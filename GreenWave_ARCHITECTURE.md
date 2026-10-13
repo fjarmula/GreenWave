@@ -49,8 +49,8 @@ assistants.
 - **Data processing engine:** **GeoPandas**, **Polars**, and
   **NetworkX** for graph-based pathfinding and spatial joins.
 - **Frontend:** **Next.js** (React), **Tailwind CSS**, and
-  **shadcn/ui** for dashboard development; deployed on **Vercel**.
-- **Mapping engine:** **Mapbox GL JS** for GPU-accelerated WebGL
+  **shadcn/ui** for dashboard development; run locally for the demo.
+- **Mapping engine:** **MapLibre GL JS** (free, token-free fork of Mapbox GL; OSM-based tiles) for GPU-accelerated WebGL
   rendering of vehicle routes and intersection states.
 
 ### Architectural Decisions: Why?
@@ -63,7 +63,8 @@ assistants.
     stateless. It consumes a data stream at 1 Hz and renders the
     interface, keeping UI complexity low.
 3.  **Precomputed graph (ETL):** Raw GeoJSON/WFS data from MSIP is
-    processed at startup into an optimized directed NetworkX graph.
+    processed by an offline ETL step (output cached in
+    `backend/data/processed/`) into an optimized directed NetworkX graph that the server loads at startup.
     Performing real-time pathfinding directly on raw GIS data would be
     too slow.
 4.  **Corridor batching (cascade mode):** Clearing a single intersection
@@ -85,8 +86,8 @@ $$\mathrm{TTI}_i = \frac{d_i}{v_{\mathrm{avg}}}$$
 
 Where:
 
-- $(d_i)$ is the remaining distance along the route polyline to
-  intersection (i).
+- $d_i$ is the remaining distance along the route polyline to
+  intersection $i$.
 - $v_{\mathrm{avg}}$ is the smoothed velocity of the
   ambulance.
 
@@ -99,13 +100,13 @@ the potential time savings.
 
 $$T_{\mathrm{normal}} = \sum_{e \in \mathrm{Edges}} \frac{L_e}{V_e \cdot \mu_{\mathrm{traffic}}} + \sum_{v \in \mathrm{Signals}} D_v$$
 
-This model includes standard speed limits ($V_e$), a traffic-density multiplier ($\mu_{\mathrm{traffic}}$), and a static delay penalty of approximately ($D_v \approx 35\text{ s}$) at red lights.
+This model includes standard speed limits ($V_e$), a traffic-density multiplier ($\mu_{\mathrm{traffic}}$), and a static delay penalty of approximately $D_v \approx 35\text{ s}$ at red lights.
 
 #### 2. ER-GreenWave travel time (with priority)
 
 $$T_{\mathrm{greenwave}} = \sum_{e \in \mathrm{Edges}} \frac{L_e}{V_{\mathrm{ambulance}}} + \sum_{v \in \mathrm{Signals}} D_{\min}$$
 
-This model assumes a cleared lane, allowing a higher sustained speed and a minimal delay of approximately ($D_{\min} \approx 3\text{ s}$) for safe crossing.
+This model assumes a cleared lane, allowing a higher sustained speed and a minimal delay of approximately $D_{\min} \approx 3\text{ s}$ for safe crossing.
 
 ---
 
@@ -162,7 +163,7 @@ Called when the user selects the origin and destination.
 
 **Transport:** WebSocket or SSE, with a **1 Hz tick**.
 
-The frontend consumes this stream to animate the Mapbox vehicle marker
+The frontend consumes this stream to animate the MapLibre vehicle marker
 and update dashboard KPIs. In this example, the second intersection
 transitions to `CLEARING_CASCADE` based on the TTI threshold.
 
@@ -237,3 +238,30 @@ establish compatibility with Kraków's production traffic-control
 infrastructure. Any real-world deployment would require validation with
 the relevant authorities, controller-specific integration, and rigorous
 operational and safety testing.
+
+---
+
+## 6. Open Questions
+
+Unresolved points in this document. Agents must not invent answers (see
+`.agents/INSTRUCTIONS.md`); resolve them here first, then implement.
+
+1. **State machine:** the documented sequence is `NORMAL → CLEARING → PRIORITY_GREEN → RECOVERY`,
+   but the telemetry example uses `CLEARING_CASCADE`. Proposal: treat cascade as a boolean flag,
+   not a state. Transition conditions (TTI thresholds for CLEARING → PRIORITY_GREEN, start of
+   RECOVERY) and the relation of `hold_duration_sec` to them are undefined.
+2. **Identifiers:** telemetry uses `INT-302`, the ITS request uses `MSIP-SIG-089`; no mapping defined.
+3. **Contract gaps:** `simulation_id` is client-supplied but not echoed in the response or
+   telemetry; no stream subscription or stop/cancel endpoint; no policy for concurrent or
+   duplicate simulations; no `schema_version`; no field marking values as simulated; ambulance
+   `status` enum undefined; valid range of `traffic_density_multiplier` undefined (it divides
+   speed, so it must be > 0).
+4. **ITS dispatch (Phase 3):** model as an internal `ItsGateway` interface with a mock
+   implementation rather than an HTTP call from the backend to itself.
+5. **Model inputs:** `V_ambulance`, the ambulance speed model, and the smoothing method for
+   $v_{\mathrm{avg}}$ are unspecified. The CRS and units of the MSIP/ZDMK layers must be verified
+   before writing distance code.
+6. **Data sources:** concrete datasets and URLs from the Kraków Open Data portal are not yet
+   chosen or verified (the contest requires at least one Kraków open-data source).
+7. **Terminology:** verify the name "STeR" for Kraków's ITS; "Datex II / NTCIP 1211" is in the
+   glossary but not used.

@@ -38,6 +38,9 @@ frontend/.env.local
 frontend/.env*.local
 frontend/tsconfig.tsbuildinfo
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # Logs & Environment
 *.log
 .env

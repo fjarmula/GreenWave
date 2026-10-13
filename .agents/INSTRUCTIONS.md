@@ -28,7 +28,7 @@ Use the repository's actual configuration as the source of truth for installed v
 
 ### Backend
 
-- Python 3.12+
+- Python 3.12+ (package `greenwave` in `backend/src/greenwave/`)
 - `uv` for dependency and environment management
 - FastAPI and asynchronous ASGI
 - WebSockets and/or SSE for telemetry
@@ -43,7 +43,7 @@ Use the repository's actual configuration as the source of truth for installed v
 - Next.js App Router
 - TypeScript in strict mode
 - Tailwind CSS and `shadcn/ui`
-- Mapbox GL JS for map rendering
+- MapLibre GL JS for map rendering
 - React hooks and the project's existing state-management approach for real-time updates
 
 Do not introduce a listed technology merely because it appears here. Prefer existing dependencies and established project conventions.
@@ -65,11 +65,11 @@ Use existing code and documentation as evidence. If they disagree, identify the 
 ### Authority and contracts
 
 - `GreenWave_ARCHITECTURE.md` is the intended architectural reference. Confirm its current contents and relationship to the implementation before relying on it.
-- Backend Pydantic models live in `backend/src/schemas/` if that path exists in the current repository.
-- Frontend types are expected under `frontend/src/types/` if that path exists.
+- Backend Pydantic models in `backend/src/greenwave/schemas/` are the canonical definition of every REST and telemetry payload.
+- Frontend types in `frontend/src/types/api.generated.ts` are generated from them (via `contracts/openapi.json`); never edit generated files by hand. Regeneration steps are in `AGENTS.md`, and CI fails on drift.
+- Payloads that are not exposed through a FastAPI route (e.g. WebSocket/SSE messages) must still be registered in the OpenAPI document so they are generated.
 - Identify the canonical definition for each API/WebSocket payload. Do not maintain competing definitions without a documented reason.
 - When a shared contract changes, update or generate all affected representations within the task's scope, and add a check that detects drift where practical.
-- If the project does not yet have a reliable contract-generation workflow, explain the options and ask before introducing a broad tooling change.
 
 ## 4. Operating Workflow
 
@@ -124,7 +124,7 @@ Preserve the repository's established architecture. Unless the architecture docu
 
 - Keep GIS ingestion, normalization, and graph construction separate from the real-time simulation loop.
 - Keep domain and graph logic out of FastAPI request handlers and WebSocket transport code.
-- Keep Mapbox rendering isolated within the existing map component boundary (expected at `frontend/src/components/map/`).
+- Keep MapLibre rendering isolated within the existing map component boundary (expected at `frontend/src/components/map/`).
 - Keep dashboard/HUD presentation components separate from map rendering (expected at `frontend/src/components/hud/`).
 - Keep transport, validation, domain logic, persistence, and presentation responsibilities distinct.
 - Avoid unnecessary abstractions; introduce a new layer when it provides a clear boundary or testability benefit.
@@ -285,7 +285,7 @@ Inspect the project's actual configuration and scripts before running commands. 
 ```bash
 uv run ruff check .
 uv run ruff format --check .
-uv run mypy src
+uv run mypy
 uv run pytest
 ```
 
@@ -293,10 +293,13 @@ uv run pytest
 
 ```bash
 npm run lint
-npx tsc --noEmit
+npm run typecheck      # next typegen && tsc --noEmit
+npm run format:check
+npm test
+npm run build
 ```
 
-Use the package manager and scripts actually declared by the repository. Do not run `npm` commands if the project uses another package manager or has no matching script.
+Use the package manager and scripts actually declared by the repository (npm, Node 22+). The frontend `typecheck` script must be used instead of a bare `tsc`, because Next generates route types (e.g. `LayoutProps`) that `tsc` needs.
 
 ### Verification rules
 

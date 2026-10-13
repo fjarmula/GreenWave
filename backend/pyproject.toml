@@ -1,30 +1,62 @@
 [project]
-name = "backend"
+name = "greenwave-backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "ER-GreenWave backend: spatial ETL, simulation engine and telemetry API for emergency-vehicle green corridors."
 readme = "README.md"
 authors = [
-    { name = "fjarmula", email = "jarmulafilip@gmail.com" },
-    {name = "piotrek406", email = "piotrlorek06@gmail.com"}
+    { name = "Filip Jarmuła", email = "jarmulafilip@gmail.com" },
+    { name = "Piotr Lorek", email = "piotrlorek06@gmail.com" },
 ]
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.143.0",
+    "geopandas>=1.2.0",
+    "networkx>=3.7",
+    "polars>=2.0.0",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.15.0",
+    "shapely>=2.2.0",
     "uvicorn[standard]>=0.54.0",
 ]
-
-[project.scripts]
-backend = "backend:main"
 
 [build-system]
 requires = ["uv_build>=0.13.0,<0.14.0"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+module-name = "greenwave"
+
 [dependency-groups]
 dev = [
+    "httpx2>=2.13.1",
     "mypy>=2.4.0",
     "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
     "ruff>=0.17.0",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# E/F: pycodestyle + pyflakes, I: isort, B: bugbear, UP: pyupgrade, SIM: simplify,
+# ASYNC: blocking calls in async code, RUF: ruff-specific rules.
+select = ["E", "F", "I", "B", "UP", "SIM", "ASYNC", "RUF"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+mypy_path = "src"
+packages = ["greenwave"]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+# These GIS libraries ship no complete type information.
+[[tool.mypy.overrides]]
+module = ["geopandas.*", "networkx.*", "shapely.*"]
+ignore_missing_imports = true

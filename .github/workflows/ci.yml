@@ -2,73 +2,116 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend-quality:
     name: Backend Check
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v6
         with:
-          version: "latest"
+          version: "0.12.3"
           enable-cache: true
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+          cache-dependency-glob: backend/uv.lock
 
       - name: Install dependencies
-        run: |
-          cd backend
-          uv sync --dev
+        run: uv sync --dev --locked
 
-      - name: Run Ruff (Linter & Formatter)
-        run: |
-          cd backend
-          uv run ruff check .
-          uv run ruff format --check .
+      - name: Ruff lint
+        run: uv run ruff check .
 
-      - name: Run Mypy
-        run: |
-          cd backend
-          uv run mypy src
+      - name: Ruff format
+        run: uv run ruff format --check .
 
-      - name: Run Pytest
-        run: |
-          cd backend
-          uv run pytest
+      - name: Mypy
+        run: uv run mypy
+
+      - name: Pytest
+        run: uv run pytest
 
   frontend-quality:
     name: Frontend Check
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version-file: frontend/.nvmrc
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Prettier
+        run: npm run format:check
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  contract-drift:
+    name: Contract Drift Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.3"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Regenerate OpenAPI document
+        working-directory: backend
         run: |
-          cd frontend
+          uv sync --dev --locked
+          uv run python scripts/export_openapi.py
+
+      - name: Regenerate frontend types
+        working-directory: frontend
+        run: |
           npm ci
+          npm run generate:types
 
-      - name: Run ESLint
+      - name: Fail if generated contract files are stale
         run: |
-          cd frontend
-          npm run lint
-
-      - name: Run TypeScript Check
-        run: |
-          cd frontend
-          npx tsc --noEmit
+          git add --intent-to-add contracts frontend/src/types
+          git diff --exit-code -- contracts frontend/src/types
