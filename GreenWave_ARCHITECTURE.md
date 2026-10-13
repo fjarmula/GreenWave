@@ -8,7 +8,7 @@ Using open spatial data from the City of Kraków, the system creates
 temporary "green corridors" (life corridors) to reduce emergency
 response times without compromising civilian traffic safety.
 
-**Contact:** Filip Jarmuła (<jarmulafilip@gmail.com>)
+**Contact:** Filip Jarmuła (<jarmulafilip@gmail.com>), Piotr Lorek (<piotrlorek06@gmail.com>)
 
 ---
 
