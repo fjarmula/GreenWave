@@ -1,0 +1,104 @@
+# Install both hook stages from the repository root with:
+#   uv run --project backend pre-commit install --install-hooks
+minimum_pre_commit_version: "4.0.0"
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+        stages: [pre-commit]
+      - id: check-case-conflict
+        stages: [pre-commit]
+      - id: check-illegal-windows-names
+        stages: [pre-commit]
+      - id: check-json
+        stages: [pre-commit]
+      - id: check-merge-conflict
+        stages: [pre-commit]
+      - id: check-symlinks
+        stages: [pre-commit]
+      - id: check-toml
+        stages: [pre-commit]
+      - id: check-yaml
+        stages: [pre-commit]
+      - id: debug-statements
+        stages: [pre-commit]
+      - id: detect-private-key
+        stages: [pre-commit]
+      - id: end-of-file-fixer
+        exclude: ^\.agents/
+        stages: [pre-commit]
+      - id: fix-byte-order-marker
+        stages: [pre-commit]
+      - id: mixed-line-ending
+        args: [--fix=lf]
+        stages: [pre-commit]
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+        stages: [pre-commit]
+
+  - repo: local
+    hooks:
+      - id: backend-ruff-check
+        name: backend · Ruff lint
+        entry: uv run --project backend ruff check --fix
+        language: system
+        files: ^backend/.*\.py$
+        types: [python]
+
+      - id: backend-ruff-format
+        name: backend · Ruff format
+        entry: uv run --project backend ruff format
+        language: system
+        files: ^backend/.*\.py$
+        types: [python]
+
+      - id: frontend-prettier
+        name: frontend · Prettier
+        entry: >-
+          bash -c 'cd frontend && npm exec --offline -- prettier --write
+          "${@#frontend/}"' --
+        language: system
+        files: ^frontend/
+        exclude: ^frontend/(package-lock\.json|src/types/api\.generated\.ts)$
+        types_or: [css, javascript, jsx, json, markdown, ts, tsx, yaml]
+
+      - id: frontend-eslint
+        name: frontend · ESLint
+        entry: >-
+          bash -c 'cd frontend && npm exec --offline -- eslint --fix
+          "${@#frontend/}"' --
+        language: system
+        files: ^frontend/.*\.[cm]?[jt]sx?$
+        exclude: ^frontend/src/types/api\.generated\.ts$
+
+      - id: backend-mypy
+        name: backend · mypy
+        entry: bash -c 'cd backend && uv run mypy'
+        language: system
+        pass_filenames: false
+        files: ^backend/.*\.py$
+        stages: [pre-push]
+
+      - id: frontend-typecheck
+        name: frontend · TypeScript type check
+        entry: npm --prefix frontend run typecheck
+        language: system
+        pass_filenames: false
+        files: ^frontend/.*\.(ts|tsx)$
+        stages: [pre-push]
+
+      - id: contract-drift
+        name: contracts · generated files are current
+        entry: >-
+          bash -c 'uv run --project backend python backend/scripts/export_openapi.py &&
+          npm --prefix frontend run generate:types &&
+          git diff --exit-code -- contracts/openapi.json frontend/src/types/api.generated.ts'
+        language: system
+        pass_filenames: false
+        files: ^(backend/src/greenwave/|backend/scripts/export_openapi\.py$|contracts/openapi\.json$)
+        stages: [pre-push]
