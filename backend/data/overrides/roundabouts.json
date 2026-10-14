@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "name": "Rondo Mogilskie",
+      "verified": true,
+      "ring_edge_ids": [
+        "W316293.0+",
+        "W320715.0+",
+        "W320716.0+",
+        "W329134.0+",
+        "W335575.0+",
+        "W386318.0+",
+        "W386319.0+",
+        "W386320.0+",
+        "W395468.0+",
+        "W395469.0+",
+        "W395517.0+",
+        "W547944.0+",
+        "W547945.0+",
+        "W576708.0+",
+        "W899687.0+",
+        "W899688.0+"
+      ],
+      "entry_arm_edge_ids": [
+        "W316297.0+",
+        "W316337.0+",
+        "W316883.0+",
+        "W316979.0+",
+        "W386321.0+",
+        "W387933.0+",
+        "W395463.0+",
+        "W445113.0+",
+        "W489203.0+",
+        "W547996.0+"
+      ],
+      "internal_edge_ids": [],
+      "notes": "Verified by the human on the check map (2026-10-14)."
+    },
+    {
+      "name": "Rondo Antoniego Matecznego",
+      "verified": false,
+      "ring_edge_ids": [
+        "W317075.0+",
+        "W317076.0+",
+        "W317077.0+",
+        "W320720.0+",
+        "W400556.0+",
+        "W449972.0+"
+      ],
+      "entry_arm_edge_ids": [
+        "W316761.0+",
+        "W395541.0+",
+        "W449980.0+",
+        "W713589.0+",
+        "W713591.0+",
+        "W713592.0+",
+        "W713593.0+",
+        "W713594.0+"
+      ],
+      "internal_edge_ids": [
+        "W380811.0+"
+      ],
+      "notes": "W380811.0+ is highway=primary_link (lanes=2, foot=no, oneway=yes, 33 m, same name) joining two ring nodes and bypassing the node between them; the other six ring edges are highway=primary. It is not part of the ring: kept as an internal edge of the intersection. Awaiting human confirmation."
+    },
+    {
+      "name": "Rondo Generała Stanisława Maczka",
+      "verified": true,
+      "ring_edge_ids": [
+        "W319660.0+",
+        "W320706.0+",
+        "W320713.0+",
+        "W320714.0+",
+        "W346170.0+",
+        "W346171.0+",
+        "W346172.0+",
+        "W346173.0+"
+      ],
+      "entry_arm_edge_ids": [
+        "W316370.0+",
+        "W319661.0+",
+        "W395410.0+",
+        "W546551.0+",
+        "W688262.0+",
+        "W759371.0+",
+        "W944187.0+",
+        "W944188.0+"
+      ],
+      "internal_edge_ids": [],
+      "notes": "Verified by the human on the check map (2026-10-14)."
+    },
+    {
+      "name": "Rondo Stanisława Barei",
+      "verified": true,
+      "ring_edge_ids": [
+        "W316190.0+",
+        "W329133.0+",
+        "W346331.0+",
+        "W395082.0+",
+        "W395083.0+",
+        "W576604.0+",
+        "W579056.0+",
+        "W900373.0+"
+      ],
+      "entry_arm_edge_ids": [
+        "W316455.0+",
+        "W316934.0+",
+        "W395079.2+",
+        "W541145.0+",
+        "W579055.0+",
+        "W640773.0+",
+        "W812529.0+",
+        "W944971.0+"
+      ],
+      "internal_edge_ids": [],
+      "notes": "Verified by the human on the check map (2026-10-14)."
+    }
+  ]
+}

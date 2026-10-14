@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roundabout override check</title>
+<style>
+:root { --bg:#fafaf8; --fg:#1d1d1b; --muted:#6b6b66; --road:#b4b4ac; --panel:#fff; --line:#dcdcd6;
+  --ring:#1b6ca8; --arm:#e09f3e; --signal:#d1495b; }
+@media (prefers-color-scheme: dark) { :root { --bg:#16161a; --fg:#ececea; --muted:#9a9a96;
+  --road:#55555d; --panel:#1e1e24; --line:#34343c; --ring:#5aa9e6; --arm:#f0b45a; --signal:#ff7a8a; } }
+body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, sans-serif; }
+h1 { font-size:20px; margin:0 0 4px; } h2 { font-size:16px; margin:28px 0 4px; }
+small, .note, .lede { color:var(--muted); font-weight:400; } .lede { max-width:70ch; }
+section { max-width:680px; } svg { width:100%; height:auto; display:block; background:var(--panel);
+  border:1px solid var(--line); border-radius:6px; }
+.road { fill:none; stroke:var(--road); stroke-width:1.4; stroke-linecap:round; }
+.arm { fill:none; stroke:var(--arm); stroke-width:3.2; stroke-linecap:round; opacity:.85; }
+.ring { fill:none; stroke:var(--ring); stroke-width:3.6; stroke-linecap:round; }
+.arrow { fill:var(--ring); } .signal { fill:var(--signal); stroke:var(--panel); stroke-width:1.5; }
+.scale { stroke:var(--fg); stroke-width:2; } .scale-text { fill:var(--fg); font-size:11px; }
+.key span { display:inline-block; margin-right:14px; }
+.key i { display:inline-block; width:22px; height:4px; vertical-align:middle; margin-right:5px; }
+</style></head><body>
+<h1>Roundabout override check</h1>
+<p class="lede">Blue = ring edges with an arrow for travel direction. Orange = entry-arm edges. Red dots =
+counted signal nodes. Grey = every other edge. Edit <code>backend/data/overrides/roundabouts.json</code>:
+fix the edge ids and set <code>"verified": true</code> per entry once it looks right.</p>
+<p class="key"><span><i style="background:var(--ring)"></i>ring</span><span><i style="background:var(--arm)"></i>entry arm</span>
+<span><i style="background:var(--road)"></i>other roads</span></p>
+__BODY__
+<footer><p class="note">Road data © OpenStreetMap contributors (ODbL). Simulation inputs only.</p></footer>
+</body></html>
