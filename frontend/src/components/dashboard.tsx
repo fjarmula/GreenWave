@@ -2,6 +2,8 @@
 
 import { Activity, Ambulance, Gauge, Route, Settings2, Siren } from "lucide-react";
 import { useState } from "react";
+import { useSimulationStream, createMockRoute } from "@/lib/useSimulationStream";
+import { useSimulationDispatch, useSimulationState } from "@/components/simulation-provider";
 
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import { IntersectionList } from "@/components/hud/IntersectionList";
@@ -19,6 +21,8 @@ import {
 type DashboardMode = "setup" | "live";
 
 export function Dashboard() {
+  useSimulationStream();
+  const dispatch = useSimulationDispatch();
   const [mode, setMode] = useState<DashboardMode>("setup");
   const [originId, setOriginId] = useState<OriginEndpointId>("hospital");
   const [destinationId, setDestinationId] = useState<DestinationEndpointId>("station");
@@ -31,13 +35,29 @@ export function Dashboard() {
 
   return (
     <main className="flex min-h-dvh min-w-80 flex-col overflow-x-hidden bg-background text-foreground">
-      <DashboardHeader mode={mode} onModeChange={setMode} />
+      <DashboardHeader
+        mode={mode}
+        onModeChange={(nextMode) => {
+          if (nextMode === "setup") dispatch({ type: "RESET" });
+          setMode(nextMode);
+        }}
+      />
 
       {mode === "setup" ? (
         <section className="grid min-h-0 flex-1 lg:grid-cols-[370px_minmax(0,1fr)]">
           <div className="order-2 lg:order-1">
             <DispatchForm
-              onInitialize={() => setMode("live")}
+              onInitialize={({ trafficDensity, cascadeEnabled }) => {
+                const request = {
+                  simulation_id: crypto.randomUUID(),
+                  origin: { lng: origin.coordinates[0], lat: origin.coordinates[1] },
+                  destination: { lng: destination.coordinates[0], lat: destination.coordinates[1] },
+                  traffic_density_multiplier: trafficDensity,
+                  enable_cascade_mode: cascadeEnabled,
+                };
+                dispatch({ type: "START", request, routeData: createMockRoute(request) });
+                setMode("live");
+              }}
               originId={originId}
               destinationId={destinationId}
               onOriginChange={setOriginId}
@@ -70,6 +90,7 @@ type DashboardHeaderProps = {
 };
 
 function DashboardHeader({ mode, onModeChange }: DashboardHeaderProps) {
+  const { simulationState } = useSimulationState();
   return (
     <header className="z-50 flex flex-wrap items-center gap-3 border-b border-border bg-background/92 px-4 py-3 backdrop-blur-xl sm:px-6 lg:min-h-[76px] lg:flex-nowrap">
       <div className="flex min-w-0 flex-1 items-center gap-3 lg:min-w-[285px] lg:flex-none">
@@ -111,7 +132,13 @@ function DashboardHeader({ mode, onModeChange }: DashboardHeaderProps) {
 
       <div className="ml-2 hidden items-center gap-2 text-[11px] text-muted-foreground xl:flex">
         <span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-        <span>System ready</span>
+        <span>
+          {simulationState === "RUNNING"
+            ? "Simulation running"
+            : simulationState === "FINISHED"
+              ? "Simulation finished"
+              : "System ready"}
+        </span>
         <span className="mx-1 h-4 w-px bg-border" />
         <span className="font-mono">SIMULATION ENVIRONMENT</span>
       </div>
@@ -209,6 +236,7 @@ function RoutePreview({
 }
 
 function VehicleTelemetry() {
+  const { liveTelemetry } = useSimulationState();
   return (
     <div className="absolute top-36 left-6 z-20 hidden w-[292px] space-y-3 lg:block">
       <div className="flex gap-3 rounded-xl border border-border/80 bg-card/88 p-4 shadow-xl backdrop-blur-xl">
@@ -217,10 +245,10 @@ function VehicleTelemetry() {
         </div>
         <div>
           <p className="dashboard-eyebrow">Priority vehicle</p>
-          <h2 className="mt-1 font-mono text-sm font-bold">AMB-KRA-01</h2>
-          <p className="mt-1 text-[10px] text-muted-foreground">
-            University Hospital → Łazarza ZRM
-          </p>
+          <h2 className="mt-1 font-mono text-sm font-bold">
+            {liveTelemetry?.ambulance.id ?? "Awaiting telemetry"}
+          </h2>
+          <p className="mt-1 text-[10px] text-muted-foreground">Simulated vehicle telemetry</p>
         </div>
       </div>
       <div className="rounded-xl border border-border/80 bg-card/88 p-4 shadow-xl backdrop-blur-xl">
@@ -229,18 +257,20 @@ function VehicleTelemetry() {
           <Gauge className="size-4 text-cyan-600 dark:text-cyan-300" aria-hidden />
         </div>
         <div className="mt-4 flex items-end gap-2">
-          <strong className="font-mono text-2xl">62.4</strong>
+          <strong className="font-mono text-2xl">
+            {liveTelemetry?.ambulance.speed_kmh.toFixed(1) ?? "—"}
+          </strong>
           <span className="mb-1 text-[10px] text-muted-foreground">km/h</span>
           <b className="mb-1 ml-auto font-mono text-[10px] text-emerald-600 dark:text-emerald-400">
-            +4.2%
+            MOCK
           </b>
         </div>
         <div className="mt-2 h-1 rounded-full bg-muted">
           <span className="block h-full w-[72%] rounded-full bg-cyan-500" />
         </div>
         <div className="mt-3 flex justify-between font-mono text-[9px] text-muted-foreground">
-          <span>HEADING · NE 042°</span>
-          <span>GPS · FIXED</span>
+          <span>POSITION · SYNTHETIC</span>
+          <span>TICK · {liveTelemetry?.tick ?? 0}</span>
         </div>
       </div>
     </div>

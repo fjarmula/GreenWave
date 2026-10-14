@@ -21,7 +21,7 @@ import {
 } from "@/components/map/dispatch-endpoints";
 
 type DispatchFormProps = {
-  onInitialize: () => void;
+  onInitialize: (settings: { trafficDensity: number; cascadeEnabled: boolean }) => void;
   originId: OriginEndpointId;
   destinationId: DestinationEndpointId;
   onOriginChange: (originId: OriginEndpointId) => void;
@@ -39,6 +39,11 @@ export function DispatchForm({
 }: DispatchFormProps) {
   const [trafficDensity, setTrafficDensity] = useState(1.5);
   const [cascadeEnabled, setCascadeEnabled] = useState(true);
+  const normalSeconds = Math.round((780 * trafficDensity) / 1.5);
+  const greenwaveSeconds = 380;
+  const savedSeconds = normalSeconds - greenwaveSeconds;
+  const formatEstimate = (seconds: number) =>
+    `${String(Math.floor(seconds / 60)).padStart(2, "0")}m ${String(seconds % 60).padStart(2, "0")}s`;
 
   return (
     <aside className="border-border/80 bg-card/95 p-5 shadow-2xl backdrop-blur-xl sm:p-6 lg:h-full lg:overflow-y-auto lg:border-r">
@@ -138,7 +143,7 @@ export function DispatchForm({
 
       <button
         type="button"
-        onClick={onInitialize}
+        onClick={() => onInitialize({ trafficDensity, cascadeEnabled })}
         className="mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 text-xs font-extrabold tracking-[0.08em] text-emerald-950 uppercase shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
       >
         <Zap className="size-4" aria-hidden />
@@ -149,25 +154,29 @@ export function DispatchForm({
       <div className="mt-5 rounded-xl border border-emerald-500/25 bg-emerald-500/7 p-4">
         <div className="flex items-center gap-2 text-[11px] font-medium">
           <TimerReset className="size-4 text-emerald-500" aria-hidden />
-          <span>Pre-flight estimation</span>
+          <span>Mock pre-flight estimation</span>
           <span className="ml-auto font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
             READY
           </span>
         </div>
         <div className="my-4 grid grid-cols-2 gap-3">
-          <Estimate label="Standard time" value="13m 00s" />
-          <Estimate label="GreenWave time" value="06m 20s" highlighted />
+          <Estimate label="Standard time" value={formatEstimate(normalSeconds)} />
+          <Estimate label="GreenWave time" value={formatEstimate(greenwaveSeconds)} highlighted />
         </div>
         <div className="flex items-center gap-2 border-t border-emerald-500/20 pt-3 text-emerald-600 dark:text-emerald-400">
           <ArrowDownRight className="size-4" aria-hidden />
-          <strong className="text-[11px]">51% TIME SAVED</strong>
-          <span className="ml-auto font-mono text-[10px] text-muted-foreground">−06m 40s</span>
+          <strong className="text-[11px]">
+            {Math.round((savedSeconds / normalSeconds) * 100)}% TIME SAVED
+          </strong>
+          <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+            −{formatEstimate(savedSeconds)}
+          </span>
         </div>
       </div>
 
       <p className="mt-5 flex items-center gap-2 text-[10px] leading-relaxed text-muted-foreground">
         <ShieldCheck className="size-4 shrink-0 text-emerald-500" aria-hidden />
-        Route planning uses municipal spatial data from MSIP and ZDMK.
+        Demo uses synthetic route estimates and sample signal telemetry.
       </p>
     </aside>
   );

@@ -18,6 +18,15 @@ snapshot with `useSimulationState()` and dispatch actions with
 - `RESET` returns to `SETUP` and clears the previous run.
 
 The dashboard's setup/live tabs are presentation state; opening Live operations
-does not start a simulation. F4 will connect initialization and the mock stream
-to these actions. F5 will render route and vehicle data. No timers, transport,
-signal transition logic, or automatic completion rules are implemented in F3.
+does not start a simulation. Initialization creates a synthetic route response
+and starts the F4 one-second stream. Returning to setup resets the run and stops
+the timer. The mock finishes after its sample GreenWave estimate (380 seconds).
+ITS logs are bounded to 20 entries; the console shows the latest five.
+
+The mock uses straight-line interpolation between selected endpoints, a sample
+5,400 m distance and 780/380 second estimates from the architecture example.
+Traffic density scales only the mock normal estimate; cascade toggles the second
+sample signal's active flag and state. TTI counts down from sample 28/38 second
+values and clamps at zero. Signal snapshots remain fixed example states: this
+is not backend routing or a signal transition engine. F5 will render route and
+vehicle data. Runtime transport validation remains necessary for integration.

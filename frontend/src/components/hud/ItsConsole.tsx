@@ -1,14 +1,11 @@
-import { Activity } from "lucide-react";
+"use client";
 
-const logEntries = [
-  "[ENGINE] TTI threshold reached for INT-302 (TTI <= 40s)",
-  "[ITS_GATEWAY] Outbound simulated priority request prepared",
-  "[ITS_GATEWAY] Mock ACK: node MSIP-SIG-089 entered priority phase",
-  "[CASCADE] Adjacent node MSIP-SIG-090 grouped at 180 m",
-  "[ENGINE] Corridor integrity check passed · 4/4 nodes synchronized",
-];
+import { Activity } from "lucide-react";
+import { useSimulationState } from "@/components/simulation-provider";
 
 export function ItsConsole() {
+  const { itsLogs, simulationState } = useSimulationState();
+  const logEntries = itsLogs.slice(-5);
   return (
     <section className="overflow-hidden rounded-xl border border-border/80 bg-card/92 shadow-2xl backdrop-blur-xl">
       <div className="flex items-center justify-between gap-4 border-b border-border px-3 py-2.5 font-mono text-[10px] text-muted-foreground">
@@ -18,10 +15,19 @@ export function ItsConsole() {
         </span>
         <span className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
           <i className="size-1.5 animate-pulse rounded-full bg-current" />
-          REC
+          {simulationState === "RUNNING"
+            ? "REC"
+            : simulationState === "FINISHED"
+              ? "FINISHED"
+              : "IDLE"}
         </span>
       </div>
       <div className="space-y-2 bg-slate-950/[0.04] px-3 py-3 dark:bg-slate-950/55">
+        {!logEntries.length && (
+          <p className="text-xs text-muted-foreground">
+            Initialize a simulation to start the mock audit log.
+          </p>
+        )}
         {logEntries.map((entry, index) => (
           <p
             key={entry}
