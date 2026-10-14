@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { positionOnRoute } from "@/lib/route-position";
 import { useSimulationDispatch, useSimulationState } from "@/components/simulation-provider";
 import type {
   SimulationStartRequest,
@@ -32,6 +33,8 @@ export function createMockTick(
   tick: number,
 ): SimulationTick {
   const progress = Math.min(1, tick / route.estimated_greenwave_time_sec);
+  const position = positionOnRoute(route.route_geometry, progress);
+  if (!position) throw new Error("Mock simulation requires at least two route coordinates");
   return {
     event_type: "SIMULATION_TICK",
     tick,
@@ -39,8 +42,8 @@ export function createMockTick(
     ambulance: {
       id: "AMB-KRA-01",
       position: {
-        lat: request.origin.lat + (request.destination.lat - request.origin.lat) * progress,
-        lng: request.origin.lng + (request.destination.lng - request.origin.lng) * progress,
+        lat: position[1],
+        lng: position[0],
       },
       speed_kmh: progress === 1 ? 0 : Number((62.4 + Math.sin(tick / 5) * 3).toFixed(1)),
       status: progress === 1 ? "ARRIVED" : "APPROACHING_INTERSECTION",

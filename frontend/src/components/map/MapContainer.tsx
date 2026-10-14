@@ -10,6 +10,7 @@ import { EndpointMarkers } from "@/components/map/EndpointMarkers";
 import { RouteLayer } from "@/components/map/RouteLayer";
 import { SignalMarkers } from "@/components/map/SignalMarkers";
 import type { DestinationEndpoint, OriginEndpoint } from "@/components/map/dispatch-endpoints";
+import { useSimulationState } from "@/components/simulation-provider";
 
 const MAP_STYLES: Record<"light" | "dark", string> = {
   light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
@@ -30,6 +31,8 @@ type MapContainerProps = {
 };
 
 export function MapContainer({ live, origin, destination, focusRequest }: MapContainerProps) {
+  const { routeData, liveTelemetry, startRequest } = useSimulationState();
+  const vehiclePosition = liveTelemetry?.ambulance.position ?? startRequest?.origin;
   const mapElement = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Map | null>(null);
   const [map, setMap] = useState<Map | null>(null);
@@ -76,15 +79,24 @@ export function MapContainer({ live, origin, destination, focusRequest }: MapCon
           </span>
         </div>
       )}
-      <AmbulanceMarker map={map} visible={live} />
+      <AmbulanceMarker
+        map={map}
+        visible={live && !!vehiclePosition}
+        coordinates={vehiclePosition ? [vehiclePosition.lng, vehiclePosition.lat] : null}
+      />
       <EndpointMarkers
         map={map}
         origin={origin}
         destination={destination}
         focusRequest={focusRequest}
       />
-      <RouteLayer map={map} />
-      <SignalMarkers map={map} visible={live} />
+      <RouteLayer map={map} routeGeometry={routeData?.route_geometry ?? null} />
+      <SignalMarkers
+        map={map}
+        visible={live}
+        routeGeometry={routeData?.route_geometry ?? null}
+        intersections={liveTelemetry?.intersections ?? []}
+      />
     </div>
   );
 }

@@ -28,5 +28,10 @@ The mock uses straight-line interpolation between selected endpoints, a sample
 Traffic density scales only the mock normal estimate; cascade toggles the second
 sample signal's active flag and state. TTI counts down from sample 28/38 second
 values and clamps at zero. Signal snapshots remain fixed example states: this
-is not backend routing or a signal transition engine. F5 will render route and
-vehicle data. Runtime transport validation remains necessary for integration.
+is not backend routing or a signal transition engine. The F5 map draws that
+synthetic route, interpolates the vehicle between one-second snapshots, and
+positions sample signals at evenly spaced progress points on the route. Signal
+coordinates are absent from the telemetry contract; backend integration must
+supply real coordinates separately. Map colors reflect received signal states
+and active signals pulse. Reduced-motion settings disable animation.
+Runtime transport validation remains necessary for integration.

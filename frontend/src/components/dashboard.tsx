@@ -209,10 +209,10 @@ function RoutePreview({
             <KpiHeader />
           </div>
           <VehicleTelemetry />
-          <div className="absolute top-36 right-6 z-20 hidden w-[330px] lg:block">
-            <IntersectionList />
-          </div>
-          <div className="absolute right-6 bottom-48 z-20 hidden w-[440px] lg:block">
+          <div className="absolute top-36 right-6 bottom-28 z-20 hidden w-[440px] space-y-3 overflow-y-auto lg:block">
+            <div className="ml-auto w-[330px]">
+              <IntersectionList />
+            </div>
             <ItsConsole />
           </div>
           <div className="relative z-20 mt-[310px] grid gap-3 px-3 pb-3 sm:mt-[360px] sm:grid-cols-2 sm:px-4 lg:hidden">
