@@ -30,6 +30,9 @@ backend/data/raw/*
 backend/data/processed/*
 !backend/data/processed/.gitkeep
 
+# Frontend sketch files
+er-green-wave-dashboard-design/
+
 # Node / Next.js
 frontend/node_modules/
 frontend/.next/
