@@ -196,12 +196,18 @@ function RoutePreview({
       }`}
       aria-label={isLive ? "Live corridor route preview" : "Planned corridor route preview"}
     >
-      <MapContainer
-        live={isLive}
-        origin={origin}
-        destination={destination}
-        focusRequest={mapFocusRequest}
-      />
+      <div
+        className={
+          isLive ? "absolute inset-x-0 top-0 h-[560px] sm:h-[620px] lg:h-full" : "absolute inset-0"
+        }
+      >
+        <MapContainer
+          live={isLive}
+          origin={origin}
+          destination={destination}
+          focusRequest={mapFocusRequest}
+        />
+      </div>
 
       {isLive ? (
         <>
@@ -215,7 +221,7 @@ function RoutePreview({
             </div>
             <ItsConsole />
           </div>
-          <div className="relative z-20 mt-[310px] grid gap-3 px-3 pb-3 sm:mt-[360px] sm:grid-cols-2 sm:px-4 lg:hidden">
+          <div className="relative z-20 mt-[420px] grid gap-3 px-3 pb-3 sm:mt-[550px] sm:grid-cols-2 sm:px-4 lg:hidden">
             <IntersectionList />
             <ItsConsole />
           </div>

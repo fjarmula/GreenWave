@@ -11,9 +11,16 @@ type EndpointMarkersProps = {
   origin: OriginEndpoint;
   destination: DestinationEndpoint;
   focusRequest: number;
+  live: boolean;
 };
 
-export function EndpointMarkers({ map, origin, destination, focusRequest }: EndpointMarkersProps) {
+export function EndpointMarkers({
+  map,
+  origin,
+  destination,
+  focusRequest,
+  live,
+}: EndpointMarkersProps) {
   useEffect(() => {
     if (!map) return;
 
@@ -32,8 +39,11 @@ export function EndpointMarkers({ map, origin, destination, focusRequest }: Endp
 
     const bounds = new maplibregl.LngLatBounds(origin.coordinates, origin.coordinates);
     bounds.extend(destination.coordinates);
+    const mobile = map.getContainer().clientWidth < 640;
     map.fitBounds(bounds, {
-      padding: { top: 140, right: 160, bottom: 140, left: 160 },
+      padding: mobile
+        ? { top: live ? 180 : 110, right: 100, bottom: 80, left: 40 }
+        : { top: 140, right: 160, bottom: 140, left: 160 },
       maxZoom: 13.2,
       duration: focusRequest ? 600 : 0,
     });
@@ -42,7 +52,7 @@ export function EndpointMarkers({ map, origin, destination, focusRequest }: Endp
       originMapMarker.remove();
       destinationMapMarker.remove();
     };
-  }, [destination, focusRequest, map, origin]);
+  }, [destination, focusRequest, live, map, origin]);
 
   return null;
 }

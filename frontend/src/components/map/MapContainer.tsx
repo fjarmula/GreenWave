@@ -89,6 +89,7 @@ export function MapContainer({ live, origin, destination, focusRequest }: MapCon
         origin={origin}
         destination={destination}
         focusRequest={focusRequest}
+        live={live}
       />
       <RouteLayer map={map} routeGeometry={routeData?.route_geometry ?? null} />
       <SignalMarkers
