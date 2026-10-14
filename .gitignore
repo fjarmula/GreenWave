@@ -27,6 +27,7 @@ htmlcov/
 # Data Directories (keep directory structure via .gitkeep)
 backend/data/raw/*
 !backend/data/raw/.gitkeep
+!backend/data/raw/MANIFEST.json
 backend/data/processed/*
 !backend/data/processed/.gitkeep
 
