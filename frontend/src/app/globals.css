@@ -50,6 +50,12 @@
 
 :root {
   color-scheme: light;
+  --map-surface: #dce8ed;
+  --map-grid: rgb(48 104 119 / 12%);
+  --map-road: rgb(44 91 104 / 24%);
+  --map-label: #42616d;
+  --map-vignette: rgb(235 244 246 / 10%);
+  --route-shadow: rgb(221 234 238 / 90%);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -86,6 +92,12 @@
 
 .dark {
   color-scheme: dark;
+  --map-surface: #07131f;
+  --map-grid: rgb(75 132 148 / 11%);
+  --map-road: rgb(104 151 162 / 28%);
+  --map-label: #547583;
+  --map-vignette: rgb(2 8 14 / 72%);
+  --route-shadow: #031019;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -128,5 +140,147 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer components {
+  .dashboard-eyebrow {
+    @apply m-0 text-[9px] font-bold tracking-[0.14em] text-muted-foreground uppercase;
+  }
+
+  .dashboard-label {
+    @apply block text-[10px] font-bold tracking-[0.08em] text-muted-foreground uppercase;
+  }
+
+  .dashboard-map {
+    background-color: var(--map-surface);
+    background-image:
+      linear-gradient(var(--map-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--map-grid) 1px, transparent 1px),
+      radial-gradient(circle at 70% 15%, rgb(6 182 212 / 10%), transparent 35%);
+    background-size:
+      72px 72px,
+      72px 72px,
+      auto;
+  }
+
+  .dashboard-map::after {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 25%, var(--map-vignette) 100%);
+    content: "";
+    pointer-events: none;
+  }
+
+  .dashboard-road {
+    position: absolute;
+    z-index: 1;
+    height: 9px;
+    border-top: 2px solid var(--map-road);
+    border-bottom: 1px solid color-mix(in srgb, var(--map-road), transparent 45%);
+  }
+
+  .dashboard-map-label {
+    position: absolute;
+    z-index: 1;
+    color: var(--map-label);
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+  }
+
+  .dashboard-route-planned {
+    stroke: #0891b2;
+    stroke-dasharray: 10 12;
+    filter: drop-shadow(0 0 7px rgb(6 182 212 / 65%));
+    animation: route-flow 12s linear infinite;
+  }
+
+  .dashboard-route-live {
+    stroke: #10b981;
+    filter: drop-shadow(0 0 8px rgb(16 185 129 / 75%));
+  }
+
+  .dashboard-vehicle {
+    position: absolute;
+    z-index: 10;
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border: 2px solid #f8fafc;
+    border-radius: 999px;
+    color: #f8fafc;
+    background: #0a2935;
+    animation: ambulance-flash 0.9s steps(1, end) infinite;
+  }
+
+  .dashboard-wave {
+    position: absolute;
+    inset: -12px;
+    border: 1px solid rgb(37 99 235 / 65%);
+    border-radius: 999px;
+    animation: signal-wave 2.2s infinite;
+  }
+
+  .dashboard-signal-pulse {
+    animation: signal-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes route-flow {
+  to {
+    stroke-dashoffset: -220;
+  }
+}
+
+@keyframes signal-wave {
+  from {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes signal-pulse {
+  50% {
+    transform: scale(1.45);
+    opacity: 0.55;
+  }
+}
+
+@keyframes ambulance-flash {
+  0%,
+  49% {
+    border-color: #ef4444;
+    box-shadow:
+      0 0 0 8px rgb(239 68 68 / 13%),
+      0 0 26px rgb(239 68 68 / 65%);
+  }
+  50%,
+  100% {
+    border-color: #2563eb;
+    box-shadow:
+      0 0 0 8px rgb(37 99 235 / 13%),
+      0 0 26px rgb(37 99 235 / 65%);
+  }
+}
+
+@media (max-width: 639px) {
+  .dashboard-map-label {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-route-planned,
+  .dashboard-vehicle,
+  .dashboard-wave,
+  .dashboard-signal-pulse {
+    animation: none;
   }
 }
