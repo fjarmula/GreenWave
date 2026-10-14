@@ -308,11 +308,9 @@ cite them).
     (`CROSSING_MERGE_DISTANCE_METERS`, its own key), under the same diameter cap.
 12. **Welding.** Decided: way ends within 1 m of another way's end or body are welded
     (`WELD_TOLERANCE_METERS`), never across different layer, bridge or tunnel; every weld logged.
-    **Open: human review** of the 19 near-misses involving a tertiary-or-above road
-    (`near_misses_tertiary_plus.csv`) before the rule is changed; the rule is unchanged for now.
+    Human review of the 19 near-misses involving a tertiary-or-above road (`near_misses_tertiary_plus.csv`) is complete and approved: the 9 sub-metre skips are valid grade separations, the 2 welds on Marii Dąbrowskiej are valid, and the 8 cases between 1.02 m and 1.30 m (Igołomska stub, Kąpielowa vs. A4 motorway, and Walerego Sławka parallel carriageways) must remain unwelded. The 1 m rule is confirmed and unchanged.
 13. **Roundabout overrides.** Decided: Mogilskie, Maczka and Barei verified; Piekarza Ochwata removed
-    (ordinary intersection); the Matecznego bypass link is an internal edge, not ring. **Open:
-    confirmation of the Matecznego entry** (`verified: true`).
+    (ordinary intersection); the Matecznego bypass link is an internal edge, not ring. Matecznego is successfully verified
 14. **Cascade candidate set.** Decided: neighbour pairs at distance <= 250 m
     (`CASCADE_THRESHOLD_METERS`, inclusive; the architecture doc says `d < 250 m`), in travel
     direction, no pair inside one intersection, no U-turns (`CASCADE_ALLOW_U_TURNS`). The table is only
