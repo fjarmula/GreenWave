@@ -70,8 +70,8 @@ assistants.
 4.  **Corridor batching (cascade mode):** Clearing a single intersection
     on a dense street (such as Aleje Trzech Wieszczów) is ineffective if
     traffic is blocked at another intersection 150 m ahead. The engine
-    groups nearby intersections (distance **d \< 250 m**) and triggers
-    them together.
+    groups consecutive intersections along the active route (along-route
+    stop-line distance **d <= 250 m**) and triggers them together.
 
 ---
 
@@ -79,34 +79,29 @@ assistants.
 
 ### Time to Intersection (TTI)
 
-TTI is recalculated every second to drive the intersection state
-machine:
+TTI is recalculated every second (1 Hz tick) to drive the intersection state machine:
 
 $$\mathrm{TTI}_i = \frac{d_i}{v_{\mathrm{avg}}}$$
 
 Where:
-
-- $d_i$ is the remaining distance along the route polyline to
-  intersection $i$.
-- $v_{\mathrm{avg}}$ is the smoothed velocity of the
-  ambulance.
+- $d_i$ is the remaining distance (in metres, calculated in EPSG:2178) along the active route polyline to the first controlled approach stop line of intersection $i$.
+- $v_{\mathrm{avg}}$ is the smoothed velocity of the ambulance (in $\text{m/s}$), computed as an exponential moving average $v_{\mathrm{avg}, t} = 0.25 \cdot v_t + 0.75 \cdot v_{\mathrm{avg}, t-1}$ (initialized to $v_0$ on the starting edge and floored at $5.0\text{ m/s}$ to prevent division by zero).
 
 ### Travel-Time Estimation Algorithm
 
-The system compares normal routing with ER-GreenWave routing to estimate
-the potential time savings.
+The system compares normal routing with ER-GreenWave routing to estimate potential time savings (converting $L_e$ in metres and speeds in $\text{km/h}$ to seconds via $\text{speed}_{\mathrm{m/s}} = \text{speed}_{\mathrm{km/h}} / 3.6$):
 
 #### 1. Normal travel time (without priority)
 
-$$T_{\mathrm{normal}} = \sum_{e \in \mathrm{Edges}} \frac{L_e}{V_e \cdot \mu_{\mathrm{traffic}}} + \sum_{v \in \mathrm{Signals}} D_v$$
+$$T_{\mathrm{normal}} = \sum_{e \in \mathrm{Edges}} \frac{L_e \cdot \mu_{\mathrm{traffic}}}{V_e} + \sum_{u \in \mathrm{Intersections}} D_u$$
 
-This model includes standard speed limits ($V_e$), a traffic-density multiplier ($\mu_{\mathrm{traffic}}$), and a static delay penalty of approximately $D_v \approx 35\text{ s}$ at red lights.
+Where $V_e$ is the edge speed limit (`speed_kmh`), $\mu_{\mathrm{traffic}} \in [1.0, 3.0]$ is the traffic-density multiplier ($\mu_{\mathrm{traffic}} = 1.0$ is free-flow; $1.5$ increases edge traversal time by 50%), and $D_u = 35\text{ s}$ is applied once per unique signalized intersection (`INT-xxxx`) crossed along the route.
 
 #### 2. ER-GreenWave travel time (with priority)
 
-$$T_{\mathrm{greenwave}} = \sum_{e \in \mathrm{Edges}} \frac{L_e}{V_{\mathrm{ambulance}}} + \sum_{v \in \mathrm{Signals}} D_{\min}$$
+$$T_{\mathrm{greenwave}} = \sum_{e \in \mathrm{Edges}} \frac{L_e}{V_{\mathrm{ambulance}}(e)} + \sum_{u \in \mathrm{Intersections}} D_{\min}$$
 
-This model assumes a cleared lane, allowing a higher sustained speed and a minimal delay of approximately $D_{\min} \approx 3\text{ s}$ for safe crossing.
+Where $V_{\mathrm{ambulance}}(e) = \min(\max(1.3 \cdot V_e,\; 30\text{ km/h}),\; 90\text{ km/h})$ and $D_{\min} = 3\text{ s}$ is applied once per unique signalized intersection crossed along the route.
 
 ---
 
@@ -187,7 +182,7 @@ transitions to `CLEARING_CASCADE` based on the TTI threshold.
   },
   "intersections": [
     {
-      "id": "INT-302",
+      "id": "INT-0042",
       "name": "Aleje / Czarnowiejska",
       "state": "CLEARING",
       "tti_seconds": 28,
@@ -249,19 +244,19 @@ Unresolved points in this document. Agents must not invent answers (see
 1. **State machine:** the documented sequence is `NORMAL → CLEARING → PRIORITY_GREEN → RECOVERY`,
    but the telemetry example uses `CLEARING_CASCADE`. Proposal: treat cascade as a boolean flag,
    not a state. Transition conditions (TTI thresholds for CLEARING → PRIORITY_GREEN, start of
-   RECOVERY) and the relation of `hold_duration_sec` to them are undefined.
-2. **Identifiers:** telemetry uses `INT-302`, the ITS request uses `MSIP-SIG-089`; no mapping defined.
+   RECOVERY) and the relation of `hold_duration_sec` to them are undefined. -- resolved entirely
+2. **Identifiers:** telemetry uses `INT-302`, the ITS request uses `MSIP-SIG-089`; no mapping defined. -- resolved entirely
 3. **Contract gaps:** `simulation_id` is client-supplied but not echoed in the response or
    telemetry; no stream subscription or stop/cancel endpoint; no policy for concurrent or
    duplicate simulations; no `schema_version`; no field marking values as simulated; ambulance
    `status` enum undefined; valid range of `traffic_density_multiplier` undefined (it divides
-   speed, so it must be > 0).
+   speed, so it must be > 0). -- resolved entirely
 4. **ITS dispatch (Phase 3):** model as an internal `ItsGateway` interface with a mock
    implementation rather than an HTTP call from the backend to itself.
 5. **Model inputs:** `V_ambulance`, the ambulance speed model, and the smoothing method for
    $v_{\mathrm{avg}}$ are unspecified. The CRS and units of the MSIP/ZDMK layers must be verified
-   before writing distance code.
+   before writing distance code. -- resolved entirely
 6. **Data sources:** concrete datasets and URLs from the Kraków Open Data portal are not yet
-   chosen or verified (the contest requires at least one Kraków open-data source).
+   chosen or verified (the contest requires at least one Kraków open-data source). -- resolved entirely
 7. **Terminology:** verify the name "STeR" for Kraków's ITS; "Datex II / NTCIP 1211" is in the
    glossary but not used.
