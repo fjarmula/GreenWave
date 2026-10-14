@@ -229,6 +229,38 @@
   }
 }
 
+/* MapLibre controls use the dashboard theme rather than vendor white surfaces. */
+.dashboard-map .maplibregl-ctrl-group,
+.dashboard-map .maplibregl-ctrl-attrib,
+.dashboard-map .maplibregl-ctrl-attrib.maplibregl-compact,
+.dashboard-map .maplibregl-ctrl-attrib.maplibregl-compact-show {
+  background-color: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.dashboard-map .maplibregl-ctrl-group button + button {
+  border-top-color: var(--border);
+}
+
+.dashboard-map .maplibregl-ctrl-group button:not(:disabled):hover,
+.dashboard-map .maplibregl-ctrl-group button:not(:disabled):active {
+  background-color: var(--accent);
+}
+
+.dashboard-map .maplibregl-ctrl-attrib a {
+  color: var(--foreground);
+}
+
+.dashboard-map .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
+  background-color: transparent;
+}
+
+.dark .dashboard-map .maplibregl-ctrl-icon,
+.dark .dashboard-map .maplibregl-ctrl-attrib-button {
+  filter: invert(1);
+}
+
 @keyframes route-flow {
   to {
     stroke-dashoffset: -220;
