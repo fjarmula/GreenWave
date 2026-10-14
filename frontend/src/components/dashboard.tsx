@@ -1,18 +1,6 @@
 "use client";
 
-import {
-  Activity,
-  Ambulance,
-  Crosshair,
-  Gauge,
-  Layers3,
-  MapPin,
-  Minus,
-  Plus,
-  Route,
-  Settings2,
-  Siren,
-} from "lucide-react";
+import { Activity, Ambulance, Gauge, Route, Settings2, Siren } from "lucide-react";
 import { useState } from "react";
 
 import { DispatchForm } from "@/components/hud/DispatchForm";
@@ -20,11 +8,26 @@ import { IntersectionList } from "@/components/hud/IntersectionList";
 import { ItsConsole } from "@/components/hud/ItsConsole";
 import { KpiHeader } from "@/components/hud/KpiHeader";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
+import { MapContainer } from "@/components/map/MapContainer";
+import {
+  DESTINATION_ENDPOINTS,
+  ORIGIN_ENDPOINTS,
+  type DestinationEndpointId,
+  type OriginEndpointId,
+} from "@/components/map/dispatch-endpoints";
 
 type DashboardMode = "setup" | "live";
 
 export function Dashboard() {
   const [mode, setMode] = useState<DashboardMode>("setup");
+  const [originId, setOriginId] = useState<OriginEndpointId>("hospital");
+  const [destinationId, setDestinationId] = useState<DestinationEndpointId>("station");
+  const [mapFocusRequest, setMapFocusRequest] = useState(0);
+  const origin =
+    ORIGIN_ENDPOINTS.find((endpoint) => endpoint.id === originId) ?? ORIGIN_ENDPOINTS[0];
+  const destination =
+    DESTINATION_ENDPOINTS.find((endpoint) => endpoint.id === destinationId) ??
+    DESTINATION_ENDPOINTS[0];
 
   return (
     <main className="flex min-h-dvh min-w-80 flex-col overflow-x-hidden bg-background text-foreground">
@@ -33,12 +36,29 @@ export function Dashboard() {
       {mode === "setup" ? (
         <section className="grid min-h-0 flex-1 lg:grid-cols-[370px_minmax(0,1fr)]">
           <div className="order-2 lg:order-1">
-            <DispatchForm onInitialize={() => setMode("live")} />
+            <DispatchForm
+              onInitialize={() => setMode("live")}
+              originId={originId}
+              destinationId={destinationId}
+              onOriginChange={setOriginId}
+              onDestinationChange={setDestinationId}
+              onFocusNodes={() => setMapFocusRequest((request) => request + 1)}
+            />
           </div>
-          <RoutePreview mode="setup" />
+          <RoutePreview
+            mode="setup"
+            origin={origin}
+            destination={destination}
+            mapFocusRequest={mapFocusRequest}
+          />
         </section>
       ) : (
-        <RoutePreview mode="live" />
+        <RoutePreview
+          mode="live"
+          origin={origin}
+          destination={destination}
+          mapFocusRequest={mapFocusRequest}
+        />
       )}
     </main>
   );
@@ -127,7 +147,17 @@ function ModeButton({ active, onClick, icon: Icon, live = false, children }: Mod
   );
 }
 
-function RoutePreview({ mode }: { mode: DashboardMode }) {
+function RoutePreview({
+  mode,
+  origin,
+  destination,
+  mapFocusRequest,
+}: {
+  mode: DashboardMode;
+  origin: (typeof ORIGIN_ENDPOINTS)[number];
+  destination: (typeof DESTINATION_ENDPOINTS)[number];
+  mapFocusRequest: number;
+}) {
   const isLive = mode === "live";
 
   return (
@@ -139,7 +169,12 @@ function RoutePreview({ mode }: { mode: DashboardMode }) {
       }`}
       aria-label={isLive ? "Live corridor route preview" : "Planned corridor route preview"}
     >
-      <MapBackdrop live={isLive} />
+      <MapContainer
+        live={isLive}
+        origin={origin}
+        destination={destination}
+        focusRequest={mapFocusRequest}
+      />
 
       {isLive ? (
         <>
@@ -167,130 +202,9 @@ function RoutePreview({ mode }: { mode: DashboardMode }) {
               <strong className="mt-1 block font-mono text-xs">KRK-ROUTE-0942</strong>
             </div>
           </div>
-          <RouteMarker
-            label="A · UNIVERSITY HOSPITAL"
-            className="bottom-[12%] left-[9%] sm:left-[13%]"
-          />
-          <RouteMarker
-            label="B · ŁAZARZA ZRM"
-            destination
-            className="top-[13%] right-[5%] sm:right-[10%]"
-          />
         </>
       )}
-
-      <MapControls />
     </section>
-  );
-}
-
-function MapBackdrop({ live }: { live: boolean }) {
-  return (
-    <div className="absolute inset-0" aria-hidden>
-      <div className="dashboard-road top-[47%] left-[2%] w-[90%] -rotate-[27deg]" />
-      <div className="dashboard-road top-[29%] left-[16%] w-[75%] rotate-[38deg]" />
-      <div className="dashboard-road top-[69%] left-[5%] w-[95%] rotate-[7deg]" />
-      <div className="dashboard-road top-[53%] left-[40%] w-[58%] -rotate-[63deg]" />
-
-      <span className="dashboard-map-label top-[44%] left-[25%] -rotate-[27deg]">
-        ALEJE TRZECH WIESZCZÓW
-      </span>
-      <span className="dashboard-map-label top-[26%] left-[62%] rotate-[38deg]">CZARNOWIEJSKA</span>
-      <span className="dashboard-map-label top-[67%] left-[19%] rotate-[7deg]">REYMONTA</span>
-      <span className="dashboard-map-label top-[55%] left-[72%] -rotate-[63deg]">KARMELICKA</span>
-
-      <svg
-        className="absolute inset-0 z-[2] size-full"
-        viewBox="0 0 1000 800"
-        preserveAspectRatio="none"
-      >
-        <path
-          d="M155 690 C260 620 220 520 370 455 S510 370 570 280 S690 250 820 100"
-          fill="none"
-          stroke="var(--route-shadow)"
-          strokeWidth="17"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          className={live ? "dashboard-route-live" : "dashboard-route-planned"}
-          d="M155 690 C260 620 220 520 370 455 S510 370 570 280 S690 250 820 100"
-          fill="none"
-          strokeWidth={live ? 6 : 4}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-
-      {live && (
-        <>
-          <div className="dashboard-vehicle left-[37%] top-[57%] -translate-x-1/2 -translate-y-1/2">
-            <span className="dashboard-wave" />
-            <span className="dashboard-wave [animation-delay:1.1s]" />
-            <Ambulance className="size-5" />
-          </div>
-          <SignalNode className="top-[51%] left-[43%]" label="NORMAL" />
-          <SignalNode className="top-[32%] left-[60%]" label="CLEARING" active />
-          <SignalNode className="top-[28.5%] left-[70%]" label="CASCADE" cascade />
-          <SignalNode className="top-[12.5%] left-[82%]" label="PRIORITY GREEN" active prominent />
-        </>
-      )}
-    </div>
-  );
-}
-
-function RouteMarker({
-  label,
-  destination = false,
-  className,
-}: {
-  label: string;
-  destination?: boolean;
-  className: string;
-}) {
-  return (
-    <div
-      className={`absolute z-10 flex items-center gap-2 font-mono text-[9px] font-bold text-foreground drop-shadow-md ${className}`}
-    >
-      <MapPin
-        className={`size-6 ${destination ? "text-emerald-500" : "text-cyan-500"}`}
-        aria-hidden
-      />
-      <span className="hidden rounded bg-background/65 px-1.5 py-1 backdrop-blur sm:block">
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function SignalNode({
-  className,
-  label,
-  active = false,
-  cascade = false,
-  prominent = false,
-}: {
-  className: string;
-  label: string;
-  active?: boolean;
-  cascade?: boolean;
-  prominent?: boolean;
-}) {
-  return (
-    <div
-      className={`absolute z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 font-mono text-[9px] font-bold text-[var(--map-label)] ${className}`}
-    >
-      <span
-        className={`rounded-full ${prominent ? "size-4" : "size-3"} ${
-          cascade
-            ? "dashboard-signal-pulse bg-violet-500 shadow-[0_0_14px_rgb(139,92,246)]"
-            : active
-              ? "dashboard-signal-pulse bg-emerald-500 shadow-[0_0_14px_rgb(16,185,129)]"
-              : "bg-red-500/70"
-        }`}
-      />
-      <b className="hidden sm:block">{label}</b>
-    </div>
   );
 }
 
@@ -330,40 +244,5 @@ function VehicleTelemetry() {
         </div>
       </div>
     </div>
-  );
-}
-
-function MapControls() {
-  return (
-    <div className="absolute right-3 bottom-3 z-30 hidden flex-col gap-1 sm:flex lg:right-6 lg:bottom-6">
-      <MapControl label="Center route" icon={Crosshair} />
-      <MapControl label="Map layers" icon={Layers3} />
-      <div className="overflow-hidden rounded-lg border border-border shadow-lg">
-        <MapControl label="Zoom in" icon={Plus} grouped />
-        <MapControl label="Zoom out" icon={Minus} grouped />
-      </div>
-    </div>
-  );
-}
-
-function MapControl({
-  label,
-  icon: Icon,
-  grouped = false,
-}: {
-  label: string;
-  icon: typeof Crosshair;
-  grouped?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      className={`grid size-9 place-items-center border border-border bg-card/90 text-muted-foreground shadow-lg backdrop-blur transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 ${
-        grouped ? "border-0 border-b last:border-b-0" : "rounded-lg"
-      }`}
-    >
-      <Icon className="size-4" aria-hidden />
-    </button>
   );
 }

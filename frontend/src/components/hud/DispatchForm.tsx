@@ -13,11 +13,30 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import {
+  DESTINATION_ENDPOINTS,
+  ORIGIN_ENDPOINTS,
+  type DestinationEndpointId,
+  type OriginEndpointId,
+} from "@/components/map/dispatch-endpoints";
+
 type DispatchFormProps = {
   onInitialize: () => void;
+  originId: OriginEndpointId;
+  destinationId: DestinationEndpointId;
+  onOriginChange: (originId: OriginEndpointId) => void;
+  onDestinationChange: (destinationId: DestinationEndpointId) => void;
+  onFocusNodes: () => void;
 };
 
-export function DispatchForm({ onInitialize }: DispatchFormProps) {
+export function DispatchForm({
+  onInitialize,
+  originId,
+  destinationId,
+  onOriginChange,
+  onDestinationChange,
+  onFocusNodes,
+}: DispatchFormProps) {
   const [trafficDensity, setTrafficDensity] = useState(1.5);
   const [cascadeEnabled, setCascadeEnabled] = useState(true);
 
@@ -35,31 +54,26 @@ export function DispatchForm({ onInitialize }: DispatchFormProps) {
         <NodeSelect
           id="origin"
           label="Origin node"
-          defaultValue="hospital"
-          options={[
-            ["hospital", "University Hospital (SOR)"],
-            ["prokocim", "Prokocim Emergency Hub"],
-            ["rydygier", "Rydygier Hospital"],
-          ]}
+          value={originId}
+          onChange={onOriginChange}
+          options={ORIGIN_ENDPOINTS.map(({ id, label }) => [id, label] as const)}
         />
         <NodeSelect
           id="destination"
           label="Destination node"
-          defaultValue="station"
-          options={[
-            ["station", "Łazarza ZRM Station"],
-            ["wroclawska", "Wrocławska ZRM Station"],
-            ["nowa-huta", "Nowa Huta Dispatch Point"],
-          ]}
+          value={destinationId}
+          onChange={onDestinationChange}
+          options={DESTINATION_ENDPOINTS.map(({ id, label }) => [id, label] as const)}
         />
       </div>
 
       <button
         type="button"
+        onClick={onFocusNodes}
         className="mt-4 flex w-full items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/8 px-3 py-2.5 text-left text-xs font-semibold text-cyan-700 transition hover:bg-cyan-500/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 dark:text-cyan-300"
       >
         <Target className="size-4" aria-hidden />
-        Pick on map
+        View selected nodes
         <kbd className="ml-auto font-mono text-[10px] text-muted-foreground">⌘ K</kbd>
       </button>
 
@@ -159,14 +173,15 @@ export function DispatchForm({ onInitialize }: DispatchFormProps) {
   );
 }
 
-type NodeSelectProps = {
+type NodeSelectProps<T extends string> = {
   id: string;
   label: string;
-  defaultValue: string;
-  options: ReadonlyArray<readonly [string, string]>;
+  value: T;
+  onChange: (value: T) => void;
+  options: ReadonlyArray<readonly [T, string]>;
 };
 
-function NodeSelect({ id, label, defaultValue, options }: NodeSelectProps) {
+function NodeSelect<T extends string>({ id, label, value, onChange, options }: NodeSelectProps<T>) {
   return (
     <div>
       <label htmlFor={id} className="dashboard-label">
@@ -175,7 +190,8 @@ function NodeSelect({ id, label, defaultValue, options }: NodeSelectProps) {
       <div className="relative mt-2">
         <select
           id={id}
-          defaultValue={defaultValue}
+          value={value}
+          onChange={(event) => onChange(event.target.value as T)}
           className="w-full appearance-none rounded-lg border border-border bg-background px-3 py-3 pr-10 text-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
         >
           {options.map(([value, text]) => (

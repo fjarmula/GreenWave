@@ -35,6 +35,7 @@ Each step ends with checking formatting (`npm run lint`), building (`npm run bui
 - Replace the static/placeholder map div from v0 with a real `MapLibre GL JS` instance in `src/components/map/MapContainer.tsx`.
 - Configure the map to react to the current theme (e.g., switch between CartoDB Dark Matter and a Light equivalent like CartoDB Positron when the theme toggle is clicked).
 - Create skeleton sub-components: `AmbulanceMarker.tsx`, `RouteLayer.tsx`, and `SignalMarkers.tsx`.
+- Move setup start/end points from fixed HUD positions to MapLibre markers using selected node geographic coordinates. Selecting a new origin/destination or choosing “View selected nodes” must update markers and fit bounds on the real map; fixed viewport endpoint labels must be removed.
 - **Done when:** The map renders successfully, updates its base style based on the current theme, and fits the responsive layout.
 
 ### F3. TypeScript Contracts & State Management
