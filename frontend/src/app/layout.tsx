@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { SimulationProvider } from "@/components/simulation-provider";
 
 import "./globals.css";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -36,7 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <SimulationProvider>{children}</SimulationProvider>
         </ThemeProvider>
       </body>
     </html>
