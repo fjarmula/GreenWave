@@ -187,9 +187,9 @@ WELD_TOLERANCE_METERS = 1.0
 INTERSECTION_ID_PREFIX = "INT-"
 
 # --- T5 ---------------------------------------------------------------------------------------
-# Cascade (corridor batching) threshold. The architecture doc gives 250 m ("d < 250 m"); T5 stores
-# neighbour pairs with distance <= this value (inclusive, as requested by the human; the doc's
-# strict "<" differs only for a distance of exactly the threshold).
+# Cascade (corridor batching) threshold. The architecture doc gives an along-route stop-line
+# distance d <= 250 m (inclusive). T5 stores neighbour pairs by shortest drive with distance <= this
+# value (inclusive); the table is only a candidate set, the engine uses the along-route distance.
 CASCADE_THRESHOLD_METERS = 250.0
 # Whether a candidate path may reverse straight back along the edge it arrived on (a U-turn at a
 # node). The graph has no turn restrictions, so U-turns would create spurious "neighbours" such as

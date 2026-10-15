@@ -247,8 +247,8 @@ Stop after each step for approval.
 - An *approach* is a (signal, controlled edge) pair; its stop line is at the end of the controlled
   edge, so a signal controlling both directions gives two directed approaches. A pair (A -> B) means a
   vehicle that has just crossed A's stop line reaches B's stop line by driving forward along directed
-  edges, with a shortest drive of at most `CASCADE_THRESHOLD_METERS` (250 m, from the architecture
-  doc; inclusive `<=` as requested, the doc's strict `d < 250 m` differs only at exactly 250 m).
+  edges, with a shortest drive of at most `CASCADE_THRESHOLD_METERS` (250 m, inclusive `<=`, the same
+  threshold as the architecture doc's along-route stop-line distance `d <= 250 m`).
   Each row has the distance, the two approach edges, both intersection ids and the shortest-path
   edge ids (the edges driven after A's stop line, ending with B's controlled edge).
 - No pair is made inside one intersection. U-turns (reversing straight back along the edge just
@@ -384,6 +384,7 @@ cite them).
 13. **Roundabout overrides.** Decided: Mogilskie, Maczka and Barei verified; Piekarza Ochwata removed
     (ordinary intersection); the Matecznego bypass link is an internal edge, not ring. Matecznego is successfully verified
 14. **Cascade candidate set.** Decided: neighbour pairs at distance <= 250 m
-    (`CASCADE_THRESHOLD_METERS`, inclusive; the architecture doc says `d < 250 m`), in travel
+    (`CASCADE_THRESHOLD_METERS`, inclusive; the architecture doc says along-route stop-line distance
+    `d <= 250 m`, also inclusive), in travel
     direction, no pair inside one intersection, no U-turns (`CASCADE_ALLOW_U_TURNS`). The table is only
     a candidate set; the simulation uses along-route distance.
