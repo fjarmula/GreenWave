@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signal clustering radius</title>
+<style>
+:root { --bg:#fafaf8; --fg:#1d1d1b; --muted:#6b6b66; --road:#a7a7a0; --crossing:#9a9a94; --panel:#ffffff; --line:#dcdcd6; }
+@media (prefers-color-scheme: dark) { :root { --bg:#16161a; --fg:#ececea; --muted:#9a9a96; --road:#5a5a62; --crossing:#7a7a82; --panel:#1e1e24; --line:#34343c; } }
+body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, sans-serif; }
+h1 { font-size:20px; margin:0 0 4px; } h2 { font-size:16px; margin:28px 0 8px; } small { color:var(--muted); font-weight:400; }
+.lede, .note, footer { color:var(--muted); max-width:70ch; }
+.row { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px; }
+figure { margin:0; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px; }
+figcaption { font-size:12px; margin-bottom:4px; } svg { width:100%; height:auto; display:block; }
+.road { fill:none; stroke:var(--road); stroke-linecap:round; stroke-linejoin:round; }
+.crossing { fill:var(--crossing); } .scale { stroke:var(--fg); stroke-width:2; } .scale-text { fill:var(--fg); font-size:10px; }
+</style></head><body>
+<h1>Signal clustering radius: named junctions at 20 / 30 / 40 / 50 m</h1>
+<p class="lede">Each dot is one OSM <code>highway=traffic_signals</code> node. Dots joined by a line are within the
+radius of each other; one colour is one cluster (grey = alone). Hollow ring = blinker / tram_priority,
+filled square = controller. Small grey squares are signalised pedestrian crossings. Window is 300 m wide.
+Plain distance clustering chains: watch for one colour spreading beyond a single junction.</p>
+__MISSING__
+__BODY__
+<footer><p>Road and signal data © OpenStreetMap contributors (ODbL). Simulation inputs only.</p></footer>
+</body></html>
