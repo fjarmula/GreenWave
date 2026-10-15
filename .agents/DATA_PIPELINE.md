@@ -312,9 +312,52 @@ Stop after each step for approval.
   by an older ETL version; re-run `intersections` and then `neighbours`"). Gate: 274 passed, 0
   skipped. The mixed-run scenario was tested on synthetic fixtures only.
 
-**T8. Benchmark** (not started)
-- Measure ETL runtime and graph load time and shortest-path latency on the real graph. Report hardware and
-  method. Do not state budgets that were not measured.
+**T8. Benchmark** (done 2026-10-15)
+- `backend/scripts/benchmark.py` measures; it is not run by pytest or CI. It is ONE run (07:54-08:03
+  UTC) on one development machine (AMD Ryzen 5 5600X, 12 logical CPUs, 15.5 GiB, Linux 7.0.0-38,
+  Python 3.12.3, networkx 3.7, polars 2.0.0) at commit `ce05c0e`. The CPU governor was `powersave` and
+  the mean clock varied between 2.0 and 4.6 GHz during the run, so treat the numbers as indicative.
+  The results file (`backend/data/processed/benchmarks/benchmark_20261015T075451Z.json`: environment,
+  method, every raw timing) is local and gitignored. `data/processed` was hashed before and after and
+  did not change. No budget is set by this entry.
+- Method: `time.perf_counter`, `gc.collect()` before each pass, garbage collection enabled. ETL steps
+  run in a fresh subprocess that calls `main()` of `scripts/run_etl.py` against a scratch directory
+  (excludes interpreter start and imports). Files were in the OS page cache, so "cold" is not a cold
+  disk. Shortest paths: `networkx.bidirectional_dijkstra`, weight `length_m / (speed_kmh / 3.6)`,
+  seed 20261015, 1,000 pairs (200 per straight-line stratum) from the largest strongly connected
+  component, 5 passes per pair (the pair's value is the median), 50 warm-up pairs. Intersection
+  delays are not in the weight (D_v is once per unique INT). The callable-weight and
+  precomputed-weight searches were timed back to back for each pair in every pass (callable first),
+  so their difference is a single-run indication only.
+
+| Measurement | n | Result |
+|---|---|---|
+| ETL `intersections` (main(), s) | 3 | min 31.4, median 31.6, max 32.1 |
+| ETL `neighbours` (main(), s) | 5 | min 1.2, median 1.2, max 1.2 |
+| `load_dataset` cold (fresh process, ms) | 10 | min 857, median 866, p95 893, max 896 |
+| `load_dataset` warm (ms) | 10 | min 840, median 850, p95 856, max 857 |
+| Memory after load (RSS, MiB) | 10 | about 345 (before load about 130) |
+| Server start to first `/api/v1/health` 200 (s) | 5 | 1.46 to 1.48, median 1.46 |
+
+Shortest path, latency in ms (callable weight; precomputed weight in brackets), by straight-line
+stratum; route length within the stratum in km:
+
+| Straight line | n | Route km min / median / max | Median | p95 |
+|---|---|---|---|---|
+| 0-1 km | 200 | 0.04 / 1.3 / 4.4 | 0.4 (0.3) | 1.3 (1.1) |
+| 1-3 km | 200 | 1.2 / 3.4 / 8.4 | 2.4 (2.1) | 6.2 (5.5) |
+| 3-6 km | 200 | 3.1 / 6.7 / 11.7 | 10.0 (8.7) | 21.4 (18.6) |
+| 6-10 km | 200 | 7.0 / 11.0 / 17.4 | 25.6 (22.1) | 40.6 (35.5) |
+| over 10 km | 200 | 11.8 / 15.7 / 35.5 | 39.5 (34.7) | 52.3 (45.3) |
+| all pairs (pooled) | 1,000 | | 9.5 (8.1) | 47.2 (40.8), p99 52.3 (45.3), max 58.8 (50.9) |
+
+- Headline for the server artifacts: `intersections` + `neighbours` medians sum to 32.8 s. The steps
+  `profile` (median 21.7 s), `signals` (25.5 s) and `graph` (29.4 s) are not required for the server
+  artifacts.
+- Not measured: the ambulance speed model `V_ambulance(e)` (the search uses `speed_kmh`),
+  delay-aware route choice, the traffic multiplier, the state machine and 1 Hz loop, SSE, concurrent
+  requests. A per-INT delay lookup after the search took at most 0.4 ms in this run (benchmark-only
+  sketch, not the routing step). The pairs are not real ambulance routes.
 
 ## 6. Decisions
 
