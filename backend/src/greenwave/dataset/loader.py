@@ -18,6 +18,13 @@ from pathlib import Path
 
 import networkx as nx
 
+from greenwave.artifacts import (
+    APPROACHES_FILENAME,
+    IDS_FILENAME,
+    INTERSECTIONS_FILENAME,
+    NEIGHBOURS_FILENAME,
+    REPORT_FILENAME,
+)
 from greenwave.dataset.helpers import (
     check_artifact_hashes,
     check_counts,
@@ -39,14 +46,7 @@ from greenwave.dataset.models import (
     ProcessedDataset,
     Provenance,
 )
-from greenwave.etl.intersections_pipeline import (
-    APPROACHES_FILENAME,
-    IDS_FILENAME,
-    INTERSECTIONS_FILENAME,
-)
-from greenwave.etl.io import REPORT_FILENAME
 from greenwave.etl.manifest import load_manifest
-from greenwave.etl.neighbours_pipeline import NEIGHBOURS_FILENAME
 
 logger = logging.getLogger(__name__)
 

@@ -9,6 +9,17 @@ import polars as pl
 import shapely.errors
 from pydantic import BaseModel, ValidationError
 
+from greenwave.artifacts import (
+    APPROACHES_FILENAME,
+    IDS_FILENAME,
+    INTERSECTIONS_FILENAME,
+    NEIGHBOURS_FILENAME,
+    NETWORK_EDGES_FILENAME,
+    NETWORK_NODES_FILENAME,
+    REPORT_FILENAME,
+    T4_ARTIFACT_FILENAMES,
+    artifact_hashes,
+)
 from greenwave.dataset.constants import (
     CHAIN,
     COMMAND,
@@ -33,18 +44,7 @@ from greenwave.dataset.models import (
     NeighboursSection,
 )
 from greenwave.etl.graph_io import read_graph
-from greenwave.etl.intersections_pipeline import (
-    APPROACHES_FILENAME,
-    IDS_FILENAME,
-    INTERSECTIONS_FILENAME,
-    NETWORK_EDGES_FILENAME,
-    NETWORK_NODES_FILENAME,
-    T4_ARTIFACT_FILENAMES,
-    artifact_hashes,
-)
-from greenwave.etl.io import REPORT_FILENAME
 from greenwave.etl.neighbours import approach_edges
-from greenwave.etl.neighbours_pipeline import NEIGHBOURS_FILENAME
 
 
 def require_files(processed_dir: Path, manifest_path: Path) -> None:

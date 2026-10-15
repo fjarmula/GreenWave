@@ -3,15 +3,15 @@ the columns the loader requires."""
 
 import polars as pl
 
-from greenwave.etl.intersections_pipeline import (
+from greenwave.artifacts import (
     APPROACHES_FILENAME,
     IDS_FILENAME,
     INTERSECTIONS_FILENAME,
+    NEIGHBOURS_FILENAME,
     NETWORK_EDGES_FILENAME,
     NETWORK_NODES_FILENAME,
+    REPORT_FILENAME,
 )
-from greenwave.etl.io import REPORT_FILENAME
-from greenwave.etl.neighbours_pipeline import NEIGHBOURS_FILENAME
 
 COMMAND = "uv run python scripts/run_etl.py {step}"
 STEP_INTERSECTIONS = "intersections"

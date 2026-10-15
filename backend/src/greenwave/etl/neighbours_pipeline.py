@@ -9,6 +9,7 @@ from pathlib import Path
 import polars as pl
 from pydantic import BaseModel
 
+from greenwave import artifacts
 from greenwave.etl.config import CASCADE_ALLOW_U_TURNS, CASCADE_THRESHOLD_METERS
 from greenwave.etl.graph_io import read_graph
 from greenwave.etl.intersections_pipeline import (
@@ -32,7 +33,8 @@ from greenwave.etl.neighbours import (
 
 logger = logging.getLogger(__name__)
 
-NEIGHBOURS_FILENAME = "approach_neighbours.parquet"
+# Moved to greenwave.artifacts (shared with the dataset loader); still importable from here.
+NEIGHBOURS_FILENAME = artifacts.NEIGHBOURS_FILENAME
 
 
 class StaleArtifactError(RuntimeError):

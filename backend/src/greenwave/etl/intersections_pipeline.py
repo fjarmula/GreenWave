@@ -11,6 +11,7 @@ import networkx as nx
 import polars as pl
 from pydantic import BaseModel
 
+from greenwave import artifacts
 from greenwave.etl.config import SIGNAL_SNAP_TOLERANCE_METERS
 from greenwave.etl.graph import build_graph
 from greenwave.etl.graph_io import write_graph
@@ -31,7 +32,7 @@ from greenwave.etl.intersections import (
     prepare_rings,
 )
 from greenwave.etl.junctions import Ring, find_junction_nodes, undirected_adjacency
-from greenwave.etl.manifest import MANIFEST_FILENAME, sha256_of_file
+from greenwave.etl.manifest import MANIFEST_FILENAME
 from greenwave.etl.near_misses import NearMissReport, find_near_misses
 from greenwave.etl.network import (
     DIRECTION_UNRESOLVED,
@@ -57,27 +58,16 @@ from greenwave.etl.weld import WeldReport
 
 logger = logging.getLogger(__name__)
 
-NETWORK_NODES_FILENAME = "network_nodes.parquet"
-NETWORK_EDGES_FILENAME = "network_edges.parquet"
-INTERSECTIONS_FILENAME = "intersections.parquet"
-APPROACHES_FILENAME = "signal_approaches.parquet"
-IDS_FILENAME = "intersection_ids.json"
+# These names moved to greenwave.artifacts (so the server does not import this pipeline to load
+# the dataset); they stay importable from here.
+NETWORK_NODES_FILENAME = artifacts.NETWORK_NODES_FILENAME
+NETWORK_EDGES_FILENAME = artifacts.NETWORK_EDGES_FILENAME
+INTERSECTIONS_FILENAME = artifacts.INTERSECTIONS_FILENAME
+APPROACHES_FILENAME = artifacts.APPROACHES_FILENAME
+IDS_FILENAME = artifacts.IDS_FILENAME
+T4_ARTIFACT_FILENAMES = artifacts.T4_ARTIFACT_FILENAMES
+artifact_hashes = artifacts.artifact_hashes
 NEAR_MISSES_FILENAME = "near_misses.csv"
-
-# The artifacts the server loads from this step. Their hashes are recorded in the report section
-# `intersections` (an integrity check against mixed runs, not a security measure).
-T4_ARTIFACT_FILENAMES = (
-    NETWORK_NODES_FILENAME,
-    NETWORK_EDGES_FILENAME,
-    INTERSECTIONS_FILENAME,
-    APPROACHES_FILENAME,
-    IDS_FILENAME,
-)
-
-
-def artifact_hashes(processed_dir: Path, filenames: tuple[str, ...]) -> dict[str, str]:
-    """sha256 of each file as it is on disk now."""
-    return {name: sha256_of_file(processed_dir / name) for name in filenames}
 
 
 class SnapReport(BaseModel):

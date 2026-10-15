@@ -5,7 +5,10 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-REPORT_FILENAME = "etl_report.json"
+from greenwave import artifacts
+
+# Moved to greenwave.artifacts (shared with the dataset loader); still importable from here.
+REPORT_FILENAME = artifacts.REPORT_FILENAME
 
 
 def update_report_section(report_path: Path, section: str, content: BaseModel) -> None:
