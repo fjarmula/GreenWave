@@ -19,6 +19,11 @@ import {
   type DestinationEndpointId,
   type OriginEndpointId,
 } from "@/components/map/dispatch-endpoints";
+import {
+  DEFAULT_TRAFFIC_DENSITY_MULTIPLIER,
+  estimateMockNormalTravelTimeSeconds,
+  MOCK_GREENWAVE_TRAVEL_TIME_SECONDS,
+} from "@/lib/mock-simulation-config";
 
 type DispatchFormProps = {
   onInitialize: (settings: { trafficDensity: number; cascadeEnabled: boolean }) => void;
@@ -37,10 +42,10 @@ export function DispatchForm({
   onDestinationChange,
   onFocusNodes,
 }: DispatchFormProps) {
-  const [trafficDensity, setTrafficDensity] = useState(1.5);
+  const [trafficDensity, setTrafficDensity] = useState(DEFAULT_TRAFFIC_DENSITY_MULTIPLIER);
   const [cascadeEnabled, setCascadeEnabled] = useState(true);
-  const normalSeconds = Math.round((780 * trafficDensity) / 1.5);
-  const greenwaveSeconds = 380;
+  const normalSeconds = estimateMockNormalTravelTimeSeconds(trafficDensity);
+  const greenwaveSeconds = MOCK_GREENWAVE_TRAVEL_TIME_SECONDS;
   const savedSeconds = normalSeconds - greenwaveSeconds;
   const formatEstimate = (seconds: number) =>
     `${String(Math.floor(seconds / 60)).padStart(2, "0")}m ${String(seconds % 60).padStart(2, "0")}s`;

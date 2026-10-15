@@ -2,8 +2,8 @@
 
 import { Activity, Ambulance, Gauge, Route, Settings2, Siren } from "lucide-react";
 import { useState } from "react";
-import { useSimulationStream, createMockRoute } from "@/lib/useSimulationStream";
-import { useSimulationDispatch, useSimulationState } from "@/components/simulation-provider";
+import { useSimulationStream } from "@/lib/useSimulationStream";
+import { useSimulationState } from "@/components/simulation-provider";
 
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import { IntersectionList } from "@/components/hud/IntersectionList";
@@ -21,8 +21,7 @@ import {
 type DashboardMode = "setup" | "live";
 
 export function Dashboard() {
-  useSimulationStream();
-  const dispatch = useSimulationDispatch();
+  const { startSimulation, stopSimulation } = useSimulationStream();
   const [mode, setMode] = useState<DashboardMode>("setup");
   const [originId, setOriginId] = useState<OriginEndpointId>("hospital");
   const [destinationId, setDestinationId] = useState<DestinationEndpointId>("station");
@@ -38,7 +37,7 @@ export function Dashboard() {
       <DashboardHeader
         mode={mode}
         onModeChange={(nextMode) => {
-          if (nextMode === "setup") dispatch({ type: "RESET" });
+          if (nextMode === "setup") stopSimulation();
           setMode(nextMode);
         }}
       />
@@ -55,8 +54,7 @@ export function Dashboard() {
                   traffic_density_multiplier: trafficDensity,
                   enable_cascade_mode: cascadeEnabled,
                 };
-                dispatch({ type: "START", request, routeData: createMockRoute(request) });
-                setMode("live");
+                void startSimulation(request).then(() => setMode("live"));
               }}
               originId={originId}
               destinationId={destinationId}

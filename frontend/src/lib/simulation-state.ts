@@ -45,7 +45,7 @@ export function simulationReducer(
         startRequest: action.request,
         routeData: action.routeData,
         liveTelemetry: null,
-        itsLogs: ["[MOCK] Simulation initialized; synthetic route and estimates loaded"],
+        itsLogs: ["Simulation initialized; route and estimates loaded"],
       };
     case "TICK":
       return state.simulationState === "RUNNING"
@@ -54,7 +54,7 @@ export function simulationReducer(
             liveTelemetry: action.telemetry,
             itsLogs: [
               ...state.itsLogs,
-              `[MOCK ITS] Tick ${action.telemetry.tick} · ${action.telemetry.intersections.filter((intersection) => intersection.is_active_corridor).length} sample corridor signals · telemetry received`,
+              `ITS telemetry tick ${action.telemetry.tick} · ${action.telemetry.intersections.filter((intersection) => intersection.is_active_corridor).length} active corridor signals`,
             ].slice(-20),
           }
         : state;
