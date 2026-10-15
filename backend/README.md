@@ -39,3 +39,14 @@ The ETL reads the OSM extract in about 20 s; the whole chain takes a few minutes
 manual: the tests use tiny synthetic fixtures only.
 
 Everything the ETL produces is a simulation input, not a verified physical signal state.
+
+## Running the server needs built data
+
+The server loads and validates `data/processed/` once at startup (`greenwave.dataset`). Build it
+first (`intersections`, then `neighbours`, see above). If a file is missing, stale or inconsistent,
+startup fails with an error that names the file and the ETL command to re-run; there is no
+fallback. Paths default to `backend/data/processed` and `backend/data/raw/MANIFEST.json`; override
+them with `GREENWAVE_PROCESSED_DIR` and `GREENWAVE_RAW_MANIFEST_PATH`.
+
+Editing `data/raw/MANIFEST.json`, even metadata only, makes every processed artifact stale: re-run
+`intersections` and then `neighbours`.
