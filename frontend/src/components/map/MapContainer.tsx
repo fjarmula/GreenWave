@@ -22,6 +22,7 @@ const MAPLIBRE_WORKER_URL = new URL(
 ).toString();
 
 const KRAKOW_CENTER: [number, number] = [19.945, 50.064];
+const MAP_STYLE_FADE_OUT_MILLISECONDS = 220;
 
 type MapContainerProps = {
   live: boolean;
@@ -39,6 +40,7 @@ export function MapContainer({ live, origin, destination, focusRequest }: MapCon
   const mapRef = useRef<Map | null>(null);
   const initialTheme = useRef<"light" | "dark">(theme);
   const appliedTheme = useRef<"light" | "dark" | null>(null);
+  const styleSwapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [map, setMap] = useState<Map | null>(null);
   const [styleRevision, setStyleRevision] = useState(0);
 
@@ -62,6 +64,9 @@ export function MapContainer({ live, origin, destination, focusRequest }: MapCon
     const onStyleLoad = () => {
       setMap(instance);
       setStyleRevision((revision) => revision + 1);
+      requestAnimationFrame(() => {
+        instance.getCanvas().classList.remove("dashboard-map-canvas--switching");
+      });
     };
     instance.on("style.load", onStyleLoad);
     mapRef.current = instance;
@@ -77,10 +82,35 @@ export function MapContainer({ live, origin, destination, focusRequest }: MapCon
 
   useEffect(() => {
     const instance = mapRef.current;
-    if (!instance || appliedTheme.current === theme) return;
+    if (!instance) return;
 
-    appliedTheme.current = theme;
-    instance.setStyle(MAP_STYLES[theme]);
+    if (styleSwapTimer.current) clearTimeout(styleSwapTimer.current);
+
+    if (appliedTheme.current === theme) {
+      instance.getCanvas().classList.remove("dashboard-map-canvas--switching");
+      return;
+    }
+
+    const canvas = instance.getCanvas();
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      appliedTheme.current = theme;
+      instance.setStyle(MAP_STYLES[theme]);
+      return;
+    }
+
+    canvas.classList.add("dashboard-map-canvas--switching");
+    styleSwapTimer.current = setTimeout(() => {
+      styleSwapTimer.current = null;
+      if (mapRef.current !== instance) return;
+      appliedTheme.current = theme;
+      instance.setStyle(MAP_STYLES[theme]);
+    }, MAP_STYLE_FADE_OUT_MILLISECONDS);
+
+    return () => {
+      if (styleSwapTimer.current) clearTimeout(styleSwapTimer.current);
+      styleSwapTimer.current = null;
+    };
   }, [theme]);
 
   return (

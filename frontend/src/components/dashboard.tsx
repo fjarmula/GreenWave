@@ -33,7 +33,7 @@ export function Dashboard() {
     DESTINATION_ENDPOINTS[0];
 
   return (
-    <main className="flex min-h-dvh min-w-80 flex-col overflow-x-hidden bg-background text-foreground">
+    <main className="dashboard-theme-transition flex min-h-dvh min-w-80 flex-col overflow-x-hidden bg-background text-foreground">
       <DashboardHeader
         mode={mode}
         onModeChange={(nextMode) => {
