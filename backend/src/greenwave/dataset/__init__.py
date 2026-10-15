@@ -9,12 +9,12 @@ from greenwave.dataset.errors import (
     MissingArtifactError,
     ReferentialIntegrityError,
 )
-from greenwave.dataset.loader import (
+from greenwave.dataset.loader import load_dataset
+from greenwave.dataset.models import (
     IntersectionIdRecord,
     LoadedCounts,
     ProcessedDataset,
     Provenance,
-    load_dataset,
 )
 from greenwave.dataset.settings import DatasetSettings
 
