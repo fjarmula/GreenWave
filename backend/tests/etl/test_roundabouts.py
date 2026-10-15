@@ -1,10 +1,9 @@
 from pathlib import Path
 
-from osm_fixtures import line, point, write_osm
-
 from greenwave.etl.profile_osm import scan_osm
 from greenwave.etl.roundabouts import analyse_roundabouts
 from greenwave.etl.signals import build_signals
+from tests.support.osm_fixtures import line, point, write_osm
 
 LON, LAT = 19.9, 50.0
 D = 0.0003  # ~33 m of latitude

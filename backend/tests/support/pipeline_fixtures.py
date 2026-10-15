@@ -3,8 +3,6 @@
 import json
 from pathlib import Path
 
-from osm_fixtures import line, point, write_osm
-
 from greenwave.etl.manifest import (
     MANIFEST_FILENAME,
     Manifest,
@@ -13,6 +11,7 @@ from greenwave.etl.manifest import (
     write_manifest,
 )
 from greenwave.etl.profile import OSM_RELATIVE_PATH
+from tests.support.osm_fixtures import line, point, write_osm
 
 STEP = 0.001
 

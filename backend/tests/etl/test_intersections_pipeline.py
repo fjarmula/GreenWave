@@ -3,7 +3,6 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-from pipeline_fixtures import make_raw
 
 from greenwave.etl.config import PEDESTRIAN_CROSSING_DELAY_SECONDS, SIGNAL_DELAY_SECONDS
 from greenwave.etl.graph_io import read_graph
@@ -23,6 +22,7 @@ from greenwave.etl.neighbours_pipeline import (
     StaleArtifactError,
     run_neighbours,
 )
+from tests.support.pipeline_fixtures import make_raw
 
 
 def test_pipeline_writes_all_artifacts_and_ties_ids_to_the_manifest(tmp_path: Path) -> None:

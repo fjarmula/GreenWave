@@ -1,14 +1,13 @@
 import json
 from pathlib import Path
 
-from osm_fixtures import line, point, write_osm
-
 from greenwave.etl.graph import build_graph
 from greenwave.etl.near_misses import find_near_misses
 from greenwave.etl.prepare import prepare_scan, tertiary_plus_cases, welds_frame
 from greenwave.etl.profile import OSM_RELATIVE_PATH
 from greenwave.etl.profile_osm import DrivableWay, LonLat
 from greenwave.etl.weld import weld_ways
+from tests.support.osm_fixtures import line, point, write_osm
 
 STEP = 0.001
 METRE_LAT = 1 / 111_200

@@ -6,9 +6,9 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from conftest import Layout
 from greenwave.dataset import DatasetError, MissingArtifactError, load_dataset
 from greenwave.main import create_app
+from tests.support.processed import Layout
 
 BACKEND = Path(__file__).resolve().parents[2]
 

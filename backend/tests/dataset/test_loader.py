@@ -7,7 +7,6 @@ import networkx as nx
 import polars as pl
 import pytest
 
-from conftest import REPORT_FILENAME, Layout
 from greenwave.dataset import (
     ArtifactHashMismatchError,
     CountMismatchError,
@@ -26,8 +25,10 @@ from greenwave.etl.intersections_pipeline import (
     NETWORK_EDGES_FILENAME,
     NETWORK_NODES_FILENAME,
 )
+from greenwave.etl.io import REPORT_FILENAME
 from greenwave.etl.manifest import load_manifest, sha256_of_file
 from greenwave.etl.neighbours_pipeline import NEIGHBOURS_FILENAME
+from tests.support.processed import Layout
 
 
 def record_hash(path: Path) -> None:

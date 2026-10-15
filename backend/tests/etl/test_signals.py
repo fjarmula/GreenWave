@@ -2,10 +2,10 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-from osm_fixtures import line, point, write_osm
 
 from greenwave.etl.profile_osm import scan_osm
 from greenwave.etl.signals import SignalSettings, SignalsResult, build_signals
+from tests.support.osm_fixtures import line, point, write_osm
 
 # 0.001 degree of latitude is about 111.2 m at Krakow's latitude.
 LON = 19.9
