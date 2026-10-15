@@ -126,10 +126,22 @@ backend/
     override_map.py cluster_map.py roundabouts.py    # check pages and an analysis report
     neighbours.py neighbours_pipeline.py             # T5
     io.py                         # etl_report.json sections
-  src/greenwave/dataset/          # T7: startup loader (loader.py, errors.py, settings.py)
+  src/greenwave/artifacts.py      # names of the processed artifacts (+ artifact_hashes), shared by the
+                                  #   ETL writers and the loader; the ETL modules re-export them, so
+                                  #   loading the dataset does not import the ETL pipelines
+  src/greenwave/dataset/          # T7: startup loader
+    loader.py                     # load_dataset() only
+    constants.py models.py        # command templates, required columns; models and ProcessedDataset
+    helpers.py                    # file reading, parsing, hash checks, consistency checks
+    errors.py settings.py         # DatasetError family; paths and the GREENWAVE_* env vars
   scripts/run_etl.py              # CLI: one subcommand per step (see its docstring)
   scripts/build_manifest.py       # write/check data/raw/MANIFEST.json
-  tests/etl/                      # tiny synthetic fixtures, never the 310 MB file
+  scripts/benchmark.py            # T8 measurements; not run by pytest or CI, results gitignored
+  tests/                          # a package; conftest.py has the shared session fixtures
+                                  #   (built_layout, layout, tiny_dataset), built lazily, no autouse
+  tests/support/                  # shared fixtures: osm_fixtures, pipeline_fixtures (tiny raw data),
+                                  #   processed.py (Layout, build_layout for the tiny processed dir)
+  tests/etl/                      # ETL tests on tiny synthetic fixtures, never the 310 MB file
   tests/dataset/                  # T7: loader and startup tests; the real-data smoke test skips
                                   #   where data/processed/ is absent
 ```
