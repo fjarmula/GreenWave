@@ -19,25 +19,25 @@ from pathlib import Path
 import networkx as nx
 
 from greenwave.dataset.helpers import (
-    _check_artifact_hashes,
-    _check_counts,
-    _check_delays,
-    _check_ids_file,
-    _check_manifest_hashes,
-    _check_references,
-    _parse,
-    _read_json,
-    _read_network,
-    _read_parquet,
-    _report_section,
-    _require_files,
+    check_artifact_hashes,
+    check_counts,
+    check_delays,
+    check_ids_file,
+    check_manifest_hashes,
+    check_references,
+    parse,
+    read_json,
+    read_network,
+    read_parquet,
+    report_section,
+    require_files,
 )
 from greenwave.dataset.models import (
+    IdsDocument,
+    IntersectionsSection,
+    NeighboursSection,
     ProcessedDataset,
     Provenance,
-    _IdsDocument,
-    _IntersectionsSection,
-    _NeighboursSection,
 )
 from greenwave.etl.intersections_pipeline import (
     APPROACHES_FILENAME,
@@ -55,13 +55,13 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
     """Read, validate and return the processed data, or raise a ``DatasetError``."""
     started = time.perf_counter()
 
-    _require_files(processed_dir, manifest_path)  # check 1
+    require_files(processed_dir, manifest_path)  # check 1
     manifest_sha256 = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
-    ids = _parse(_read_json(processed_dir / IDS_FILENAME), _IdsDocument, IDS_FILENAME)
-    report = _read_json(processed_dir / REPORT_FILENAME)
-    intersections_section = _report_section(report, "intersections", _IntersectionsSection)
-    neighbours_section = _report_section(report, "neighbours", _NeighboursSection)
-    _check_manifest_hashes(  # check 2
+    ids = parse(read_json(processed_dir / IDS_FILENAME), IdsDocument, IDS_FILENAME)
+    report = read_json(processed_dir / REPORT_FILENAME)
+    intersections_section = report_section(report, "intersections", IntersectionsSection)
+    neighbours_section = report_section(report, "neighbours", NeighboursSection)
+    check_manifest_hashes(  # check 2
         manifest_path,
         manifest_sha256,
         {
@@ -71,17 +71,17 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
         },
     )
 
-    _check_artifact_hashes(processed_dir, intersections_section, neighbours_section)  # check 2b
+    check_artifact_hashes(processed_dir, intersections_section, neighbours_section)  # check 2b
 
-    graph = _read_network(processed_dir)
-    intersections = _read_parquet(processed_dir, INTERSECTIONS_FILENAME)
-    _check_delays(processed_dir, intersections)
-    approaches = _read_parquet(processed_dir, APPROACHES_FILENAME)
-    neighbours = _read_parquet(processed_dir, NEIGHBOURS_FILENAME)
+    graph = read_network(processed_dir)
+    intersections = read_parquet(processed_dir, INTERSECTIONS_FILENAME)
+    check_delays(processed_dir, intersections)
+    approaches = read_parquet(processed_dir, APPROACHES_FILENAME)
+    neighbours = read_parquet(processed_dir, NEIGHBOURS_FILENAME)
 
-    _check_references(graph, intersections, approaches, neighbours)  # check 3
-    _check_ids_file(ids.intersections, intersections)
-    counts = _check_counts(
+    check_references(graph, intersections, approaches, neighbours)  # check 3
+    check_ids_file(ids.intersections, intersections)
+    counts = check_counts(
         graph, intersections, approaches, neighbours, intersections_section, neighbours_section
     )
 

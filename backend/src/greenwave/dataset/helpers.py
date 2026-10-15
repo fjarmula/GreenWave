@@ -10,13 +10,13 @@ import shapely.errors
 from pydantic import BaseModel, ValidationError
 
 from greenwave.dataset.constants import (
-    _CHAIN,
-    _COMMAND,
-    _EXAMPLES_IN_MESSAGE,
-    _NEIGHBOURS_COMMAND,
-    _PRODUCED_BY,
-    _REQUIRED_COLUMNS,
-    _STEP_INTERSECTIONS,
+    CHAIN,
+    COMMAND,
+    EXAMPLES_IN_MESSAGE,
+    NEIGHBOURS_COMMAND,
+    PRODUCED_BY,
+    REQUIRED_COLUMNS,
+    STEP_INTERSECTIONS,
 )
 from greenwave.dataset.errors import (
     ArtifactHashMismatchError,
@@ -28,9 +28,9 @@ from greenwave.dataset.errors import (
 )
 from greenwave.dataset.models import (
     IntersectionIdRecord,
+    IntersectionsSection,
     LoadedCounts,
-    _IntersectionsSection,
-    _NeighboursSection,
+    NeighboursSection,
 )
 from greenwave.etl.graph_io import read_graph
 from greenwave.etl.intersections_pipeline import (
@@ -47,12 +47,12 @@ from greenwave.etl.neighbours import approach_edges
 from greenwave.etl.neighbours_pipeline import NEIGHBOURS_FILENAME
 
 
-def _require_files(processed_dir: Path, manifest_path: Path) -> None:
-    for filename, step in _PRODUCED_BY.items():
+def require_files(processed_dir: Path, manifest_path: Path) -> None:
+    for filename, step in PRODUCED_BY.items():
         if not (processed_dir / filename).is_file():
             raise MissingArtifactError(
                 f"{processed_dir / filename} is missing; build it with "
-                f"`{_COMMAND.format(step=step)}` (run from backend/)"
+                f"`{COMMAND.format(step=step)}` (run from backend/)"
             )
     if not manifest_path.is_file():
         raise MissingArtifactError(
@@ -61,56 +61,56 @@ def _require_files(processed_dir: Path, manifest_path: Path) -> None:
         )
 
 
-def _read_json(path: Path) -> dict[str, object]:
-    step = _PRODUCED_BY[path.name]
+def read_json(path: Path) -> dict[str, object]:
+    step = PRODUCED_BY[path.name]
     try:
         loaded: object = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as error:
         raise MalformedArtifactError(
             f"{path} cannot be read as JSON ({error}); rebuild it with "
-            f"`{_COMMAND.format(step=step)}`"
+            f"`{COMMAND.format(step=step)}`"
         ) from error
     if not isinstance(loaded, dict):
         raise MalformedArtifactError(
-            f"{path} does not contain a JSON object; rebuild it with `{_COMMAND.format(step=step)}`"
+            f"{path} does not contain a JSON object; rebuild it with `{COMMAND.format(step=step)}`"
         )
     return loaded
 
 
-def _parse[Model: BaseModel](content: object, model: type[Model], label: str) -> Model:
+def parse[Model: BaseModel](content: object, model: type[Model], label: str) -> Model:
     try:
         return model.model_validate(content)
     except ValidationError as error:
         raise MalformedArtifactError(
-            f"{label} is missing a required key or has a wrong type ({error}); re-run {_CHAIN}"
+            f"{label} is missing a required key or has a wrong type ({error}); re-run {CHAIN}"
         ) from error
 
 
-def _report_section[Model: BaseModel](
+def report_section[Model: BaseModel](
     report: dict[str, object], section: str, model: type[Model]
 ) -> Model:
     if section not in report:
         raise MalformedArtifactError(
-            f"{REPORT_FILENAME} has no section '{section}'; re-run {_CHAIN}"
+            f"{REPORT_FILENAME} has no section '{section}'; re-run {CHAIN}"
         )
-    return _parse(report[section], model, f"{REPORT_FILENAME} section '{section}'")
+    return parse(report[section], model, f"{REPORT_FILENAME} section '{section}'")
 
 
-def _check_manifest_hashes(
+def check_manifest_hashes(
     manifest_path: Path, manifest_sha256: str, recorded: dict[str, str]
 ) -> None:
     stale = [where for where, recorded_hash in recorded.items() if recorded_hash != manifest_sha256]
     if stale:
         raise ManifestMismatchError(
             f"{manifest_path} has sha256 {manifest_sha256[:12]}..., but these were built from a "
-            f"different manifest: {', '.join(stale)}; re-run {_CHAIN}"
+            f"different manifest: {', '.join(stale)}; re-run {CHAIN}"
         )
 
 
-def _check_artifact_hashes(
+def check_artifact_hashes(
     processed_dir: Path,
-    intersections_section: _IntersectionsSection,
-    neighbours_section: _NeighboursSection,
+    intersections_section: IntersectionsSection,
+    neighbours_section: NeighboursSection,
 ) -> None:
     recorded_t4 = intersections_section.artifact_sha256
     recorded_t5 = neighbours_section.artifact_sha256
@@ -127,7 +127,7 @@ def _check_artifact_hashes(
     if recorded_t4 is None or recorded_t5 is None or consumed is None:
         raise MalformedArtifactError(
             f"{', '.join(absent)} missing: the processed data was written by an older ETL "
-            f"version; re-run {_CHAIN}"
+            f"version; re-run {CHAIN}"
         )
 
     expected = {name: recorded_t4.get(name) for name in T4_ARTIFACT_FILENAMES} | {
@@ -136,13 +136,13 @@ def _check_artifact_hashes(
     unrecorded = [name for name, value in expected.items() if value is None]
     if unrecorded:
         raise MalformedArtifactError(
-            f"{REPORT_FILENAME} records no hash for {', '.join(unrecorded)}; re-run {_CHAIN}"
+            f"{REPORT_FILENAME} records no hash for {', '.join(unrecorded)}; re-run {CHAIN}"
         )
 
     actual = artifact_hashes(processed_dir, (*T4_ARTIFACT_FILENAMES, NEIGHBOURS_FILENAME))
     for name, on_disk in actual.items():
         if on_disk != expected[name]:
-            rerun = _NEIGHBOURS_COMMAND if name == NEIGHBOURS_FILENAME else _CHAIN
+            rerun = NEIGHBOURS_COMMAND if name == NEIGHBOURS_FILENAME else CHAIN
             raise ArtifactHashMismatchError(
                 f"{processed_dir / name} has sha256 {on_disk[:12]}..., but {REPORT_FILENAME} "
                 f"recorded {str(expected[name])[:12]}... when the step wrote it; the artifacts "
@@ -153,11 +153,11 @@ def _check_artifact_hashes(
         raise ArtifactHashMismatchError(
             f"{NEIGHBOURS_FILENAME} was built from other versions of {', '.join(different)} than "
             f"the ones on disk now (hashes recorded by the neighbours step differ from section "
-            f"'intersections' of {REPORT_FILENAME}); re-run {_NEIGHBOURS_COMMAND}"
+            f"'intersections' of {REPORT_FILENAME}); re-run {NEIGHBOURS_COMMAND}"
         )
 
 
-def _check_delays(processed_dir: Path, intersections: pl.DataFrame) -> None:
+def check_delays(processed_dir: Path, intersections: pl.DataFrame) -> None:
     bad = sum(
         value is None or not math.isfinite(value) or value < 0
         for value in intersections["delay_seconds"].to_list()
@@ -166,41 +166,41 @@ def _check_delays(processed_dir: Path, intersections: pl.DataFrame) -> None:
         raise MalformedArtifactError(
             f"{processed_dir / INTERSECTIONS_FILENAME} column 'delay_seconds' has {bad} null, "
             f"negative or non-finite values; rebuild it with "
-            f"`{_COMMAND.format(step=_STEP_INTERSECTIONS)}`"
+            f"`{COMMAND.format(step=STEP_INTERSECTIONS)}`"
         )
 
 
-def _read_parquet(processed_dir: Path, filename: str) -> pl.DataFrame:
+def read_parquet(processed_dir: Path, filename: str) -> pl.DataFrame:
     path = processed_dir / filename
-    step = _PRODUCED_BY[filename]
+    step = PRODUCED_BY[filename]
     try:
         schema = pl.read_parquet_schema(path)
     except (OSError, pl.exceptions.PolarsError) as error:
         raise MalformedArtifactError(
             f"{path} is not a readable parquet file ({error}); rebuild it with "
-            f"`{_COMMAND.format(step=step)}`"
+            f"`{COMMAND.format(step=step)}`"
         ) from error
-    for column, dtype in _REQUIRED_COLUMNS[filename].items():
+    for column, dtype in REQUIRED_COLUMNS[filename].items():
         if column not in schema:
             raise MalformedArtifactError(
-                f"{path} has no column '{column}'; rebuild it with `{_COMMAND.format(step=step)}`"
+                f"{path} has no column '{column}'; rebuild it with `{COMMAND.format(step=step)}`"
             )
         if dtype is not None and schema[column] != dtype:
             raise MalformedArtifactError(
                 f"{path} column '{column}' has type {schema[column]}, expected {dtype}; "
-                f"rebuild it with `{_COMMAND.format(step=step)}`"
+                f"rebuild it with `{COMMAND.format(step=step)}`"
             )
     try:
         return pl.read_parquet(path)
     except (OSError, pl.exceptions.PolarsError) as error:
         raise MalformedArtifactError(
-            f"{path} cannot be read ({error}); rebuild it with `{_COMMAND.format(step=step)}`"
+            f"{path} cannot be read ({error}); rebuild it with `{COMMAND.format(step=step)}`"
         ) from error
 
 
-def _read_network(processed_dir: Path) -> nx.MultiDiGraph:
+def read_network(processed_dir: Path) -> nx.MultiDiGraph:
     for filename in (NETWORK_NODES_FILENAME, NETWORK_EDGES_FILENAME):
-        _read_parquet(processed_dir, filename)  # column and readability checks
+        read_parquet(processed_dir, filename)  # column and readability checks
     try:
         return read_graph(processed_dir, NETWORK_NODES_FILENAME, NETWORK_EDGES_FILENAME)
     except (
@@ -213,7 +213,7 @@ def _read_network(processed_dir: Path) -> nx.MultiDiGraph:
         raise MalformedArtifactError(
             f"{processed_dir / NETWORK_NODES_FILENAME} / {NETWORK_EDGES_FILENAME} cannot be "
             f"turned into a graph ({type(error).__name__}: {error}); rebuild with "
-            f"`{_COMMAND.format(step=_STEP_INTERSECTIONS)}`"
+            f"`{COMMAND.format(step=STEP_INTERSECTIONS)}`"
         ) from error
 
 
@@ -224,19 +224,19 @@ def _unknown(values: pl.Series, known: set[str]) -> list[str]:
 def _require_known(what: str, location: str, values: pl.Series, known: set[str]) -> None:
     missing = _unknown(values, known)
     if missing:
-        shown = ", ".join(missing[:_EXAMPLES_IN_MESSAGE])
+        shown = ", ".join(missing[:EXAMPLES_IN_MESSAGE])
         more = (
-            f" (and {len(missing) - _EXAMPLES_IN_MESSAGE} more)"
-            if len(missing) > _EXAMPLES_IN_MESSAGE
+            f" (and {len(missing) - EXAMPLES_IN_MESSAGE} more)"
+            if len(missing) > EXAMPLES_IN_MESSAGE
             else ""
         )
         raise ReferentialIntegrityError(
             f"{location} references {len(missing)} {what} that do not exist: {shown}{more}; "
-            f"the artifacts come from different runs, re-run {_CHAIN}"
+            f"the artifacts come from different runs, re-run {CHAIN}"
         )
 
 
-def _check_references(
+def check_references(
     graph: nx.MultiDiGraph,
     intersections: pl.DataFrame,
     approaches: pl.DataFrame,
@@ -245,8 +245,7 @@ def _check_references(
     ids = intersections["intersection_id"]
     if ids.null_count() or ids.n_unique() != len(ids):
         raise ReferentialIntegrityError(
-            f"{INTERSECTIONS_FILENAME} has null or duplicate intersection_id values; "
-            f"re-run {_CHAIN}"
+            f"{INTERSECTIONS_FILENAME} has null or duplicate intersection_id values; re-run {CHAIN}"
         )
     known_intersections = set(ids.to_list())
     known_edges = {data["edge_id"] for *_, data in graph.edges(data=True)}
@@ -281,7 +280,7 @@ def _check_references(
     )
 
 
-def _check_ids_file(records: list[IntersectionIdRecord], intersections: pl.DataFrame) -> None:
+def check_ids_file(records: list[IntersectionIdRecord], intersections: pl.DataFrame) -> None:
     from_file = {r.id: (r.kind, r.node_key) for r in records}
     from_parquet = {
         row["intersection_id"]: (row["kind"], row["node_key"])
@@ -295,18 +294,18 @@ def _check_ids_file(records: list[IntersectionIdRecord], intersections: pl.DataF
         )
         raise ReferentialIntegrityError(
             f"{IDS_FILENAME} and {INTERSECTIONS_FILENAME} disagree on id -> (kind, node_key) "
-            f"for {len(differing)} ids, e.g. {', '.join(differing[:_EXAMPLES_IN_MESSAGE])}; "
-            f"re-run {_CHAIN}"
+            f"for {len(differing)} ids, e.g. {', '.join(differing[:EXAMPLES_IN_MESSAGE])}; "
+            f"re-run {CHAIN}"
         )
 
 
-def _check_counts(
+def check_counts(
     graph: nx.MultiDiGraph,
     intersections: pl.DataFrame,
     approaches: pl.DataFrame,
     neighbours: pl.DataFrame,
-    intersections_section: _IntersectionsSection,
-    neighbours_section: _NeighboursSection,
+    intersections_section: IntersectionsSection,
+    neighbours_section: NeighboursSection,
 ) -> LoadedCounts:
     snapping = intersections_section.snapping
     neighbour_report = neighbours_section.report
@@ -333,7 +332,7 @@ def _check_counts(
         if actual != recorded:
             raise CountMismatchError(
                 f"{artifact} has {actual} rows, but {REPORT_FILENAME} records {recorded}; "
-                f"re-run {_CHAIN}"
+                f"re-run {CHAIN}"
             )
     return LoadedCounts(
         intersections=intersections.height,

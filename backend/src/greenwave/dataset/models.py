@@ -28,7 +28,7 @@ class _ValidFor(BaseModel):
     manifest_sha256: str
 
 
-class _IdsDocument(BaseModel):
+class IdsDocument(BaseModel):
     valid_for: _ValidFor
     intersections: list[IntersectionIdRecord]
 
@@ -42,7 +42,7 @@ class _Snapping(BaseModel):
     unsnapped: list[dict[str, object]]
 
 
-class _IntersectionsSection(BaseModel):
+class IntersectionsSection(BaseModel):
     manifest_sha256: str
     artifact_sha256: dict[str, str] | None = None
     grouping: _Grouping
@@ -56,7 +56,7 @@ class _NeighboursReport(BaseModel):
     pairs: int
 
 
-class _NeighboursSection(BaseModel):
+class NeighboursSection(BaseModel):
     manifest_sha256: str
     artifact_sha256: dict[str, str] | None = None
     consumed_sha256: dict[str, str] | None = None

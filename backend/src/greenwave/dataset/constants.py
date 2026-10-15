@@ -13,29 +13,28 @@ from greenwave.etl.intersections_pipeline import (
 from greenwave.etl.io import REPORT_FILENAME
 from greenwave.etl.neighbours_pipeline import NEIGHBOURS_FILENAME
 
-_COMMAND = "uv run python scripts/run_etl.py {step}"
-_STEP_INTERSECTIONS = "intersections"
-_STEP_NEIGHBOURS = "neighbours"
-_NEIGHBOURS_COMMAND = f"`{_COMMAND.format(step=_STEP_NEIGHBOURS)}`"
-_CHAIN = (
-    f"`{_COMMAND.format(step=_STEP_INTERSECTIONS)}` "
-    f"and then `{_COMMAND.format(step=_STEP_NEIGHBOURS)}`"
+COMMAND = "uv run python scripts/run_etl.py {step}"
+STEP_INTERSECTIONS = "intersections"
+STEP_NEIGHBOURS = "neighbours"
+NEIGHBOURS_COMMAND = f"`{COMMAND.format(step=STEP_NEIGHBOURS)}`"
+CHAIN = (
+    f"`{COMMAND.format(step=STEP_INTERSECTIONS)}` and then `{COMMAND.format(step=STEP_NEIGHBOURS)}`"
 )
-_EXAMPLES_IN_MESSAGE = 5
+EXAMPLES_IN_MESSAGE = 5
 
 # file -> step that writes it
-_PRODUCED_BY = {
-    NETWORK_NODES_FILENAME: _STEP_INTERSECTIONS,
-    NETWORK_EDGES_FILENAME: _STEP_INTERSECTIONS,
-    INTERSECTIONS_FILENAME: _STEP_INTERSECTIONS,
-    APPROACHES_FILENAME: _STEP_INTERSECTIONS,
-    IDS_FILENAME: _STEP_INTERSECTIONS,
-    NEIGHBOURS_FILENAME: _STEP_NEIGHBOURS,
-    REPORT_FILENAME: _STEP_INTERSECTIONS,
+PRODUCED_BY = {
+    NETWORK_NODES_FILENAME: STEP_INTERSECTIONS,
+    NETWORK_EDGES_FILENAME: STEP_INTERSECTIONS,
+    INTERSECTIONS_FILENAME: STEP_INTERSECTIONS,
+    APPROACHES_FILENAME: STEP_INTERSECTIONS,
+    IDS_FILENAME: STEP_INTERSECTIONS,
+    NEIGHBOURS_FILENAME: STEP_NEIGHBOURS,
+    REPORT_FILENAME: STEP_INTERSECTIONS,
 }
 
 # Columns the loader reads by name (dtype None: presence only). Other columns are carried through.
-_REQUIRED_COLUMNS: dict[str, dict[str, pl.DataType | type[pl.DataType] | None]] = {
+REQUIRED_COLUMNS: dict[str, dict[str, pl.DataType | type[pl.DataType] | None]] = {
     NETWORK_NODES_FILENAME: {"node_key": pl.String},
     NETWORK_EDGES_FILENAME: {
         "u": pl.String,
