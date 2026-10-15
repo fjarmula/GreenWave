@@ -3,6 +3,7 @@ import numpy as np
 import polars as pl
 import pytest
 
+from greenwave.etl.config import PEDESTRIAN_CROSSING_DELAY_SECONDS, SIGNAL_DELAY_SECONDS
 from greenwave.etl.geo import project_points
 from greenwave.etl.graph import build_graph, node_key
 from greenwave.etl.intersections import (
@@ -14,6 +15,7 @@ from greenwave.etl.intersections import (
     distance_distribution,
     intersection_frame,
     intersection_index,
+    kind_delay_seconds,
     merge_junction_nodes,
     name_report,
     prepare_rings,
@@ -554,3 +556,54 @@ def test_the_crossing_merge_respects_the_diameter_cap_and_reports_the_refusal() 
     assert sorted(len(i.nodes) for i in intersections) == [1, 2]
     assert len(report.crossing_capped_cases) == 1
     assert report.crossing_capped_cases[0].would_be_diameter_m == pytest.approx(14.3, rel=0.05)
+
+
+def test_delay_by_kind_comes_from_config_and_an_unknown_kind_raises() -> None:
+    delays = kind_delay_seconds(signal_delay_seconds=11.0, pedestrian_crossing_delay_seconds=7.0)
+
+    assert delays == {
+        "signalised_junction": 11.0,
+        "midblock_signal": 11.0,
+        "pedestrian_crossing": 7.0,
+    }
+    assert kind_delay_seconds() == {
+        "signalised_junction": SIGNAL_DELAY_SECONDS,
+        "midblock_signal": SIGNAL_DELAY_SECONDS,
+        "pedestrian_crossing": PEDESTRIAN_CROSSING_DELAY_SECONDS,
+    }
+
+
+def test_the_frame_has_a_delay_per_intersection_and_refuses_an_unmapped_kind() -> None:
+    signals = [
+        signal(at(1.5, 0), "OSM-L70"),
+        signal(at(4, 0), "OSM-L71"),  # standalone mid-block
+        signal(at(4.2, 0), "OSM-L72", node_type="pedestrian_crossing"),
+    ]
+    attached, _, rings, _, _, intersections, _ = run(two_junction_ways(), signals)
+    nodes = set(attached.graph.nodes)
+
+    frame = intersection_frame(
+        attached.graph,
+        intersections,
+        attached.attachments,
+        rings,
+        set(),
+        nodes,
+        kind_delay_seconds(signal_delay_seconds=30.0, pedestrian_crossing_delay_seconds=12.0),
+    )
+    assert dict(frame.select("kind", "delay_seconds").iter_rows()) == {
+        "signalised_junction": 30.0,
+        "midblock_signal": 30.0,
+        "pedestrian_crossing": 12.0,
+    }
+    assert frame.schema["delay_seconds"] == pl.Float64
+    with pytest.raises(ValueError, match="midblock_signal"):
+        intersection_frame(
+            attached.graph,
+            intersections,
+            attached.attachments,
+            rings,
+            set(),
+            nodes,
+            {"signalised_junction": 30.0, "pedestrian_crossing": 12.0},
+        )

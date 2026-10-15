@@ -9,12 +9,17 @@ Decisions applied (2026-10-14):
   reported).
 - Standalone pedestrian crossings are intersections of kind ``pedestrian_crossing``; crossings
   within the crossing merge distance along the road merge (same diameter cap).
-D_v attaches to each signal approach a route crosses, so approaches keep their own delay.
+D_v (per type via config) is applied once per unique intersection INT-xxxx whose controlled
+approach the route passes; a route crossing two approaches of one intersection pays it once. The
+delay of an intersection is ``delay_seconds`` in ``intersections.parquet`` (by kind, from config).
+``signal_approaches.delay_seconds`` is a property of the signal node and must not be summed along a
+route.
 """
 
 import heapq
 import logging
 from collections import Counter, defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 import networkx as nx
@@ -27,6 +32,8 @@ from greenwave.etl.config import (
     CROSSING_MERGE_DISTANCE_METERS,
     MERGE_DISTANCE_METERS,
     MERGE_MAX_GROUP_DIAMETER_METERS,
+    PEDESTRIAN_CROSSING_DELAY_SECONDS,
+    SIGNAL_DELAY_SECONDS,
 )
 from greenwave.etl.junctions import (
     KIND_MIDBLOCK_SIGNAL,
@@ -714,6 +721,24 @@ def prepare_rings(graph: nx.MultiDiGraph, overrides: OverrideFile) -> tuple[list
     return rings, problems
 
 
+def kind_delay_seconds(
+    signal_delay_seconds: float = SIGNAL_DELAY_SECONDS,
+    pedestrian_crossing_delay_seconds: float = PEDESTRIAN_CROSSING_DELAY_SECONDS,
+) -> dict[str, float]:
+    """D_v of one intersection by kind. A kind that is not listed here has no delay: it raises."""
+    return {
+        KIND_SIGNALISED_JUNCTION: signal_delay_seconds,
+        KIND_MIDBLOCK_SIGNAL: signal_delay_seconds,
+        KIND_PEDESTRIAN_CROSSING: pedestrian_crossing_delay_seconds,
+    }
+
+
+def _delay_of(kind: str, delay_by_kind: Mapping[str, float]) -> float:
+    if kind not in delay_by_kind:
+        raise ValueError(f"no D_v is configured for intersection kind {kind!r}")
+    return delay_by_kind[kind]
+
+
 def intersection_frame(
     graph: nx.MultiDiGraph,
     intersections: list[IntersectionRecord],
@@ -721,7 +746,9 @@ def intersection_frame(
     rings: list[Ring],
     ulice_names: set[str],
     reachable_nodes: set[str],
+    delay_by_kind: Mapping[str, float] | None = None,
 ) -> pl.DataFrame:
+    delay_by_kind = kind_delay_seconds() if delay_by_kind is None else delay_by_kind
     ring_by_id = {ring.ring_id: ring for ring in rings}
     rows = []
     for record in intersections:
@@ -732,6 +759,7 @@ def intersection_frame(
             {
                 "intersection_id": record.intersection_id,
                 "kind": record.kind,
+                "delay_seconds": _delay_of(record.kind, delay_by_kind),
                 "node_key": record.representative,
                 "member_nodes": sorted(record.nodes),
                 "lon": record.lon,
@@ -766,6 +794,7 @@ def intersection_frame(
         schema={
             "intersection_id": pl.String,
             "kind": pl.String,
+            "delay_seconds": pl.Float64,
             "node_key": pl.String,
             "member_nodes": pl.List(pl.String),
             "lon": pl.Float64,

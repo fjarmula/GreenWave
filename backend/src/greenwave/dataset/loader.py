@@ -3,14 +3,18 @@
 No fallback and no partial load: any missing, stale or inconsistent artifact raises a
 ``DatasetError`` that names the file and the ETL command to re-run. Nothing here runs ETL code.
 
-Known residual risk: the checks tie every artifact to the committed MANIFEST.json and to each
-other, but the ETL does not record per-artifact hashes. The same manifest with a changed ETL
-config and a partial re-run can therefore pass every check.
+Mixed runs: every artifact is tied to the committed MANIFEST.json and to each other, and each ETL
+step records the sha256 of the files it wrote in ``etl_report.json`` (the neighbours step also
+records the hashes of the files it read). The loader re-hashes the six files and compares them with
+those records. This is an integrity check against artifacts from different runs (for example the
+same manifest, a changed ETL config and a partial re-run), not a security measure: the records are
+in ``etl_report.json``, which is itself not hashed, and nothing here claims reproducible builds.
 """
 
 import hashlib
 import json
 import logging
+import math
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,6 +25,7 @@ import shapely.errors
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from greenwave.dataset.errors import (
+    ArtifactHashMismatchError,
     CountMismatchError,
     MalformedArtifactError,
     ManifestMismatchError,
@@ -34,18 +39,20 @@ from greenwave.etl.intersections_pipeline import (
     INTERSECTIONS_FILENAME,
     NETWORK_EDGES_FILENAME,
     NETWORK_NODES_FILENAME,
+    T4_ARTIFACT_FILENAMES,
+    artifact_hashes,
 )
+from greenwave.etl.io import REPORT_FILENAME
 from greenwave.etl.manifest import ManifestEntry, load_manifest
 from greenwave.etl.neighbours import approach_edges
 from greenwave.etl.neighbours_pipeline import NEIGHBOURS_FILENAME
 
 logger = logging.getLogger(__name__)
 
-REPORT_FILENAME = "etl_report.json"
-
 _COMMAND = "uv run python scripts/run_etl.py {step}"
 _STEP_INTERSECTIONS = "intersections"
 _STEP_NEIGHBOURS = "neighbours"
+_NEIGHBOURS_COMMAND = f"`{_COMMAND.format(step=_STEP_NEIGHBOURS)}`"
 _CHAIN = (
     f"`{_COMMAND.format(step=_STEP_INTERSECTIONS)}` "
     f"and then `{_COMMAND.format(step=_STEP_NEIGHBOURS)}`"
@@ -76,6 +83,7 @@ _REQUIRED_COLUMNS: dict[str, dict[str, pl.DataType | type[pl.DataType] | None]] 
         "intersection_id": pl.String,
         "kind": pl.String,
         "node_key": pl.String,
+        "delay_seconds": pl.Float64,
     },
     APPROACHES_FILENAME: {
         "signal_key": pl.String,
@@ -130,6 +138,7 @@ class _Snapping(BaseModel):
 
 class _IntersectionsSection(BaseModel):
     manifest_sha256: str
+    artifact_sha256: dict[str, str] | None = None
     grouping: _Grouping
     snapping: _Snapping
 
@@ -143,6 +152,8 @@ class _NeighboursReport(BaseModel):
 
 class _NeighboursSection(BaseModel):
     manifest_sha256: str
+    artifact_sha256: dict[str, str] | None = None
+    consumed_sha256: dict[str, str] | None = None
     report: _NeighboursReport
 
 
@@ -177,8 +188,11 @@ class ProcessedDataset:
     read-only by convention, not enforced.
 
     ``signal_approaches`` keeps unsnapped rows (null ``intersection_id``, empty
-    ``controlled_edge_ids``). ``delay_seconds`` is carried per approach; how delays aggregate per
-    route is not decided here. ``approach_neighbours`` is a candidate set only: its distance is not
+    ``controlled_edge_ids``). D_v (per type via config) is applied once per unique intersection
+    INT-xxxx whose controlled approach a route passes; a route crossing two approaches of one
+    intersection pays it once. ``intersections["delay_seconds"]`` is that delay by kind.
+    ``signal_approaches["delay_seconds"]`` is a property of the signal node and must not be summed
+    along a route. ``approach_neighbours`` is a candidate set only: its distance is not
     an along-route distance.
     """
 
@@ -213,8 +227,11 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
         },
     )
 
+    _check_artifact_hashes(processed_dir, intersections_section, neighbours_section)  # check 2b
+
     graph = _read_network(processed_dir)
     intersections = _read_parquet(processed_dir, INTERSECTIONS_FILENAME)
+    _check_delays(processed_dir, intersections)
     approaches = _read_parquet(processed_dir, APPROACHES_FILENAME)
     neighbours = _read_parquet(processed_dir, NEIGHBOURS_FILENAME)
 
@@ -308,6 +325,69 @@ def _check_manifest_hashes(
         raise ManifestMismatchError(
             f"{manifest_path} has sha256 {manifest_sha256[:12]}..., but these were built from a "
             f"different manifest: {', '.join(stale)}; re-run {_CHAIN}"
+        )
+
+
+def _check_artifact_hashes(
+    processed_dir: Path,
+    intersections_section: _IntersectionsSection,
+    neighbours_section: _NeighboursSection,
+) -> None:
+    recorded_t4 = intersections_section.artifact_sha256
+    recorded_t5 = neighbours_section.artifact_sha256
+    consumed = neighbours_section.consumed_sha256
+    absent = [
+        f"{REPORT_FILENAME} section '{section}' ({field})"
+        for section, field, value in (
+            ("intersections", "artifact_sha256", recorded_t4),
+            ("neighbours", "artifact_sha256", recorded_t5),
+            ("neighbours", "consumed_sha256", consumed),
+        )
+        if value is None
+    ]
+    if recorded_t4 is None or recorded_t5 is None or consumed is None:
+        raise MalformedArtifactError(
+            f"{', '.join(absent)} missing: the processed data was written by an older ETL "
+            f"version; re-run {_CHAIN}"
+        )
+
+    expected = {name: recorded_t4.get(name) for name in T4_ARTIFACT_FILENAMES} | {
+        NEIGHBOURS_FILENAME: recorded_t5.get(NEIGHBOURS_FILENAME)
+    }
+    unrecorded = [name for name, value in expected.items() if value is None]
+    if unrecorded:
+        raise MalformedArtifactError(
+            f"{REPORT_FILENAME} records no hash for {', '.join(unrecorded)}; re-run {_CHAIN}"
+        )
+
+    actual = artifact_hashes(processed_dir, (*T4_ARTIFACT_FILENAMES, NEIGHBOURS_FILENAME))
+    for name, on_disk in actual.items():
+        if on_disk != expected[name]:
+            rerun = _NEIGHBOURS_COMMAND if name == NEIGHBOURS_FILENAME else _CHAIN
+            raise ArtifactHashMismatchError(
+                f"{processed_dir / name} has sha256 {on_disk[:12]}..., but {REPORT_FILENAME} "
+                f"recorded {str(expected[name])[:12]}... when the step wrote it; the artifacts "
+                f"come from different runs or the file was changed, re-run {rerun}"
+            )
+    different = [name for name in T4_ARTIFACT_FILENAMES if consumed.get(name) != expected[name]]
+    if different:
+        raise ArtifactHashMismatchError(
+            f"{NEIGHBOURS_FILENAME} was built from other versions of {', '.join(different)} than "
+            f"the ones on disk now (hashes recorded by the neighbours step differ from section "
+            f"'intersections' of {REPORT_FILENAME}); re-run {_NEIGHBOURS_COMMAND}"
+        )
+
+
+def _check_delays(processed_dir: Path, intersections: pl.DataFrame) -> None:
+    bad = sum(
+        value is None or not math.isfinite(value) or value < 0
+        for value in intersections["delay_seconds"].to_list()
+    )
+    if bad:
+        raise MalformedArtifactError(
+            f"{processed_dir / INTERSECTIONS_FILENAME} column 'delay_seconds' has {bad} null, "
+            f"negative or non-finite values; rebuild it with "
+            f"`{_COMMAND.format(step=_STEP_INTERSECTIONS)}`"
         )
 
 

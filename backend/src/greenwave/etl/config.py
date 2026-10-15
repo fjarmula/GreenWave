@@ -88,7 +88,9 @@ ABSENT_TAG = "<absent>"
 SIGNAL_CLUSTER_RADIUS_METERS = 40.0
 
 # D_v per type, one key each so they can diverge later. The architecture gives about 35 s.
-# Applied once per signalised junction traversed in T4/routing, not once per signal node.
+# Applied once per unique intersection INT-xxxx (signalised junction, mid-block signal or pedestrian
+# crossing) whose controlled approach a route passes, never once per signal node or per approach.
+# `intersections.parquet` gets its `delay_seconds` from these keys by kind.
 SIGNAL_DELAY_SECONDS = 35.0
 PEDESTRIAN_CROSSING_DELAY_SECONDS = 35.0
 

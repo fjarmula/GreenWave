@@ -51,6 +51,10 @@ them with `GREENWAVE_PROCESSED_DIR` and `GREENWAVE_RAW_MANIFEST_PATH`.
 Editing `data/raw/MANIFEST.json`, even metadata only, makes every processed artifact stale: re-run
 `intersections` and then `neighbours`.
 
+Each ETL step records the sha256 of the files it wrote (and `neighbours` of the files it read) in
+`etl_report.json`, and the server re-checks them at startup: this is an integrity check against
+artifacts from different runs, not a security measure and not a reproducible-build claim.
+
 ## Data Sources & Attribution
 
 - **OpenStreetMap:** Road network and traffic signal geometry © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, licensed under the Open Database License (ODbL), extracted via [BBBike.org](https://extract.bbbike.org/).

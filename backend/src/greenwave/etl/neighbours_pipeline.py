@@ -17,7 +17,10 @@ from greenwave.etl.intersections_pipeline import (
     INTERSECTIONS_FILENAME,
     NETWORK_EDGES_FILENAME,
     NETWORK_NODES_FILENAME,
+    T4_ARTIFACT_FILENAMES,
+    artifact_hashes,
 )
+from greenwave.etl.io import REPORT_FILENAME
 from greenwave.etl.manifest import MANIFEST_FILENAME
 from greenwave.etl.neighbours import (
     NeighboursReport,
@@ -33,13 +36,44 @@ NEIGHBOURS_FILENAME = "approach_neighbours.parquet"
 
 
 class StaleArtifactError(RuntimeError):
-    """The processed artifacts were built from different raw inputs than the manifest says."""
+    """The processed artifacts come from different raw inputs or from different runs."""
 
 
 class NeighboursSection(BaseModel):
+    """``artifact_sha256`` is this step's output; ``consumed_sha256`` the T4 files it read.
+
+    Both are integrity checks against mixed runs (not security, not a reproducible-build claim).
+    """
+
     generated_at_utc: str
     manifest_sha256: str
+    artifact_sha256: dict[str, str]
+    consumed_sha256: dict[str, str]
     report: NeighboursReport
+
+
+def _recorded_t4_hashes(report_path: Path) -> dict[str, str]:
+    """The hashes the intersections step recorded for its own artifacts."""
+    rerun = "re-run the intersections step"
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        recorded = report["intersections"]["artifact_sha256"]
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise StaleArtifactError(
+            f"{report_path} has no artifact_sha256 in its section 'intersections' ({error!r}); "
+            f"{rerun}"
+        ) from error
+    if not isinstance(recorded, dict):
+        raise StaleArtifactError(
+            f"{report_path} section 'intersections' has a malformed artifact_sha256; {rerun}"
+        )
+    missing = [name for name in T4_ARTIFACT_FILENAMES if name not in recorded]
+    if missing:
+        raise StaleArtifactError(
+            f"{report_path} section 'intersections' records no hash for {', '.join(missing)}; "
+            f"{rerun}"
+        )
+    return {name: str(recorded[name]) for name in T4_ARTIFACT_FILENAMES}
 
 
 def run_neighbours(
@@ -57,6 +91,16 @@ def run_neighbours(
             f"current manifest is {manifest_sha256[:12]}...; re-run the intersections step"
         )
 
+    recorded = _recorded_t4_hashes(processed_dir / REPORT_FILENAME)
+    consumed = artifact_hashes(processed_dir, T4_ARTIFACT_FILENAMES)  # hashed just before reading
+    changed = [name for name in T4_ARTIFACT_FILENAMES if consumed[name] != recorded[name]]
+    if changed:
+        raise StaleArtifactError(
+            f"{', '.join(changed)} differ from the hashes the intersections step recorded in "
+            f"{REPORT_FILENAME}; the artifacts come from different runs, re-run the "
+            "intersections step"
+        )
+
     graph = read_graph(processed_dir, NETWORK_NODES_FILENAME, NETWORK_EDGES_FILENAME)
     approaches = approach_edges(pl.read_parquet(processed_dir / APPROACHES_FILENAME))
     kinds = dict(
@@ -72,6 +116,8 @@ def run_neighbours(
     return NeighboursSection(
         generated_at_utc=datetime.now(UTC).isoformat(timespec="seconds"),
         manifest_sha256=manifest_sha256,
+        artifact_sha256=artifact_hashes(processed_dir, (NEIGHBOURS_FILENAME,)),
+        consumed_sha256=consumed,
         report=neighbours_report(
             search, approaches, kinds, threshold_meters, allow_u_turns, len(other.pairs)
         ),

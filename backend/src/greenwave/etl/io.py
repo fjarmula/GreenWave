@@ -5,6 +5,8 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
+REPORT_FILENAME = "etl_report.json"
+
 
 def update_report_section(report_path: Path, section: str, content: BaseModel) -> None:
     """Replace one section of the report, keeping the sections written by other steps."""

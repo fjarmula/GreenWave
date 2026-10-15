@@ -2,17 +2,27 @@ import json
 from pathlib import Path
 
 import polars as pl
+import pytest
 from pipeline_fixtures import make_raw
 
+from greenwave.etl.config import PEDESTRIAN_CROSSING_DELAY_SECONDS, SIGNAL_DELAY_SECONDS
 from greenwave.etl.graph_io import read_graph
 from greenwave.etl.intersections_pipeline import (
+    APPROACHES_FILENAME,
     IDS_FILENAME,
     INTERSECTIONS_FILENAME,
     NETWORK_EDGES_FILENAME,
     NETWORK_NODES_FILENAME,
+    T4_ARTIFACT_FILENAMES,
     run_intersections,
 )
+from greenwave.etl.io import REPORT_FILENAME, update_report_section
 from greenwave.etl.manifest import MANIFEST_FILENAME, sha256_of_file
+from greenwave.etl.neighbours_pipeline import (
+    NEIGHBOURS_FILENAME,
+    StaleArtifactError,
+    run_neighbours,
+)
 
 
 def test_pipeline_writes_all_artifacts_and_ties_ids_to_the_manifest(tmp_path: Path) -> None:
@@ -66,17 +76,13 @@ def test_pipeline_output_is_deterministic(tmp_path: Path) -> None:
 def test_neighbours_step_reads_the_processed_artifacts_and_refuses_a_stale_manifest(
     tmp_path: Path,
 ) -> None:
-    import pytest
-
-    from greenwave.etl.neighbours_pipeline import (
-        NEIGHBOURS_FILENAME,
-        StaleArtifactError,
-        run_neighbours,
-    )
-
     raw = make_raw(tmp_path)
     processed = tmp_path / "processed"
-    run_intersections(raw, processed, tmp_path / "overrides")
+    update_report_section(
+        processed / REPORT_FILENAME,
+        "intersections",
+        run_intersections(raw, processed, tmp_path / "overrides"),
+    )
 
     section = run_neighbours(raw, processed, threshold_meters=250.0)
 
@@ -89,5 +95,113 @@ def test_neighbours_step_reads_the_processed_artifacts_and_refuses_a_stale_manif
 
     manifest = raw / MANIFEST_FILENAME
     manifest.write_text(manifest.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    with pytest.raises(StaleArtifactError, match="re-run the intersections step"):
+        run_neighbours(raw, processed)
+
+
+def _build_t4(tmp_path: Path) -> tuple[Path, Path]:
+    raw = make_raw(tmp_path)
+    processed = tmp_path / "processed"
+    update_report_section(
+        processed / REPORT_FILENAME,
+        "intersections",
+        run_intersections(raw, processed, tmp_path / "overrides"),
+    )
+    return raw, processed
+
+
+def test_the_section_records_the_hash_of_every_artifact_and_the_delays_used(
+    tmp_path: Path,
+) -> None:
+    raw = make_raw(tmp_path)
+    processed = tmp_path / "processed"
+
+    section = run_intersections(raw, processed, tmp_path / "overrides")
+
+    assert section.artifact_sha256 == {
+        name: sha256_of_file(processed / name) for name in T4_ARTIFACT_FILENAMES
+    }
+    assert set(section.artifact_sha256) == {
+        "network_nodes.parquet",
+        "network_edges.parquet",
+        "intersections.parquet",
+        "signal_approaches.parquet",
+        "intersection_ids.json",
+    }
+    assert section.delay_seconds_by_kind == {
+        "signalised_junction": SIGNAL_DELAY_SECONDS,
+        "midblock_signal": SIGNAL_DELAY_SECONDS,
+        "pedestrian_crossing": PEDESTRIAN_CROSSING_DELAY_SECONDS,
+    }
+    delays = pl.read_parquet(processed / INTERSECTIONS_FILENAME).select("kind", "delay_seconds")
+    assert dict(delays.iter_rows()) == {
+        "signalised_junction": SIGNAL_DELAY_SECONDS,
+        "pedestrian_crossing": PEDESTRIAN_CROSSING_DELAY_SECONDS,
+    }
+
+
+def test_the_neighbours_step_records_its_output_and_the_files_it_read(tmp_path: Path) -> None:
+    raw, processed = _build_t4(tmp_path)
+    recorded = json.loads((processed / REPORT_FILENAME).read_text(encoding="utf-8"))
+
+    section = run_neighbours(raw, processed)
+
+    assert section.artifact_sha256 == {
+        NEIGHBOURS_FILENAME: sha256_of_file(processed / NEIGHBOURS_FILENAME)
+    }
+    assert section.consumed_sha256 == recorded["intersections"]["artifact_sha256"]
+
+
+def test_the_neighbours_step_detects_a_t4_file_changed_after_the_intersections_step(
+    tmp_path: Path,
+) -> None:
+    raw, processed = _build_t4(tmp_path)
+    path = processed / APPROACHES_FILENAME
+    path.write_bytes(path.read_bytes() + b"x")
+
+    with pytest.raises(StaleArtifactError, match=APPROACHES_FILENAME) as error:
+        run_neighbours(raw, processed)
+    assert "re-run the intersections step" in str(error.value)
+
+
+def test_the_neighbours_step_detects_a_t4_rerun_whose_section_was_not_recorded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw, processed = _build_t4(tmp_path)
+    monkeypatch.setattr(
+        "greenwave.etl.intersections_pipeline.kind_delay_seconds",
+        lambda: {
+            k: 99.0 for k in ("signalised_junction", "midblock_signal", "pedestrian_crossing")
+        },
+    )
+    run_intersections(raw, processed, tmp_path / "overrides")  # changed setting, report not updated
+
+    with pytest.raises(StaleArtifactError, match=INTERSECTIONS_FILENAME):
+        run_neighbours(raw, processed)
+
+
+@pytest.mark.parametrize("drop", ["section", "field", "one_file"])
+def test_the_neighbours_step_asks_for_a_rerun_when_the_hashes_are_missing(
+    tmp_path: Path, drop: str
+) -> None:
+    raw, processed = _build_t4(tmp_path)
+    report_path = processed / REPORT_FILENAME
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    if drop == "section":
+        del report["intersections"]
+    elif drop == "field":
+        del report["intersections"]["artifact_sha256"]
+    else:
+        del report["intersections"]["artifact_sha256"][IDS_FILENAME]
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+
+    with pytest.raises(StaleArtifactError, match="re-run the intersections step"):
+        run_neighbours(raw, processed)
+
+
+def test_the_neighbours_step_asks_for_a_rerun_when_there_is_no_report(tmp_path: Path) -> None:
+    raw, processed = _build_t4(tmp_path)
+    (processed / REPORT_FILENAME).unlink()
+
     with pytest.raises(StaleArtifactError, match="re-run the intersections step"):
         run_neighbours(raw, processed)

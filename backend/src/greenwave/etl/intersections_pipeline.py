@@ -26,11 +26,12 @@ from greenwave.etl.intersections import (
     distance_distribution,
     intersection_frame,
     intersection_index,
+    kind_delay_seconds,
     name_report,
     prepare_rings,
 )
 from greenwave.etl.junctions import Ring, find_junction_nodes, undirected_adjacency
-from greenwave.etl.manifest import MANIFEST_FILENAME
+from greenwave.etl.manifest import MANIFEST_FILENAME, sha256_of_file
 from greenwave.etl.near_misses import NearMissReport, find_near_misses
 from greenwave.etl.network import (
     DIRECTION_UNRESOLVED,
@@ -63,6 +64,21 @@ APPROACHES_FILENAME = "signal_approaches.parquet"
 IDS_FILENAME = "intersection_ids.json"
 NEAR_MISSES_FILENAME = "near_misses.csv"
 
+# The artifacts the server loads from this step. Their hashes are recorded in the report section
+# `intersections` (an integrity check against mixed runs, not a security measure).
+T4_ARTIFACT_FILENAMES = (
+    NETWORK_NODES_FILENAME,
+    NETWORK_EDGES_FILENAME,
+    INTERSECTIONS_FILENAME,
+    APPROACHES_FILENAME,
+    IDS_FILENAME,
+)
+
+
+def artifact_hashes(processed_dir: Path, filenames: tuple[str, ...]) -> dict[str, str]:
+    """sha256 of each file as it is on disk now."""
+    return {name: sha256_of_file(processed_dir / name) for name in filenames}
+
 
 class SnapReport(BaseModel):
     tolerance_m: float
@@ -92,6 +108,8 @@ class IntersectionsSection(BaseModel):
     generated_at_utc: str
     inputs_sha256: dict[str, str]
     manifest_sha256: str
+    artifact_sha256: dict[str, str]
+    delay_seconds_by_kind: dict[str, float]
     snapping: SnapReport
     assignment_distance: AssignmentDistribution
     grouping: GroupingReport
@@ -158,8 +176,9 @@ def run_intersections(
 
     largest_scc = max(nx.strongly_connected_components(graph), key=len)
     ulice_names = set(ulice_street_lengths(raw_dir / "krakow" / "Ulice.geojson"))
+    delay_by_kind = kind_delay_seconds()
     intersections_frame = intersection_frame(
-        graph, intersections, attachments, rings, ulice_names, largest_scc
+        graph, intersections, attachments, rings, ulice_names, largest_scc, delay_by_kind
     )
     approaches = approach_frame(attachments, assignments, intersections, largest_scc, settings)
 
@@ -181,6 +200,8 @@ def run_intersections(
         generated_at_utc=datetime.now(UTC).isoformat(timespec="seconds"),
         inputs_sha256=inputs_sha256,
         manifest_sha256=manifest_sha256,
+        artifact_sha256=artifact_hashes(processed_dir, T4_ARTIFACT_FILENAMES),
+        delay_seconds_by_kind=delay_by_kind,
         snapping=_snap_report(attached, snap_tolerance_meters, largest_scc),
         assignment_distance=distance_distribution(
             attachments,
@@ -213,8 +234,13 @@ def _notes(prepared: PreparedScan) -> list[str]:
         "standalone mid-block signals. Pedestrian crossings are kind=pedestrian_crossing.",
         "Ids INT-0001.. are ordered by kind (signalised junctions, mid-block signals, pedestrian "
         "crossings), then position (south to north, then west to east) of the group centroid.",
-        "D_v attaches to each signal approach a route crosses (signal_approaches.delay_seconds and "
-        "controlled_edge_ids), not to the intersection.",
+        "D_v (per type via config) is applied once per unique intersection INT-xxxx whose "
+        "controlled approach the route passes; a route crossing two approaches of one intersection "
+        "pays it once. intersections.delay_seconds is that delay by kind. "
+        "signal_approaches.delay_seconds is a property of the signal node and must not be summed "
+        "along a route.",
+        "artifact_sha256 is the sha256 of each artifact as written by this run: an integrity check "
+        "against mixed runs, not a security measure and not a reproducible-build claim.",
         "Signals on an existing junction node control every arriving edge; traffic_signals:"
         "direction can only pick an edge for signals split out of an edge.",
         f"All ETL steps use ways welded within {prepared.weld_report.tolerance_m:g} m "

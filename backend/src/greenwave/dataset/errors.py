@@ -17,6 +17,10 @@ class ManifestMismatchError(DatasetError):
     """Artifacts were built from a different MANIFEST.json than the one committed now."""
 
 
+class ArtifactHashMismatchError(DatasetError):
+    """A file differs from the hash its ETL step recorded, or the steps ran on different files."""
+
+
 class ReferentialIntegrityError(DatasetError):
     """Artifacts reference ids that do not exist in each other (mixed runs)."""
 
