@@ -17,44 +17,44 @@
       "sha256": "381489e913ba03f0431058fa1efabe2fe1591c67b7c133121dcec931c70d6a4e",
       "size_bytes": 3374774,
       "source": "Krakow open data (MSIP/ZDMK export)",
-      "url": null,
+      "url": "https://msip.krakow.pl/dataset/1379",
       "retrieved_on": "2026-10-13",
-      "licence": null,
-      "attribution": null,
-      "notes": "EPSG:2178. Street names only, not routable. Licence wording pending (decision 7)."
+      "licence": "Polish Open Data Act (Ustawa z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu informacji sektora publicznego, Dz.U. 2021 poz. 1641) — free re-use with source attribution",
+      "attribution": "Źródło: Urząd Miasta Krakowa / Miejski System Informacji Przestrzennej (MSIP), zestaw danych 'Ulice' (stan danych: 2026-10-13 00:47:34). Dane przetworzone w projekcie ER-GreenWave.",
+      "notes": "Used in T3 (street_length_comparison.csv) and T4 (intersection street-name cross-check). EPSG:2178."
     },
     {
       "path": "krakow/Buspasy_wyświetlenie_05a20664f5884653b7fa8bd7acbcb5ef.csv",
       "sha256": "0a50cc1bc44daf3dba271819acf0e20c62eeb15d5bc1eb64f2ec1a00416638dd",
       "size_bytes": 33975,
       "source": "Krakow open data (MSIP/ZDMK export)",
-      "url": null,
+      "url": "https://msip.krakow.pl/",
       "retrieved_on": "2026-10-13",
-      "licence": null,
-      "attribution": null,
-      "notes": "Bus lane records, no geometry. Licence wording pending (decision 7)."
+      "licence": "Polish Open Data Act (Ustawa z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu informacji sektora publicznego, Dz.U. 2021 poz. 1641) — free re-use with source attribution",
+      "attribution": "Źródło: Urząd Miasta Krakowa / Zarząd Dróg Miasta Krakowa (ZDMK) / MSIP, zestaw danych 'Buspasy' (stan danych: 2026-10-13 00:47:34).",
+      "notes": "Raw input recorded in MANIFEST.json; parked/unused in PoC simulation (T6 skipped)."
     },
     {
       "path": "krakow/Linie_KMK_-1530449249114032553.csv",
       "sha256": "91f960c4b19ea4bbbe79eaaa758766ffb0a1b4349b89710a0db6980fd1994784",
       "size_bytes": 5971,
       "source": "Krakow open data (MSIP/ZDMK export)",
-      "url": null,
+      "url": "https://msip.krakow.pl/",
       "retrieved_on": "2026-10-13",
-      "licence": null,
-      "attribution": null,
-      "notes": "Tram lines, no geometry. Parked. Licence wording pending (decision 7)."
+      "licence": "Polish Open Data Act (Ustawa z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu informacji sektora publicznego, Dz.U. 2021 poz. 1641) — free re-use with source attribution",
+      "attribution": "Źródło: Urząd Miasta Krakowa / Zarząd Transportu Publicznego w Krakowie (ZTP) / MSIP, zestaw danych 'Linie KMK' (stan danych: 2026-10-13 00:47:34).",
+      "notes": "Raw input recorded in MANIFEST.json; parked/unused in PoC simulation (T6 skipped)."
     },
     {
       "path": "krakow/__Aktualnosc__.txt",
       "sha256": "ecb20a0990ed0d66e4bcb555c48b48afcd805bb65bed3b55182a9c527f041879",
       "size_bytes": 47,
       "source": "Krakow open data (MSIP/ZDMK export)",
-      "url": null,
+      "url": "https://msip.krakow.pl/",
       "retrieved_on": "2026-10-13",
-      "licence": null,
-      "attribution": null,
-      "notes": "Export timestamp of the Krakow files: 2026-10-13 00:47:34."
+      "licence": "Polish Open Data Act (Ustawa z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu informacji sektora publicznego, Dz.U. 2021 poz. 1641) — free re-use with source attribution",
+      "attribution": "Źródło: Urząd Miasta Krakowa / MSIP (znacznik czasu eksportu danych: 2026-10-13 00:47:34).",
+      "notes": "Records the export timestamp (2026-10-13 00:47:34) of the Kraków municipal dataset package; no data used in the simulation."
     }
   ]
 }

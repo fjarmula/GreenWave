@@ -5,7 +5,7 @@
 
 Hashes and sizes are computed from the files. Provenance fields below are recorded facts from
 ``.agents/DATA_PIPELINE.md`` and the files themselves; anything not known is ``None`` rather than
-guessed (the Kraków licence wording is open decision 7).
+guessed (the Kraków licence wording is decision 7, decided).
 """
 
 import argparse
@@ -28,6 +28,12 @@ OSM_SOURCE = "OpenStreetMap extract of Krakow, BBBike (https://extract.bbbike.or
 OSM_LICENCE = "ODbL 1.0"
 OSM_ATTRIBUTION = "© OpenStreetMap contributors"
 KRAKOW_SOURCE = "Krakow open data (MSIP/ZDMK export)"
+KRAKOW_URL = "https://msip.krakow.pl/"
+KRAKOW_LICENCE = (
+    "Polish Open Data Act (Ustawa z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym "
+    "wykorzystywaniu informacji sektora publicznego, Dz.U. 2021 poz. 1641) — free re-use "
+    "with source attribution"
+)
 
 # (relative path, source, url, retrieved_on, licence, attribution, notes)
 # retrieved_on is the local file date; the Krakow export timestamp is 2026-10-13 00:47:34.
@@ -44,38 +50,45 @@ _SOURCES: list[tuple[str, str, str | None, str, str | None, str | None, str | No
     (
         "krakow/Ulice.geojson",
         KRAKOW_SOURCE,
-        None,
+        "https://msip.krakow.pl/dataset/1379",
         "2026-10-13",
-        None,
-        None,
-        "EPSG:2178. Street names only, not routable. Licence wording pending (decision 7).",
+        KRAKOW_LICENCE,
+        "Źródło: Urząd Miasta Krakowa / Miejski System Informacji Przestrzennej (MSIP), "
+        "zestaw danych 'Ulice' (stan danych: 2026-10-13 00:47:34). "
+        "Dane przetworzone w projekcie ER-GreenWave.",
+        "Used in T3 (street_length_comparison.csv) and T4 (intersection street-name "
+        "cross-check). EPSG:2178.",
     ),
     (
         "krakow/Buspasy_wyświetlenie_05a20664f5884653b7fa8bd7acbcb5ef.csv",
         KRAKOW_SOURCE,
-        None,
+        KRAKOW_URL,
         "2026-10-13",
-        None,
-        None,
-        "Bus lane records, no geometry. Licence wording pending (decision 7).",
+        KRAKOW_LICENCE,
+        "Źródło: Urząd Miasta Krakowa / Zarząd Dróg Miasta Krakowa (ZDMK) / MSIP, "
+        "zestaw danych 'Buspasy' (stan danych: 2026-10-13 00:47:34).",
+        "Raw input recorded in MANIFEST.json; parked/unused in PoC simulation (T6 skipped).",
     ),
     (
         "krakow/Linie_KMK_-1530449249114032553.csv",
         KRAKOW_SOURCE,
-        None,
+        KRAKOW_URL,
         "2026-10-13",
-        None,
-        None,
-        "Tram lines, no geometry. Parked. Licence wording pending (decision 7).",
+        KRAKOW_LICENCE,
+        "Źródło: Urząd Miasta Krakowa / Zarząd Transportu Publicznego w Krakowie (ZTP) / MSIP, "
+        "zestaw danych 'Linie KMK' (stan danych: 2026-10-13 00:47:34).",
+        "Raw input recorded in MANIFEST.json; parked/unused in PoC simulation (T6 skipped).",
     ),
     (
         "krakow/__Aktualnosc__.txt",
         KRAKOW_SOURCE,
-        None,
+        KRAKOW_URL,
         "2026-10-13",
-        None,
-        None,
-        "Export timestamp of the Krakow files: 2026-10-13 00:47:34.",
+        KRAKOW_LICENCE,
+        "Źródło: Urząd Miasta Krakowa / MSIP "
+        "(znacznik czasu eksportu danych: 2026-10-13 00:47:34).",
+        "Records the export timestamp (2026-10-13 00:47:34) of the Kraków municipal dataset "
+        "package; no data used in the simulation.",
     ),
 ]
 
