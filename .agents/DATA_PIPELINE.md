@@ -100,13 +100,14 @@ backend/
   data/overrides/roundabouts.json # hand-made, committed: roundabout rings the OSM tags miss
   data/processed/                 # gitignored, rebuilt by scripts/run_etl.py
     etl_report.json               # one section per step: profile, signals, graph, roundabouts,
-                                  #   intersections, neighbours (counts, rejects, hashes)
+                                  #   intersections, neighbours (counts, rejects, hashes; T7b: the
+                                  #   sha256 of each artifact a step wrote, and of what T5 read)
     signals.parquet               # T2: one row per signal/crossing node, handling, provisional cluster
     road_nodes.parquet            # T3 base graph (before signals), parquet not a pickle
     road_edges.parquet            #   directed edges, EPSG:2178 geometry as WKB
     network_nodes.parquet         # T4: the graph the server loads (signals attached, edges split)
     network_edges.parquet
-    intersections.parquet         # T4: INT-0001..., kind, name, ring, member nodes, internal edges
+    intersections.parquet         # T4: INT-0001..., kind, delay_seconds (D_v), name, ring, member nodes
     signal_approaches.parquet     # T4: one row per counted signal node: snap, controlled edges, delay
     intersection_ids.json         # T4: id -> node, valid for the manifest hash stored inside
     approach_neighbours.parquet   # T5: candidate neighbour pairs (not an along-route distance)
@@ -125,9 +126,12 @@ backend/
     override_map.py cluster_map.py roundabouts.py    # check pages and an analysis report
     neighbours.py neighbours_pipeline.py             # T5
     io.py                         # etl_report.json sections
+  src/greenwave/dataset/          # T7: startup loader (loader.py, errors.py, settings.py)
   scripts/run_etl.py              # CLI: one subcommand per step (see its docstring)
   scripts/build_manifest.py       # write/check data/raw/MANIFEST.json
   tests/etl/                      # tiny synthetic fixtures, never the 310 MB file
+  tests/dataset/                  # T7: loader and startup tests; the real-data smoke test skips
+                                  #   where data/processed/ is absent
 ```
 
 Raw data stays out of git. Real-data ETL runs are manual; the tests never read the raw files
@@ -214,9 +218,13 @@ Stop after each step for approval.
      diameter cap (59 crossing nodes become 54 intersections).
 - Result on the pinned snapshot: **534 intersections** = 428 signalised junctions + 52 mid-block
   signals + 54 pedestrian crossings (`etl_report.json`, `intersections.grouping`).
-- **D_v attaches to each signal approach a route crosses** (`signal_approaches.delay_seconds` with
-  `controlled_edge_ids`), not to the intersection or once per junction. `intersections.parquet` has
-  no delay column.
+- **D_v (35 s, per type via config) is applied once per unique intersection `INT-xxxx` whose
+  controlled approach the route passes;** a route crossing two approaches of one intersection pays it
+  once. `signal_approaches.delay_seconds` is a property of the signal node and must not be summed
+  along a route. `intersections.parquet` has a `delay_seconds` column: D_v of the intersection by
+  `kind` (`signalised_junction` and `midblock_signal` use `SIGNAL_DELAY_SECONDS`, `pedestrian_crossing`
+  uses `PEDESTRIAN_CROSSING_DELAY_SECONDS`; a kind with no mapping raises). The two values used are
+  in the report section `intersections` (`delay_seconds_by_kind`). `config.py` states the same rule.
 - Ids `INT-0001...`: signalised junctions first, then mid-block signals, then pedestrian crossings;
   each by group-centroid position (south to north, then west to east). Stored in `intersection_ids.json`
   with the manifest hash; valid for the pinned snapshot and this configuration only. No `MSIP-SIG-*`
@@ -257,9 +265,52 @@ Stop after each step for approval.
 - The Kraków open-data requirement is already satisfied by `Ulice.geojson` in T3 (`street_length_comparison.csv`) and T4 (intersection street-name cross-check).
 - `Buspasy_wyświetlenie_*.csv` and `Linie_KMK_*.csv` have no geometry and are parked for the PoC. Proceed directly to T7.
 
-**T7. Loader and API hook** (not started)
-- A small loader in `greenwave` that reads `data/processed/` at startup and fails loudly if files are
-  missing or the `etl_report.json` input hashes do not match the manifest. No ETL code in request handlers.
+**T7. Loader and API hook** (done, approved; real-data check 2026-10-15)
+- `greenwave.dataset.load_dataset` reads `data/processed/` once at startup (FastAPI lifespan) and
+  returns one read-only `ProcessedDataset`. It raises a `DatasetError` subclass that names the file
+  and the ETL command to re-run when: an artifact is missing or unreadable; the manifest sha256 differs
+  from the one recorded in `intersection_ids.json` or the `etl_report.json` sections `intersections`
+  and `neighbours`; references between artifacts dangle; or row counts differ from the report. No
+  fallback, no partial load, no ETL code in request handlers. Paths come from `DatasetSettings`
+  (`GREENWAVE_PROCESSED_DIR`, `GREENWAVE_RAW_MANIFEST_PATH`).
+- Real-data check, 2026-10-15, after a full rebuild from the committed manifest: loaded in 0.8 s;
+  534 intersections, 1,044 signal approaches, 1,293 neighbour pairs (1,339 approach edges), graph
+  34,777 nodes / 68,619 edges, `cascade_threshold_m` 250.0, `allow_u_turns` False; all match the ETL
+  report. `GET /api/v1/health` returned 200. A dangling `INT-9999`, a deleted artifact and a modified
+  manifest each stopped uvicorn startup with a specific error. Gate: 246 passed, 0 skipped (the
+  real-data smoke test ran and passed).
+- The 0.8 s load time is one observation, not a benchmark (T8). The residual risk of mixed runs
+  under one manifest is addressed by T7b.
+
+**T7b. Per-artifact hashes and D_v per intersection** (done, approved; real-data check 2026-10-15)
+- Purpose: detect processed artifacts from different runs (same manifest, changed config, partial
+  re-run). It is an integrity check against mixed runs, not a security measure; hashes are compared
+  only with the record of the same run, and no reproducible-build claim is made. `etl_report.json`
+  itself is not hashed.
+- `run_intersections` records `artifact_sha256` (network_nodes, network_edges, intersections,
+  signal_approaches, intersection_ids.json) in the section `intersections`. `run_neighbours` records
+  `artifact_sha256` for approach_neighbours.parquet and `consumed_sha256`, the hashes of the T4
+  files it read (computed from disk just before reading), and raises `StaleArtifactError` if they
+  differ from the record in section `intersections` or if the record is missing.
+- The loader hashes the six files (`sha256_of_file`, streaming) and raises
+  `ArtifactHashMismatchError` (file name, recorded and actual hash, the command to re-run) when a
+  file differs from its record or when `consumed_sha256` differs from the T4 record. Processed data
+  without the new fields (or without `delay_seconds`) fails with a message to re-run `intersections`
+  and then `neighbours`, never a `KeyError`.
+- D_v per intersection: `intersections.parquet` gets `delay_seconds` by `kind` from the two config
+  keys (no literal value, no default for an unknown kind); the loader requires the column (Float64)
+  and rejects null, negative or non-finite values. `signal_approaches.delay_seconds` is unchanged. No
+  other value changed.
+- Real-data check, 2026-10-15, after a full rebuild (manifest check, `intersections`, `neighbours`):
+  loaded in 0.80 s with the extra hashing (one observation, not a benchmark); 534 intersections,
+  1,044 signal approaches, 1,293 neighbour pairs, 1,339 approach edges, graph 34,777 nodes / 68,619
+  edges; manifest hash `a5e4176136345d4c...`. `delay_seconds` is 35.0 for all 534 intersections (428
+  signalised junctions, 52 mid-block signals, 54 pedestrian crossings). `/api/v1/health` returned
+  200. On scratch copies, a flipped byte in `signal_approaches.parquet` stopped startup with
+  `ArtifactHashMismatchError` (file, both hashes, re-run `intersections` and then `neighbours`), and
+  an `etl_report.json` without `artifact_sha256` stopped it with `MalformedArtifactError` ("written
+  by an older ETL version; re-run `intersections` and then `neighbours`"). Gate: 274 passed, 0
+  skipped. The mixed-run scenario was tested on synthetic fixtures only.
 
 **T8. Benchmark** (not started)
 - Measure ETL runtime and graph load time and shortest-path latency on the real graph. Report hardware and
@@ -291,10 +342,33 @@ cite them).
    stored with the manifest hash, valid for the pinned snapshot and configuration only. No `MSIP-SIG-*`
    ids are generated from OSM data; mock ITS payloads use our `INT-` ids. Contract wording is closed
    and aligned with the architecture doc.
-7. **Licence and attribution wording** for OSM (ODbL) and the Kraków open data in the app and README.
-   **Open.**
-8. **Roundabouts and D_v.** Decided: a ring is one intersection; D_v attaches to each signal approach a
-   route crosses.
+7. **Licence and attribution wording.** Decided 2026-10-15; recorded per file in
+   `backend/data/raw/MANIFEST.json` (written by `scripts/build_manifest.py`).
+   - OSM: ODbL 1.0, "© OpenStreetMap contributors".
+   - Kraków open data (`Ulice.geojson`, `Buspasy_*.csv`, `Linie_KMK_*.csv`): Polish Open Data Act
+     (Ustawa z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu informacji
+     sektora publicznego, Dz.U. 2021 poz. 1641), free re-use with source attribution; source URL
+     https://msip.krakow.pl/ (`Ulice.geojson`: https://msip.krakow.pl/dataset/1379); per-file
+     attribution text in the manifest. `__Aktualnosc__.txt` has the same licence value and records
+     the export timestamp only.
+   - Combined app/README text: "Road network and traffic signal geometry © OpenStreetMap
+     contributors, licensed under the Open Database License (ODbL), extracted via BBBike.org.
+     Municipal street registry (Ulice.geojson) provided by Urząd Miasta Krakowa / Miejski System
+     Informacji Przestrzennej (MSIP, export timestamp: 2026-10-13 00:47:34), re-used under the
+     Polish Act on Open Data and Re-use of Public Sector Information (Dz.U. 2021 poz. 1641). All
+     traffic signal states, delays, and priority dispatches are simulated proof-of-concept inputs
+     and do not represent verified physical traffic signal states."
+   - Evidence, checked 2026-10-15 (as supplied by the human): the export metadata file
+     `backend/data/raw/krakow/__Aktualnosc__.txt` (export timestamp 2026-10-13 00:47:34); the Act
+     of 11 August 2021 (Dz.U. 2021 poz. 1641) and the Kraków BIP/MSIP terms for re-use of public
+     sector information (source attribution, timestamp, notice of modification); the OpenStreetMap
+     Legal FAQ and ODbL 1.0 terms for the BBBike extract (retrieved 2026-10-13). Owner reply: none;
+     the statutory re-use terms are taken to apply directly. No dataset-specific licence page was
+     recorded.
+8. **Roundabouts and D_v.** Decided: a ring is one intersection. D_v (35 s, per type via config) is
+   applied once per unique intersection `INT-xxxx` whose controlled approach the route passes; a
+   route crossing two approaches of one intersection pays it once. `signal_approaches.delay_seconds`
+   is a property of the signal node and must not be summed along a route.
 9. **Assignment and merging.** Decided: an approach farther than 50 m from its nearest junction along
    the road is a standalone mid-block signal (`ASSIGNMENT_LIMIT_METERS`); junction nodes with counted
    signals within 30 m along the road merge (`MERGE_DISTANCE_METERS`) unless the group's diameter
