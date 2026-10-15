@@ -7,9 +7,10 @@ import type { RouteGeometry } from "@/types/telemetry";
 type RouteLayerProps = {
   map: Map | null;
   routeGeometry: RouteGeometry | null;
+  styleRevision: number;
 };
 
-export function RouteLayer({ map, routeGeometry }: RouteLayerProps) {
+export function RouteLayer({ map, routeGeometry, styleRevision }: RouteLayerProps) {
   useEffect(() => {
     if (!map || !routeGeometry || routeGeometry.coordinates.length < 2) return;
 
@@ -44,7 +45,7 @@ export function RouteLayer({ map, routeGeometry }: RouteLayerProps) {
       if (map.getLayer(casingId)) map.removeLayer(casingId);
       if (map.getSource(sourceId)) map.removeSource(sourceId);
     };
-  }, [map, routeGeometry]);
+  }, [map, routeGeometry, styleRevision]);
 
   return null;
 }

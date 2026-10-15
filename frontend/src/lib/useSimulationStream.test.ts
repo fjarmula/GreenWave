@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createMockRoute, createMockTick, startMockStream } from "@/lib/useSimulationStream";
-import type { SimulationStartRequest } from "@/types/telemetry";
+import { createMockSimulationAdapter } from "@/lib/mock-simulation-adapter";
+import type { SimulationStartRequest, SimulationTick } from "@/types/telemetry";
 
 const request: SimulationStartRequest = {
   simulation_id: "test",
@@ -13,12 +13,14 @@ const request: SimulationStartRequest = {
 afterEach(() => vi.useRealTimers());
 
 describe("mock simulation stream", () => {
-  it("emits once per second, finishes once and stops its timer", () => {
+  it("emits once per second, finishes once and stops its timer", async () => {
     vi.useFakeTimers();
     const onTick = vi.fn();
     const onFinish = vi.fn();
-    const route = { ...createMockRoute(request), estimated_greenwave_time_sec: 3 };
-    startMockStream(request, route, onTick, onFinish);
+    const adapter = createMockSimulationAdapter();
+    const route = await adapter.start(request);
+    route.estimated_greenwave_time_sec = 3;
+    adapter.subscribe({ onTick, onComplete: onFinish });
     vi.advanceTimersByTime(999);
     expect(onTick).not.toHaveBeenCalled();
     vi.advanceTimersByTime(2001);
@@ -29,25 +31,34 @@ describe("mock simulation stream", () => {
     expect(onTick).toHaveBeenCalledTimes(3);
   });
 
-  it("cleans up without further ticks or completion", () => {
+  it("stops without further ticks or completion", async () => {
     vi.useFakeTimers();
     const onTick = vi.fn();
     const onFinish = vi.fn();
-    const stop = startMockStream(request, createMockRoute(request), onTick, onFinish);
+    const adapter = createMockSimulationAdapter();
+    await adapter.start(request);
+    adapter.subscribe({ onTick, onComplete: onFinish });
     vi.advanceTimersByTime(1000);
-    stop();
+    adapter.stop();
     vi.advanceTimersByTime(10000);
     expect(onTick).toHaveBeenCalledTimes(1);
     expect(onFinish).not.toHaveBeenCalled();
   });
 
-  it("decreases TTI without negative values and respects the cascade setting", () => {
+  it("decreases TTI without negative values and respects the cascade setting", async () => {
+    vi.useFakeTimers();
     const noCascade = { ...request, enable_cascade_mode: false };
-    const route = createMockRoute(noCascade);
-    expect(createMockTick(noCascade, route, 1).intersections[0].tti_seconds).toBe(27);
-    const tick = createMockTick(noCascade, route, 50);
-    expect(tick.intersections.every((signal) => signal.tti_seconds === 0)).toBe(true);
-    expect(tick.intersections[1].state).toBe("NORMAL");
-    expect(tick.intersections[1].is_active_corridor).toBe(false);
+    const adapter = createMockSimulationAdapter();
+    await adapter.start(noCascade);
+    const onTick = vi.fn();
+    adapter.subscribe({ onTick, onComplete: vi.fn() });
+    vi.advanceTimersByTime(1000);
+    expect(onTick.mock.calls[0][0].intersections[0].tti_seconds).toBe(27);
+    vi.advanceTimersByTime(49000);
+    const tick = onTick.mock.calls.at(-1)?.[0] as SimulationTick | undefined;
+    expect(tick).toBeDefined();
+    expect(tick?.intersections.every((signal) => signal.tti_seconds === 0)).toBe(true);
+    expect(tick?.intersections[1].state).toBe("NORMAL");
+    expect(tick?.intersections[1].is_active_corridor).toBe(false);
   });
 });
