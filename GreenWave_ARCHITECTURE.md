@@ -132,6 +132,8 @@ The system uses explicit JSON schemas as the API contract between the
 engine and the dispatcher dashboard. Only one active simulation runs at
 a time in the PoC (starting a new simulation cancels any previous run).
 All outputs are simulated inputs and include `"is_simulated": true`.
+Every response and stream event also carries `"schema_version": "1.0"`.
+The contract is frozen as `contract-v1` (see `docs/adr/0003-simulation-contract-v1.md`).
 The intersection ids and names in the examples are real ETL output (two
 consecutive junctions on Aleja 29 Listopada, about 152 m apart by
 shortest drive); coordinates, times and speeds are illustrative.
@@ -146,15 +148,29 @@ the transition was triggered early by an upstream intersection within
 
 1. **`NORMAL -> CLEARING`:** Triggered when $\mathrm{TTI}_i \le 40\text{ s}$
    (`is_cascade: false`), OR when an upstream intersection $j$ along the
-   route enters `CLEARING` and the along-route distance from the stop
+   route enters `CLEARING` **because its own** $\mathrm{TTI}_j \le 40\text{ s}$
+   (`is_cascade: false`) and the along-route distance from the stop
    line of $j$'s controlled approach to the stop line of $i$'s is
-   $\le 250\text{ m}$ (`is_cascade: true`).
+   $\le 250\text{ m}$ (`is_cascade: true`). Cascade is **one hop only**:
+   an intersection that entered `CLEARING` through a cascade
+   (`is_cascade: true`) never triggers a further cascade. Cascade looks
+   only ahead along the route (never at an intersection already passed
+   or behind $j$), uses the inclusive 250 m threshold measured from
+   $j$ itself, and is disabled when `enable_cascade_mode` is `false`.
+   Every other intersection still enters `CLEARING` by its own TTI. If an
+   intersection reaches $\mathrm{TTI} \le 40\text{ s}$ in the same tick in
+   which it would be cascaded, its own TTI wins (`is_cascade: false`).
+   `CLEARING_CASCADE` is **not** a state; a cascaded intersection is
+   `state: "CLEARING"` with `is_cascade: true`.
 2. **`CLEARING -> PRIORITY_GREEN`:** Triggered when $\mathrm{TTI}_i \le 25\text{ s}$.
 3. **`PRIORITY_GREEN -> RECOVERY`:** Triggered immediately when the
    ambulance passes the intersection's last controlled approach stop
    line ($d_i \le 0\text{ m}$).
 4. **`RECOVERY -> NORMAL`:** Triggered $15\text{ s}$ after entering
    `RECOVERY`.
+
+`is_active_corridor` is `true` exactly when `state` is `CLEARING` or
+`PRIORITY_GREEN` (computed by the backend).
 
 ### Phase 1: Route Initialization (Frontend → Backend)
 
@@ -177,9 +193,16 @@ Called when the user selects the origin and destination.
     "lng": 19.9982
   },
   "traffic_density_multiplier": 1.5,
-  "enable_cascade_mode": true
+  "enable_cascade_mode": true,
+  "playback_speed": 1
 }
 ```
+
+`simulation_id` is chosen by the client and must match
+`^[A-Za-z0-9_-]{1,64}$`. `playback_speed` is optional (integer `1..10`,
+default `1`): the wall-clock tick stays at 1 Hz and each tick advances
+`playback_speed` simulated seconds, evaluated as 1 s sub-steps so no
+threshold (40 / 25 / 0 / 15 s) is skipped.
 
 **Response:** Returns static graph and route data.
 
@@ -200,9 +223,63 @@ Called when the user selects the origin and destination.
   "total_distance_m": 5400,
   "estimated_normal_time_sec": 780,
   "estimated_greenwave_time_sec": 380,
-  "intersections_on_route": ["INT-0360", "INT-0366"]
+  "intersections_on_route": ["INT-0360", "INT-0366"],
+  "route_intersections": [
+    {
+      "id": "INT-0360",
+      "name": "Aleja 29 Listopada / Lublańska / Opolska",
+      "kind": "signalised_junction",
+      "position": { "lat": 50.0661, "lng": 19.9221 },
+      "distance_along_route_m": 1480
+    },
+    {
+      "id": "INT-0366",
+      "name": "Aleja 29 Listopada / Jana Woronicza",
+      "kind": "signalised_junction",
+      "position": { "lat": 50.0655, "lng": 19.9243 },
+      "distance_along_route_m": 1632
+    }
+  ],
+  "origin_snapped": {
+    "position": { "lat": 50.0611, "lng": 19.9568 },
+    "snap_distance_m": 12.4
+  },
+  "destination_snapped": {
+    "position": { "lat": 50.0136, "lng": 19.9979 },
+    "snap_distance_m": 31.7
+  }
 }
 ```
+
+`route_intersections` lists every unique intersection on the route in
+route order (`distance_along_route_m` is the distance to its first
+controlled stop line); `intersections_on_route` carries the same ids.
+`name` is `null` when the ETL has no name. `kind` is
+`signalised_junction | midblock_signal | pedestrian_crossing`.
+`origin_snapped` / `destination_snapped` give the graph point the route
+really starts / ends at and its distance from the requested point.
+
+**Errors** (body `ErrorResponse`):
+
+```json
+{
+  "schema_version": "1.0",
+  "error_code": "ORIGIN_OFF_NETWORK",
+  "message": "Origin is 412 m from the nearest routable road; the limit is 150 m."
+}
+```
+
+| `error_code` | HTTP | When |
+|---|---|---|
+| `ORIGIN_OFF_NETWORK` | 422 | Origin farther than the snap limit (150 m, section 6) from the network |
+| `DESTINATION_OFF_NETWORK` | 422 | Same for the destination |
+| `NO_ROUTE` | 422 | Both ends snap but no route connects them |
+| `SIMULATION_ID_IN_USE` | 409 | `simulation_id` already used by a session still held in memory |
+| `SIMULATION_NOT_FOUND` | 404 | Stream or stop for an unknown `simulation_id` |
+
+FastAPI's default `422` body is kept for request-schema violations
+(multiplier outside `[1.0, 3.0]`, bad `simulation_id` pattern,
+`playback_speed` outside `1..10`).
 
 ### Phase 2: Real-Time Telemetry Stream & Control (Backend ↔ Frontend)
 
@@ -212,6 +289,30 @@ Called when the user selects the origin and destination.
 The frontend consumes the Server-Sent Events (SSE) stream to animate the
 MapLibre vehicle marker and update dashboard KPIs. Ambulance `status` is
 an enum of `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`.
+
+The stream carries a discriminated union on `event_type`:
+`SIMULATION_TICK`, `ITS_DISPATCH`, `SIMULATION_COMPLETED`,
+`SIMULATION_CANCELLED` (`reason: STOPPED | SUPERSEDED`). Every event has
+`schema_version`, `is_simulated`, `simulation_id`, `tick` and `timestamp`
+(wall-clock UTC at emission; simulated time is
+`kpi_metrics.total_time_elapsed_sec`).
+
+**SSE framing** (not expressible in OpenAPI, so normative here): the first
+frame is `retry: 2000`. Each event is one frame with `event:` = its
+`event_type`, `id:` = its `tick` (non-decreasing; ticks start at 1, an
+`ITS_DISPATCH` shares the id of the tick that produced it and precedes that
+tick's `SIMULATION_TICK`; a terminal event repeats the last tick id) and
+`data:` = the JSON of one event model. The server closes the stream after
+a terminal event (`SIMULATION_COMPLETED` or `SIMULATION_CANCELLED`).
+A subscriber first receives the latest snapshot, then live events; a
+reconnect resumes at "now" without replay. The run is server-authoritative:
+it starts on `POST /start` and ticks whether or not anyone listens. After
+`ARRIVED` the engine keeps ticking until every intersection is `NORMAL`
+(at most 15 s), then emits `SIMULATION_COMPLETED`. A finished session stays
+readable until superseded. `POST /stop` returns `StopResponse`
+(`{"schema_version": "1.0", "is_simulated": true, "simulation_id": ..., "status": "STOPPED"}`).
+
+**`SIMULATION_TICK`:**
 
 ```json
 {
@@ -255,21 +356,72 @@ an enum of `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVE
 }
 ```
 
+Every tick lists **all** route intersections in route order.
+`tti_seconds` is an integer (rounded) and `null` once the intersection has
+been passed; `name` is nullable. `total_time_elapsed_sec` advances by
+`playback_speed` per tick.
+
+**`SIMULATION_COMPLETED`** (terminal; final KPIs):
+
+```json
+{
+  "schema_version": "1.0",
+  "is_simulated": true,
+  "event_type": "SIMULATION_COMPLETED",
+  "simulation_id": "SIM-20261025-01",
+  "tick": 383,
+  "timestamp": "2026-10-25T14:37:51Z",
+  "kpi_metrics": {
+    "current_time_saved_sec": 396,
+    "total_time_elapsed_sec": 383
+  }
+}
+```
+
+**`SIMULATION_CANCELLED`** (terminal; `reason` is `STOPPED` after
+`POST /stop`, `SUPERSEDED` when another `POST /start` replaced the run):
+
+```json
+{
+  "schema_version": "1.0",
+  "is_simulated": true,
+  "event_type": "SIMULATION_CANCELLED",
+  "simulation_id": "SIM-20261025-01",
+  "tick": 57,
+  "timestamp": "2026-10-25T14:32:25Z",
+  "reason": "SUPERSEDED"
+}
+```
+
 ### Phase 3: Simulated ITS Dispatch (Internal `ItsGateway` Interface)
 
 Triggered internally via a Python `ItsGateway` interface (with a mock
 implementation that logs and records the dispatch event, rather than an
 HTTP loop to itself) when an intersection transitions to `CLEARING`
 ($\mathrm{TTI}_i \le 40\text{ s}$ or via cascade). Uses the ETL-generated
-`INT-xxxx` identifiers (`hold_duration_sec = 40` covers the window from
-`CLEARING` through `PRIORITY_GREEN` until the vehicle clears the stop line).
+`INT-xxxx` identifiers. One dispatch is made per tick and contains every
+intersection that entered `CLEARING` in that tick (the TTI-triggered ones
+and their cascade group); `message_id` is `MSG-ITS-<n>`, numbered per
+simulation. The dispatch is also streamed as an `ITS_DISPATCH` event
+(the fields below plus `event_type`, `tick`, `timestamp`).
+
+`hold_duration_sec = max(40, ceil(TTI at dispatch) + 5)`, where for a group
+the TTI is the **largest** in the group and 5 s is `its_hold_buffer_seconds`
+(engine configuration, not a contract field). The hold covers the window
+from `CLEARING` through `PRIORITY_GREEN` until the vehicle clears the stop
+line; a fixed 40 s expired before the vehicle reached cascaded
+intersections. `expected_arrival_utc` is the emission time plus the
+**smallest** TTI in the group.
 
 ```json
 {
   "schema_version": "1.0",
   "is_simulated": true,
+  "event_type": "ITS_DISPATCH",
   "message_id": "MSG-ITS-88392",
   "simulation_id": "SIM-20261025-01",
+  "tick": 30,
+  "timestamp": "2026-10-25T14:31:58Z",
   "system_source": "ER_GREENWAVE_ENGINE",
   "target_system": "STeR_KRAKOW_ITS",
   "payload": {
@@ -277,11 +429,15 @@ HTTP loop to itself) when an intersection transitions to `CLEARING`
     "vehicle_type": "AMBULANCE",
     "intersections_group": ["INT-0360", "INT-0366"],
     "action": "FORCE_GREEN_PHASE",
-    "hold_duration_sec": 40,
+    "hold_duration_sec": 55,
     "expected_arrival_utc": "2026-10-25T14:32:38Z"
   }
 }
 ```
+
+Here INT-0360 has TTI 40 s and its cascaded neighbour INT-0366 has TTI
+50 s: the hold is `max(40, 50 + 5) = 55`. `hold_duration_sec` is never
+below 40.
 
 ---
 
@@ -314,7 +470,7 @@ physical traffic signal states.
 
 All previously open questions have been resolved and approved:
 
-1. **State machine:** Intersection `state` is strictly `NORMAL | CLEARING | PRIORITY_GREEN | RECOVERY`, with `is_cascade: bool` as a separate field. Transitions occur at $\mathrm{TTI} \le 40\text{ s}$ (`CLEARING`), $\mathrm{TTI} \le 25\text{ s}$ (`PRIORITY_GREEN`), $d_i \le 0\text{ m}$ (`RECOVERY`), and $+15\text{ s}$ (`NORMAL`), with `hold_duration_sec = 40`.
+1. **State machine:** Intersection `state` is strictly `NORMAL | CLEARING | PRIORITY_GREEN | RECOVERY`, with `is_cascade: bool` as a separate field. Transitions occur at $\mathrm{TTI} \le 40\text{ s}$ (`CLEARING`), $\mathrm{TTI} \le 25\text{ s}$ (`PRIORITY_GREEN`), $d_i \le 0\text{ m}$ (`RECOVERY`), and $+15\text{ s}$ (`NORMAL`). Cascade is one hop only (section 4, rule 1). `CLEARING_CASCADE` is not a state. `hold_duration_sec = max(40, ceil(TTI at dispatch) + its_hold_buffer_seconds)` with `its_hold_buffer_seconds = 5` (section 4, Phase 3).
 2. **Identifiers:** All endpoints, telemetry ticks, and mock ITS payloads use the ETL's `INT-0001`..`INT-0534` IDs (`intersection_ids.json`). No `MSIP-SIG-*` IDs are used.
 3. **Contract completeness:** `simulation_id`, `schema_version: "1.0"`, and `is_simulated: true` are included in all responses and ticks; streaming uses SSE (`GET /api/v1/simulation/{simulation_id}/stream`) with a cancel endpoint (`POST /api/v1/simulation/{simulation_id}/stop`); one active simulation is supported at a time; ambulance `status` is `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`; `traffic_density_multiplier` is bounded to `[1.0, 3.0]`.
 4. **ITS dispatch (Phase 3):** Implemented as an internal Python `ItsGateway` interface with a mock implementation (no self-HTTP calls).
@@ -323,3 +479,5 @@ All previously open questions have been resolved and approved:
 7. **Terminology:** `STeR_KRAKOW_ITS` is retained as the mocked target name.
 8. **Intersection delay:** $D_u$ (35 s per kind via ETL configuration) and $D_{\min}$ (3 s) are applied once per unique `INT-xxxx` whose controlled approach the route passes, never per signal node or per approach. The ETL provides `delay_seconds` per intersection by kind (signalised junction and mid-block signal use the signal delay, a standalone pedestrian crossing the crossing delay).
 9. **Cascade distance:** the threshold is `d <= 250 m` (inclusive) along the active route, measured between stop lines. The ETL's neighbour table uses the same inclusive threshold by shortest drive and is a candidate set only.
+10. **Snapping:** the origin and destination snap to the nearest graph node (EPSG:2178) from which a route exists. A snap distance above **150 m** (engine configuration `max_snap_distance_meters`, not a contract field) is rejected with `ORIGIN_OFF_NETWORK` / `DESTINATION_OFF_NETWORK`.
+11. **Contract v1:** the stream event union, SSE framing, error codes, `playback_speed` and the remaining simulation semantics are recorded in `docs/adr/0003-simulation-contract-v1.md`.
