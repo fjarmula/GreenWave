@@ -74,7 +74,7 @@ def test_error_responses_are_documented(layout: Layout) -> None:
     assert stream["404"]["content"]["application/json"]["schema"]["$ref"].endswith("/ErrorResponse")
 
 
-def test_stubs_return_501(layout: Layout) -> None:
+def test_invalid_start_is_a_contract_error_not_a_stub(layout: Layout) -> None:
     body = {
         "simulation_id": "SIM-1",
         "origin": {"lat": 50.06, "lng": 19.95},
@@ -83,6 +83,6 @@ def test_stubs_return_501(layout: Layout) -> None:
         "enable_cascade_mode": True,
     }
     with client(layout) as c:
-        assert c.post("/api/v1/simulation/start", json=body).status_code == 501
-        assert c.get("/api/v1/simulation/SIM-1/stream").status_code == 501
-        assert c.post("/api/v1/simulation/SIM-1/stop").status_code == 501
+        assert c.post("/api/v1/simulation/start", json=body).status_code == 422
+        assert c.get("/api/v1/simulation/SIM-1/stream").status_code == 404
+        assert c.post("/api/v1/simulation/SIM-1/stop").status_code == 404
