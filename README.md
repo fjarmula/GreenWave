@@ -23,6 +23,8 @@ cd frontend && npm ci && cd ..
 uv run --project backend pre-commit install --install-hooks
 ```
 
+The last command installs the git hooks once per clone. Besides the usual pre-commit and pre-push checks, `post-checkout`, `post-merge` and `post-rewrite` hooks refresh the local code graph (`graphify-out/`, never committed; see ADR 0004), so it stays current after `git switch`, `git pull` and `git worktree add`. Claude Code refreshes it at session start and end through the project hooks (accept them if prompted). Codex users open Codex in the repo, run `/hooks` and trust the two project hooks; re-trust whenever `.codex/hooks.json` changes. To refresh by hand, run `scripts/graphify-refresh.sh`; its log is `.tmp/graphify-refresh.log`.
+
 ### Prepare the simulation dataset
 
 The raw GIS data and generated artifacts are deliberately gitignored. Obtain the team-provided raw-data bundle and copy it into `backend/data/raw/` with the paths in [`backend/data/raw/MANIFEST.json`](backend/data/raw/MANIFEST.json) unchanged. The OSM source entry does not have a recorded reproducible download URL, so do not substitute a newer extract when recreating the current environment.

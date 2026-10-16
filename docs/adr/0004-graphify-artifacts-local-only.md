@@ -35,3 +35,13 @@ Graphify output is generated locally by `graphify update .` and in CI, and is ne
 ## Validation
 
 `tests/scripts/test_graphify_ci.sh` and `tests/scripts/test_setup_agent_env.sh`, the `graphify-build` CI job, and `scripts/check-agent-readiness.sh`.
+
+## Follow-up: automation
+
+Nobody should have to remember `graphify update .`, so regeneration is automatic in three layers that all call one script, `scripts/graphify-refresh.sh`:
+
+- **Claude Code hooks** (`.claude/settings.json`): `SessionStart` (matcher `startup|resume`, 60 s) and `Stop` (30 s). The script prints nothing to stdout, so nothing is injected into the session or read as a decision.
+- **Codex hooks** (`.codex/hooks.json`): `SessionStart` (`startup|resume`, 60 s) and `Stop` (30 s, `--json`). A Codex `Stop` hook that exits 0 must print JSON, so `--json` prints `{}`; the script never returns `decision: "block"` or exits 2. Codex runs project hooks only after the user trusts them with `/hooks`, and again whenever `.codex/hooks.json` changes. Until then they are skipped.
+- **Git hooks** via pre-commit (`.pre-commit-config.yaml`): `post-checkout`, `post-merge` and `post-rewrite` run the `graphify-refresh` hook, so `git switch`, `git pull`, rebases and `git worktree add` refresh the graph. They need `pre-commit install --install-hooks` once per clone. Existing hooks keep their stages.
+
+The script resolves the repo root from its own location (any cwd, any worktree), does nothing when `graphify` is not installed, writes its output to `.tmp/graphify-refresh.log`, skips when a refresh is already running (an atomic `mkdir` lock, stale after 5 minutes), and always exits 0, so a failed refresh never blocks a session, a commit, a checkout or a push. Run `scripts/check-agent-readiness.sh` to see whether a graph exists.
