@@ -1,6 +1,6 @@
 [mcp_servers.graphify]
-command = "graphify"
-args = [".", "--mcp"]
+command = "graphify-mcp"
+args = ["graphify-out/graph.json"]
 
 [mcp_servers.context7]
 command = "npx"

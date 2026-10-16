@@ -14,7 +14,7 @@ required_tools=(graphify ctx7 playwright-cli claude)
 
 install_tool() {
   case "$1" in
-    graphify) uv tool install --upgrade graphifyy ;;
+    graphify) uv tool install --upgrade 'graphifyy[mcp]' ;;
     ctx7) npm install --global ctx7@latest ;;
     playwright-cli) npm install --global @playwright/cli@latest ;;
     claude) npm install --global @anthropic-ai/claude-code@latest ;;
@@ -23,6 +23,13 @@ install_tool() {
       return 2
       ;;
   esac
+}
+
+# graphify-mcp ships with the base package but crashes without the `mcp` extra.
+graphify_mcp_ready() {
+  local py
+  py=$(head -n1 "$(command -v graphify)" | sed 's/^#!//')
+  "$py" -c 'import mcp' >/dev/null 2>&1
 }
 
 check_tools() {
@@ -36,6 +43,10 @@ check_tools() {
       missing=1
     fi
   done
+  if command -v graphify >/dev/null 2>&1 && ! graphify_mcp_ready; then
+    printf "missing: graphify MCP extra (run: uv tool install --force 'graphifyy[mcp]')\n" >&2
+    missing=1
+  fi
   return "$missing"
 }
 
@@ -49,6 +60,10 @@ install_missing_tools() {
     printf 'installing: %s\n' "$tool"
     install_tool "$tool"
   done
+  if command -v graphify >/dev/null 2>&1 && ! graphify_mcp_ready; then
+    printf 'installing: graphify MCP extra\n'
+    install_tool graphify
+  fi
 }
 
 case "${1:---check}" in

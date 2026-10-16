@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "graphify": {
-      "command": "graphify",
-      "args": [".", "--mcp"]
+      "command": "graphify-mcp",
+      "args": ["graphify-out/graph.json"]
     },
     "context7": {
       "command": "npx",
