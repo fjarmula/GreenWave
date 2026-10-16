@@ -5,12 +5,14 @@ usage() {
   cat <<'EOF'
 Usage: scripts/setup-agent-env.sh [--check|--install]
 
-  --check    Verify required agent CLIs are available; do not modify the host.
-  --install  Install missing agent CLIs, then verify them.
+  --check    Verify required agent CLIs and the local graph exist; do not modify the host.
+  --install  Install missing agent CLIs, build the local graph (graphify update .), then verify.
 EOF
 }
 
 required_tools=(graphify ctx7 playwright-cli claude)
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+graph_hint='missing: graphify-out/graph.json (run: graphify update .)'
 
 install_tool() {
   case "$1" in
@@ -47,6 +49,11 @@ check_tools() {
     printf "missing: graphify MCP extra (run: uv tool install --force 'graphifyy[mcp]')\n" >&2
     missing=1
   fi
+  # Graphify output is local and never committed (ADR 0004); --check only reports it.
+  if [ ! -s "$root/graphify-out/graph.json" ]; then
+    printf '%s\n' "$graph_hint" >&2
+    missing=1
+  fi
   return "$missing"
 }
 
@@ -73,6 +80,7 @@ case "${1:---check}" in
   --install)
     install_missing_tools
     hash -r
+    (cd "$root" && graphify update .)
     check_tools
     ;;
   --help|-h)

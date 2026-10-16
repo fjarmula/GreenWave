@@ -1,6 +1,6 @@
 # 0003: Simulation contract v1
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-16
 - Owners: @fjarmula @Piotrek406
 - Supersedes: None

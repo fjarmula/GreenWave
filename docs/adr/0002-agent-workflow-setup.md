@@ -1,6 +1,6 @@
 # 0002: Agent workflow setup
 
-- Status: Accepted
+- Status: Accepted. Superseded in part by 0004 (graphify output is no longer a tracked artifact)
 - Date: 2026-10-16
 - Owners: @fjarmula @Piotrek406
 - Supersedes: None

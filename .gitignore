@@ -53,9 +53,8 @@ frontend/tsconfig.tsbuildinfo
 .tmp/
 playwright-report/
 test-results/
-graphify-out/*
-!graphify-out/GRAPH_REPORT.md
-!graphify-out/graph.json
+# Generated locally by `graphify update .`, never committed (ADR 0004)
+graphify-out/
 .claude/settings.local.json
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
