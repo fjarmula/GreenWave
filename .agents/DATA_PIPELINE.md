@@ -85,7 +85,7 @@ What OSMnx is still good for: building the graph once, offline, from a local fil
   signal and duplicate it. Tram/rail crossings (189) are not pedestrian crossings and are excluded
   (decision 3).
 - Do all distance work in EPSG:2178 (metres). Convert WGS84 once at ingestion
-  (INSTRUCTIONS.md 6.3).
+  (INSTRUCTIONS_REFERENCE.md 6.3).
 - Every record that is dropped, merged or repaired must be counted and reported. No silent fixes.
 - All outputs are simulation inputs. Do not label any derived value as a verified physical signal state.
 

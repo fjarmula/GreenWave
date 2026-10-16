@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": ["Bash(playwright-cli *)", "Bash(ctx7 *)"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f graphify-out/graph.json ] && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"Graph exists. Run `graphify query \\\"<q>\\\"` or read graphify-out/GRAPH_REPORT.md before blind Glob/Grep.\"}}' || true"
+          }
+        ]
+      }
+    ]
+  }
+}

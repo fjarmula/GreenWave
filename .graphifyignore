@@ -1,0 +1,11 @@
+.agent/
+.agents/
+.git/
+.tmp/
+graphify-out/
+contracts/openapi.json
+frontend/src/types/api.generated.ts
+frontend/package-lock.json
+backend/uv.lock
+backend/data/
+*.lock
