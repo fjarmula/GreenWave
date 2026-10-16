@@ -11,6 +11,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from typing import cast
 
 from greenwave.its.gateway import ItsGateway
 from greenwave.routing.estimates import estimate_times
@@ -25,12 +26,12 @@ from greenwave.schemas import (
     StopResponse,
 )
 from greenwave.simulation.engine import EngineState, SimulationEngine
+from greenwave.simulation.events import SimulationEvent
 from greenwave.simulation.route_model import build_route_model, to_start_response
 from greenwave.simulation_settings import SimulationSettings
 
 logger = logging.getLogger(__name__)
 
-StreamEvent = SimulationCancelledEvent | SimulationCompletedEvent | object
 Clock = Callable[[], datetime]
 Sleep = Callable[[float], Awaitable[None]]
 
@@ -49,9 +50,9 @@ class _Session:
     engine: SimulationEngine
     state: EngineState
     playback_speed: int
-    subscribers: set[asyncio.Queue[object]] = field(default_factory=set)
-    latest: object | None = None
-    terminal: object | None = None
+    subscribers: set[asyncio.Queue[SimulationEvent]] = field(default_factory=set)
+    latest: SimulationEvent | None = None
+    terminal: SimulationCancelledEvent | SimulationCompletedEvent | None = None
     task: asyncio.Task[None] | None = None
 
 
@@ -130,7 +131,7 @@ class SessionManager:
             schema_version="1.0", is_simulated=True, simulation_id=simulation_id, status="STOPPED"
         )
 
-    async def subscribe(self, simulation_id: str) -> AsyncIterator[object]:
+    async def subscribe(self, simulation_id: str) -> AsyncIterator[SimulationEvent]:
         """Yield the current snapshot then live events, closing after a terminal event."""
         session = self._sessions.get(simulation_id)
         if session is None:
@@ -139,7 +140,9 @@ class SessionManager:
             yield session.terminal
             return
 
-        queue: asyncio.Queue[object] = asyncio.Queue(maxsize=self._settings.subscriber_queue_size)
+        queue: asyncio.Queue[SimulationEvent] = asyncio.Queue(
+            maxsize=self._settings.subscriber_queue_size
+        )
         session.subscribers.add(queue)
         if session.latest is not None:
             self._put(queue, session.latest, terminal=False)
@@ -210,21 +213,23 @@ class SessionManager:
         if self._active is session:
             self._active = None
 
-    def _publish(self, session: _Session, event: object) -> None:
+    def _publish(self, session: _Session, event: SimulationEvent) -> None:
         terminal = isinstance(event, (SimulationCancelledEvent, SimulationCompletedEvent))
         if terminal:
-            session.terminal = event
+            session.terminal = cast(SimulationCancelledEvent | SimulationCompletedEvent, event)
         else:
             session.latest = event
         for queue in tuple(session.subscribers):
             self._put(queue, event, terminal=terminal)
 
     @staticmethod
-    def _put(queue: asyncio.Queue[object], event: object, *, terminal: bool) -> None:
+    def _put(
+        queue: asyncio.Queue[SimulationEvent], event: SimulationEvent, *, terminal: bool
+    ) -> None:
         if not queue.full():
             queue.put_nowait(event)
             return
-        buffered: list[object] = []
+        buffered: list[SimulationEvent] = []
         dropped = False
         while not queue.empty():
             item = queue.get_nowait()

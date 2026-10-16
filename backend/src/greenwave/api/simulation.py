@@ -127,7 +127,7 @@ async def stream_simulation(
             async for event in stream:
                 if await request.is_disconnected():
                     return
-                yield event_frame(event)  # type: ignore[arg-type]
+                yield event_frame(event)
         except SimulationNotFoundError:
             return
 

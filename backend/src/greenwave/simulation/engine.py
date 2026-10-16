@@ -23,7 +23,7 @@ from greenwave.simulation.route_model import RouteModel
 from greenwave.simulation.state_machine import IntersectionRuntime, Transition, advance_intersection
 from greenwave.simulation_settings import SimulationSettings
 
-StreamEvent = SimulationTickEvent | ItsDispatchEvent | SimulationCompletedEvent
+EngineEvent = SimulationTickEvent | ItsDispatchEvent | SimulationCompletedEvent
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,13 +74,13 @@ class SimulationEngine:
 
     def step(
         self, state: EngineState, wall_clock_utc: datetime
-    ) -> tuple[EngineState, list[StreamEvent]]:
+    ) -> tuple[EngineState, list[EngineEvent]]:
         if state.completed:
             return state, []
         state, actual_speed = self._move(state)
         runtimes, clearing = self._advance_intersections(state)
         state = replace(state, intersection_runtimes=runtimes)
-        events: list[StreamEvent] = []
+        events: list[EngineEvent] = []
         if clearing:
             state, dispatch = self._dispatch(state, clearing, wall_clock_utc)
             events.append(dispatch)
@@ -117,8 +117,8 @@ class SimulationEngine:
 
     def run_tick(
         self, state: EngineState, wall_clock_utc: datetime, playback_speed: int
-    ) -> tuple[EngineState, list[StreamEvent]]:
-        retained: list[StreamEvent] = []
+    ) -> tuple[EngineState, list[EngineEvent]]:
+        retained: list[EngineEvent] = []
         final_tick: SimulationTickEvent | None = None
         for _ in range(playback_speed):
             state, events = self.step(state, wall_clock_utc)
