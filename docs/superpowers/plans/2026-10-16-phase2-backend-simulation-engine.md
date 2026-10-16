@@ -1,8 +1,8 @@
-# Phase 2 · Backend — Simulation Engine, Routing and Streaming API (Piotr)
+# Phase 2 · Backend — Simulation Engine, Routing and Streaming API (Filip)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Expand each task with superpowers:writing-plans before coding if a step leaves a choice open.
 
-**Owner:** Piotr Lorek · **Branch:** `feature/simulation-engine` from tag `contract-v1` · **Worktree:** own worktree, never shared.
+**Owner:** Filip Jarmuła · **Branch:** `feature/simulation-engine` from tag `contract-v1` · **Worktree:** own worktree, never shared.
 
 **Goal:** Replace the three HTTP 501 stubs from Phase 0 with a real, deterministic simulation: snap → route → estimates → 1 Hz engine (TTI, state machine, cascade, ITS mock) → SSE stream, using only the validated `ProcessedDataset`.
 
@@ -156,7 +156,7 @@ backend/tests/
 - [ ] Update `backend/README.md` (yours) with the new env vars. Root `README.md` waits for Phase 3.
 - [ ] PR → `main` with merge commit (not squash). Merge **before** the frontend PR (coordination doc §6).
 
-## What you hand to Filip during the branch (no file sharing — messages only)
+## What you hand to Piotr during the branch (no file sharing — messages only)
 
 - As soon as B2 runs on real data: the list of preset endpoints that do/don't snap, and the real snap distances.
 - As soon as B7 works locally: "backend runnable" + the exact env (`GREENWAVE_CORS_ORIGINS`) so he can smoke-test his adapter against your branch locally **without merging** (he runs your worktree's server; no code crosses branches).

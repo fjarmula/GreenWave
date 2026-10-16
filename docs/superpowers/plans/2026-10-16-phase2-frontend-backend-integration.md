@@ -1,8 +1,8 @@
-# Phase 2 · Frontend — Contract Migration and Backend Transport (Filip)
+# Phase 2 · Frontend — Contract Migration and Backend Transport (Piotr)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Expand each task with superpowers:writing-plans before coding if a step leaves a choice open.
 
-**Owner:** Filip Jarmuła · **Branch:** `feature/frontend-integration` from tag `contract-v1` · **Worktree:** own worktree, never shared.
+**Owner:** Piotr Lorek · **Branch:** `feature/frontend-integration` from tag `contract-v1` · **Worktree:** own worktree, never shared.
 
 **Goal:** Make the dashboard consume the canonical v1 contract (generated types), add a real HTTP + SSE `SimulationAdapter` with validation, reconnection and terminal-event handling, and show real intersection positions — while the mock stays the default until Phase 3 flips the switch.
 
@@ -154,7 +154,7 @@ frontend/src/
 - [ ] `git diff --name-only contract-v1...HEAD` — every path under `frontend/` and not `api.generated.ts`, plus your own plan file.
 - [ ] Rebase on `main` **after** the backend PR is merged; CI green; PR with merge commit (not squash).
 
-## What you hand to Piotr during the branch (messages only)
+## What you hand to Filip during the branch (messages only)
 
 - Early (after F1): confirm the generated types are pleasant to use — e.g. if the union didn't narrow on `event_type` in TS, that is a Pydantic-side fix (coordination doc §5), cheaper now than later.
 - After F4: your timeout and stale-threshold proposals, so he can check them against his measured planning time and tick duration.
