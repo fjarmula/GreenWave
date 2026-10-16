@@ -23,3 +23,13 @@ Pydantic models in `backend/src/greenwave/schemas/` are canonical. `contracts/op
 
 ## Skills
 Shared dir `.agent/skills/` (symlinked at `.claude/skills`, `.codex/skills`). Load skill by name when task matches (brainstorming, TDD, systematic-debugging, writing-plans, verification-before-completion, graphify, playwright-cli, context7-cli, caveman...).
+
+## Plan execution
+- When asked to implement a plan from `docs/superpowers/plans/`, read it in full, along with its associated specification and relevant architecture documentation.
+- Load and follow available plan-execution, TDD, debugging, and verification skills.
+- Execute tasks in dependency order, in small test-driven increments.
+- Treat plan acceptance criteria as the completion checklist.
+- Resolve non-blocking ambiguities autonomously; escalate architectural conflicts.
+- Continue through executable tasks without unnecessary approval checkpoints.
+- Verify the complete implementation before claiming done.
+- Do not stop after producing an implementation outline.
