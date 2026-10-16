@@ -1,0 +1,7 @@
+[mcp_servers.graphify]
+command = "graphify"
+args = [".", "--mcp"]
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]

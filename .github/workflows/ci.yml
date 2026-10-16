@@ -14,6 +14,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  graphify-artifact:
+    name: Graphify Artifact Freshness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Graphify artifact freshness
+        run: |
+          test -f graphify-out/graph.json
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          graph = json.loads(Path("graphify-out/graph.json").read_text(encoding="utf-8"))
+          head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          if graph.get("built_at_commit") != head:
+              raise SystemExit(
+                  "graphify-out/graph.json is stale; run `graphify . --no-viz --code-only` and commit the result"
+              )
+          PY
+
   backend-quality:
     name: Backend Check
     runs-on: ubuntu-latest
