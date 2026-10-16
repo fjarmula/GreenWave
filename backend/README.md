@@ -51,6 +51,19 @@ them with `GREENWAVE_PROCESSED_DIR` and `GREENWAVE_RAW_MANIFEST_PATH`.
 Editing `data/raw/MANIFEST.json`, even metadata only, makes every processed artifact stale: re-run
 `intersections` and then `neighbours`.
 
+## Simulation configuration
+
+The simulation is entirely in-memory and simulated. `GREENWAVE_CORS_ORIGINS` is a comma-separated
+allow-list for browser clients (default: `http://localhost:3000`); credentials are never allowed.
+Simulation tunables use the `GREENWAVE_SIM_` prefix. The defaults are suitable for the PoC; useful
+development overrides include `GREENWAVE_SIM_TICK_INTERVAL_SECONDS`,
+`GREENWAVE_SIM_SUBSCRIBER_QUEUE_SIZE` (default 32), and
+`GREENWAVE_SIM_MAX_SNAP_DISTANCE_METERS` (default 150). All values are validated at startup.
+
+The stream endpoint is `GET /api/v1/simulation/{simulation_id}/stream`. It uses SSE with a
+`retry: 2000` control frame followed by framed contract events. Slow clients receive bounded,
+drop-oldest telemetry; terminal events are preserved.
+
 Each ETL step records the sha256 of the files it wrote (and `neighbours` of the files it read) in
 `etl_report.json`, and the server re-checks them at startup: this is an integrity check against
 artifacts from different runs, not a security measure and not a reproducible-build claim.

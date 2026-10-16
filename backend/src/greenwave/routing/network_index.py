@@ -1,0 +1,153 @@
+"""Startup-only lookup structures built from a validated processed dataset."""
+
+from collections.abc import Mapping
+from dataclasses import dataclass
+from types import MappingProxyType
+
+import networkx as nx
+import numpy as np
+from shapely.geometry import LineString, Point
+from shapely.strtree import STRtree
+
+from greenwave.dataset import ProcessedDataset
+from greenwave.simulation_settings import SimulationSettings
+
+
+@dataclass(frozen=True, slots=True)
+class EdgeView:
+    """Route-relevant attributes of one directed graph edge."""
+
+    edge_id: str
+    source_node: str
+    target_node: str
+    length_m: float
+    speed_kmh: float
+    geometry: LineString
+
+
+@dataclass(frozen=True, slots=True)
+class ApproachRef:
+    """One signal approach controlled by an edge."""
+
+    intersection_id: str
+    signal_key: str
+    edge_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class IntersectionInfo:
+    """Intersection metadata used by the route model and API response."""
+
+    id: str
+    name: str | None
+    kind: str
+    lon: float
+    lat: float
+    delay_seconds: float
+
+
+@dataclass(frozen=True, slots=True)
+class RoutingIndex:
+    """Immutable routing lookups; all coordinates here are metric EPSG:2178."""
+
+    graph: nx.MultiDiGraph
+    cascade_threshold_m: float
+    _node_keys: tuple[str, ...]
+    _node_points: tuple[Point, ...]
+    _tree: STRtree
+    _max_snap_distance_meters: float
+    _edges: Mapping[str, EdgeView]
+    _approaches: Mapping[str, tuple[ApproachRef, ...]]
+    _intersections: Mapping[str, IntersectionInfo]
+
+    def snap(self, x_m: float, y_m: float) -> tuple[str, float] | None:
+        """Return the nearest routable node within the configured metric distance."""
+        point = Point(x_m, y_m)
+        index = int(self._tree.nearest(point))
+        distance = float(point.distance(self._node_points[index]))
+        if distance > self._max_snap_distance_meters:
+            return None
+        return self._node_keys[index], distance
+
+    def edge(self, edge_id: str) -> EdgeView:
+        """Get a route edge by its stable ETL edge id."""
+        return self._edges[edge_id]
+
+    def approaches_on_edge(self, edge_id: str) -> tuple[ApproachRef, ...]:
+        """Return all attached controlled approaches on an edge, in stable order."""
+        return self._approaches.get(edge_id, ())
+
+    def intersection(self, intersection_id: str) -> IntersectionInfo:
+        """Get canonical metadata for one route intersection."""
+        return self._intersections[intersection_id]
+
+
+def build_routing_index(dataset: ProcessedDataset, settings: SimulationSettings) -> RoutingIndex:
+    """Build O(nodes + edges) immutable indexes once at application startup."""
+    node_keys = tuple(str(node_key) for node_key in dataset.graph.nodes)
+    node_points = tuple(
+        Point(
+            float(dataset.graph.nodes[node_key]["x_m"]),
+            float(dataset.graph.nodes[node_key]["y_m"]),
+        )
+        for node_key in node_keys
+    )
+    if not node_points:
+        raise ValueError("processed graph has no nodes")
+    edges: dict[str, EdgeView] = {}
+    for source, target, edge_key, attributes in dataset.graph.edges(keys=True, data=True):
+        edge_id = str(attributes["edge_id"])
+        if edge_id != str(edge_key):
+            raise ValueError(f"graph edge key {edge_key!r} does not match edge_id {edge_id!r}")
+        geometry = attributes["geometry"]
+        if not isinstance(geometry, LineString):
+            raise TypeError(f"edge {edge_id!r} geometry is not a LineString")
+        edges[edge_id] = EdgeView(
+            edge_id=edge_id,
+            source_node=str(source),
+            target_node=str(target),
+            length_m=float(attributes["length_m"]),
+            speed_kmh=float(attributes["speed_kmh"]),
+            geometry=geometry,
+        )
+
+    delays = {
+        str(row["intersection_id"]): float(row["delay_seconds"])
+        for row in dataset.intersections.select("intersection_id", "delay_seconds").iter_rows(
+            named=True
+        )
+    }
+    intersections = {
+        record.id: IntersectionInfo(
+            id=record.id,
+            name=record.name,
+            kind=record.kind,
+            lon=record.lon,
+            lat=record.lat,
+            delay_seconds=delays[record.id],
+        )
+        for record in dataset.intersection_ids
+    }
+    approaches: dict[str, list[ApproachRef]] = {}
+    for row in dataset.signal_approaches.iter_rows(named=True):
+        intersection_id = row["intersection_id"]
+        if intersection_id is None:
+            continue
+        for edge_id in row["controlled_edge_ids"]:
+            ref = ApproachRef(str(intersection_id), str(row["signal_key"]), str(edge_id))
+            approaches.setdefault(ref.edge_id, []).append(ref)
+    sorted_approaches = {
+        edge_id: tuple(sorted(refs, key=lambda ref: (ref.intersection_id, ref.signal_key)))
+        for edge_id, refs in approaches.items()
+    }
+    return RoutingIndex(
+        graph=dataset.graph,
+        cascade_threshold_m=dataset.cascade_threshold_m,
+        _node_keys=node_keys,
+        _node_points=node_points,
+        _tree=STRtree(np.asarray(node_points, dtype=object)),
+        _max_snap_distance_meters=settings.max_snap_distance_meters,
+        _edges=MappingProxyType(edges),
+        _approaches=MappingProxyType(sorted_approaches),
+        _intersections=MappingProxyType(intersections),
+    )

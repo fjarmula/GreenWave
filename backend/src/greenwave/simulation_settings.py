@@ -1,0 +1,37 @@
+"""Validated, environment-configurable simulation tuning values."""
+
+from typing import Self
+
+from pydantic import Field, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class SimulationSettings(BaseSettings):
+    """All simulation tunables, loaded from ``GREENWAVE_SIM_`` environment variables."""
+
+    model_config = SettingsConfigDict(env_prefix="GREENWAVE_SIM_", frozen=True)
+
+    clearing_tti_seconds: float = Field(default=40, ge=0)
+    priority_green_tti_seconds: float = Field(default=25, ge=0)
+    recovery_hold_seconds: float = Field(default=15, ge=0)
+    min_intersection_delay_seconds: float = Field(default=3, ge=0)
+    ambulance_speed_factor: float = Field(default=1.3, gt=0)
+    ambulance_min_speed_kmh: float = Field(default=30, ge=0)
+    ambulance_max_speed_kmh: float = Field(default=90, gt=0)
+    speed_ema_alpha: float = Field(default=0.25, gt=0, le=1)
+    speed_floor_meters_per_second: float = Field(default=5, ge=0)
+    its_min_hold_seconds: int = Field(default=40, ge=0)
+    its_hold_buffer_seconds: int = Field(default=5, ge=0)
+    tick_interval_seconds: float = Field(default=1, gt=0)
+    max_snap_distance_meters: float = Field(default=150, ge=0)
+    max_playback_speed: int = Field(default=10, ge=1)
+    subscriber_queue_size: int = Field(default=32, ge=1)
+
+    @model_validator(mode="after")
+    def priority_precedes_clearing(self) -> Self:
+        """The priority threshold must be reached within the clearing window."""
+        if self.priority_green_tti_seconds > self.clearing_tti_seconds:
+            raise ValueError("priority_green_tti_seconds must not exceed clearing_tti_seconds")
+        if self.ambulance_min_speed_kmh > self.ambulance_max_speed_kmh:
+            raise ValueError("ambulance_min_speed_kmh must not exceed ambulance_max_speed_kmh")
+        return self
