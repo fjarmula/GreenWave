@@ -58,6 +58,9 @@ These fill details the list does not cover. Challenge them in review.
 6. `Position` bounds `lat` in [-90, 90] and `lng` in [-180, 180]. Route coordinates are `[lng, lat]` pairs.
 7. `ItsDispatchPayload` fixes the architecture constants as literals: `priority_level: 1`, `vehicle_type: "AMBULANCE"`, `action: "FORCE_GREEN_PHASE"`; the event fixes `system_source: "ER_GREENWAVE_ENGINE"` and `target_system: "STeR_KRAKOW_ITS"`.
 8. The start response `status` is the literal `"INITIALIZED"`.
+9. `tick` is `>= 0`: ticks start at 1; a terminal event emitted before any tick carries 0.
+10. `SimulationStreamEvent` is a Pydantic `RootModel` over the discriminated union so OpenAPI has a named component and the generated TypeScript has a named union. Backend code constructs the member models (`SimulationTickEvent`, ...) directly; `SimulationStreamEvent` is for validation and OpenAPI only.
+11. The generated TypeScript marks `playback_speed` as required in `SimulationStartRequest` (openapi-typescript treats fields with a default as non-optional). The wire contract stays optional with default 1; the frontend may simply always send it.
 
 ## Consequences
 

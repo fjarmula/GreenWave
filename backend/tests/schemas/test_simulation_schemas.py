@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic import BaseModel, ValidationError
 
 from greenwave.schemas import (
     ErrorResponse,
@@ -19,7 +19,7 @@ from greenwave.schemas import (
 )
 
 ARCHITECTURE = Path(__file__).resolve().parents[3] / "GreenWave_ARCHITECTURE.md"
-STREAM_EVENT = TypeAdapter(SimulationStreamEvent)
+STREAM_EVENT = SimulationStreamEvent
 
 
 def architecture_examples() -> list[dict[str, Any]]:
@@ -55,7 +55,7 @@ def test_architecture_examples_validate_against_their_models() -> None:
         elif "error_code" in item:
             model = ErrorResponse
         else:
-            event = STREAM_EVENT.validate_python(item)
+            event = STREAM_EVENT.model_validate(item).root
             model = type(event)
         model.model_validate(item)
         seen.add(model)
@@ -81,7 +81,7 @@ def test_architecture_examples_round_trip_without_losing_fields() -> None:
             if "error_code" in item
             else None
         )
-        parsed = model.model_validate(item) if model else STREAM_EVENT.validate_python(item)
+        parsed = model.model_validate(item) if model else STREAM_EVENT.model_validate(item).root
         dumped = parsed.model_dump(mode="json")
         for key, value in item.items():
             if key == "playback_speed":
@@ -173,20 +173,19 @@ def test_tti_must_be_an_integer() -> None:
     ],
 )
 def test_envelope_fields_are_literals(item: dict[str, Any]) -> None:
-    adapter: TypeAdapter[Any] = (
-        TypeAdapter(SimulationStartResponse)
+    model: type[BaseModel] = (
+        SimulationStartResponse
         if "route_geometry" in item
-        else TypeAdapter(ErrorResponse)
+        else ErrorResponse
         if "error_code" in item
         else STREAM_EVENT
     )
-    adapter.validate_python(item)
-    bad_version = {**item, "schema_version": "2.0"}
+    model.model_validate(item)
     with pytest.raises(ValidationError):
-        adapter.validate_python(bad_version)
+        model.model_validate({**item, "schema_version": "2.0"})
     if "error_code" not in item:
         with pytest.raises(ValidationError):
-            adapter.validate_python({**item, "is_simulated": False})
+            model.model_validate({**item, "is_simulated": False})
 
 
 @pytest.mark.parametrize(("hold", "ok"), [(39, False), (40, True), (55, True)])
@@ -218,12 +217,12 @@ def test_the_dispatch_example_shows_a_hold_above_forty_for_a_cascaded_group() ->
 def test_the_union_dispatches_on_event_type(
     item: dict[str, Any], expected: type[BaseModel]
 ) -> None:
-    assert type(STREAM_EVENT.validate_python(item)) is expected
+    assert type(STREAM_EVENT.model_validate(item).root) is expected
 
 
 def test_an_unknown_event_type_is_rejected() -> None:
     with pytest.raises(ValidationError):
-        STREAM_EVENT.validate_python({**tick(), "event_type": "SOMETHING_ELSE"})
+        STREAM_EVENT.model_validate({**tick(), "event_type": "SOMETHING_ELSE"})
 
 
 @pytest.mark.parametrize("reason", ["STOPPED", "SUPERSEDED"])

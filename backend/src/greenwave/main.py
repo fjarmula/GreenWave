@@ -4,6 +4,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
+from greenwave.api.simulation import router as simulation_router
 from greenwave.dataset import DatasetSettings, ProcessedDataset, load_dataset
 from greenwave.schemas import HealthResponse
 
@@ -40,6 +41,8 @@ def create_app(
     @app.get("/api/v1/health", response_model=HealthResponse, tags=["system"])
     async def health() -> HealthResponse:
         return HealthResponse(status="ok")
+
+    app.include_router(simulation_router)
 
     return app
 

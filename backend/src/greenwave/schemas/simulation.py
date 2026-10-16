@@ -8,10 +8,11 @@ Canonical definition of the payloads in ``GreenWave_ARCHITECTURE.md`` section 4 
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 SchemaVersion = Literal["1.0"]
-SimulationId = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")]
+SIMULATION_ID_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"
+SimulationId = Annotated[str, Field(pattern=SIMULATION_ID_PATTERN)]
 
 HOLD_DURATION_FLOOR_SEC = 40  # contract floor; the engine adds its TTI-based extension (ADR 0003)
 
@@ -177,10 +178,22 @@ class SimulationCancelledEvent(BaseModel):
     reason: CancelReason
 
 
-SimulationStreamEvent = Annotated[
-    SimulationTickEvent | ItsDispatchEvent | SimulationCompletedEvent | SimulationCancelledEvent,
-    Field(discriminator="event_type"),
-]
+class SimulationStreamEvent(
+    RootModel[
+        Annotated[
+            SimulationTickEvent
+            | ItsDispatchEvent
+            | SimulationCompletedEvent
+            | SimulationCancelledEvent,
+            Field(discriminator="event_type"),
+        ]
+    ]
+):
+    """Any event on the SSE stream, discriminated on ``event_type``.
+
+    A RootModel (not a bare alias) so the union is a named OpenAPI component and the frontend
+    gets a named ``SimulationStreamEvent`` type.
+    """
 
 
 class ErrorResponse(BaseModel):
