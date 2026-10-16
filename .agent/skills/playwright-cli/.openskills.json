@@ -1,0 +1,7 @@
+{
+  "source": "microsoft/playwright-cli",
+  "sourceType": "git",
+  "repoUrl": "https://github.com/microsoft/playwright-cli",
+  "subpath": "skills/playwright-cli",
+  "installedAt": "2026-10-16T06:17:28.839Z"
+}
