@@ -1,6 +1,9 @@
 {
   "permissions": {
-    "allow": ["Bash(playwright-cli *)", "Bash(ctx7 *)"]
+    "allow": [
+      "Bash(playwright-cli *)",
+      "Bash(ctx7 *)"
+    ]
   },
   "hooks": {
     "PreToolUse": [
@@ -10,6 +13,29 @@
           {
             "type": "command",
             "command": "[ -f graphify-out/graph.json ] && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"Graph exists. Run `graphify query \\\"<q>\\\"` or read graphify-out/GRAPH_REPORT.md before blind Glob/Grep.\"}}' || true"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'root=$(git rev-parse --show-toplevel 2>/dev/null || printf \"%s\" \"$CLAUDE_PROJECT_DIR\"); exec \"$root/scripts/graphify-refresh.sh\"'",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'root=$(git rev-parse --show-toplevel 2>/dev/null || printf \"%s\" \"$CLAUDE_PROJECT_DIR\"); exec \"$root/scripts/graphify-refresh.sh\"'",
+            "timeout": 30
           }
         ]
       }
