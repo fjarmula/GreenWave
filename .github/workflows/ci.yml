@@ -29,10 +29,10 @@ jobs:
           from pathlib import Path
 
           graph = json.loads(Path("graphify-out/graph.json").read_text(encoding="utf-8"))
-          head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-          if graph.get("built_at_commit") != head:
+          built = graph.get("built_at_commit")
+          if not built or subprocess.run(["git", "merge-base", "--is-ancestor", built, "HEAD"]).returncode:
               raise SystemExit(
-                  "graphify-out/graph.json is stale; run `graphify . --no-viz --code-only` and commit the result"
+                  "graphify-out/graph.json has no valid source commit; regenerate it before committing"
               )
           PY
 

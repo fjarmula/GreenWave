@@ -3,7 +3,7 @@
 Kraków emergency-vehicle green-corridor PoC. Backend: Python 3.12, FastAPI, uv, GeoPandas/NetworkX, Pydantic v2, ruff, mypy strict, pytest (`backend/src/greenwave/`). Frontend: Next.js 16 (breaking changes: read `frontend/node_modules/next/dist/docs/` first), React 19, TS strict, Tailwind, shadcn, MapLibre, vitest (`frontend/`). Simulation only, no real signal actuation.
 
 ## Rules
-- **Navigate:** read `graphify-out/GRAPH_REPORT.md` or run `graphify query "<q>"` / `graphify path A B` / `graphify explain X` BEFORE grep/find/glob. Missing `graph.json`: `graphify update .` (AST, ~10s, free). Rerun after structural refactors.
+- **Navigate (Claude and Codex):** read `graphify-out/GRAPH_REPORT.md` or run `graphify query "<q>"` / `graphify path A B` / `graphify explain X` BEFORE grep/find/glob. Codex must not bypass this rule when hooks are unavailable. Missing `graph.json`: `graphify update .` (AST, ~10s, free). Rerun after structural refactors.
 - **Output:** caveman terse for explanations, handoffs, subagent prompts. No filler. Code and technical facts exact.
 - **Workflow:** spec first, short plan, TDD, small verifiable steps. No big-bang features. Verify before claiming done.
 - **Browser/E2E:** `@playwright/cli` via bash + `playwright-cli` skill. NEVER `@playwright/mcp`, never dump DOM/a11y trees. Save to `.tmp/playwright/`, read targeted output only.
