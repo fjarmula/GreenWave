@@ -15,6 +15,8 @@ jq empty "$root/.mcp.json"
 test "$(jq -r '.mcpServers.graphify.command' "$root/.mcp.json")" = graphify-mcp
 grep -F '[mcp_servers.graphify]' "$root/.codex/config.toml" >/dev/null
 grep -F '[mcp_servers.context7]' "$root/.codex/config.toml" >/dev/null
-test -f "$root/graphify-out/graph.json"
-git -C "$root" merge-base --is-ancestor "$(jq -r '.built_at_commit' "$root/graphify-out/graph.json")" HEAD
+if [ ! -f "$root/graphify-out/graph.json" ]; then
+  printf 'missing: graphify-out/graph.json (run: graphify update .)\n' >&2
+  exit 1
+fi
 printf 'agent readiness: pass\n'

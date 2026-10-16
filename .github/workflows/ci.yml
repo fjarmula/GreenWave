@@ -14,29 +14,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  graphify-artifact:
-    name: Graphify Artifact Freshness
+  graphify-build:
+    name: Graphify Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
-          fetch-depth: 0
+          version: "0.12.3"
 
-      - name: Graphify artifact freshness
+      - name: Install graphify
+        run: uv tool install 'graphifyy==0.9.91'
+
+      - name: Build the graph
         run: |
-          test -f graphify-out/graph.json
-          python - <<'PY'
-          import json
-          import subprocess
-          from pathlib import Path
-
-          graph = json.loads(Path("graphify-out/graph.json").read_text(encoding="utf-8"))
-          built = graph.get("built_at_commit")
-          if not built or subprocess.run(["git", "merge-base", "--is-ancestor", built, "HEAD"]).returncode:
-              raise SystemExit(
-                  "graphify-out/graph.json has no valid source commit; regenerate it before committing"
-              )
-          PY
+          graphify update .
+          test -s graphify-out/graph.json
 
   backend-quality:
     name: Backend Check

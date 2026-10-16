@@ -31,7 +31,7 @@ Stated plainly so nobody plans against an assumption:
 4. **The stream has no terminal event.** The architecture defines only `SIMULATION_TICK`, so the client cannot distinguish "arrived", "stopped" and "superseded by another start" from a dropped connection.
 5. **No CORS** on the backend; frontend (`:3000`) and backend (`:8000`) are different origins.
 6. **Cascade vs. `hold_duration_sec = 40`:** a cascaded intersection can enter `CLEARING` with TTI well above 40 s, so a fixed 40 s hold expires before the ambulance arrives. The architecture does not address this.
-7. **Graphify artifact is a guaranteed merge conflict** (see §4).
+7. **Graphify artifact is a guaranteed merge conflict** (resolved: graphify output is no longer tracked, ADR 0004).
 
 ---
 
@@ -119,7 +119,6 @@ Every item below is something the architecture leaves open. "Recommendation" is 
 - [ ] `cd backend && uv run python scripts/export_openapi.py && cd ../frontend && npm run generate:types`
 - [ ] Inspect `api.generated.ts`: union, enums and literals came through as TS unions (not `string`). If they did not, fix the Pydantic side now — not on a branch.
 - [ ] Full checks both sides (`AGENTS.md` "Checks"). Frontend still compiles because nothing imports the new types yet.
-- [ ] `graphify update .` and commit `graphify-out/` **on main** in this commit.
 - [ ] Commit to `main` (merge commit or direct push per your usual rule), tag `contract-v1`.
 - [ ] Piotr: `git switch -c feature/simulation-engine contract-v1`. Filip: `git switch -c feature/frontend-integration contract-v1`. Each in their own worktree (`CONTRIBUTING.md`).
 
@@ -138,12 +137,12 @@ A path is written by **exactly one** branch. If you need to change a path you do
 | `frontend/**` except `api.generated.ts` | read-only | **writes** | |
 | `frontend/package*.json` | | **writes** | |
 | `frontend/src/types/api.generated.ts` | | | **frozen**, generated |
-| `graphify-out/**` | regenerate locally, **never stage** | regenerate locally, **never stage** | regenerated on `main` after each merge |
+| `graphify-out/**` | local only, gitignored; nobody commits it | local only, gitignored; nobody commits it | local only, gitignored; nobody commits it |
 | `GreenWave_ARCHITECTURE.md`, `AGENTS.md`, `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `.agents/**`, `.agent/**`, `docs/adr/**`, `.github/**`, `.pre-commit-config.yaml`, `.mcp.json` | | | **Phase 0 / Phase 3 only** |
 | `docs/superpowers/plans/**` | own plan file only (checkbox ticks) | own plan file only | |
 
 Why each rule exists:
-- **Graphify:** `graph.json` is one huge JSON line — any two regenerations conflict on the whole file. Also CI requires `built_at_commit` to be an ancestor of `HEAD`; a graph built on a branch commit that is later **squash**-merged points at a commit that is not on `main`, and CI fails. Agents must still run `graphify update .` locally for navigation (AGENTS.md) — just never `git add graphify-out`. Prefer **merge commits or rebase-merge, not squash**, for both PRs.
+- **Graphify:** generated locally and never committed; see `docs/adr/0004-graphify-artifacts-local-only.md`.
 - **`frontend/AGENTS.md`** is rewritten by `next dev`; it is inside Filip's tree, so only he commits it.
 - **Lockfiles** are per-side, so dependency additions never collide.
 - **Root docs** are where both people naturally want to "just add a line" (README run instructions, MEMORY). Batch all of that into Phase 3.
@@ -170,7 +169,6 @@ Mechanical guard (each person, in their own worktree — local only, not committ
    - [ ] Playwright CLI smoke (per AGENTS.md: `@playwright/cli`, outputs in `.tmp/playwright/`): start → ticks arrive → at least one `CLEARING` → `ARRIVED` → `SIMULATION_COMPLETED`; stop mid-run; second start supersedes the first tab.
    - [ ] Measure and record (do not invent budgets — record, then agree): backend startup time on real data, route planning time per request, tick loop duration (p50/max), SSE delivery latency.
    - [ ] Docs: `README.md`, `backend/README.md`, `frontend/src/types/README.md` (remove "temporary"), `.agents/FRONTEND_DASHBOARD.md` ("Preserve the mock boundary until a backend contract is approved" is now satisfied), `.agent/MEMORY.md`.
-   - [ ] `graphify update .`, commit on the integration branch, merge (not squash).
 
 ## Review Focus (cross-cutting)
 
