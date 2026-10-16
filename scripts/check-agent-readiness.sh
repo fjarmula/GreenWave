@@ -3,10 +3,10 @@ set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 test -f "$root/.agent/MEMORY.md"
-for link in .claude/skills .codex/skills; do
+for link in .agents/skills .claude/skills .codex/skills; do
   test "$(readlink "$root/$link")" = ../.agent/skills
 done
-# Claude Code only loads SKILL.md (graphify ships lowercase skill.md; SKILL.md is a symlink to it).
+# Every shared skill has a canonical SKILL.md entry point.
 for skill in "$root"/.agent/skills/*; do
   test -f "$skill/SKILL.md"
 done
