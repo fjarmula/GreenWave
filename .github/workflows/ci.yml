@@ -14,6 +14,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  graphify-artifact:
+    name: Graphify Artifact Freshness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Graphify artifact freshness
+        run: |
+          test -f graphify-out/graph.json
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          graph = json.loads(Path("graphify-out/graph.json").read_text(encoding="utf-8"))
+          built = graph.get("built_at_commit")
+          if not built or subprocess.run(["git", "merge-base", "--is-ancestor", built, "HEAD"]).returncode:
+              raise SystemExit(
+                  "graphify-out/graph.json has no valid source commit; regenerate it before committing"
+              )
+          PY
+
   backend-quality:
     name: Backend Check
     runs-on: ubuntu-latest

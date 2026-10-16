@@ -1,6 +1,6 @@
-# Frontend Pipeline: Dashboard Implementation Plan
+# Frontend dashboard constraints
 
-Scope: Integrate the static v0-generated UI from `./er-green-wave-dashboard-design/` into the official `frontend/` Next.js application, implement the MapLibre GL map, and wire the UI to the simulated data stream according to `GreenWave_ARCHITECTURE.md`.
+Scope: maintain the official `frontend/` Next.js dashboard and its simulated MapLibre workflow according to `GreenWave_ARCHITECTURE.md`.
 
 **Agent Creative Freedom:** While you must follow the core data contracts and component structure, you are strongly encouraged to use your creative freedom to enhance the UI/UX. Feel free to introduce smooth micro-interactions (e.g., Framer Motion), better layout spacing, improved typography, or polished glassmorphism effects. If you see a way to make the dashboard look more professional or intuitive, do it.
 
@@ -11,56 +11,26 @@ Do not invent answers to open questions in the architecture document. Implement 
 - **Target Destination:** The official Next.js app in `./frontend/`.
 - **Contracts:** Refer to `GreenWave_ARCHITECTURE.md` (Section 4) for exact JSON payloads (Phase 1: Route Init, Phase 2: Telemetry Stream).
 
-## 1. Steps for the Coding Agent
+## Operating constraints
 
-Each step ends with checking formatting (`npm run lint`), building (`npm run build`), and a short report. Stop after each step for human approval.
+The dashboard is delivered. Do not repeat F0-F5 as a build plan. Preserve the mock boundary until a backend contract is approved.
 
-### F0. Setup & Dependency Check
-- Ensure all necessary dependencies are in `frontend/package.json`: `maplibre-gl`, `lucide-react`, `clsx`, `tailwind-merge`, `next-themes` (for theme toggling), and required `shadcn/ui` primitives.
-- Merge the tailwind config intelligently. Ensure you set up `next-themes` to support both **Dark Mode (Tactical GIS)** and **Light Mode (High-Contrast/Daylight)**.
-- **Done when:** Dependencies are installed, theme provider is wrapped around the layout, and a test build succeeds.
+### UI and map
+- Keep HUD presentation separate from `src/components/map/` rendering.
+- Preserve responsive light/dark themes and English-only UI text.
+- Do not alter simulation logic or generated contracts from UI components.
 
-### F1. Component Migration, Mobile Responsiveness & Theming
-- Move the raw v0 code from `./er-green-wave-dashboard-design/` into the modular structure in `frontend/src/`:
-  - `src/components/hud/DispatchForm.tsx`
-  - `src/components/hud/KpiHeader.tsx`
-  - `src/components/hud/IntersectionList.tsx`
-  - `src/components/hud/ItsConsole.tsx`
-  - `src/components/hud/ThemeToggle.tsx` (New: allowing users to switch themes).
-- **Responsive Layout (Crucial):** Refactor the layout to be fully responsive. On desktop, keep the split view/floating HUDs. On mobile devices, use bottom sheets (drawers), collapsible sidebars, or stacked layouts so the map remains usable and the KPIs are visible without cluttering the small screen.
-- Adapt the UI to look beautiful in both Light and Dark modes using Tailwind's `dark:` modifier. 
-- **Done when:** The app runs locally, the theme toggle works seamlessly, and the layout adapts elegantly from mobile screens up to 4K desktop monitors.
+### Simulation boundary
+- `src/lib/simulation-adapter.ts` isolates the mock from future transport.
+- `MockSimulationAdapter` owns synthetic route, 1 Hz telemetry, ambulance movement, and signal samples.
+- `src/types/telemetry.ts` is temporary. Use generated types after Pydantic schemas and OpenAPI registration exist.
+- Keep synthetic values visibly simulated. Never send traffic-controller commands.
 
-### F2. MapLibre GL Integration
-- Replace the static/placeholder map div from v0 with a real `MapLibre GL JS` instance in `src/components/map/MapContainer.tsx`.
-- Configure the map to react to the current theme (e.g., switch between CartoDB Dark Matter and a Light equivalent like CartoDB Positron when the theme toggle is clicked).
-- Create skeleton sub-components: `AmbulanceMarker.tsx`, `RouteLayer.tsx`, and `SignalMarkers.tsx`.
-- Move setup start/end points from fixed HUD positions to MapLibre markers using selected node geographic coordinates. Selecting a new origin/destination or choosing “View selected nodes” must update markers and fit bounds on the real map; fixed viewport endpoint labels must be removed.
-- **Done when:** The map renders successfully, updates its base style based on the current theme, and fits the responsive layout.
+### Backend integration
+- Define canonical Pydantic schemas first, export OpenAPI, and regenerate frontend types.
+- Implement a transport adapter satisfying `SimulationAdapter`; dashboard and map components remain transport-agnostic.
+- Backend data becomes authoritative for route geometry, distance, position, and signal state.
+- Add validation for connection, completion, cancellation, invalid payloads, reconnection, and stale events.
 
-### F3. TypeScript Contracts & State Management
-- Create `frontend/src/types/telemetry.ts` directly translating the Phase 1 and Phase 2 JSON payloads from `GreenWave_ARCHITECTURE.md`.
-- Implement a state management approach (Context API or Zustand) to hold:
-  - `simulationState` ('SETUP' | 'RUNNING' | 'FINISHED')
-  - `routeData` (GeoJSON and base times)
-  - `liveTelemetry` (1 Hz tick updates)
-- **Done when:** Types are strictly defined and the global state structure is ready.
-
-### F4. Data Stream Mocking (Custom Hook)
-- Create `src/lib/useSimulationStream.ts`.
-- Write a mock generator inside this hook that simulates the 1 Hz `SIMULATION_TICK` stream based on the Phase 2 JSON example.
-- The mock should emit updates every 1000ms, incrementing the elapsed time, decreasing TTI for intersections, and generating ITS logs.
-- Wire this hook to the HUD components (`KpiHeader`, `IntersectionList`, `ItsConsole`).
-- **Done when:** Clicking "INITIALIZE GREEN CORRIDOR" switches the UI to Live Mode, and the UI dynamically updates every second driven by the mock hook.
-
-### F5. Map Data Wiring & Animation (Final Polish)
-- Connect the mock state to the MapLibre layers:
-  - Update `AmbulanceMarker` position. Use your creative freedom to implement smooth interpolation (e.g., `requestAnimationFrame` or MapLibre's setLngLat with transition) so the vehicle moves fluidly between 1 Hz ticks.
-  - Update `SignalMarkers` colors based on their state (`NORMAL`, `CLEARING`, `CLEARING_CASCADE`). Apply pulsating CSS animations for active signals.
-  - Render the `RouteLayer` GeoJSON line.
-- **Done when:** The map visually reflects the live telemetry fluidly, completing the PoC frontend.
-
-## 2. Rules & Constraints
-- **Strict English UI:** Do not translate any labels, buttons, or console logs to Polish.
-- **No Backend Modifications:** Do not touch anything in `./backend/` during these steps.
-- **Creative Freedom Boundary:** You may improve layouts, animations, and color contrast, but do not alter the underlying simulation logic or the JSON contracts.
+### Verification
+Run `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm test`, and `npm run build` after frontend changes.
