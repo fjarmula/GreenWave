@@ -21,10 +21,101 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/simulation/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Simulation */
+        post: operations["start_simulation_api_v1_simulation_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation/{simulation_id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop Simulation */
+        post: operations["stop_simulation_api_v1_simulation__simulation_id__stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation/{simulation_id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream Simulation */
+        get: operations["stream_simulation_api_v1_simulation__simulation_id__stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AmbulanceStatus
+         * @enum {string}
+         */
+        AmbulanceStatus: "EN_ROUTE" | "APPROACHING_INTERSECTION" | "CROSSING_INTERSECTION" | "ARRIVED";
+        /** AmbulanceTelemetry */
+        AmbulanceTelemetry: {
+            /** Id */
+            id: string;
+            position: components["schemas"]["Position"];
+            /** Speed Kmh */
+            speed_kmh: number;
+            status: components["schemas"]["AmbulanceStatus"];
+        };
+        /**
+         * CancelReason
+         * @enum {string}
+         */
+        CancelReason: "STOPPED" | "SUPERSEDED";
+        /**
+         * ErrorCode
+         * @enum {string}
+         */
+        ErrorCode: "ORIGIN_OFF_NETWORK" | "DESTINATION_OFF_NETWORK" | "NO_ROUTE" | "SIMULATION_ID_IN_USE" | "SIMULATION_NOT_FOUND";
+        /** ErrorResponse */
+        ErrorResponse: {
+            error_code: components["schemas"]["ErrorCode"];
+            /** Message */
+            message: string;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
         /** HealthResponse */
         HealthResponse: {
             /**
@@ -32,6 +123,320 @@ export interface components {
              * @constant
              */
             status: "ok";
+        };
+        /**
+         * IntersectionKind
+         * @description The ETL's intersection kinds (``intersections.parquet``).
+         * @enum {string}
+         */
+        IntersectionKind: "signalised_junction" | "midblock_signal" | "pedestrian_crossing";
+        /**
+         * IntersectionState
+         * @description ``CLEARING_CASCADE`` is not a state: a cascaded one is ``CLEARING`` + ``is_cascade``.
+         * @enum {string}
+         */
+        IntersectionState: "NORMAL" | "CLEARING" | "PRIORITY_GREEN" | "RECOVERY";
+        /** IntersectionTelemetry */
+        IntersectionTelemetry: {
+            /** Id */
+            id: string;
+            /** Is Active Corridor */
+            is_active_corridor: boolean;
+            /** Is Cascade */
+            is_cascade: boolean;
+            /** Name */
+            name: string | null;
+            state: components["schemas"]["IntersectionState"];
+            /** Tti Seconds */
+            tti_seconds: number | null;
+        };
+        /** ItsDispatchEvent */
+        ItsDispatchEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "ITS_DISPATCH";
+            /**
+             * Is Simulated
+             * @constant
+             */
+            is_simulated: true;
+            /** Message Id */
+            message_id: string;
+            payload: components["schemas"]["ItsDispatchPayload"];
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Simulation Id */
+            simulation_id: string;
+            /**
+             * System Source
+             * @constant
+             */
+            system_source: "ER_GREENWAVE_ENGINE";
+            /**
+             * Target System
+             * @constant
+             */
+            target_system: "STeR_KRAKOW_ITS";
+            /** Tick */
+            tick: number;
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+        };
+        /** ItsDispatchPayload */
+        ItsDispatchPayload: {
+            /**
+             * Action
+             * @constant
+             */
+            action: "FORCE_GREEN_PHASE";
+            /**
+             * Expected Arrival Utc
+             * Format: date-time
+             */
+            expected_arrival_utc: string;
+            /** Hold Duration Sec */
+            hold_duration_sec: number;
+            /** Intersections Group */
+            intersections_group: string[];
+            /**
+             * Priority Level
+             * @constant
+             */
+            priority_level: 1;
+            /**
+             * Vehicle Type
+             * @constant
+             */
+            vehicle_type: "AMBULANCE";
+        };
+        /** KpiMetrics */
+        KpiMetrics: {
+            /** Current Time Saved Sec */
+            current_time_saved_sec: number;
+            /** Total Time Elapsed Sec */
+            total_time_elapsed_sec: number;
+        };
+        /** Position */
+        Position: {
+            /** Lat */
+            lat: number;
+            /** Lng */
+            lng: number;
+        };
+        /** RouteGeometry */
+        RouteGeometry: {
+            /** Coordinates */
+            coordinates: [
+                number,
+                number
+            ][];
+            /**
+             * Type
+             * @constant
+             */
+            type: "LineString";
+        };
+        /** RouteIntersection */
+        RouteIntersection: {
+            /** Distance Along Route M */
+            distance_along_route_m: number;
+            /** Id */
+            id: string;
+            kind: components["schemas"]["IntersectionKind"];
+            /** Name */
+            name: string | null;
+            position: components["schemas"]["Position"];
+        };
+        /** SimulationCancelledEvent */
+        SimulationCancelledEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "SIMULATION_CANCELLED";
+            /**
+             * Is Simulated
+             * @constant
+             */
+            is_simulated: true;
+            reason: components["schemas"]["CancelReason"];
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Simulation Id */
+            simulation_id: string;
+            /** Tick */
+            tick: number;
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+        };
+        /** SimulationCompletedEvent */
+        SimulationCompletedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "SIMULATION_COMPLETED";
+            /**
+             * Is Simulated
+             * @constant
+             */
+            is_simulated: true;
+            kpi_metrics: components["schemas"]["KpiMetrics"];
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Simulation Id */
+            simulation_id: string;
+            /** Tick */
+            tick: number;
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+        };
+        /** SimulationStartRequest */
+        SimulationStartRequest: {
+            destination: components["schemas"]["Position"];
+            /** Enable Cascade Mode */
+            enable_cascade_mode: boolean;
+            origin: components["schemas"]["Position"];
+            /**
+             * Playback Speed
+             * @default 1
+             */
+            playback_speed: number;
+            /** Simulation Id */
+            simulation_id: string;
+            /** Traffic Density Multiplier */
+            traffic_density_multiplier: number;
+        };
+        /** SimulationStartResponse */
+        SimulationStartResponse: {
+            destination_snapped: components["schemas"]["SnappedEndpoint"];
+            /** Estimated Greenwave Time Sec */
+            estimated_greenwave_time_sec: number;
+            /** Estimated Normal Time Sec */
+            estimated_normal_time_sec: number;
+            /** Intersections On Route */
+            intersections_on_route: string[];
+            /**
+             * Is Simulated
+             * @constant
+             */
+            is_simulated: true;
+            origin_snapped: components["schemas"]["SnappedEndpoint"];
+            route_geometry: components["schemas"]["RouteGeometry"];
+            /** Route Intersections */
+            route_intersections: components["schemas"]["RouteIntersection"][];
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Simulation Id */
+            simulation_id: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "INITIALIZED";
+            /** Total Distance M */
+            total_distance_m: number;
+        };
+        /**
+         * SimulationStreamEvent
+         * @description Any event on the SSE stream, discriminated on ``event_type``.
+         *
+         *     A RootModel (not a bare alias) so the union is a named OpenAPI component and the frontend
+         *     gets a named ``SimulationStreamEvent`` type.
+         */
+        SimulationStreamEvent: components["schemas"]["SimulationTickEvent"] | components["schemas"]["ItsDispatchEvent"] | components["schemas"]["SimulationCompletedEvent"] | components["schemas"]["SimulationCancelledEvent"];
+        /** SimulationTickEvent */
+        SimulationTickEvent: {
+            ambulance: components["schemas"]["AmbulanceTelemetry"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "SIMULATION_TICK";
+            /** Intersections */
+            intersections: components["schemas"]["IntersectionTelemetry"][];
+            /**
+             * Is Simulated
+             * @constant
+             */
+            is_simulated: true;
+            kpi_metrics: components["schemas"]["KpiMetrics"];
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Simulation Id */
+            simulation_id: string;
+            /** Tick */
+            tick: number;
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+        };
+        /** SnappedEndpoint */
+        SnappedEndpoint: {
+            position: components["schemas"]["Position"];
+            /** Snap Distance M */
+            snap_distance_m: number;
+        };
+        /** StopResponse */
+        StopResponse: {
+            /**
+             * Is Simulated
+             * @constant
+             */
+            is_simulated: true;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Simulation Id */
+            simulation_id: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "STOPPED";
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Context */
+            ctx?: Record<string, never>;
+            /** Input */
+            input?: unknown;
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
         };
     };
     responses: never;
@@ -58,6 +463,128 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    start_simulation_api_v1_simulation_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulationStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationStartResponse"];
+                };
+            };
+            /** @description SIMULATION_ID_IN_USE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description ORIGIN_OFF_NETWORK, DESTINATION_OFF_NETWORK or NO_ROUTE (ErrorResponse); request-schema violations return FastAPI's default validation body. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    stop_simulation_api_v1_simulation__simulation_id__stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                simulation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StopResponse"];
+                };
+            };
+            /** @description SIMULATION_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_simulation_api_v1_simulation__simulation_id__stream_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                simulation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Server-Sent Events. Frame: `event:` = event_type, `id:` = tick, `data:` = the event JSON; first frame `retry: 2000`; closed after a terminal event. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["SimulationStreamEvent"];
+                };
+            };
+            /** @description SIMULATION_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
