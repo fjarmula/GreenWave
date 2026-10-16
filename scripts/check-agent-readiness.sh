@@ -2,6 +2,7 @@
 set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+test -f "$root/.agent/MEMORY.md"
 for link in .claude/skills .codex/skills; do
   test "$(readlink "$root/$link")" = ../.agent/skills
 done
