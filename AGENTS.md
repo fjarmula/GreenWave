@@ -8,7 +8,7 @@ Kraków emergency-vehicle green-corridor PoC. Simulation only; never add real si
 - **Workflow:** Start with a spec and short plan; use TDD and small verifiable steps. Verify before claiming completion.
 - **Browser/E2E:** Use `@playwright/cli` through bash and the `playwright-cli` skill. Never use `@playwright/mcp`, dump DOM/a11y trees, or write output outside `.tmp/playwright/`.
 - **Docs:** Use Context7 or a project skill for library documentation. Do not generic-web-fetch library docs.
-- **Git:** Check status, keep diffs focused, and never reformat unrelated work. No commit, push, or PR unless asked. Tell the human before editing this file or `GreenWave_ARCHITECTURE.md`.
+- **Git:** Check status and preserve existing changes. Keep diffs focused; never reformat unrelated work. Do not commit, push, create branches, switch branches, or open pull requests without explicit authorization. Tell the human before editing this file or `GreenWave_ARCHITECTURE.md`.
 - **Style:** Use terse, exact explanations, handoffs, and subagent prompts.
 
 ## Read when relevant
@@ -32,13 +32,26 @@ Pydantic models in `backend/src/greenwave/schemas/` are canonical. `contracts/op
 
 Shared dir `.agent/skills/` (symlinked at `.claude/skills`, `.codex/skills`); do not hand-edit managed skills. Load a matching skill (brainstorming, TDD, systematic-debugging, writing-plans, verification-before-completion, graphify, playwright-cli, context7-cli, caveman...).
 
-## Plan execution
+Load only task-relevant skills and supporting references. Do not repeatedly load the same documentation without a specific reason.
 
-- When asked to implement a plan from `docs/superpowers/plans/`, read it in full, along with its associated specification and relevant architecture documentation.
-- Load and follow available plan-execution, TDD, debugging, and verification skills.
-- Execute tasks in dependency order, in small test-driven increments.
-- Treat plan acceptance criteria as the completion checklist.
-- Resolve non-blocking ambiguities autonomously; escalate architectural conflicts.
-- Continue through executable tasks without unnecessary approval checkpoints.
-- Verify the complete implementation before claiming done.
-- Do not stop after producing an implementation outline.
+## Plan execution and human review
+
+When implementing a plan from `docs/superpowers/plans/`:
+
+1. Read the complete plan, its associated specification, and relevant architecture and engineering documentation.
+2. Load and follow applicable plan-execution, TDD, debugging, and verification skills.
+3. Group implementation tasks into logical, independently verifiable milestones, respecting dependencies and acceptance criteria.
+4. Execute each milestone autonomously in small, test-driven increments.
+5. After each milestone:
+   - Run relevant tests and quality checks.
+   - Summarize completed changes, affected files, and verification results.
+   - Report significant decisions, deviations, or blockers.
+   - Propose a Conventional Commit message.
+   - Stop and wait for explicit human approval before proceeding.
+6. Incorporate human feedback before beginning the next milestone.
+7. Escalate significant architectural conflicts or blocking ambiguities immediately.
+8. Verify all acceptance criteria before declaring the complete plan finished.
+
+Do not request approval for routine implementation steps within an approved milestone.
+
+Never commit, push, or create a PR without explicit authorization.
