@@ -98,8 +98,8 @@ frontend/src/
 **Interfaces:**
 - Produces: `parseStartResponse(value: unknown): SimulationStartResponse`, `parseStreamEvent(value: unknown, expectedSimulationId: string): SimulationStreamEvent | null` (null = drop silently with a `console.warn` in dev), `parseErrorResponse(value: unknown): ErrorResponse | null`.
 
-- [ ] Tests: rejects `schema_version !== "1.0"`, `is_simulated !== true`, wrong `simulation_id`, missing `ambulance.position.lat`, a non-finite number, an unknown `state` string, a `route_geometry` with < 2 coordinates; returns `null` (ignore) for an unknown `event_type`; accepts the architecture §4 examples (as fixtures written under `src/lib/transport/__fixtures__/`, typed against generated types so a contract change breaks compilation, not runtime).
-- [ ] Guards check exactly what the UI dereferences plus the envelope — not a second full schema (no competing contract definition, `.agents/INSTRUCTIONS.md` §3).
+- [x] Tests: rejects `schema_version !== "1.0"`, `is_simulated !== true`, wrong `simulation_id`, missing `ambulance.position.lat`, a non-finite number, an unknown `state` string, a `route_geometry` with < 2 coordinates; returns `null` (ignore) for an unknown `event_type`; accepts the architecture §4 examples (as fixtures written under `src/lib/transport/__fixtures__/`, typed against generated types so a contract change breaks compilation, not runtime).
+- [x] Guards check exactly what the UI dereferences plus the envelope — not a second full schema (no competing contract definition, `.agents/INSTRUCTIONS.md` §3).
 
 ### Task F4: Backend adapter (fetch + EventSource)
 
