@@ -12,9 +12,11 @@
  * 404 detection: EventSource cannot read HTTP status. Per the HTML spec a
  * non-200 or non-`text/event-stream` answer *fails* the connection
  * (`readyState === CLOSED`, no retry), while a dropped connection is retried
- * (`readyState === CONNECTING`). The stream route's only non-200 answer is 404
- * SIMULATION_NOT_FOUND, so an `error` with readyState CLOSED is reported as
- * "simulation no longer exists". No follow-up request is made.
+ * (`readyState === CONNECTING`). Every failed connection is therefore treated
+ * as "simulation no longer exists" (SIMULATION_NOT_FOUND): in practice the
+ * stream route's only non-200 answer is 404, because ids are client-generated
+ * to the D8 pattern (422 cannot occur) and a 500 is a backend bug. No
+ * follow-up request is made.
  */
 import type {
   ConnectionStatus,
@@ -50,26 +52,38 @@ export function createBackendSimulationAdapter(
   const simulationUrl = (simulationId: string, action: "stream" | "stop") =>
     `${baseUrl}/api/v1/simulation/${encodeURIComponent(simulationId)}/${action}`;
 
-  /** fetch + JSON body within the timeout; network failures become SimulationAdapterError. */
-  async function postJson(url: string, body?: unknown) {
+  /**
+   * fetch + JSON body within the timeout (headers and body both count);
+   * network failures and timeouts become SimulationAdapterError(kind network).
+   */
+  async function postJson(url: string, body?: unknown, onTimeout?: () => void) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), options.startTimeoutMilliseconds);
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: body === undefined ? undefined : JSON.stringify(body),
-        signal: controller.signal,
-      });
-      const json: unknown = await response.json().catch(() => undefined);
-      return { response, json };
-    } catch {
-      throw new SimulationAdapterError({
+    const timeoutError = () => {
+      onTimeout?.();
+      return new SimulationAdapterError({
         kind: "network",
-        message: controller.signal.aborted
-          ? `Simulation backend at ${baseUrl} did not answer within ${Math.round(options.startTimeoutMilliseconds / 1000)} s`
-          : unreachableMessage(baseUrl),
+        message: `Simulation backend at ${baseUrl} did not answer within ${Math.round(options.startTimeoutMilliseconds / 1000)} s`,
       });
+    };
+    try {
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: body === undefined ? undefined : JSON.stringify(body),
+          signal: controller.signal,
+        });
+      } catch {
+        throw controller.signal.aborted
+          ? timeoutError()
+          : new SimulationAdapterError({ kind: "network", message: unreachableMessage(baseUrl) });
+      }
+      // A body that is not JSON is judged by the caller; an aborted body read is a timeout.
+      const json: unknown = await response.json().catch(() => undefined);
+      if (controller.signal.aborted) throw timeoutError();
+      return { response, json };
     } finally {
       clearTimeout(timer);
     }
@@ -87,7 +101,15 @@ export function createBackendSimulationAdapter(
 
   return {
     async start(request) {
-      const { response, json } = await postJson(`${baseUrl}/api/v1/simulation/start`, request);
+      // If the server finishes routing after we gave up, that run must not keep ticking.
+      const stopAbandonedStart = () => {
+        postJson(simulationUrl(request.simulation_id, "stop")).catch(() => undefined);
+      };
+      const { response, json } = await postJson(
+        `${baseUrl}/api/v1/simulation/start`,
+        request,
+        stopAbandonedStart,
+      );
       if (!response.ok) throw httpError(response.status, json);
       try {
         return parseStartResponse(json);
@@ -178,17 +200,23 @@ function openStream(
 
   const handle = (eventType: SimulationStreamEvent["event_type"], message: MessageEvent) => {
     if (closed) return;
-    let payload: unknown;
+    let payload: unknown = undefined;
     try {
       payload = JSON.parse(String(message.data));
     } catch {
       if (process.env.NODE_ENV !== "production") {
         console.warn(`[simulation stream] dropped ${eventType}: invalid JSON`);
       }
+    }
+    const event = payload === undefined ? null : parseStreamEvent(payload, simulationId);
+    if (!event || event.event_type !== eventType) {
+      // The server closes the stream after a terminal frame and re-sends the same retained
+      // terminal on every reconnect; dropping it silently would reconnect forever.
+      if (eventType === "SIMULATION_COMPLETED" || eventType === "SIMULATION_CANCELLED") {
+        giveUp({ kind: "http", message: "Simulation backend sent an invalid terminal event" });
+      }
       return;
     }
-    const event = parseStreamEvent(payload, simulationId);
-    if (!event || event.event_type !== eventType) return;
 
     switch (event.event_type) {
       case "SIMULATION_TICK":

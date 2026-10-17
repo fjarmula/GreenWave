@@ -195,7 +195,53 @@ describe("start", () => {
       .start(request)
       .catch((caught: unknown) => caught);
     await vi.advanceTimersByTimeAsync(10_000);
-    expect(await started).toMatchObject({ kind: "network" });
+    expect(await started).toMatchObject({
+      kind: "network",
+      message: `Simulation backend at ${BASE_URL} did not answer within 10 s`,
+    });
+  });
+
+  it("reports a body that is still arriving at the timeout as a timeout, not invalid JSON", async () => {
+    vi.useFakeTimers();
+    fetchMock.mockImplementation(async (_url, init) => {
+      if (String(_url).endsWith("/stop")) return jsonResponse({}, 404);
+      const body = new ReadableStream({
+        start(controller) {
+          init?.signal?.addEventListener("abort", () =>
+            controller.error(new DOMException("aborted", "AbortError")),
+          );
+        },
+      });
+      return new Response(body, { status: 200 });
+    });
+    const started = adapter()
+      .start(request)
+      .catch((caught: unknown) => caught);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(await started).toMatchObject({
+      kind: "network",
+      message: `Simulation backend at ${BASE_URL} did not answer within 10 s`,
+    });
+  });
+
+  it("asks the backend to stop a run whose start timed out on the client", async () => {
+    vi.useFakeTimers();
+    fetchMock.mockImplementation((url, init) => {
+      if (String(url).endsWith("/stop")) return Promise.resolve(jsonResponse({}, 404));
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () =>
+          reject(new DOMException("aborted", "AbortError")),
+        );
+      });
+    });
+    const started = adapter()
+      .start(request)
+      .catch((caught: unknown) => caught);
+    await vi.advanceTimersByTimeAsync(10_000);
+    await started;
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toContain(
+      `${BASE_URL}/api/v1/simulation/${SIMULATION_ID}/stop`,
+    );
   });
 
   it("rejects an invalid 2xx body as an http error", async () => {
@@ -316,6 +362,45 @@ describe("subscribe", () => {
       }),
     ]);
     expect(source.closed).toBe(true);
+  });
+
+  it("delivers several ITS dispatches before one tick (playback_speed > 1)", () => {
+    const events = recorder();
+    adapter().subscribe(SIMULATION_ID, events.subscriber);
+    const source = latestSource();
+    source.open();
+    source.emit({ ...tickEventExample, tick: 40 });
+    source.emit({ ...itsDispatchEventExample, tick: 43, message_id: "MSG-ITS-1" });
+    source.emit({ ...itsDispatchEventExample, tick: 46, message_id: "MSG-ITS-2" });
+    source.emit({ ...tickEventExample, tick: 50 });
+    expect(events.calls).toEqual(["tick:40", "its:MSG-ITS-1", "its:MSG-ITS-2", "tick:50"]);
+  });
+
+  it("drops a terminal event older than the last tick, accepts one equal to it after reconnect", () => {
+    const events = recorder();
+    adapter().subscribe(SIMULATION_ID, events.subscriber);
+    const source = latestSource();
+    source.open();
+    source.emit(tickEventExample);
+    source.emit({ ...cancelledEventExample, tick: 41 });
+    expect(events.calls).toEqual(["tick:42"]);
+    source.fail(FakeEventSource.CONNECTING);
+    source.open();
+    source.emit(tickEventExample); // reconnect snapshot repeats tick 42
+    source.emit({ ...completedEventExample, tick: 42 });
+    expect(events.calls).toEqual(["tick:42", "terminal:SIMULATION_COMPLETED"]);
+    expect(source.closed).toBe(true);
+  });
+
+  it("closes and reports an error instead of reconnecting forever on an invalid terminal event", () => {
+    const events = recorder();
+    adapter().subscribe(SIMULATION_ID, events.subscriber);
+    const source = latestSource();
+    source.open();
+    source.emit({ ...cancelledEventExample, reason: "CRASHED" });
+    expect(source.closed).toBe(true);
+    expect(events.connection.at(-1)).toBe("lost");
+    expect(events.errors).toEqual([expect.objectContaining({ kind: "http" })]);
   });
 
   it("unsubscribe closes the stream and silences late events", () => {

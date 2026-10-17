@@ -49,6 +49,7 @@ function parseApiBaseUrl(value: string | undefined, warn: (message: string) => v
     );
     return DEFAULT_API_BASE_URL;
   }
+  // Only origin + path prefix are meaningful for the API base; a query or hash is ignored.
   return `${url.origin}${url.pathname}`.replace(/\/+$/, "");
 }
 
@@ -67,7 +68,10 @@ export function parseFrontendConfig(
 
 let cachedConfig: FrontendConfig | null = null;
 
-/** Parsed once per page load, so each invalid value warns once. */
+/**
+ * Parsed once per JS runtime, so each invalid value warns once in the browser
+ * console (and once more in the server log when the page is prerendered).
+ */
 export function getFrontendConfig(): FrontendConfig {
   cachedConfig ??= parseFrontendConfig(
     {
