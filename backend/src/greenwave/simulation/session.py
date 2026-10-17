@@ -100,6 +100,7 @@ class SessionManager:
                 route,
                 route_model,
                 estimates,
+                request.traffic_density_multiplier,
                 self._settings,
                 self._gateway,
             )

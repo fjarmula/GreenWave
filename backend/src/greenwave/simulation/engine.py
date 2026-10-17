@@ -1,8 +1,10 @@
 """Pure deterministic one-second simulation engine."""
 
+from bisect import bisect_right
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
-from math import ceil
+from itertools import pairwise
+from math import ceil, cos, hypot, inf, radians
 
 from greenwave.its import ItsGateway
 from greenwave.routing.estimates import Estimates
@@ -19,11 +21,37 @@ from greenwave.schemas import (
     SimulationCompletedEvent,
     SimulationTickEvent,
 )
-from greenwave.simulation.route_model import RouteModel
+from greenwave.simulation.route_model import RouteIntersection, RouteModel
 from greenwave.simulation.state_machine import IntersectionRuntime, Transition, advance_intersection
 from greenwave.simulation_settings import SimulationSettings
 
 EngineEvent = SimulationTickEvent | ItsDispatchEvent | SimulationCompletedEvent
+
+_METERS_PER_DEGREE_LAT = 111_320.0
+_TIME_EPSILON_S = 1e-9
+
+
+def _polyline_offsets_m(polyline: list[tuple[float, float]]) -> tuple[float, ...]:
+    """Cumulative vertex offsets in local equirectangular metres (sub-metre error at city scale)."""
+    lng_scale = cos(radians(polyline[0][1]))
+    offsets = [0.0]
+    for (lng_a, lat_a), (lng_b, lat_b) in pairwise(polyline):
+        offsets.append(
+            offsets[-1] + hypot((lng_b - lng_a) * lng_scale, lat_b - lat_a) * _METERS_PER_DEGREE_LAT
+        )
+    return tuple(offsets)
+
+
+def _point_along(
+    polyline: list[tuple[float, float]], offsets: tuple[float, ...], fraction: float
+) -> Position:
+    """The point at ``fraction`` of the polyline's length, clamped to its ends."""
+    target = min(max(fraction, 0.0), 1.0) * offsets[-1]
+    index = min(bisect_right(offsets, target), len(polyline) - 1) - 1
+    (lng_a, lat_a), (lng_b, lat_b) = polyline[index], polyline[index + 1]
+    length = offsets[index + 1] - offsets[index]
+    t = 0.0 if length == 0 else (target - offsets[index]) / length
+    return Position(lat=lat_a + (lat_b - lat_a) * t, lng=lng_a + (lng_b - lng_a) * t)
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,7 +59,7 @@ class EngineState:
     simulated_time_s: int
     distance_travelled_m: float
     current_edge_index: int
-    dwell_remaining_s: int
+    dwell_remaining_s: float
     dwelling_intersection_id: str | None
     v_avg_meters_per_second: float
     intersection_runtimes: tuple[IntersectionRuntime, ...]
@@ -39,6 +67,7 @@ class EngineState:
     message_sequence: int
     arrived: bool
     completed: bool
+    arrived_at_s: float | None = None
 
 
 class SimulationEngine:
@@ -50,11 +79,14 @@ class SimulationEngine:
         route: PlannedRoute,
         route_model: RouteModel,
         estimates: Estimates,
+        traffic_density_multiplier: float,
         settings: SimulationSettings,
         gateway: ItsGateway,
     ) -> None:
         self.simulation_id, self.route, self.route_model = simulation_id, route, route_model
+        self.traffic_density_multiplier = traffic_density_multiplier
         self.estimates, self.settings, self.gateway = estimates, settings, gateway
+        self._polyline_offsets_m = _polyline_offsets_m(route.polyline_wgs84)
 
     def initial_state(self) -> EngineState:
         speed = self._speed(0)
@@ -62,7 +94,7 @@ class SimulationEngine:
             0,
             0.0,
             0,
-            0,
+            0.0,
             None,
             max(speed, self.settings.speed_floor_meters_per_second),
             tuple(IntersectionRuntime() for _ in self.route_model.intersections),
@@ -137,63 +169,77 @@ class SimulationEngine:
         return state, retained
 
     def _move(self, state: EngineState) -> tuple[EngineState, float]:
+        """Spend one simulated second (D13).
+
+        The ambulance drives at the speed of whichever edge it is on, carrying the rest of the
+        second across edge ends, and dwells ``D_min`` at each first stop line; a dwell may start
+        and end mid-second. Arrival is recorded to the fraction of a second, so the trip time
+        equals ``T_greenwave``.
+        """
         now, tick = state.simulated_time_s + 1, state.tick + 1
         if state.arrived:
             return replace(state, simulated_time_s=now, tick=tick), 0.0
-        if state.dwell_remaining_s:
-            return replace(
-                state,
-                simulated_time_s=now,
-                tick=tick,
-                dwell_remaining_s=state.dwell_remaining_s - 1,
-                dwelling_intersection_id=None
-                if state.dwell_remaining_s == 1
-                else state.dwelling_intersection_id,
-                v_avg_meters_per_second=max(
-                    self.settings.speed_floor_meters_per_second,
-                    (1 - self.settings.speed_ema_alpha) * state.v_avg_meters_per_second,
-                ),
-            ), 0.0
-        speed, target = (
-            self._speed(state.current_edge_index),
-            min(
+        budget = 1.0
+        distance = state.distance_travelled_m
+        dwell, dwelling = state.dwell_remaining_s, state.dwelling_intersection_id
+        arrived_at: float | None = None
+        while budget > _TIME_EPSILON_S:
+            if dwell > 0:
+                spent = min(dwell, budget)
+                dwell, budget = dwell - spent, budget - spent
+                if dwell <= _TIME_EPSILON_S:
+                    dwell, dwelling = 0.0, None
+                continue
+            edge = self._edge_at(distance)
+            speed = self._speed(edge)
+            stop = self._next_stop(distance, state)
+            limit = min(
+                self.route.cumulative_m[edge] + self.route.edge_lengths_m[edge],
                 self.route.total_distance_m,
-                state.distance_travelled_m + self._speed(state.current_edge_index),
+                inf if stop is None else stop.first_stop_line_m,
+            )
+            needed = (limit - distance) / speed
+            if needed > budget:
+                distance += speed * budget
+                break
+            distance, budget = limit, budget - needed
+            if distance >= self.route.total_distance_m:
+                arrived_at = state.simulated_time_s + (1.0 - budget)
+                break
+            if stop is not None and distance == stop.first_stop_line_m:
+                dwell, dwelling = self.settings.min_intersection_delay_seconds, stop.id
+                if dwell <= 0:
+                    dwelling = None
+        moved = distance - state.distance_travelled_m
+        return replace(
+            state,
+            simulated_time_s=now,
+            tick=tick,
+            distance_travelled_m=distance,
+            current_edge_index=self._edge_at(distance),
+            dwell_remaining_s=dwell,
+            dwelling_intersection_id=dwelling,
+            v_avg_meters_per_second=max(
+                self.settings.speed_floor_meters_per_second,
+                self.settings.speed_ema_alpha * moved
+                + (1 - self.settings.speed_ema_alpha) * state.v_avg_meters_per_second,
             ),
-        )
-        stop = next(
+            arrived=arrived_at is not None,
+            arrived_at_s=arrived_at,
+        ), (0.0 if arrived_at is not None else moved)
+
+    def _next_stop(self, distance: float, state: EngineState) -> RouteIntersection | None:
+        """The first unpassed intersection whose first stop line is strictly ahead."""
+        return next(
             (
                 item
                 for item, runtime in zip(
                     self.route_model.intersections, state.intersection_runtimes, strict=True
                 )
-                if not runtime.passed
-                and state.distance_travelled_m < item.first_stop_line_m <= target
+                if not runtime.passed and item.first_stop_line_m > distance
             ),
             None,
         )
-        dwell, dwelling = (
-            (0, None)
-            if stop is None
-            else (int(self.settings.min_intersection_delay_seconds), stop.id)
-        )
-        if stop is not None:
-            target = stop.first_stop_line_m
-        return replace(
-            state,
-            simulated_time_s=now,
-            tick=tick,
-            distance_travelled_m=target,
-            current_edge_index=self._edge_at(target),
-            dwell_remaining_s=dwell,
-            dwelling_intersection_id=dwelling,
-            v_avg_meters_per_second=max(
-                self.settings.speed_floor_meters_per_second,
-                self.settings.speed_ema_alpha * speed
-                + (1 - self.settings.speed_ema_alpha) * state.v_avg_meters_per_second,
-            ),
-            arrived=target >= self.route.total_distance_m,
-        ), (0.0 if target >= self.route.total_distance_m else speed)
 
     def _advance_intersections(
         self, state: EngineState
@@ -305,11 +351,16 @@ class SimulationEngine:
             status = AmbulanceStatus.APPROACHING_INTERSECTION
         else:
             status = AmbulanceStatus.EN_ROUTE
-        ratio = state.distance_travelled_m / self.route.total_distance_m
-        a, b = self.route.polyline_wgs84[0], self.route.polyline_wgs84[-1]
+        # Edge lengths come from the same geometry as the polyline, so the share of route distance
+        # travelled is the share of polyline length; this also tolerates small length mismatches.
+        position = _point_along(
+            self.route.polyline_wgs84,
+            self._polyline_offsets_m,
+            state.distance_travelled_m / self.route.total_distance_m,
+        )
         return AmbulanceTelemetry(
             id=self.simulation_id,
-            position=Position(lat=a[1] + (b[1] - a[1]) * ratio, lng=a[0] + (b[0] - a[0]) * ratio),
+            position=position,
             speed_kmh=speed * 3.6,
             status=status,
         )
@@ -334,7 +385,11 @@ class SimulationEngine:
 
     def _kpi(self, state: EngineState) -> KpiMetrics:
         normal = sum(
-            min(length, max(0.0, state.distance_travelled_m - start)) * 3.6 / speed
+            # Same normal-mode model as estimate_times: motion scales with traffic density.
+            min(length, max(0.0, state.distance_travelled_m - start))
+            * self.traffic_density_multiplier
+            * 3.6
+            / speed
             for length, speed, start in zip(
                 self.route.edge_lengths_m,
                 self.route.edge_speeds_kmh,
@@ -349,7 +404,9 @@ class SimulationEngine:
             )
             if runtime.passed
         )
+        # The trip ends on arrival (D15); post-arrival recovery ticks (D19) do not add trip time.
+        elapsed = state.arrived_at_s if state.arrived_at_s is not None else state.simulated_time_s
         return KpiMetrics(
-            current_time_saved_sec=round(normal - state.simulated_time_s),
-            total_time_elapsed_sec=state.simulated_time_s,
+            current_time_saved_sec=round(normal - elapsed),
+            total_time_elapsed_sec=round(elapsed),
         )
