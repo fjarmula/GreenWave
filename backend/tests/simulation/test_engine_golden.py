@@ -32,6 +32,7 @@ SCENARIOS: dict[str, tuple[bool, float, int, float]] = {
     "cascade_x1": (True, 1.5, 1, 40.0),
     "cascade_x5": (True, 2.0, 5, 40.0),
     "short_window_cascade_x1": (True, 1.0, 1, 10.0),
+    "short_window_no_cascade_x1": (False, 1.0, 1, 10.0),
 }
 
 
@@ -86,3 +87,18 @@ def test_engine_event_stream_matches_golden() -> None:
         pytest.skip("golden regenerated")
 
     assert actual == json.loads(_GOLDEN.read_text())
+
+
+def _dispatch_groups(scenario: object) -> list[list[str]]:
+    events = scenario["events"]  # type: ignore[index]
+    return [
+        e["payload"]["intersections_group"] for e in events if e["event_type"] == "ITS_DISPATCH"
+    ]
+
+
+def test_golden_pins_a_cascade_that_changes_dispatch_groups() -> None:
+    golden = json.loads(_GOLDEN.read_text())
+
+    assert _dispatch_groups(golden["short_window_cascade_x1"]) != _dispatch_groups(
+        golden["short_window_no_cascade_x1"]
+    )
