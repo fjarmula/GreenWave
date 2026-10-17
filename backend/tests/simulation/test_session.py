@@ -186,3 +186,39 @@ def test_full_subscriber_queue_makes_room_for_terminal_event() -> None:
     SessionManager._put(queue, terminal, terminal=True)
 
     assert queue.get_nowait() is terminal
+
+
+class _FailingEngine(_Engine):
+    def run_tick(
+        self, state: SimpleNamespace, _: datetime, __: int
+    ) -> tuple[SimpleNamespace, list[object]]:
+        raise RuntimeError("engine bug")
+
+
+@pytest.mark.asyncio
+async def test_engine_failure_is_logged_with_the_simulation_id(
+    manager: SessionManager, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """An unlogged loop crash leaves a silent, frozen run that nobody can diagnose."""
+    import greenwave.simulation.session as session
+
+    monkeypatch.setattr(session, "SimulationEngine", _FailingEngine)
+    with caplog.at_level("ERROR", logger="greenwave.simulation.session"):
+        await manager.start(_request("first"))
+        await asyncio.sleep(0)
+
+    [record] = [r for r in caplog.records if r.getMessage() == "simulation_loop_failed"]
+    assert record.exc_info is not None
+    assert getattr(record, "simulation_id", None) == "first"
+    await manager.shutdown()
+
+
+def test_full_subscriber_queue_drops_the_oldest_tick_for_a_new_tick() -> None:
+    queue: asyncio.Queue[object] = asyncio.Queue(maxsize=2)
+    oldest, newer, newest = object(), object(), object()
+    queue.put_nowait(oldest)
+    queue.put_nowait(newer)
+
+    SessionManager._put(queue, newest, terminal=False)  # type: ignore[arg-type]
+
+    assert [queue.get_nowait(), queue.get_nowait()] == [newer, newest]

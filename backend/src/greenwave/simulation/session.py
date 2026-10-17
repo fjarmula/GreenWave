@@ -34,6 +34,11 @@ logger = logging.getLogger(__name__)
 
 Clock = Callable[[], datetime]
 Sleep = Callable[[float], Awaitable[None]]
+TerminalEvent = SimulationCancelledEvent | SimulationCompletedEvent
+
+
+def _is_terminal(event: SimulationEvent) -> bool:
+    return isinstance(event, (SimulationCancelledEvent, SimulationCompletedEvent))
 
 
 class SimulationIdInUseError(Exception):
@@ -52,7 +57,7 @@ class _Session:
     playback_speed: int
     subscribers: set[asyncio.Queue[SimulationEvent]] = field(default_factory=set)
     latest: SimulationEvent | None = None
-    terminal: SimulationCancelledEvent | SimulationCompletedEvent | None = None
+    terminal: TerminalEvent | None = None
     task: asyncio.Task[None] | None = None
 
 
@@ -151,7 +156,7 @@ class SessionManager:
             while True:
                 event = await queue.get()
                 yield event
-                if isinstance(event, (SimulationCancelledEvent, SimulationCompletedEvent)):
+                if _is_terminal(event):
                     return
         finally:
             session.subscribers.discard(queue)
@@ -189,8 +194,12 @@ class SessionManager:
                     logger.warning(
                         "simulation_tick_deadline_missed", extra={"overrun_ms": -remaining * 1000}
                     )
-        except asyncio.CancelledError:
-            raise
+        except Exception:
+            # The run freezes without a terminal event; clients fall back to their stale/lost
+            # timeouts. Log so the frozen run can be diagnosed.
+            logger.exception(
+                "simulation_loop_failed", extra={"simulation_id": session.simulation_id}
+            )
         finally:
             if self._active is session and session.terminal is not None:
                 self._active = None
@@ -215,9 +224,9 @@ class SessionManager:
             self._active = None
 
     def _publish(self, session: _Session, event: SimulationEvent) -> None:
-        terminal = isinstance(event, (SimulationCancelledEvent, SimulationCompletedEvent))
+        terminal = _is_terminal(event)
         if terminal:
-            session.terminal = cast(SimulationCancelledEvent | SimulationCompletedEvent, event)
+            session.terminal = cast(TerminalEvent, event)
         else:
             session.latest = event
         for queue in tuple(session.subscribers):
@@ -234,8 +243,7 @@ class SessionManager:
         dropped = False
         while not queue.empty():
             item = queue.get_nowait()
-            is_terminal = isinstance(item, (SimulationCancelledEvent, SimulationCompletedEvent))
-            if not dropped and (not terminal or not is_terminal):
+            if not dropped and (not terminal or not _is_terminal(item)):
                 dropped = True
                 continue
             buffered.append(item)
