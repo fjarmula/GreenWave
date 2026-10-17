@@ -140,11 +140,11 @@ frontend/src/
 
 **Files:** Modify `src/components/map/SignalMarkers.tsx`, `MapContainer.tsx`, `EndpointMarkers.tsx`, `dispatch-endpoints.ts` (only if Piotr reports a preset fails to snap).
 
-- [ ] `SignalMarkers`: position = `route_intersections[i].position` (from the start response, joined to tick intersections by `id`); delete the even-spacing fallback for the backend path (keep it nowhere — the mock now supplies positions too, F1).
-- [ ] `MapContainer`: fit bounds to `route_geometry` on `START_SUCCEEDED` (respect reduced motion: no animated fly).
-- [ ] `EndpointMarkers`: when `snap_distance_m` > a few metres, draw a thin dashed connector from the requested point to the snapped point so the user sees why the route starts elsewhere.
-- [ ] Attribution: the Carto basemap shows OSM attribution, but our **data** also needs "Road network & signals © OpenStreetMap contributors (ODbL) · Street registry © City of Kraków (MSIP)" (architecture §5). Add it as a MapLibre custom attribution, plus "All signal states are simulated".
-- [ ] Ambulance animation: interpolate between consecutive tick positions as today, but **along the route polyline** (not a straight chord) — at 10× playback a chord visibly cuts corners. Reuse `route-position.ts`; add a test for interpolation across a polyline bend.
+- [x] `SignalMarkers`: position = `route_intersections[i].position` (from the start response, joined to tick intersections by `id`); delete the even-spacing fallback for the backend path (keep it nowhere — the mock now supplies positions too, F1).
+- [x] `MapContainer`: fit bounds to `route_geometry` on `START_SUCCEEDED` (respect reduced motion: no animated fly).
+- [x] `EndpointMarkers`: when `snap_distance_m` > a few metres, draw a thin dashed connector from the requested point to the snapped point so the user sees why the route starts elsewhere.
+- [x] Attribution: the Carto basemap shows OSM attribution, but our **data** also needs "Road network & signals © OpenStreetMap contributors (ODbL) · Street registry © City of Kraków (MSIP)" (architecture §5). Add it as a MapLibre custom attribution, plus "All signal states are simulated".
+- [x] Ambulance animation: interpolate between consecutive tick positions as today, but **along the route polyline** (not a straight chord) — at 10× playback a chord visibly cuts corners. Reuse `route-position.ts`; add a test for interpolation across a polyline bend.
 
 ### Task F8: Branch finish
 

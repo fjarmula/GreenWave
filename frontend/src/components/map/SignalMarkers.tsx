@@ -2,9 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import { Marker, type Map } from "maplibre-gl";
-import { positionOnRoute } from "@/lib/route-position";
 import { isCascadeClearing } from "@/lib/signal-visuals";
-import type { IntersectionState, IntersectionTelemetry, RouteGeometry } from "@/types/telemetry";
+import type {
+  IntersectionState,
+  IntersectionTelemetry,
+  RouteIntersection,
+} from "@/types/telemetry";
 
 const SIGNAL_COLORS: Record<IntersectionState, string> = {
   NORMAL: "#ef4444",
@@ -22,11 +25,17 @@ function signalColor(intersection: IntersectionTelemetry): string {
 type SignalMarkersProps = {
   map: Map | null;
   visible: boolean;
-  routeGeometry: RouteGeometry | null;
+  /** Positions from the start response, joined to tick intersections by id. */
+  routeIntersections: RouteIntersection[];
   intersections: IntersectionTelemetry[];
 };
 
-export function SignalMarkers({ map, visible, routeGeometry, intersections }: SignalMarkersProps) {
+export function SignalMarkers({
+  map,
+  visible,
+  routeIntersections,
+  intersections,
+}: SignalMarkersProps) {
   const markers = useRef(new globalThis.Map<string, Marker>());
   useEffect(() => {
     const currentMarkers = markers.current;
@@ -38,18 +47,22 @@ export function SignalMarkers({ map, visible, routeGeometry, intersections }: Si
 
   useEffect(() => {
     const currentMarkers = markers.current;
+    const positions = new globalThis.Map(
+      routeIntersections.map(({ id, position }) => [id, position] as const),
+    );
     const ids = new Set(intersections.map((intersection) => intersection.id));
     currentMarkers.forEach((marker, id) => {
-      if (!visible || !routeGeometry || !ids.has(id)) {
+      if (!visible || !ids.has(id) || !positions.has(id)) {
         marker.remove();
         currentMarkers.delete(id);
       }
     });
-    if (!map || !visible || !routeGeometry) return;
-    intersections.forEach((intersection, index) => {
-      // Synthetic positions only: the telemetry contract has no signal coordinates.
-      const coordinates = positionOnRoute(routeGeometry, (index + 1) / (intersections.length + 1));
-      if (!coordinates) return;
+    if (!map || !visible) return;
+    intersections.forEach((intersection) => {
+      // No position is invented: an intersection missing from the start response is not drawn.
+      const position = positions.get(intersection.id);
+      if (!position) return;
+      const coordinates: [number, number] = [position.lng, position.lat];
       let marker = currentMarkers.get(intersection.id);
       if (!marker) {
         const element = document.createElement("div");
@@ -75,7 +88,7 @@ export function SignalMarkers({ map, visible, routeGeometry, intersections }: Si
       const label = element.lastElementChild as HTMLElement;
       label.textContent = `${intersection.id} · ${intersection.state}${isCascadeClearing(intersection) ? " · CASCADE" : ""}`;
     });
-  }, [map, visible, routeGeometry, intersections]);
+  }, [map, visible, routeIntersections, intersections]);
 
   return null;
 }
