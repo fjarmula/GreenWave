@@ -25,9 +25,10 @@ from greenwave.schemas import (
     SimulationStartResponse,
     StopResponse,
 )
-from greenwave.simulation.engine import EngineState, SimulationEngine
+from greenwave.simulation.engine import SimulationEngine
 from greenwave.simulation.events import SimulationEvent
 from greenwave.simulation.route_model import build_route_model, to_start_response
+from greenwave.simulation.state import EngineState
 from greenwave.simulation_settings import SimulationSettings
 
 logger = logging.getLogger(__name__)
