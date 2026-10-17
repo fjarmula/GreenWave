@@ -13,10 +13,13 @@ import {
 import { positionOnRoute } from "@/lib/route-position";
 import type { SimulationAdapter, SimulationStreamSubscriber } from "@/lib/simulation-adapter";
 import type {
+  CancelReason,
   IntersectionState,
   IntersectionTelemetry,
   ItsDispatchEvent,
   Position,
+  SimulationCancelledEvent,
+  SimulationCompletedEvent,
   SimulationStartRequest,
   SimulationStartResponse,
   SimulationTickEvent,
@@ -55,14 +58,34 @@ export function createMockSimulationAdapter(): SimulationAdapter {
     timer = null;
   };
 
+  const endSession = (terminal: SimulationCompletedEvent | SimulationCancelledEvent) => {
+    stopTimer();
+    session = null;
+    const current = [...subscribers];
+    subscribers.clear();
+    current.forEach((subscriber) => subscriber.onTerminal(terminal));
+  };
+
+  const cancel = (reason: CancelReason) => {
+    if (!session) return;
+    endSession({
+      schema_version: "1.0",
+      is_simulated: true,
+      event_type: "SIMULATION_CANCELLED",
+      simulation_id: session.request.simulation_id,
+      tick: session.tick,
+      timestamp: new Date().toISOString(),
+      reason,
+    });
+  };
+
   const emitNextTick = () => {
     if (!session) return;
     const { tick, dispatch, completed } = advanceMockSession(session);
     if (dispatch) subscribers.forEach((subscriber) => subscriber.onItsDispatch(dispatch));
     subscribers.forEach((subscriber) => subscriber.onTick(tick));
     if (completed) {
-      stopTimer();
-      const completion = {
+      endSession({
         schema_version: "1.0",
         is_simulated: true,
         event_type: "SIMULATION_COMPLETED",
@@ -70,8 +93,7 @@ export function createMockSimulationAdapter(): SimulationAdapter {
         tick: tick.tick,
         timestamp: tick.timestamp,
         kpi_metrics: tick.kpi_metrics,
-      } as const;
-      subscribers.forEach((subscriber) => subscriber.onComplete(completion));
+      });
     }
   };
 
@@ -82,7 +104,7 @@ export function createMockSimulationAdapter(): SimulationAdapter {
 
   return {
     async start(request) {
-      stopTimer();
+      cancel("SUPERSEDED");
       const route = createMockRoute(request);
       session = {
         request,
@@ -99,8 +121,19 @@ export function createMockSimulationAdapter(): SimulationAdapter {
       };
       return route;
     },
-    subscribe(subscriber) {
+    subscribe(simulationId, subscriber) {
+      if (session?.request.simulation_id !== simulationId) {
+        subscriber.onConnectionChange("lost");
+        subscriber.onError({
+          kind: "http",
+          status: 404,
+          code: "SIMULATION_NOT_FOUND",
+          message: "Simulation no longer exists",
+        });
+        return () => undefined;
+      }
       subscribers.add(subscriber);
+      subscriber.onConnectionChange("open");
       startTimer();
 
       return () => {
@@ -108,10 +141,8 @@ export function createMockSimulationAdapter(): SimulationAdapter {
         if (subscribers.size === 0) stopTimer();
       };
     },
-    stop() {
-      stopTimer();
-      session = null;
-      subscribers.clear();
+    async stop(simulationId) {
+      if (session?.request.simulation_id === simulationId) cancel("STOPPED");
     },
   };
 }

@@ -4,8 +4,8 @@ import { Activity } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
 
 export function ItsConsole() {
-  const { itsLogs, simulationState } = useSimulationState();
-  const logEntries = itsLogs.slice(-5);
+  const { itsLog, simulationState } = useSimulationState();
+  const logEntries = itsLog.slice(-5);
   return (
     <section className="overflow-hidden rounded-xl border border-border/80 bg-card/92 shadow-2xl backdrop-blur-xl">
       <div className="flex items-center justify-between gap-4 border-b border-border px-3 py-2.5 font-mono text-[10px] text-muted-foreground">
@@ -30,7 +30,7 @@ export function ItsConsole() {
         )}
         {logEntries.map((entry, index) => (
           <p
-            key={entry}
+            key={entry.messageId}
             className={`flex gap-2 font-mono text-[9px] leading-relaxed ${
               index === 2 ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"
             }`}
@@ -38,7 +38,7 @@ export function ItsConsole() {
             <span className="shrink-0 text-muted-foreground opacity-60">
               {String(index + 1).padStart(2, "0")}
             </span>
-            <span>{entry}</span>
+            <span>{entry.text}</span>
           </p>
         ))}
       </div>

@@ -1,27 +1,37 @@
 import { createMockSimulationAdapter } from "@/lib/mock-simulation-adapter";
+import type { SimulationErrorInfo } from "@/lib/transport/errors";
 import type {
   ItsDispatchEvent,
+  SimulationCancelledEvent,
   SimulationCompletedEvent,
   SimulationStartRequest,
   SimulationStartResponse,
   SimulationTickEvent,
 } from "@/types/telemetry";
 
+export type ConnectionStatus = "connecting" | "open" | "reconnecting" | "lost";
+
 export type SimulationStreamSubscriber = {
   onTick: (event: SimulationTickEvent) => void;
   onItsDispatch: (event: ItsDispatchEvent) => void;
-  onComplete: (event: SimulationCompletedEvent) => void;
+  /** Called once; the adapter closes the stream afterwards. */
+  onTerminal: (event: SimulationCompletedEvent | SimulationCancelledEvent) => void;
+  onConnectionChange: (status: ConnectionStatus) => void;
+  /** The stream is unrecoverable (simulation gone, retries exhausted) and closed. */
+  onError: (error: SimulationErrorInfo) => void;
 };
 
 /**
- * Transport boundary for a simulation session. A backend WebSocket or SSE
- * implementation can replace the selected adapter without changing dashboard
- * components or simulation state.
+ * Transport boundary for a simulation session. Components and the reducer
+ * talk only to this interface; the mock and the backend (HTTP + SSE) adapters
+ * implement it.
  */
 export type SimulationAdapter = {
+  /** Rejects with `SimulationAdapterError`. */
   start: (request: SimulationStartRequest) => Promise<SimulationStartResponse>;
-  subscribe: (subscriber: SimulationStreamSubscriber) => () => void;
-  stop: () => void;
+  /** Returns an unsubscribe function that closes the stream. */
+  subscribe: (simulationId: string, subscriber: SimulationStreamSubscriber) => () => void;
+  stop: (simulationId: string) => Promise<void>;
 };
 
 // Replace only this adapter selection when the backend stream is available.

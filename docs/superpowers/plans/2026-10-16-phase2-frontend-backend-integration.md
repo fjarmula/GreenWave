@@ -87,8 +87,8 @@ frontend/src/
   - `SimulationAdapter.stop(simulationId) -> Promise<void>` (D-architecture: stop needs the id).
   - Reducer state machine: `SETUP → STARTING → RUNNING → FINISHED | CANCELLED | ERROR`, plus `connection` sub-field on `RUNNING`; actions `START_REQUESTED`, `START_SUCCEEDED`, `START_FAILED`, `TICK`, `ITS_DISPATCH`, `CONNECTION`, `TERMINAL`, `ERROR`, `RESET`.
 
-- [ ] Tests first (pure reducer): `TICK` with `tick` ≤ last tick is ignored; `TICK` with another `simulation_id` is ignored; `ITS_DISPATCH` appends a formatted log line (bounded to 20 entries as today); `TERMINAL{COMPLETED}` → `FINISHED` keeps route + last telemetry; `TERMINAL{CANCELLED, SUPERSEDED}` → `CANCELLED` with reason; `START_FAILED` → `ERROR` with the code; `RESET` from any state → `SETUP`.
-- [ ] Hook: opens the subscription on `START_SUCCEEDED`, closes it on unmount/`RESET`/terminal; idempotent under React Strict Mode double effects (test with two mount cycles).
+- [x] Tests first (pure reducer): `TICK` with `tick` ≤ last tick is ignored; `TICK` with another `simulation_id` is ignored; `ITS_DISPATCH` appends a formatted log line (bounded to 20 entries as today); `TERMINAL{COMPLETED}` → `FINISHED` keeps route + last telemetry; `TERMINAL{CANCELLED, SUPERSEDED}` → `CANCELLED` with reason; `START_FAILED` → `ERROR` with the code; `RESET` from any state → `SETUP`.
+- [x] Hook: opens the subscription on `START_SUCCEEDED`, closes it on unmount/`RESET`/terminal; idempotent under React Strict Mode double effects (test with two mount cycles).
 - [ ] "Stale" indicator: if `open` but no event for N seconds, set connection `reconnecting`. N is **not specified anywhere** — propose 3 s (three missed 1 Hz ticks), put it in `config.ts`, and mention it in the PR so it is approved explicitly.
 
 ### Task F3: Wire validation (D23)

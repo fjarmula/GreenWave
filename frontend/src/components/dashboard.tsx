@@ -55,7 +55,9 @@ export function Dashboard() {
                   enable_cascade_mode: cascadeEnabled,
                   playback_speed: 1,
                 };
-                void startSimulation(request).then(() => setMode("live"));
+                void startSimulation(request).then((started) => {
+                  if (started) setMode("live");
+                });
               }}
               originId={originId}
               destinationId={destinationId}

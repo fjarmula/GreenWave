@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMockSimulationAdapter } from "@/lib/mock-simulation-adapter";
+import type { ConnectionStatus, SimulationStreamSubscriber } from "@/lib/simulation-adapter";
+import type { SimulationErrorInfo } from "@/lib/transport/errors";
 import type {
   ItsDispatchEvent,
+  SimulationCancelledEvent,
   SimulationCompletedEvent,
   SimulationStartRequest,
   SimulationTickEvent,
@@ -22,16 +25,20 @@ function collect() {
   const ticks: SimulationTickEvent[] = [];
   const dispatches: ItsDispatchEvent[] = [];
   const completions: SimulationCompletedEvent[] = [];
-  return {
-    ticks,
-    dispatches,
-    completions,
-    subscriber: {
-      onTick: (event: SimulationTickEvent) => ticks.push(event),
-      onItsDispatch: (event: ItsDispatchEvent) => dispatches.push(event),
-      onComplete: (event: SimulationCompletedEvent) => completions.push(event),
-    },
+  const cancellations: SimulationCancelledEvent[] = [];
+  const connection: ConnectionStatus[] = [];
+  const errors: SimulationErrorInfo[] = [];
+  const subscriber: SimulationStreamSubscriber = {
+    onTick: (event) => ticks.push(event),
+    onItsDispatch: (event) => dispatches.push(event),
+    onTerminal: (event) =>
+      event.event_type === "SIMULATION_COMPLETED"
+        ? completions.push(event)
+        : cancellations.push(event),
+    onConnectionChange: (status) => connection.push(status),
+    onError: (error) => errors.push(error),
   };
+  return { ticks, dispatches, completions, cancellations, connection, errors, subscriber };
 }
 
 describe("mock simulation start", () => {
@@ -64,7 +71,7 @@ describe("mock simulation stream", () => {
     const adapter = createMockSimulationAdapter();
     await adapter.start(request);
     const events = collect();
-    adapter.subscribe(events.subscriber);
+    adapter.subscribe("test", events.subscriber);
     vi.advanceTimersByTime(999);
     expect(events.ticks).toHaveLength(0);
     vi.advanceTimersByTime(2001);
@@ -85,7 +92,7 @@ describe("mock simulation stream", () => {
     const adapter = createMockSimulationAdapter();
     await adapter.start(request);
     const events = collect();
-    adapter.subscribe(events.subscriber);
+    adapter.subscribe("test", events.subscriber);
     vi.advanceTimersByTime(60_000);
     expect(events.dispatches).toHaveLength(1);
     const [dispatch] = events.dispatches;
@@ -106,7 +113,7 @@ describe("mock simulation stream", () => {
     const adapter = createMockSimulationAdapter();
     await adapter.start(request);
     const events = collect();
-    adapter.subscribe(events.subscriber);
+    adapter.subscribe("test", events.subscriber);
     vi.advanceTimersByTime(60_000);
     const states = new Set(events.ticks.flatMap((tick) => tick.intersections.map((i) => i.state)));
     expect(
@@ -126,7 +133,7 @@ describe("mock simulation stream", () => {
     const adapter = createMockSimulationAdapter();
     await adapter.start({ ...request, enable_cascade_mode: false });
     const events = collect();
-    adapter.subscribe(events.subscriber);
+    adapter.subscribe("test", events.subscriber);
     vi.advanceTimersByTime(60_000);
     expect(events.dispatches.map((dispatch) => dispatch.payload.intersections_group)).toEqual([
       ["INT-0360"],
@@ -141,7 +148,7 @@ describe("mock simulation stream", () => {
     const adapter = createMockSimulationAdapter();
     await adapter.start(request);
     const events = collect();
-    adapter.subscribe(events.subscriber);
+    adapter.subscribe("test", events.subscriber);
     vi.advanceTimersByTime(120_000);
     expect(events.completions).toHaveLength(1);
     const lastTick = events.ticks.at(-1);
@@ -163,11 +170,57 @@ describe("mock simulation stream", () => {
     const adapter = createMockSimulationAdapter();
     await adapter.start(request);
     const events = collect();
-    adapter.subscribe(events.subscriber);
+    adapter.subscribe("test", events.subscriber);
     vi.advanceTimersByTime(1000);
-    adapter.stop();
+    await adapter.stop("test");
     vi.advanceTimersByTime(10000);
     expect(events.ticks).toHaveLength(1);
     expect(events.completions).toHaveLength(0);
+  });
+
+  it("reports the stream open on subscribe", async () => {
+    const adapter = createMockSimulationAdapter();
+    await adapter.start(request);
+    const events = collect();
+    adapter.subscribe("test", events.subscriber);
+    expect(events.connection).toEqual(["open"]);
+  });
+
+  it("reports SIMULATION_NOT_FOUND for an unknown simulation id", async () => {
+    const adapter = createMockSimulationAdapter();
+    await adapter.start(request);
+    const events = collect();
+    adapter.subscribe("other", events.subscriber);
+    expect(events.errors).toEqual([
+      expect.objectContaining({ kind: "http", status: 404, code: "SIMULATION_NOT_FOUND" }),
+    ]);
+  });
+
+  it("cancels a running simulation with SUPERSEDED when another one starts", async () => {
+    vi.useFakeTimers();
+    const adapter = createMockSimulationAdapter();
+    await adapter.start(request);
+    const events = collect();
+    adapter.subscribe("test", events.subscriber);
+    vi.advanceTimersByTime(2000);
+    await adapter.start({ ...request, simulation_id: "next" });
+    expect(events.cancellations).toEqual([
+      expect.objectContaining({ simulation_id: "test", reason: "SUPERSEDED", tick: 2 }),
+    ]);
+    vi.advanceTimersByTime(5000);
+    expect(events.ticks).toHaveLength(2);
+  });
+
+  it("stop cancels with STOPPED and ignores an unknown id", async () => {
+    const adapter = createMockSimulationAdapter();
+    await adapter.start(request);
+    const events = collect();
+    adapter.subscribe("test", events.subscriber);
+    await adapter.stop("other");
+    expect(events.cancellations).toHaveLength(0);
+    await adapter.stop("test");
+    expect(events.cancellations).toEqual([
+      expect.objectContaining({ reason: "STOPPED", simulation_id: "test" }),
+    ]);
   });
 });
