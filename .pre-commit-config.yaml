@@ -31,7 +31,6 @@ repos:
       - id: detect-private-key
         stages: [pre-commit]
       - id: end-of-file-fixer
-        exclude: ^\.agents/
         stages: [pre-commit]
       - id: fix-byte-order-marker
         stages: [pre-commit]
