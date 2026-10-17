@@ -117,10 +117,69 @@ def test_time_saved_on_arrival_uses_the_traffic_density_multiplier() -> None:
         state, events = engine.step(state, now)
     tick = next(event for event in events if isinstance(event, SimulationTickEvent))
 
-    assert tick.kpi_metrics.total_time_elapsed_sec == state.simulated_time_s
     assert tick.kpi_metrics.current_time_saved_sec == round(
-        estimates.normal_seconds - state.simulated_time_s
+        estimates.normal_seconds - estimates.greenwave_seconds
     )
+
+
+def engine_for_mixed_speeds(multiplier: float = 1.0) -> SimulationEngine:
+    """10 m at 36 km/h (13 m/s ambulance), then 190 m at 72 km/h (25 m/s); a signal 5 m from
+    the end, so its 15 s recovery outlasts arrival."""
+    route = PlannedRoute(
+        edge_ids=("slow", "fast"),
+        edge_lengths_m=(10.0, 190.0),
+        edge_speeds_kmh=(36.0, 72.0),
+        cumulative_m=(0.0, 10.0),
+        total_distance_m=200.0,
+        polyline_wgs84=[(19.0, 50.0), (19.003, 50.0)],
+        origin_snap=SnappedRouteEndpoint("origin", Position(lat=50.0, lng=19.0), 0),
+        destination_snap=SnappedRouteEndpoint("destination", Position(lat=50.0, lng=19.003), 0),
+        stop_lines=(),
+    )
+    model = RouteModel(
+        intersections=(RouteIntersection("INT-END", 195.0, 195.0, 20.0),),
+        _cascade_targets={},
+    )
+    settings = SimulationSettings()
+    return SimulationEngine(
+        "SIM-MIX",
+        route,
+        model,
+        estimate_times(route, model, multiplier, settings),
+        multiplier,
+        settings,
+        MockItsGateway(),
+    )
+
+
+def test_a_step_carries_its_remaining_time_onto_the_next_edge() -> None:
+    """D13: 10 m at 13 m/s takes 10/13 s; the other 3/13 s is driven at 25 m/s."""
+    engine = engine_for_mixed_speeds()
+
+    state, _ = engine.step(engine.initial_state(), datetime(2026, 10, 16, tzinfo=UTC))
+
+    assert state.distance_travelled_m == pytest.approx(10.0 + 25.0 * 3.0 / 13.0)
+
+
+def test_kpi_ends_at_normal_minus_greenwave_and_holds_through_recovery() -> None:
+    """D13 + D15: arrival lands on T_greenwave, and recovery ticks after it do not erode the KPI."""
+    engine = engine_for_mixed_speeds(multiplier=1.5)
+    expected_saved = round(engine.estimates.normal_seconds - engine.estimates.greenwave_seconds)
+    expected_elapsed = round(engine.estimates.greenwave_seconds)
+    state = engine.initial_state()
+    now = datetime(2026, 10, 16, tzinfo=UTC)
+
+    arrived_ticks: list[SimulationTickEvent] = []
+    while not state.completed:
+        state, events = engine.step(state, now)
+        tick = next(event for event in events if isinstance(event, SimulationTickEvent))
+        if state.arrived:
+            arrived_ticks.append(tick)
+
+    assert len(arrived_ticks) > 1, "recovery should outlast arrival in this fixture"
+    for tick in arrived_ticks:
+        assert tick.kpi_metrics.current_time_saved_sec == expected_saved
+        assert tick.kpi_metrics.total_time_elapsed_sec == expected_elapsed
 
 
 def test_step_advances_at_current_edge_speed_and_dwells_at_stop_line() -> None:
@@ -128,14 +187,16 @@ def test_step_advances_at_current_edge_speed_and_dwells_at_stop_line() -> None:
     state = engine.initial_state()
     now = datetime(2026, 10, 16, tzinfo=UTC)
 
+    # 13 m/s: three full seconds reach 39 m; the 4th reaches the 50 m stop line after 11/13 s
+    # and spends the remaining 2/13 s of it dwelling (D13).
     for _ in range(4):
         state, _ = engine.step(state, now)
     assert state.distance_travelled_m == 50.0
-    assert state.dwell_remaining_s == 3
+    assert state.dwell_remaining_s == pytest.approx(3 - 2 / 13)
 
     state, events = engine.step(state, now)
     assert state.distance_travelled_m == 50.0
-    assert state.dwell_remaining_s == 2
+    assert state.dwell_remaining_s == pytest.approx(2 - 2 / 13)
     assert events[-1].ambulance.speed_kmh == 0.0
 
 
