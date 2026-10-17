@@ -10,6 +10,7 @@ edge is controlled and that is reported.
 """
 
 from dataclasses import dataclass, field
+from typing import NamedTuple
 
 import networkx as nx
 import numpy as np
@@ -133,15 +134,12 @@ def attach_signals(
             _Request(float(shapely.line_locate_point(geometry, point)), index, kind)
         )
 
-    # arrivals[node][travel sign] = id of the edge that arrives at the node travelling that way.
     arrivals: dict[str, dict[str, str]] = {}
     nodes_added = 0
     edges_split = 0
+    context = _SplitContext(graph, attachments, signals, arrivals)
     for edge_index, edge_requests in sorted(requests.items()):
-        u, v, edge_id, data = canonical[edge_index]
-        added = _split_edge(
-            graph, u, v, edge_id, data, edge_requests, attachments, signals, arrivals
-        )
+        added = _split_edge(context, canonical[edge_index], edge_requests)
         nodes_added += added
         edges_split += added > 0
 
@@ -154,33 +152,54 @@ def attach_signals(
     )
 
 
-def _split_edge(
-    graph: nx.MultiDiGraph,
-    u: str,
-    v: str,
-    edge_id: str,
-    data: dict[str, object],
-    edge_requests: list[_Request],
-    attachments: list[Attachment],
-    signals: list[SignalPoint],
-    arrivals: dict[str, dict[str, str]],
-) -> int:
-    geometry = data["geometry"]
+@dataclass(frozen=True, slots=True)
+class _SplitContext:
+    graph: nx.MultiDiGraph
+    attachments: list[Attachment]
+    signals: list[SignalPoint]
+    # arrivals[node][travel sign] = id of the edge that arrives at the node travelling that way.
+    arrivals: dict[str, dict[str, str]]
+
+
+class _NewNode(NamedTuple):
+    distance_m: float
+    key: str
+    signal_index: int  # the first signal placed on the node
+    snap_kind: str
+
+
+_Edge = tuple[str, str, str, dict[str, object]]  # (u, v, edge id, attributes)
+
+
+def _split_edge(context: _SplitContext, edge: _Edge, edge_requests: list[_Request]) -> int:
+    """Attach the edge's requests to nodes, splitting it (and its twin) at each new node."""
+    geometry = edge[3]["geometry"]
     assert isinstance(geometry, shapely.LineString)
     length = float(geometry.length)
-    ordered = sorted(edge_requests, key=lambda r: (r.distance_m, signals[r.signal_index].node_key))
+    new_nodes = _place_requests(context, edge, length, edge_requests)
+    if not new_nodes:
+        return 0
+    _add_nodes(context, geometry, new_nodes)
+    _replace_with_pieces(context, edge, length, new_nodes)
+    return len(new_nodes)
 
-    # Decide the node of each request: an existing end, a node shared with the previous request,
-    # or a new node.
-    new_nodes: list[tuple[float, str, int, str]] = []  # (distance, key, first signal index, kind)
+
+def _place_requests(
+    context: _SplitContext, edge: _Edge, length: float, edge_requests: list[_Request]
+) -> list[_NewNode]:
+    """Decide the node of each request: an existing end, the previous request's, or a new one."""
+    u, v = edge[0], edge[1]
+    signals = context.signals
+    ordered = sorted(edge_requests, key=lambda r: (r.distance_m, signals[r.signal_index].node_key))
+    new_nodes: list[_NewNode] = []
     for request in ordered:
-        attachment = attachments[request.signal_index]
+        attachment = context.attachments[request.signal_index]
         if request.distance_m <= _MIN_PIECE_METERS:
             attachment.graph_node = u
         elif length - request.distance_m <= _MIN_PIECE_METERS:
             attachment.graph_node = v
-        elif new_nodes and request.distance_m - new_nodes[-1][0] <= _MIN_PIECE_METERS:
-            attachment.graph_node = new_nodes[-1][1]
+        elif new_nodes and request.distance_m - new_nodes[-1].distance_m <= _MIN_PIECE_METERS:
+            attachment.graph_node = new_nodes[-1].key
         else:
             signal = signals[request.signal_index]
             key = (
@@ -188,29 +207,46 @@ def _split_edge(
                 if request.snap_kind == SNAP_INTERIOR_VERTEX
                 else f"snap:{signal.node_key}"
             )
-            new_nodes.append((request.distance_m, key, request.signal_index, request.snap_kind))
+            new_nodes.append(
+                _NewNode(request.distance_m, key, request.signal_index, request.snap_kind)
+            )
             attachment.graph_node = key
-    if not new_nodes:
-        return 0
+    return new_nodes
 
-    distances = [d for d, *_ in new_nodes]
-    keys = [key for _, key, *_ in new_nodes]
-    new_keys = set(keys)
-    xy = np.array([shapely.get_coordinates(geometry.interpolate(d))[0] for d in distances])
+
+def _add_nodes(
+    context: _SplitContext, geometry: shapely.LineString, new_nodes: list[_NewNode]
+) -> None:
+    """A vertex signal keeps its own coordinate; an offset snap gets the point on the edge."""
+    xy = np.array(
+        [shapely.get_coordinates(geometry.interpolate(n.distance_m))[0] for n in new_nodes]
+    )
     lon_lat = unproject_points(xy)
-    for position, (_, key, signal_index, kind) in enumerate(new_nodes):
-        signal = signals[signal_index]
+    for position, new_node in enumerate(new_nodes):
+        signal = context.signals[new_node.signal_index]
         lon, lat = (
-            (signal.lon, signal.lat) if kind == SNAP_INTERIOR_VERTEX else tuple(lon_lat[position])
+            (signal.lon, signal.lat)
+            if new_node.snap_kind == SNAP_INTERIOR_VERTEX
+            else tuple(lon_lat[position])
         )
-        graph.add_node(
-            key,
+        context.graph.add_node(
+            new_node.key,
             lon=float(lon),
             lat=float(lat),
             x_m=float(xy[position][0]),
             y_m=float(xy[position][1]),
         )
 
+
+def _replace_with_pieces(
+    context: _SplitContext, edge: _Edge, length: float, new_nodes: list[_NewNode]
+) -> None:
+    """Replace the edge, and its reverse twin if any, by pieces between consecutive nodes."""
+    u, v, edge_id, data = edge
+    graph = context.graph
+    distances = [n.distance_m for n in new_nodes]
+    keys = [n.key for n in new_nodes]
+    new_keys = set(keys)
     twin_id = _twin_edge_id(edge_id)
     twin_data = graph.get_edge_data(v, u, key=twin_id) if edge_id.endswith(("+", "-")) else None
     directions = [(u, v, edge_id, data, [0.0, *distances, length], [u, *keys, v])]
@@ -240,8 +276,7 @@ def _split_edge(
             }
             graph.add_edge(chain[piece_index], chain[piece_index + 1], key=piece_id, **attributes)
             if chain[piece_index + 1] in new_keys:
-                arrivals.setdefault(chain[piece_index + 1], {})[sign] = piece_id
-    return len(new_nodes)
+                context.arrivals.setdefault(chain[piece_index + 1], {})[sign] = piece_id
 
 
 def _resolve_controlled_edges(

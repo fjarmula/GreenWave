@@ -3,8 +3,14 @@ from pathlib import Path
 import polars as pl
 import pytest
 
+from greenwave.etl.config import SignalHandling
 from greenwave.etl.profile_osm import scan_osm
-from greenwave.etl.signals import SignalSettings, SignalsResult, build_signals
+from greenwave.etl.signals import (
+    SignalSettings,
+    SignalsResult,
+    build_signals,
+    classify_signal_tag,
+)
 from tests.support.osm_fixtures import line, point, write_osm
 
 # 0.001 degree of latitude is about 111.2 m at Krakow's latitude.
@@ -208,3 +214,24 @@ def test_frame_is_sorted_by_source_line_and_roundtrips_through_parquet(tmp_path:
 def test_invalid_settings_are_rejected(kwargs: dict[str, float]) -> None:
     with pytest.raises(ValueError, match="must"):
         SignalSettings(**kwargs)
+
+
+@pytest.mark.parametrize(
+    ("variant", "handling", "reason_part"),
+    [
+        ("signal", SignalHandling.COUNT_IN_DELAY, None),
+        ("blinker", SignalHandling.EXCLUDE_AND_REJECT, "non-blocking signal"),
+        ("controller", SignalHandling.MANUAL_REVIEW, "needs manual review"),
+        ("made_up", SignalHandling.EXCLUDE_AND_REJECT, "unrecognised traffic_signals value"),
+    ],
+)
+def test_classify_signal_tag_policies(
+    variant: str, handling: SignalHandling, reason_part: str | None
+) -> None:
+    decided, reason = classify_signal_tag(variant)
+
+    assert decided is handling
+    if reason_part is None:
+        assert reason is None
+    else:
+        assert reason is not None and reason_part in reason

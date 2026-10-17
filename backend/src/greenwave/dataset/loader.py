@@ -25,19 +25,21 @@ from greenwave.artifacts import (
     NEIGHBOURS_FILENAME,
     REPORT_FILENAME,
 )
-from greenwave.dataset.helpers import (
-    check_artifact_hashes,
-    check_counts,
-    check_delays,
-    check_ids_file,
-    check_manifest_hashes,
-    check_references,
+from greenwave.dataset.artifact_io import (
     parse,
     read_json,
     read_network,
     read_parquet,
     report_section,
     require_files,
+)
+from greenwave.dataset.integrity import (
+    check_artifact_hashes,
+    check_counts,
+    check_delays,
+    check_ids_file,
+    check_manifest_hashes,
+    check_references,
 )
 from greenwave.dataset.models import (
     IdsDocument,

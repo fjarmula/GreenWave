@@ -29,7 +29,14 @@ from greenwave.etl.config import (
 )
 from greenwave.etl.geo import project_lines, project_points
 from greenwave.etl.profile_models import ClusteringProfile
-from greenwave.etl.profile_osm import LonLat, OsmScan, PointFeature, crossing_kind, tag
+from greenwave.etl.profile_osm import (
+    DrivableWay,
+    LonLat,
+    OsmScan,
+    PointFeature,
+    crossing_kind,
+    tag,
+)
 from greenwave.etl.profile_roads import build_topology
 from greenwave.etl.profile_signals import cluster_profile
 from greenwave.etl.road_rules import is_routable_way
@@ -157,175 +164,251 @@ def build_signals(
         (signal, NODE_TYPE_SIGNAL) for signal in scan.signal_nodes
     ] + [(crossing, NODE_TYPE_PEDESTRIAN_CROSSING) for crossing in scan.signalised_crossings]
     nodes.sort(key=lambda item: item[0].line_number)
-    xy = project_points(
-        np.array([node.lon for node, _ in nodes]), np.array([node.lat for node, _ in nodes])
-    )
+    table = _classify(nodes)
 
     # Signals first: the handling policy decides which ones count, and crossings are judged
     # against the counted ones only (a crossing next to a blinker is still a real stop).
-    handling: list[SignalHandling] = []
-    reasons: list[str | None] = []
-    variants: list[str | None] = []
-    kinds: list[str | None] = []
-    node_types: list[str] = []
+    counts_signal = np.array(
+        [
+            table.node_types[i] == NODE_TYPE_SIGNAL
+            and table.handling[i] is not SignalHandling.EXCLUDE_AND_REJECT
+            for i in range(len(table.nodes))
+        ],
+        dtype=np.bool_,
+    )
+    verdicts = _judge_crossings(table, counts_signal, settings)
+    counts_in_delay = np.array(
+        [h is not SignalHandling.EXCLUDE_AND_REJECT for h in table.handling], dtype=np.bool_
+    )
+    clusters = _provisional_clusters(table.xy, counts_signal, settings.cluster_radius_meters)
+    positions = [
+        _vertex_position((node.lon, node.lat), ways_per_vertex, topology.endpoints)
+        for node in table.nodes
+    ]
+    analysis = _SignalAnalysis(
+        table=table,
+        verdicts=verdicts,
+        counts_in_delay=counts_in_delay,
+        clusters=clusters,
+        positions=positions,
+        nearest_way=_off_network_distances(table, positions, routable),
+    )
+    frame = _signal_frame(analysis, settings)
+    report = _signals_report(analysis, _rejects(analysis), inputs_sha256, settings)
+    logger.info("signals: %d nodes, %d counted", len(table.nodes), report.counted_nodes)
+    return SignalsResult(frame=frame, report=report)
+
+
+def classify_signal_tag(variant: str) -> tuple[SignalHandling, str | None]:
+    """The handling policy of a ``traffic_signals=*`` value and, unless it simply counts, why."""
+    policy = SIGNAL_TAG_HANDLING.get(variant)
+    if policy is None:
+        return (
+            SignalHandling.EXCLUDE_AND_REJECT,
+            f"unrecognised traffic_signals value {variant!r}; not counted",
+        )
+    if policy is SignalHandling.EXCLUDE_AND_REJECT:
+        return policy, f"{variant}: non-blocking signal, excluded from D_v"
+    if policy is SignalHandling.MANUAL_REVIEW:
+        return policy, f"{variant}: counted in D_v, needs manual review"
+    return policy, None
+
+
+@dataclass(slots=True)
+class _SignalTable:
+    """Per-node columns in source-line order; the crossing pass refines handling and reasons."""
+
+    nodes: list[PointFeature]
+    xy: np.ndarray
+    node_types: list[str]
+    variants: list[str | None]
+    kinds: list[str | None]
+    handling: list[SignalHandling]
+    reasons: list[str | None]
+
+
+@dataclass(frozen=True, slots=True)
+class _CrossingVerdicts:
+    rows: list[int]
+    nearest_counted_m: dict[int, float | None]
+    standalone: dict[int, bool]
+    standalone_if_every_signal_counted: int
+
+
+@dataclass(frozen=True, slots=True)
+class _Clusters:
+    ids: np.ndarray
+    sizes: np.ndarray
+    counted_signal_rows: np.ndarray
+    counted_xy: np.ndarray
+
+
+@dataclass(frozen=True, slots=True)
+class _SignalAnalysis:
+    table: _SignalTable
+    verdicts: _CrossingVerdicts
+    counts_in_delay: np.ndarray
+    clusters: _Clusters
+    positions: list[str]
+    nearest_way: dict[int, float]
+
+
+def _classify(nodes: list[tuple[PointFeature, str]]) -> _SignalTable:
+    xy = project_points(
+        np.array([node.lon for node, _ in nodes]), np.array([node.lat for node, _ in nodes])
+    )
+    table = _SignalTable([node for node, _ in nodes], xy, [], [], [], [], [])
     for node, node_type in nodes:
         if node_type == NODE_TYPE_SIGNAL:
             variant = tag(node.properties, "traffic_signals") or ABSENT_TAG
-            policy = SIGNAL_TAG_HANDLING.get(variant)
-            variants.append(variant)
-            kinds.append(None)
-            node_types.append(NODE_TYPE_SIGNAL)
-            if policy is None:
-                handling.append(SignalHandling.EXCLUDE_AND_REJECT)
-                reasons.append(f"unrecognised traffic_signals value {variant!r}; not counted")
-            elif policy is SignalHandling.EXCLUDE_AND_REJECT:
-                handling.append(policy)
-                reasons.append(f"{variant}: non-blocking signal, excluded from D_v")
-            elif policy is SignalHandling.MANUAL_REVIEW:
-                handling.append(policy)
-                reasons.append(f"{variant}: counted in D_v, needs manual review")
-            else:
-                handling.append(policy)
-                reasons.append(None)
+            handling, reason = classify_signal_tag(variant)
+            table.variants.append(variant)
+            table.kinds.append(None)
+            table.node_types.append(NODE_TYPE_SIGNAL)
+            table.handling.append(handling)
+            table.reasons.append(reason)
         else:
             kind = crossing_kind(node)
-            variants.append(None)
-            kinds.append(kind)
-            node_types.append(
+            table.variants.append(None)
+            table.kinds.append(kind)
+            table.node_types.append(
                 NODE_TYPE_PEDESTRIAN_CROSSING
                 if kind in COUNTED_CROSSING_KINDS
                 else NODE_TYPE_OTHER_CROSSING
             )
-            handling.append(SignalHandling.COUNT_IN_DELAY)  # refined below
-            reasons.append(None)
+            table.handling.append(SignalHandling.COUNT_IN_DELAY)  # refined by the crossing pass
+            table.reasons.append(None)
+    return table
 
-    counts_signal = np.array(
-        [
-            node_types[i] == NODE_TYPE_SIGNAL
-            and handling[i] is not SignalHandling.EXCLUDE_AND_REJECT
-            for i in range(len(nodes))
-        ],
-        dtype=np.bool_,
-    )
-    is_signal = np.array([t == NODE_TYPE_SIGNAL for t in node_types], dtype=np.bool_)
+
+def _judge_crossings(
+    table: _SignalTable, counts_signal: np.ndarray, settings: SignalSettings
+) -> _CrossingVerdicts:
+    """Exclude other crossing kinds and crossings that duplicate a counted signal node."""
+    is_signal = np.array([t == NODE_TYPE_SIGNAL for t in table.node_types], dtype=np.bool_)
     is_crossing = ~is_signal
-
-    nearest_counted = _nearest_distance_meters(xy[is_crossing], xy[counts_signal])
-    nearest_any = _nearest_distance_meters(xy[is_crossing], xy[is_signal])
-    crossing_rows = np.flatnonzero(is_crossing)
+    limit = settings.standalone_crossing_distance_meters
+    nearest_counted = _nearest_distance_meters(table.xy[is_crossing], table.xy[counts_signal])
+    nearest_any = _nearest_distance_meters(table.xy[is_crossing], table.xy[is_signal])
+    rows = np.flatnonzero(is_crossing).tolist()
     standalone_flags: dict[int, bool] = {}
     nearest_by_row: dict[int, float | None] = {}
     standalone_if_any = 0
-    for position, row in enumerate(crossing_rows.tolist()):
+    for position, row in enumerate(rows):
         distance = nearest_counted[position]
         nearest_by_row[row] = _optional(distance)
-        standalone = bool(
-            np.isnan(distance) or distance > settings.standalone_crossing_distance_meters
-        )
+        standalone = bool(np.isnan(distance) or distance > limit)
         standalone_flags[row] = standalone
-        if node_types[row] == NODE_TYPE_PEDESTRIAN_CROSSING and (
-            np.isnan(nearest_any[position])
-            or nearest_any[position] > settings.standalone_crossing_distance_meters
+        if table.node_types[row] == NODE_TYPE_PEDESTRIAN_CROSSING and (
+            np.isnan(nearest_any[position]) or nearest_any[position] > limit
         ):
             standalone_if_any += 1
-        if node_types[row] != NODE_TYPE_PEDESTRIAN_CROSSING:
-            handling[row] = SignalHandling.EXCLUDE_AND_REJECT
-            reasons[row] = f"{kinds[row]}: not a road pedestrian crossing, excluded from D_v"
-        elif not standalone:
-            handling[row] = SignalHandling.EXCLUDE_AND_REJECT
-            reasons[row] = (
-                f"within {settings.standalone_crossing_distance_meters:g} m of a counted signal "
-                "node: duplicates it"
+        if table.node_types[row] != NODE_TYPE_PEDESTRIAN_CROSSING:
+            table.handling[row] = SignalHandling.EXCLUDE_AND_REJECT
+            table.reasons[row] = (
+                f"{table.kinds[row]}: not a road pedestrian crossing, excluded from D_v"
             )
+        elif not standalone:
+            table.handling[row] = SignalHandling.EXCLUDE_AND_REJECT
+            table.reasons[row] = f"within {limit:g} m of a counted signal node: duplicates it"
+    return _CrossingVerdicts(rows, nearest_by_row, standalone_flags, standalone_if_any)
 
-    counts_in_delay = np.array(
-        [h is not SignalHandling.EXCLUDE_AND_REJECT for h in handling], dtype=np.bool_
-    )
 
-    # Provisional clusters: counted signal nodes only, so a blinker never merges real signals.
-    cluster_ids = np.full(len(nodes), -1, dtype=np.int64)
-    cluster_sizes = np.zeros(len(nodes), dtype=np.int64)
+def _provisional_clusters(xy: np.ndarray, counts_signal: np.ndarray, radius: float) -> _Clusters:
+    """Counted signal nodes only, so a blinker never merges real signals."""
+    cluster_ids = np.full(len(xy), -1, dtype=np.int64)
+    cluster_sizes = np.zeros(len(xy), dtype=np.int64)
     counted_signal_rows = np.flatnonzero(counts_signal)
     counted_xy = xy[counts_signal]
-    labels = single_linkage_labels(counted_xy, settings.cluster_radius_meters)
+    labels = single_linkage_labels(counted_xy, radius)
     if len(labels):
         sizes = np.bincount(labels)
         cluster_ids[counted_signal_rows] = labels
         cluster_sizes[counted_signal_rows] = sizes[labels]
+    return _Clusters(cluster_ids, cluster_sizes, counted_signal_rows, counted_xy)
 
-    positions = [
-        _vertex_position((node.lon, node.lat), ways_per_vertex, topology.endpoints)
-        for node, _ in nodes
-    ]
+
+def _off_network_distances(
+    table: _SignalTable, positions: list[str], routable: list[DrivableWay]
+) -> dict[int, float]:
+    """Distance to the nearest routable way for each signal node that is on no way vertex."""
     off_network_rows = [
         i
         for i, position in enumerate(positions)
-        if position == "off_network" and node_types[i] == NODE_TYPE_SIGNAL
+        if position == "off_network" and table.node_types[i] == NODE_TYPE_SIGNAL
     ]
-    nearest_way: dict[int, float] = {}
-    if off_network_rows and routable:
-        lines = project_lines([shapely.LineString(way.coordinates) for way in routable])
-        _, distances = shapely.STRtree(lines).query_nearest(
-            shapely.points(xy[off_network_rows]), return_distance=True, all_matches=False
-        )
-        nearest_way = {row: float(d) for row, d in zip(off_network_rows, distances, strict=True)}
+    if not off_network_rows or not routable:
+        return {}
+    lines = project_lines([shapely.LineString(way.coordinates) for way in routable])
+    _, distances = shapely.STRtree(lines).query_nearest(
+        shapely.points(table.xy[off_network_rows]), return_distance=True, all_matches=False
+    )
+    return {row: float(d) for row, d in zip(off_network_rows, distances, strict=True)}
 
+
+def _signal_frame(analysis: _SignalAnalysis, settings: SignalSettings) -> pl.DataFrame:
+    table, clusters, verdicts = analysis.table, analysis.clusters, analysis.verdicts
     delay: list[float | None] = []
-    for i, node_type in enumerate(node_types):
-        if not counts_in_delay[i]:
+    for i, node_type in enumerate(table.node_types):
+        if not analysis.counts_in_delay[i]:
             delay.append(None)
         elif node_type == NODE_TYPE_SIGNAL:
             delay.append(settings.signal_delay_seconds)
         else:
             delay.append(settings.pedestrian_crossing_delay_seconds)
-
+    count = len(table.nodes)
     columns: dict[str, Sequence[object]] = {
-        "node_key": [f"OSM-L{node.line_number}" for node, _ in nodes],
-        "source_line": [node.line_number for node, _ in nodes],
-        "lon": [node.lon for node, _ in nodes],
-        "lat": [node.lat for node, _ in nodes],
-        "x_m": [float(x) for x in xy[:, 0]],
-        "y_m": [float(y) for y in xy[:, 1]],
-        "node_type": node_types,
-        "tag_variant": variants,
-        "direction": [tag(node.properties, "traffic_signals:direction") for node, _ in nodes],
-        "crossing_kind": kinds,
-        "handling": [h.value for h in handling],
-        "counts_in_delay": counts_in_delay.tolist(),
-        "needs_review": [h is SignalHandling.MANUAL_REVIEW for h in handling],
-        "reject_reason": reasons,
+        "node_key": [f"OSM-L{node.line_number}" for node in table.nodes],
+        "source_line": [node.line_number for node in table.nodes],
+        "lon": [node.lon for node in table.nodes],
+        "lat": [node.lat for node in table.nodes],
+        "x_m": [float(x) for x in table.xy[:, 0]],
+        "y_m": [float(y) for y in table.xy[:, 1]],
+        "node_type": table.node_types,
+        "tag_variant": table.variants,
+        "direction": [tag(node.properties, "traffic_signals:direction") for node in table.nodes],
+        "crossing_kind": table.kinds,
+        "handling": [h.value for h in table.handling],
+        "counts_in_delay": analysis.counts_in_delay.tolist(),
+        "needs_review": [h is SignalHandling.MANUAL_REVIEW for h in table.handling],
+        "reject_reason": table.reasons,
         "delay_seconds": delay,
-        "vertex_position": positions,
-        "nearest_counted_signal_m": [nearest_by_row.get(i) for i in range(len(nodes))],
-        "standalone": [standalone_flags.get(i) for i in range(len(nodes))],
-        "provisional_cluster_id": [int(c) if c >= 0 else None for c in cluster_ids],
-        "provisional_cluster_size": [int(s) if s > 0 else None for s in cluster_sizes],
+        "vertex_position": analysis.positions,
+        "nearest_counted_signal_m": [verdicts.nearest_counted_m.get(i) for i in range(count)],
+        "standalone": [verdicts.standalone.get(i) for i in range(count)],
+        "provisional_cluster_id": [int(c) if c >= 0 else None for c in clusters.ids],
+        "provisional_cluster_size": [int(s) if s > 0 else None for s in clusters.sizes],
     }
-    frame = pl.DataFrame(columns, schema=_SIGNAL_SCHEMA)
+    return pl.DataFrame(columns, schema=_SIGNAL_SCHEMA)
 
+
+def _rejects(analysis: _SignalAnalysis) -> list[RejectEntry]:
+    table = analysis.table
     rejects: list[RejectEntry] = []
-    for i, (node, _) in enumerate(nodes):
-        node_type = node_types[i]
+    for i, node in enumerate(table.nodes):
+        node_type = table.node_types[i]
         policy = (
-            SIGNAL_TAG_HANDLING.get(variants[i] or "") if node_type == NODE_TYPE_SIGNAL else None
+            SIGNAL_TAG_HANDLING.get(table.variants[i] or "")
+            if node_type == NODE_TYPE_SIGNAL
+            else None
         )
         found: list[tuple[str, str, float | None]] = []
-        if node_type == NODE_TYPE_SIGNAL and handling[i] is not SignalHandling.COUNT_IN_DELAY:
-            if handling[i] is SignalHandling.MANUAL_REVIEW:
+        if node_type == NODE_TYPE_SIGNAL and table.handling[i] is not SignalHandling.COUNT_IN_DELAY:
+            if table.handling[i] is SignalHandling.MANUAL_REVIEW:
                 category = "needs_manual_review"
             elif policy is None:
                 category = "unrecognised_signal_tag"
             else:
                 category = "non_blocking_signal"
-            found.append((category, reasons[i] or "", None))
+            found.append((category, table.reasons[i] or "", None))
         elif node_type == NODE_TYPE_OTHER_CROSSING:
-            found.append(("other_crossing_kind", reasons[i] or "", None))
-        if i in nearest_way:
+            found.append(("other_crossing_kind", table.reasons[i] or "", None))
+        if i in analysis.nearest_way:
             found.append(
                 (
                     "signal_off_network",
                     "not on any routable-way vertex; T4 will try to snap it",
-                    nearest_way[i],
+                    analysis.nearest_way[i],
                 )
             )
         rejects.extend(
@@ -336,28 +419,39 @@ def build_signals(
                 lon=node.lon,
                 lat=node.lat,
                 node_type=node_type,
-                tag_variant=variants[i],
+                tag_variant=table.variants[i],
                 reason=reason,
                 nearest_routable_way_m=distance,
             )
             for category, reason, distance in found
         )
+    return rejects
 
+
+def _signals_report(
+    analysis: _SignalAnalysis,
+    rejects: list[RejectEntry],
+    inputs_sha256: dict[str, str],
+    settings: SignalSettings,
+) -> SignalsSection:
+    table, verdicts = analysis.table, analysis.verdicts
+    node_types, handling = table.node_types, table.handling
+    is_signal = np.array([t == NODE_TYPE_SIGNAL for t in node_types], dtype=np.bool_)
     crossings_by_kind: dict[str, int] = {}
-    for kind in (k for k in kinds if k is not None):
+    for kind in (k for k in table.kinds if k is not None):
         crossings_by_kind[kind] = crossings_by_kind.get(kind, 0) + 1
     handling_signals: dict[str, int] = {}
     for i, h in enumerate(handling):
         if node_types[i] == NODE_TYPE_SIGNAL:
             handling_signals[h.value] = handling_signals.get(h.value, 0) + 1
     counted_positions: dict[str, int] = {}
-    for i in counted_signal_rows.tolist():
-        counted_positions[positions[i]] = counted_positions.get(positions[i], 0) + 1
+    for i in analysis.clusters.counted_signal_rows.tolist():
+        position = analysis.positions[i]
+        counted_positions[position] = counted_positions.get(position, 0) + 1
     reject_counts: dict[str, int] = {}
     for reject in rejects:
         reject_counts[reject.category] = reject_counts.get(reject.category, 0) + 1
-
-    report = SignalsSection(
+    return SignalsSection(
         generated_at_utc=datetime.now(UTC).isoformat(timespec="seconds"),
         inputs_sha256=inputs_sha256,
         settings={
@@ -368,29 +462,29 @@ def build_signals(
         },
         signal_nodes=int(is_signal.sum()),
         signals_by_handling=handling_signals,
-        crossings_total=int(is_crossing.sum()),
+        crossings_total=int((~is_signal).sum()),
         crossings_by_kind=dict(sorted(crossings_by_kind.items(), key=lambda kv: -kv[1])),
         crossings_counted_standalone=sum(
             1
-            for i in crossing_rows.tolist()
+            for i in verdicts.rows
             if node_types[i] == NODE_TYPE_PEDESTRIAN_CROSSING
             and handling[i] is SignalHandling.COUNT_IN_DELAY
         ),
         crossings_excluded_duplicate_of_signal=sum(
             1
-            for i in crossing_rows.tolist()
+            for i in verdicts.rows
             if node_types[i] == NODE_TYPE_PEDESTRIAN_CROSSING
             and handling[i] is SignalHandling.EXCLUDE_AND_REJECT
         ),
         crossings_excluded_other_kind=sum(
-            1 for i in crossing_rows.tolist() if node_types[i] == NODE_TYPE_OTHER_CROSSING
+            1 for i in verdicts.rows if node_types[i] == NODE_TYPE_OTHER_CROSSING
         ),
-        standalone_if_every_signal_node_counted=standalone_if_any,
-        counted_nodes=int(counts_in_delay.sum()),
+        standalone_if_every_signal_node_counted=verdicts.standalone_if_every_signal_counted,
+        counted_nodes=int(analysis.counts_in_delay.sum()),
         counted_signals_vertex_position=dict(sorted(counted_positions.items())),
-        provisional_clusters=cluster_profile(counted_xy, settings.cluster_radius_meters),
+        provisional_clusters=cluster_profile(
+            analysis.clusters.counted_xy, settings.cluster_radius_meters
+        ),
         rejects=rejects,
         reject_counts=dict(sorted(reject_counts.items())),
     )
-    logger.info("signals: %d nodes, %d counted", len(nodes), report.counted_nodes)
-    return SignalsResult(frame=frame, report=report)
