@@ -3,15 +3,20 @@
 import { useEffect, useRef } from "react";
 import { Marker, type Map } from "maplibre-gl";
 import { positionOnRoute } from "@/lib/route-position";
-import type { IntersectionTelemetry, RouteGeometry, SignalState } from "@/types/telemetry";
+import type { IntersectionState, IntersectionTelemetry, RouteGeometry } from "@/types/telemetry";
 
-const SIGNAL_COLORS: Record<SignalState, string> = {
+const SIGNAL_COLORS: Record<IntersectionState, string> = {
   NORMAL: "#ef4444",
   CLEARING: "#10b981",
-  CLEARING_CASCADE: "#8b5cf6",
   PRIORITY_GREEN: "#22c55e",
   RECOVERY: "#f59e0b",
 };
+// Cascaded CLEARING keeps the purple cascade visual (`is_cascade` flag, not a state).
+const CASCADE_COLOR = "#8b5cf6";
+
+function signalColor({ state, is_cascade: isCascade }: IntersectionTelemetry): string {
+  return state === "CLEARING" && isCascade ? CASCADE_COLOR : SIGNAL_COLORS[state];
+}
 
 type SignalMarkersProps = {
   map: Map | null;
@@ -64,10 +69,10 @@ export function SignalMarkers({ map, visible, routeGeometry, intersections }: Si
         `Simulated signal ${intersection.id}: ${intersection.state}`,
       );
       const dot = element.firstElementChild as HTMLElement;
-      dot.style.backgroundColor = SIGNAL_COLORS[intersection.state];
+      dot.style.backgroundColor = signalColor(intersection);
       dot.classList.toggle("dashboard-signal-pulse", intersection.is_active_corridor);
       const label = element.lastElementChild as HTMLElement;
-      label.textContent = `${intersection.id} · ${intersection.state}`;
+      label.textContent = `${intersection.id} · ${intersection.state}${intersection.is_cascade ? " · CASCADE" : ""}`;
     });
   }, [map, visible, routeGeometry, intersections]);
 

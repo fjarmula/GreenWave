@@ -4,7 +4,7 @@ import { initialSimulationState, simulationReducer } from "@/lib/simulation-stat
 import type {
   SimulationStartRequest,
   SimulationStartResponse,
-  SimulationTick,
+  SimulationTickEvent,
 } from "@/types/telemetry";
 
 const request: SimulationStartRequest = {
@@ -13,9 +13,13 @@ const request: SimulationStartRequest = {
   destination: { lat: 50.0134, lng: 19.9982 },
   traffic_density_multiplier: 1.5,
   enable_cascade_mode: true,
+  playback_speed: 1,
 };
 
 const route: SimulationStartResponse = {
+  schema_version: "1.0",
+  is_simulated: true,
+  simulation_id: "test-simulation",
   status: "INITIALIZED",
   route_geometry: {
     type: "LineString",
@@ -27,10 +31,24 @@ const route: SimulationStartResponse = {
   total_distance_m: 5400,
   estimated_normal_time_sec: 780,
   estimated_greenwave_time_sec: 380,
-  intersections_on_route: ["INT-302"],
+  intersections_on_route: ["INT-0360"],
+  route_intersections: [
+    {
+      id: "INT-0360",
+      name: null,
+      kind: "signalised_junction",
+      position: { lat: 50.04, lng: 19.97 },
+      distance_along_route_m: 1480,
+    },
+  ],
+  origin_snapped: { position: { lat: 50.0612, lng: 19.9571 }, snap_distance_m: 0 },
+  destination_snapped: { position: { lat: 50.0134, lng: 19.9982 }, snap_distance_m: 0 },
 };
 
-const tick: SimulationTick = {
+const tick: SimulationTickEvent = {
+  schema_version: "1.0",
+  is_simulated: true,
+  simulation_id: "test-simulation",
   event_type: "SIMULATION_TICK",
   tick: 1,
   timestamp: "2026-10-14T12:00:00Z",
@@ -43,9 +61,10 @@ const tick: SimulationTick = {
   kpi_metrics: { current_time_saved_sec: 1, total_time_elapsed_sec: 1 },
   intersections: [
     {
-      id: "INT-302",
-      name: "Test intersection",
+      id: "INT-0360",
+      name: null,
       state: "CLEARING",
+      is_cascade: false,
       tti_seconds: 28,
       is_active_corridor: true,
     },

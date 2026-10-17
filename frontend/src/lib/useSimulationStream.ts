@@ -26,6 +26,7 @@ export function useSimulationStream() {
     if (simulationState !== "RUNNING" || !startRequest || !routeData) return;
     return simulationAdapter.subscribe({
       onTick: (telemetry) => dispatch({ type: "TICK", telemetry }),
+      onItsDispatch: () => undefined,
       onComplete: () => dispatch({ type: "FINISH" }),
     });
   }, [dispatch, routeData, simulationState, startRequest]);

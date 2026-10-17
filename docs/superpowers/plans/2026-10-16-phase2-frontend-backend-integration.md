@@ -68,12 +68,12 @@ frontend/src/
 **Interfaces:**
 - Produces: `telemetry.ts` exports only aliases, e.g. `SimulationStartRequest = components["schemas"]["SimulationStartRequest"]`, likewise `SimulationStartResponse`, `SimulationTickEvent`, `ItsDispatchEvent`, `SimulationCompletedEvent`, `SimulationCancelledEvent`, `SimulationStreamEvent`, `IntersectionState`, `AmbulanceStatus`, `RouteIntersection`, `ErrorResponse`. Keep the old exported names (`SimulationTick`, `SignalState`, …) as aliases for one task so diffs stay small, then remove them in this same task once call sites compile.
 
-- [ ] Remove `CLEARING_CASCADE` everywhere. Cascade is now `state: "CLEARING"` + `is_cascade: true`; keep the purple cascade visual, driven by the flag (`IntersectionList`, `SignalMarkers` colour map keyed by the 4 states + a cascade override).
-- [ ] `ambulance.status` is the 4-value enum; `KpiHeader` formatting stays.
-- [ ] Mock: emits `schema_version`, `is_simulated: true`, `simulation_id`; fills `route_intersections` with **plausible fixed sample positions** along its straight line and marks them synthetic in a code comment; uses the real `INT-0360`/`INT-0366` ids from the architecture example instead of `INT-302/303`; emits at least one `ITS_DISPATCH` when a sample intersection enters `CLEARING`, and `SIMULATION_COMPLETED` at the end.
-- [ ] `name` can be `null` (D4/D5) — render "Unnamed intersection".
-- [ ] `tti_seconds` can be `null` after passing — render "Passed".
-- [ ] Tests: reducer and mock tests updated to v1 shapes; a type-level test (compile-only) that `telemetry.ts` defines no object type of its own.
+- [x] Remove `CLEARING_CASCADE` everywhere. Cascade is now `state: "CLEARING"` + `is_cascade: true`; keep the purple cascade visual, driven by the flag (`IntersectionList`, `SignalMarkers` colour map keyed by the 4 states + a cascade override).
+- [x] `ambulance.status` is the 4-value enum; `KpiHeader` formatting stays.
+- [x] Mock: emits `schema_version`, `is_simulated: true`, `simulation_id`; fills `route_intersections` with **plausible fixed sample positions** along its straight line and marks them synthetic in a code comment; uses the real `INT-0360`/`INT-0366` ids from the architecture example instead of `INT-302/303`; emits at least one `ITS_DISPATCH` when a sample intersection enters `CLEARING`, and `SIMULATION_COMPLETED` at the end.
+- [x] `name` can be `null` (D4/D5) — render "Unnamed intersection".
+- [x] `tti_seconds` can be `null` after passing — render "Passed".
+- [x] Tests: reducer and mock tests updated to v1 shapes; a type-level test (compile-only) that `telemetry.ts` defines no object type of its own.
 - [ ] `npm run build` green with `mock` transport — the dashboard looks and behaves as before.
 
 ### Task F2: Adapter interface and reducer for a real network
@@ -158,3 +158,29 @@ frontend/src/
 
 - Early (after F1): confirm the generated types are pleasant to use — e.g. if the union didn't narrow on `event_type` in TS, that is a Pydantic-side fix (coordination doc §5), cheaper now than later.
 - After F4: your timeout and stale-threshold proposals, so he can check them against his measured planning time and tick duration.
+
+---
+
+## Implementation expansion (decisions made at execution time, 2026-10-17)
+
+Choices the tasks left open, fixed before coding. Non-blocking; challenge in review.
+
+### F1
+- Mock tests move from the misnamed `useSimulationStream.test.ts` to `mock-simulation-adapter.test.ts`.
+- Mock signal timeline is a **scripted sample** (synthetic, not the engine): arrival time at each sample intersection = `distance_along_route_m / total_distance_m × estimated_greenwave_time_sec`; TTI ≤ 40 → `CLEARING`, ≤ 25 → `PRIORITY_GREEN`, passed → `RECOVERY` (15 s) → `NORMAL`; INT-0366 cascades from INT-0360 when cascade is on. Sample positions sit at the architecture distances (1480 m, 1632 m of 5400 m) on the straight mock line.
+- `telemetry.ts` alias test = compile-time `Equal<>` assertions (typecheck) + a source scan asserting no `{` object literal / `interface` in the file.
+
+### F2 — state machine
+- `SimulationState` stays a flat record (keeps component diffs small): `simulationState: "SETUP" | "STARTING" | "RUNNING" | "FINISHED" | "CANCELLED" | "ERROR"`, `startRequest`, `routeData`, `liveTelemetry`, `lastTick`, `connection: ConnectionStatus | null`, `itsLog: ItsLogEntry[]` (≤ 20), `completion`, `cancelReason`, `error: SimulationErrorInfo | null`.
+- Every action except `START_REQUESTED`/`RESET` carries `simulationId` and is ignored unless it matches `startRequest.simulation_id` **and** the phase accepts it (`START_SUCCEEDED`/`START_FAILED` only in `STARTING`; `TICK`/`ITS_DISPATCH`/`CONNECTION`/`TERMINAL` only in `RUNNING`; `ERROR` in `STARTING`/`RUNNING`). This is what keeps run-1 results out of run 2.
+- Dedupe (reducer and adapter both): `TICK` dropped if `tick ≤ lastTick`; `ITS_DISPATCH` dropped if `tick ≤ lastTick` (it precedes its own tick, D3) or its `message_id` is already logged; terminal accepted if `tick ≥ lastTick` (it repeats the last id, D3).
+- Stream lifecycle lives in a pure `connectSimulationStream(adapter, simulationId, dispatch, staleAfterMilliseconds) → cleanup` (`src/lib/simulation-controller.ts`) that the hook's effect returns; it owns the stale watchdog (`open` + no event for `staleAfterSeconds` → `reconnecting`, next event → `open`) and an `active` flag so callbacks after cleanup are no-ops. Strict Mode double effects are tested as connect → cleanup → connect on this function (no DOM test environment in the repo; adding jsdom/testing-library would be a new dependency).
+- `startSimulation` never rejects: start failures become `START_FAILED`; `SIMULATION_ID_IN_USE` retries once with a fresh id (F6).
+
+### F4 — 404 detection and reconnect
+- **404 detection: `error` event with `readyState === EventSource.CLOSED`.** Per the WHATWG spec a non-200 status or non-`text/event-stream` response *fails* the connection (CLOSED, no retry), while a network drop *re-establishes* it (CONNECTING). The backend's only non-200 answer on the stream route is 404 `SIMULATION_NOT_FOUND`, so CLOSED → `lost` + `onError({kind:"http", status:404, code:"SIMULATION_NOT_FOUND"})`. No extra request, deterministic under test.
+- Reconnect limit: 5 consecutive `error` events in CONNECTING (≈ 10 s at `retry: 2000`) → close, `lost` + `onError({kind:"network"})`. Value in `config.ts`, listed for approval with the stale threshold and start timeout.
+- `SimulationAdapterError` keeps `kind: "network" | "http"`; a timeout is `network`, an invalid 2xx body is `http` with its status.
+
+### F7 — polyline interpolation
+- `src/lib/route-position.ts` gains `distanceAlongRoute(route, point)` (nearest-point projection, equirectangular metres), `pointAtDistance(route, metres)` and `interpolateAlongRoute(route, from, to, fraction)`; `AmbulanceMarker` animates with it when a route is present.

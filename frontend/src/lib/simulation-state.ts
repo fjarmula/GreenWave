@@ -1,7 +1,7 @@
 import type {
   SimulationStartRequest,
   SimulationStartResponse,
-  SimulationTick,
+  SimulationTickEvent,
 } from "@/types/telemetry";
 
 export type SimulationState =
@@ -16,13 +16,13 @@ export type SimulationState =
       simulationState: "RUNNING" | "FINISHED";
       startRequest: SimulationStartRequest;
       routeData: SimulationStartResponse;
-      liveTelemetry: SimulationTick | null;
+      liveTelemetry: SimulationTickEvent | null;
       itsLogs: string[];
     };
 
 export type SimulationAction =
   | { type: "START"; request: SimulationStartRequest; routeData: SimulationStartResponse }
-  | { type: "TICK"; telemetry: SimulationTick }
+  | { type: "TICK"; telemetry: SimulationTickEvent }
   | { type: "FINISH" }
   | { type: "RESET" };
 

@@ -53,6 +53,7 @@ export function Dashboard() {
                   destination: { lng: destination.coordinates[0], lat: destination.coordinates[1] },
                   traffic_density_multiplier: trafficDensity,
                   enable_cascade_mode: cascadeEnabled,
+                  playback_speed: 1,
                 };
                 void startSimulation(request).then(() => setMode("live"));
               }}

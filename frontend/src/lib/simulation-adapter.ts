@@ -1,13 +1,16 @@
 import { createMockSimulationAdapter } from "@/lib/mock-simulation-adapter";
 import type {
+  ItsDispatchEvent,
+  SimulationCompletedEvent,
   SimulationStartRequest,
   SimulationStartResponse,
-  SimulationTick,
+  SimulationTickEvent,
 } from "@/types/telemetry";
 
 export type SimulationStreamSubscriber = {
-  onTick: (telemetry: SimulationTick) => void;
-  onComplete: () => void;
+  onTick: (event: SimulationTickEvent) => void;
+  onItsDispatch: (event: ItsDispatchEvent) => void;
+  onComplete: (event: SimulationCompletedEvent) => void;
 };
 
 /**
