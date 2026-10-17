@@ -1,8 +1,10 @@
 """Pure deterministic one-second simulation engine."""
 
+from bisect import bisect_right
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
-from math import ceil
+from itertools import pairwise
+from math import ceil, cos, hypot, radians
 
 from greenwave.its import ItsGateway
 from greenwave.routing.estimates import Estimates
@@ -24,6 +26,31 @@ from greenwave.simulation.state_machine import IntersectionRuntime, Transition, 
 from greenwave.simulation_settings import SimulationSettings
 
 EngineEvent = SimulationTickEvent | ItsDispatchEvent | SimulationCompletedEvent
+
+_METERS_PER_DEGREE_LAT = 111_320.0
+
+
+def _polyline_offsets_m(polyline: list[tuple[float, float]]) -> tuple[float, ...]:
+    """Cumulative vertex offsets in local equirectangular metres (sub-metre error at city scale)."""
+    lng_scale = cos(radians(polyline[0][1]))
+    offsets = [0.0]
+    for (lng_a, lat_a), (lng_b, lat_b) in pairwise(polyline):
+        offsets.append(
+            offsets[-1] + hypot((lng_b - lng_a) * lng_scale, lat_b - lat_a) * _METERS_PER_DEGREE_LAT
+        )
+    return tuple(offsets)
+
+
+def _point_along(
+    polyline: list[tuple[float, float]], offsets: tuple[float, ...], fraction: float
+) -> Position:
+    """The point at ``fraction`` of the polyline's length, clamped to its ends."""
+    target = min(max(fraction, 0.0), 1.0) * offsets[-1]
+    index = min(bisect_right(offsets, target), len(polyline) - 1) - 1
+    (lng_a, lat_a), (lng_b, lat_b) = polyline[index], polyline[index + 1]
+    length = offsets[index + 1] - offsets[index]
+    t = 0.0 if length == 0 else (target - offsets[index]) / length
+    return Position(lat=lat_a + (lat_b - lat_a) * t, lng=lng_a + (lng_b - lng_a) * t)
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,6 +82,7 @@ class SimulationEngine:
     ) -> None:
         self.simulation_id, self.route, self.route_model = simulation_id, route, route_model
         self.estimates, self.settings, self.gateway = estimates, settings, gateway
+        self._polyline_offsets_m = _polyline_offsets_m(route.polyline_wgs84)
 
     def initial_state(self) -> EngineState:
         speed = self._speed(0)
@@ -305,11 +333,16 @@ class SimulationEngine:
             status = AmbulanceStatus.APPROACHING_INTERSECTION
         else:
             status = AmbulanceStatus.EN_ROUTE
-        ratio = state.distance_travelled_m / self.route.total_distance_m
-        a, b = self.route.polyline_wgs84[0], self.route.polyline_wgs84[-1]
+        # Edge lengths come from the same geometry as the polyline, so the share of route distance
+        # travelled is the share of polyline length; this also tolerates small length mismatches.
+        position = _point_along(
+            self.route.polyline_wgs84,
+            self._polyline_offsets_m,
+            state.distance_travelled_m / self.route.total_distance_m,
+        )
         return AmbulanceTelemetry(
             id=self.simulation_id,
-            position=Position(lat=a[1] + (b[1] - a[1]) * ratio, lng=a[0] + (b[0] - a[0]) * ratio),
+            position=position,
             speed_kmh=speed * 3.6,
             status=status,
         )

@@ -1,9 +1,12 @@
 from datetime import UTC, datetime
+from math import cos, radians
+
+import pytest
 
 from greenwave.its import MockItsGateway
 from greenwave.routing.estimates import Estimates
 from greenwave.routing.planner import PlannedRoute, SnappedRouteEndpoint
-from greenwave.schemas import Position
+from greenwave.schemas import Position, SimulationTickEvent
 from greenwave.simulation.engine import SimulationEngine
 from greenwave.simulation.route_model import RouteIntersection, RouteModel
 from greenwave.simulation_settings import SimulationSettings
@@ -33,6 +36,61 @@ def engine_for_single_stop() -> SimulationEngine:
         SimulationSettings(),
         MockItsGateway(),
     )
+
+
+_METERS_PER_DEGREE_LAT = 111_320.0
+_LNG_SCALE = cos(radians(50.0))
+
+
+def _local_xy(lng: float, lat: float) -> tuple[float, float]:
+    return (lng - 19.0) * _METERS_PER_DEGREE_LAT * _LNG_SCALE, (lat - 50.0) * _METERS_PER_DEGREE_LAT
+
+
+def engine_for_l_shaped_route() -> SimulationEngine:
+    """Two 100 m legs, north then east: the origin-destination chord cuts the corner by ~71 m."""
+    leg_lat = 100.0 / _METERS_PER_DEGREE_LAT
+    leg_lng = 100.0 / (_METERS_PER_DEGREE_LAT * _LNG_SCALE)
+    route = PlannedRoute(
+        edge_ids=("north", "east"),
+        edge_lengths_m=(100.0, 100.0),
+        edge_speeds_kmh=(36.0, 36.0),
+        cumulative_m=(0.0, 100.0),
+        total_distance_m=200.0,
+        polyline_wgs84=[(19.0, 50.0), (19.0, 50.0 + leg_lat), (19.0 + leg_lng, 50.0 + leg_lat)],
+        origin_snap=SnappedRouteEndpoint("origin", Position(lat=50.0, lng=19.0), 0),
+        destination_snap=SnappedRouteEndpoint(
+            "destination", Position(lat=50.0 + leg_lat, lng=19.0 + leg_lng), 0
+        ),
+        stop_lines=(),
+    )
+    return SimulationEngine(
+        "SIM-L",
+        route,
+        RouteModel(intersections=(), _cascade_targets={}),
+        Estimates(normal_seconds=20.0, greenwave_seconds=16.0),
+        SimulationSettings(),
+        MockItsGateway(),
+    )
+
+
+def test_ambulance_position_follows_the_route_polyline() -> None:
+    engine = engine_for_l_shaped_route()
+    state = engine.initial_state()
+    now = datetime(2026, 10, 16, tzinfo=UTC)
+
+    samples: list[tuple[float, Position]] = []
+    while not state.arrived:
+        state, events = engine.step(state, now)
+        tick = next(event for event in events if isinstance(event, SimulationTickEvent))
+        samples.append((state.distance_travelled_m, tick.ambulance.position))
+
+    assert len(samples) > 2
+    for distance, position in samples:
+        x, y = _local_xy(position.lng, position.lat)
+        # Up the north leg (x = 0) for the first 100 m, then along the east leg (y = 100).
+        expected = (0.0, distance) if distance <= 100.0 else (distance - 100.0, 100.0)
+        assert x == pytest.approx(expected[0], abs=0.5)
+        assert y == pytest.approx(expected[1], abs=0.5)
 
 
 def test_step_advances_at_current_edge_speed_and_dwells_at_stop_line() -> None:
