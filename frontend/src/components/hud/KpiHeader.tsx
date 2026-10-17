@@ -2,9 +2,25 @@
 
 import { Ambulance, TriangleAlert } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
+import type { ConnectionStatus } from "@/lib/simulation-adapter";
+import { connectionLabel } from "@/lib/simulation-copy";
+import type { SimulationPhase } from "@/lib/simulation-state";
+
+const PHASE_BADGES: Partial<Record<SimulationPhase, string>> = {
+  FINISHED: "SIMULATION FINISHED",
+  CANCELLED: "SIMULATION CANCELLED",
+  ERROR: "TELEMETRY STOPPED",
+};
+
+const CONNECTION_STYLES: Record<ConnectionStatus, string> = {
+  open: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  connecting: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  reconnecting: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  lost: "bg-red-500/10 text-red-700 dark:text-red-300",
+};
 
 export function KpiHeader() {
-  const { liveTelemetry, simulationState } = useSimulationState();
+  const { liveTelemetry, simulationState, connection } = useSimulationState();
   const elapsed = liveTelemetry?.kpi_metrics.total_time_elapsed_sec ?? 0;
   const elapsedLabel = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
   return (
@@ -21,10 +37,22 @@ export function KpiHeader() {
         </div>
         <span className="ml-1 hidden items-center gap-1 rounded-md bg-amber-500/10 px-2 py-1 text-[9px] font-bold text-amber-700 xl:inline-flex dark:text-amber-300">
           <TriangleAlert className="size-3" aria-hidden />
-          {simulationState === "FINISHED"
-            ? "SIMULATION FINISHED"
-            : (liveTelemetry?.ambulance.status.replaceAll("_", " ") ?? "WAITING")}
+          {PHASE_BADGES[simulationState] ??
+            liveTelemetry?.ambulance.status.replaceAll("_", " ") ??
+            "WAITING"}
         </span>
+        {connection && (
+          <span
+            role="status"
+            aria-label={`Simulation stream: ${connectionLabel(connection)}`}
+            className={`ml-1 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[9px] font-bold ${CONNECTION_STYLES[connection]}`}
+          >
+            <i
+              className={`size-1.5 rounded-full bg-current ${connection === "open" ? "animate-pulse" : ""}`}
+            />
+            {connectionLabel(connection)}
+          </span>
+        )}
       </div>
 
       <div className="col-span-2 row-start-1 text-center sm:col-span-1 sm:col-start-2">

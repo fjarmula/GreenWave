@@ -128,13 +128,13 @@ frontend/src/
 
 **Files:** Modify `src/components/hud/DispatchForm.tsx`, `KpiHeader.tsx`, `ItsConsole.tsx`, `src/components/dashboard.tsx`; Create `src/components/hud/RunSummary.tsx`.
 
-- [ ] `STARTING`: disable the dispatch button, show "Computing route…".
-- [ ] Errors by code (English): `ORIGIN_OFF_NETWORK` / `DESTINATION_OFF_NETWORK` → "Origin/Destination is not on the simulated road network"; `NO_ROUTE` → "No drivable route between these points"; `SIMULATION_ID_IN_USE` → retry with a new id once automatically, then show the error; `network` → "Simulation backend unreachable at <url>".
-- [ ] Connection badge in `KpiHeader`: Live / Reconnecting… / Connection lost.
-- [ ] `ItsConsole`: entries from `ITS_DISPATCH` — "Simulated FORCE_GREEN_PHASE → INT-0360, INT-0366 · hold {hold_duration_sec} s (≥ 40, e.g. 55) · ETA 14:32:38Z". Remove the synthesized per-tick log lines.
-- [ ] `RunSummary` on `FINISHED`: estimated normal vs estimated GreenWave vs simulated elapsed, final time saved; on `CANCELLED`: reason ("Stopped" / "Superseded by another dispatch").
-- [ ] Playback speed selector (1×, 2×, 5×, 10×) in `DispatchForm` **only if D9 was accepted**; otherwise skip this bullet.
-- [ ] Every new string keeps "simulated" wording where it describes signal behaviour.
+- [x] `STARTING`: disable the dispatch button, show "Computing route…".
+- [x] Errors by code (English): `ORIGIN_OFF_NETWORK` / `DESTINATION_OFF_NETWORK` → "Origin/Destination is not on the simulated road network"; `NO_ROUTE` → "No drivable route between these points"; `SIMULATION_ID_IN_USE` → retry with a new id once automatically, then show the error; `network` → "Simulation backend unreachable at <url>".
+- [x] Connection badge in `KpiHeader`: Live / Reconnecting… / Connection lost.
+- [x] `ItsConsole`: entries from `ITS_DISPATCH` — "Simulated FORCE_GREEN_PHASE → INT-0360, INT-0366 · hold {hold_duration_sec} s (≥ 40, e.g. 55) · ETA 14:32:38Z". Remove the synthesized per-tick log lines.
+- [x] `RunSummary` on `FINISHED`: estimated normal vs estimated GreenWave vs simulated elapsed, final time saved; on `CANCELLED`: reason ("Stopped" / "Superseded by another dispatch").
+- [x] Playback speed selector (1×, 2×, 5×, 10×) in `DispatchForm` **only if D9 was accepted**; otherwise skip this bullet.
+- [x] Every new string keeps "simulated" wording where it describes signal behaviour.
 
 ### Task F7: Map uses real geometry
 
