@@ -1,5 +1,4 @@
 .agent/
-.agents/
 .git/
 .tmp/
 graphify-out/

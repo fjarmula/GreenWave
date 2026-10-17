@@ -6,7 +6,7 @@ ER-GreenWave is a Kraków emergency-vehicle green-corridor simulation. It never 
 
 - `GreenWave_ARCHITECTURE.md`: architecture and state-machine intent.
 - `backend/src/greenwave/schemas/`: canonical API payloads.
-- `.agents/INSTRUCTIONS.md` and `.agents/INSTRUCTIONS_REFERENCE.md`: operating and domain constraints.
+- `docs/engineering/`: operating, domain, data-pipeline, and frontend constraints.
 - `docs/adr/`: accepted durable decisions.
 
 ## Active technical boundaries

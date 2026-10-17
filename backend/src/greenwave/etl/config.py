@@ -1,8 +1,8 @@
 """ETL configuration: every operationally tunable value, with units in the names.
 
-Comments say where a value comes from: "APPROVED" values were decided by the human (see the
-numbered decisions in ``.agents/DATA_PIPELINE.md`` section 6), "analysis" values only drive reports
-and checks, and "placeholder" values are known guesses affecting almost no data. Nothing here is
+Comments say where a value comes from: "APPROVED" values were decided by the human, "analysis"
+values only drive reports and checks, and "placeholder" values are known guesses affecting almost
+no data. ``docs/engineering/data-pipeline.md`` describes this provenance policy. Nothing here is
 read by request handlers; the ETL reads it at build time.
 """
 

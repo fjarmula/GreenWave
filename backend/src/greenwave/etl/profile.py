@@ -98,7 +98,7 @@ def _claims(
     bus_lane_rows: int,
     tram_line_rows: int,
 ) -> list[ClaimCheck]:
-    """Compare measurements with the numbers quoted in DATA_PIPELINE.md section 1."""
+    """Compare measurements with the snapshot baselines defined below."""
     by_type = geometry.features_by_geometry_type
     clusters = {int(c.radius_m): c.clusters for c in signals.clustering_all}
     variants = signals.tag_variants

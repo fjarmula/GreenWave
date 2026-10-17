@@ -37,7 +37,7 @@ Stated plainly so nobody plans against an assumption:
 
 ## 2. Decision register (all confirmed and ticked; final values recorded; ADR 0003 mirrors them)
 
-Every item below is something the architecture leaves open. "Recommendation" is the analyst's proposal; nothing is final until both of you tick it. Numbers marked **(new value)** are not in the architecture and need explicit approval (`.agents/INSTRUCTIONS_REFERENCE.md` §5.4 forbids inventing thresholds silently).
+Every item below is something the architecture leaves open. "Recommendation" is the analyst's proposal; nothing is final until both of you tick it. Numbers marked **(new value)** are not in the architecture and need explicit approval (`docs/engineering/contributor-workflow.md`, “Stack and design rules”, forbids inventing thresholds silently).
 
 ### Ownership
 - [x] **D1 — Split.** Piotr owns the backend branch (he built the data pipeline; the engine consumes it). Filip owns the frontend branch (he built the dashboard and the adapter seam).
@@ -111,7 +111,7 @@ Every item below is something the architecture leaves open. "Recommendation" is 
 ### Task 0.3: Stub endpoints with final signatures
 **Files:** Create `backend/src/greenwave/api/__init__.py`, `backend/src/greenwave/api/simulation.py` (an `APIRouter`); Modify `backend/src/greenwave/main.py` (include router — the **only** Phase 0 edit to `main.py`).
 - [ ] `POST /api/v1/simulation/start` → `response_model=SimulationStartResponse`, documented `responses` for 409/422 `ErrorResponse`; body raises HTTP 501 for now.
-- [ ] `GET /api/v1/simulation/{simulation_id}/stream` → `responses={200: {"content": {"text/event-stream": {"schema": <SimulationStreamEvent ref>}}}}` so every stream event model is registered in OpenAPI (required by `.agents/INSTRUCTIONS.md` §3); body 501.
+- [ ] `GET /api/v1/simulation/{simulation_id}/stream` → `responses={200: {"content": {"text/event-stream": {"schema": <SimulationStreamEvent ref>}}}}` so every stream event model is registered in OpenAPI (required by `docs/engineering/domain-invariants.md`, “Contracts”); body 501.
 - [ ] `POST /api/v1/simulation/{simulation_id}/stop` → `StopResponse`, 404 documented; body 501.
 - [ ] Test: OpenAPI document contains the three paths and every model name from Task 0.2.
 
@@ -138,7 +138,7 @@ A path is written by **exactly one** branch. If you need to change a path you do
 | `frontend/package*.json` | | **writes** | |
 | `frontend/src/types/api.generated.ts` | | | **frozen**, generated |
 | `graphify-out/**` | local only, gitignored; nobody commits it | local only, gitignored; nobody commits it | local only, gitignored; nobody commits it |
-| `GreenWave_ARCHITECTURE.md`, `AGENTS.md`, `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `.agents/**`, `.agent/**`, `docs/adr/**`, `.github/**`, `.pre-commit-config.yaml`, `.mcp.json` | | | **Phase 0 / Phase 3 only** |
+| `GreenWave_ARCHITECTURE.md`, `AGENTS.md`, `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/engineering/**`, `.agent/**`, `docs/adr/**`, `.github/**`, `.pre-commit-config.yaml`, `.mcp.json` | | | **Phase 0 / Phase 3 only** |
 | `docs/superpowers/plans/**` | own plan file only (checkbox ticks) | own plan file only | |
 
 Why each rule exists:
@@ -168,7 +168,7 @@ Mechanical guard (each person, in their own worktree — local only, not committ
    - [ ] Real-data run of all preset endpoint pairs (`frontend/src/components/map/dispatch-endpoints.ts`): each snaps within D12 and routes; replace any that do not.
    - [ ] Playwright CLI smoke (per AGENTS.md: `@playwright/cli`, outputs in `.tmp/playwright/`): start → ticks arrive → at least one `CLEARING` → `ARRIVED` → `SIMULATION_COMPLETED`; stop mid-run; second start supersedes the first tab.
    - [ ] Measure and record (do not invent budgets — record, then agree): backend startup time on real data, route planning time per request, tick loop duration (p50/max), SSE delivery latency.
-   - [ ] Docs: `README.md`, `backend/README.md`, `frontend/src/types/README.md` (remove "temporary"), `.agents/FRONTEND_DASHBOARD.md` ("Preserve the mock boundary until a backend contract is approved" is now satisfied), `.agent/MEMORY.md`.
+   - [ ] Docs: `README.md`, `backend/README.md`, `frontend/src/types/README.md` (remove "temporary"), `docs/engineering/frontend-dashboard.md` ("Preserve the mock boundary until a backend contract is approved" is now satisfied), `.agent/MEMORY.md`.
 
 ## Review Focus (cross-cutting)
 

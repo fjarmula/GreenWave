@@ -15,11 +15,11 @@
 ## Global Constraints
 
 - You write **only** `frontend/**` excluding `frontend/src/types/api.generated.ts`. Never `npm run generate:types` on this branch unless coordination doc §5 produced a new contract tag and you rebased onto it (then the regenerated file is identical to `main`'s — commit nothing new there).
-- Never `git add graphify-out`. Never edit root docs (`README.md`, `AGENTS.md`, `.agents/**`, architecture) — Phase 3.
-- No `any`; `unknown` + guards at the wire boundary (`.agents/INSTRUCTIONS_REFERENCE.md` §5.2).
+- Never `git add graphify-out`. Never edit root docs (`README.md`, `AGENTS.md`, `docs/engineering/**`, architecture) — Phase 3.
+- No `any`; `unknown` + guards at the wire boundary (`docs/engineering/contributor-workflow.md`, “Stack and design rules”).
 - Every UI string stays English and keeps the "simulated" labelling; never present signal states as real.
 - `NEXT_PUBLIC_SIMULATION_TRANSPORT` default stays `mock` on this branch (D22). The backend adapter is exercised by tests and by local runs with the env var set.
-- No new runtime dependency without asking (D23 decides validation without zod). Framer Motion etc. from `.agents/FRONTEND_DASHBOARD.md` "creative freedom" is welcome **only after** F1–F7 are green, and needs a one-line OK because it touches `package-lock.json`.
+- No new runtime dependency without asking (D23 decides validation without zod). Visual polish described in `docs/engineering/frontend-dashboard.md` is welcome **only after** F1–F7 are green, and needs a one-line OK if it touches `package-lock.json`.
 - Checks after every task: `npm run lint && npm run typecheck && npm run format:check && npm test && npm run build`.
 
 ## Review Focus
@@ -99,7 +99,7 @@ frontend/src/
 - Produces: `parseStartResponse(value: unknown): SimulationStartResponse`, `parseStreamEvent(value: unknown, expectedSimulationId: string): SimulationStreamEvent | null` (null = drop silently with a `console.warn` in dev), `parseErrorResponse(value: unknown): ErrorResponse | null`.
 
 - [ ] Tests: rejects `schema_version !== "1.0"`, `is_simulated !== true`, wrong `simulation_id`, missing `ambulance.position.lat`, a non-finite number, an unknown `state` string, a `route_geometry` with < 2 coordinates; returns `null` (ignore) for an unknown `event_type`; accepts the architecture §4 examples (as fixtures written under `src/lib/transport/__fixtures__/`, typed against generated types so a contract change breaks compilation, not runtime).
-- [ ] Guards check exactly what the UI dereferences plus the envelope — not a second full schema (no competing contract definition, `.agents/INSTRUCTIONS.md` §3).
+- [ ] Guards check exactly what the UI dereferences plus the envelope — not a second full schema (no competing contract definition, `docs/engineering/domain-invariants.md`, “Contracts”).
 
 ### Task F4: Backend adapter (fetch + EventSource)
 
