@@ -4,7 +4,7 @@ from math import cos, radians
 import pytest
 
 from greenwave.its import MockItsGateway
-from greenwave.routing.estimates import Estimates
+from greenwave.routing.estimates import Estimates, estimate_times
 from greenwave.routing.planner import PlannedRoute, SnappedRouteEndpoint
 from greenwave.schemas import Position, SimulationTickEvent
 from greenwave.simulation.engine import SimulationEngine
@@ -33,6 +33,7 @@ def engine_for_single_stop() -> SimulationEngine:
         route,
         model,
         Estimates(normal_seconds=55.0, greenwave_seconds=23.0),
+        1.0,
         SimulationSettings(),
         MockItsGateway(),
     )
@@ -68,6 +69,7 @@ def engine_for_l_shaped_route() -> SimulationEngine:
         route,
         RouteModel(intersections=(), _cascade_targets={}),
         Estimates(normal_seconds=20.0, greenwave_seconds=16.0),
+        1.0,
         SimulationSettings(),
         MockItsGateway(),
     )
@@ -91,6 +93,34 @@ def test_ambulance_position_follows_the_route_polyline() -> None:
         expected = (0.0, distance) if distance <= 100.0 else (distance - 100.0, 100.0)
         assert x == pytest.approx(expected[0], abs=0.5)
         assert y == pytest.approx(expected[1], abs=0.5)
+
+
+def test_time_saved_on_arrival_uses_the_traffic_density_multiplier() -> None:
+    """D15: on arrival the normal-mode time covered is T_normal, scaled by the multiplier."""
+    multiplier = 2.0
+    settings = SimulationSettings()
+    template = engine_for_single_stop()
+    estimates = estimate_times(template.route, template.route_model, multiplier, settings)
+    engine = SimulationEngine(
+        "SIM-2",
+        template.route,
+        template.route_model,
+        estimates,
+        multiplier,
+        settings,
+        MockItsGateway(),
+    )
+    state = engine.initial_state()
+    now = datetime(2026, 10, 16, tzinfo=UTC)
+
+    while not state.arrived:
+        state, events = engine.step(state, now)
+    tick = next(event for event in events if isinstance(event, SimulationTickEvent))
+
+    assert tick.kpi_metrics.total_time_elapsed_sec == state.simulated_time_s
+    assert tick.kpi_metrics.current_time_saved_sec == round(
+        estimates.normal_seconds - state.simulated_time_s
+    )
 
 
 def test_step_advances_at_current_edge_speed_and_dwells_at_stop_line() -> None:

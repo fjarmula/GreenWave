@@ -77,10 +77,12 @@ class SimulationEngine:
         route: PlannedRoute,
         route_model: RouteModel,
         estimates: Estimates,
+        traffic_density_multiplier: float,
         settings: SimulationSettings,
         gateway: ItsGateway,
     ) -> None:
         self.simulation_id, self.route, self.route_model = simulation_id, route, route_model
+        self.traffic_density_multiplier = traffic_density_multiplier
         self.estimates, self.settings, self.gateway = estimates, settings, gateway
         self._polyline_offsets_m = _polyline_offsets_m(route.polyline_wgs84)
 
@@ -367,7 +369,11 @@ class SimulationEngine:
 
     def _kpi(self, state: EngineState) -> KpiMetrics:
         normal = sum(
-            min(length, max(0.0, state.distance_travelled_m - start)) * 3.6 / speed
+            # Same normal-mode model as estimate_times: motion scales with traffic density.
+            min(length, max(0.0, state.distance_travelled_m - start))
+            * self.traffic_density_multiplier
+            * 3.6
+            / speed
             for length, speed, start in zip(
                 self.route.edge_lengths_m,
                 self.route.edge_speeds_kmh,
