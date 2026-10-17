@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Target,
   TimerReset,
+  TriangleAlert,
   Zap,
 } from "lucide-react";
 import { useState } from "react";
@@ -19,14 +20,29 @@ import {
   type DestinationEndpointId,
   type OriginEndpointId,
 } from "@/components/map/dispatch-endpoints";
+import { getFrontendConfig } from "@/lib/config";
 import {
   DEFAULT_TRAFFIC_DENSITY_MULTIPLIER,
   estimateMockNormalTravelTimeSeconds,
   MOCK_GREENWAVE_TRAVEL_TIME_SECONDS,
 } from "@/lib/mock-simulation-config";
 
+// D9: wall clock stays 1 Hz; each tick advances this many simulated seconds.
+const PLAYBACK_SPEEDS = [1, 2, 5, 10] as const;
+type PlaybackSpeed = (typeof PLAYBACK_SPEEDS)[number];
+
+export type DispatchSettings = {
+  trafficDensity: number;
+  cascadeEnabled: boolean;
+  playbackSpeed: PlaybackSpeed;
+};
+
 type DispatchFormProps = {
-  onInitialize: (settings: { trafficDensity: number; cascadeEnabled: boolean }) => void;
+  onInitialize: (settings: DispatchSettings) => void;
+  /** True while the start request is in flight (STARTING). */
+  pending: boolean;
+  /** Readable reason the last initialization failed, if any. */
+  errorMessage: string | null;
   originId: OriginEndpointId;
   destinationId: DestinationEndpointId;
   onOriginChange: (originId: OriginEndpointId) => void;
@@ -36,6 +52,8 @@ type DispatchFormProps = {
 
 export function DispatchForm({
   onInitialize,
+  pending,
+  errorMessage,
   originId,
   destinationId,
   onOriginChange,
@@ -44,6 +62,8 @@ export function DispatchForm({
 }: DispatchFormProps) {
   const [trafficDensity, setTrafficDensity] = useState(DEFAULT_TRAFFIC_DENSITY_MULTIPLIER);
   const [cascadeEnabled, setCascadeEnabled] = useState(true);
+  const [playbackSpeed, setPlaybackSpeed] = useState<PlaybackSpeed>(1);
+  const isMockTransport = getFrontendConfig().transport === "mock";
   const normalSeconds = estimateMockNormalTravelTimeSeconds(trafficDensity);
   const greenwaveSeconds = MOCK_GREENWAVE_TRAVEL_TIME_SECONDS;
   const savedSeconds = normalSeconds - greenwaveSeconds;
@@ -146,42 +166,103 @@ export function DispatchForm({
         </button>
       </div>
 
+      <div className="mt-6">
+        <div className="flex items-center justify-between gap-3">
+          <span id="playback-speed-label" className="dashboard-label">
+            Playback speed
+          </span>
+          <span className="font-mono text-[10px] text-muted-foreground">
+            simulated s per 1 s tick
+          </span>
+        </div>
+        <div
+          role="radiogroup"
+          aria-labelledby="playback-speed-label"
+          className="mt-2 grid grid-cols-4 gap-1 rounded-lg border border-border bg-muted/45 p-1"
+        >
+          {PLAYBACK_SPEEDS.map((speed) => (
+            <button
+              key={speed}
+              type="button"
+              role="radio"
+              aria-checked={playbackSpeed === speed}
+              onClick={() => setPlaybackSpeed(speed)}
+              className={`min-h-8 rounded-md font-mono text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 ${
+                playbackSpeed === speed
+                  ? "bg-background text-cyan-700 shadow-sm dark:text-cyan-300"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {speed}×
+            </button>
+          ))}
+        </div>
+      </div>
+
       <button
         type="button"
-        onClick={() => onInitialize({ trafficDensity, cascadeEnabled })}
-        className="mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 text-xs font-extrabold tracking-[0.08em] text-emerald-950 uppercase shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+        disabled={pending}
+        aria-busy={pending}
+        onClick={() => onInitialize({ trafficDensity, cascadeEnabled, playbackSpeed })}
+        className="mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 text-xs font-extrabold tracking-[0.08em] text-emerald-950 uppercase shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 disabled:hover:bg-emerald-500"
       >
         <Zap className="size-4" aria-hidden />
-        Initialize green corridor
+        {pending ? "Computing route…" : "Initialize green corridor"}
         <ArrowUpRight className="ml-auto size-4" aria-hidden />
       </button>
+
+      {errorMessage && (
+        <p
+          role="alert"
+          className="mt-3 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/8 px-3 py-2.5 text-xs font-medium text-red-700 dark:text-red-300"
+        >
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          {errorMessage}
+        </p>
+      )}
 
       <div className="mt-5 rounded-xl border border-emerald-500/25 bg-emerald-500/7 p-4">
         <div className="flex items-center gap-2 text-[11px] font-medium">
           <TimerReset className="size-4 text-emerald-500" aria-hidden />
-          <span>Mock pre-flight estimation</span>
+          <span>{isMockTransport ? "Mock pre-flight estimation" : "Pre-flight estimation"}</span>
           <span className="ml-auto font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-            READY
+            {isMockTransport ? "READY" : "AFTER START"}
           </span>
         </div>
-        <div className="my-4 grid grid-cols-2 gap-3">
-          <Estimate label="Standard time" value={formatEstimate(normalSeconds)} />
-          <Estimate label="GreenWave time" value={formatEstimate(greenwaveSeconds)} highlighted />
-        </div>
-        <div className="flex items-center gap-2 border-t border-emerald-500/20 pt-3 text-emerald-600 dark:text-emerald-400">
-          <ArrowDownRight className="size-4" aria-hidden />
-          <strong className="text-[11px]">
-            {Math.round((savedSeconds / normalSeconds) * 100)}% TIME SAVED
-          </strong>
-          <span className="ml-auto font-mono text-[10px] text-muted-foreground">
-            −{formatEstimate(savedSeconds)}
-          </span>
-        </div>
+        {/* Backend estimates exist only once the route is planned; never show mock numbers as real. */}
+        {!isMockTransport ? (
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Standard and GreenWave travel times are computed by the simulation backend when the
+            route is initialized.
+          </p>
+        ) : (
+          <>
+            <div className="my-4 grid grid-cols-2 gap-3">
+              <Estimate label="Standard time" value={formatEstimate(normalSeconds)} />
+              <Estimate
+                label="GreenWave time"
+                value={formatEstimate(greenwaveSeconds)}
+                highlighted
+              />
+            </div>
+            <div className="flex items-center gap-2 border-t border-emerald-500/20 pt-3 text-emerald-600 dark:text-emerald-400">
+              <ArrowDownRight className="size-4" aria-hidden />
+              <strong className="text-[11px]">
+                {Math.round((savedSeconds / normalSeconds) * 100)}% TIME SAVED
+              </strong>
+              <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                −{formatEstimate(savedSeconds)}
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       <p className="mt-5 flex items-center gap-2 text-[10px] leading-relaxed text-muted-foreground">
         <ShieldCheck className="size-4 shrink-0 text-emerald-500" aria-hidden />
-        Demo uses synthetic route estimates and sample signal telemetry.
+        {isMockTransport
+          ? "Demo uses synthetic route estimates and sample signal telemetry."
+          : "Route estimates come from the simulation backend after initialization. All signal states are simulated."}
       </p>
     </aside>
   );

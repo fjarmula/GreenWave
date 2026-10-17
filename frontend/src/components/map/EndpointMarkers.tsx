@@ -5,6 +5,8 @@ import * as maplibregl from "maplibre-gl";
 import type { Map } from "maplibre-gl";
 
 import type { DestinationEndpoint, OriginEndpoint } from "@/components/map/dispatch-endpoints";
+import { snapConnectorFeatures, SNAP_CONNECTOR_MIN_METERS } from "@/components/map/snap-connectors";
+import type { SimulationStartRequest, SimulationStartResponse } from "@/types/telemetry";
 
 type EndpointMarkersProps = {
   map: Map | null;
@@ -12,6 +14,11 @@ type EndpointMarkersProps = {
   destination: DestinationEndpoint;
   focusRequest: number;
   live: boolean;
+  /** False once a route is shown: the map then fits the route instead of the endpoints. */
+  fitToEndpoints: boolean;
+  startRequest: SimulationStartRequest | null;
+  routeData: SimulationStartResponse | null;
+  styleRevision: number;
 };
 
 export function EndpointMarkers({
@@ -20,6 +27,10 @@ export function EndpointMarkers({
   destination,
   focusRequest,
   live,
+  fitToEndpoints,
+  startRequest,
+  routeData,
+  styleRevision,
 }: EndpointMarkersProps) {
   useEffect(() => {
     if (!map) return;
@@ -37,6 +48,12 @@ export function EndpointMarkers({
       .setLngLat(destination.coordinates)
       .addTo(map);
 
+    if (!fitToEndpoints) {
+      return () => {
+        originMapMarker.remove();
+        destinationMapMarker.remove();
+      };
+    }
     const bounds = new maplibregl.LngLatBounds(origin.coordinates, origin.coordinates);
     bounds.extend(destination.coordinates);
     const mobile = map.getContainer().clientWidth < 640;
@@ -52,7 +69,32 @@ export function EndpointMarkers({
       originMapMarker.remove();
       destinationMapMarker.remove();
     };
-  }, [destination, focusRequest, live, map, origin]);
+  }, [destination, fitToEndpoints, focusRequest, live, map, origin]);
+
+  useEffect(() => {
+    if (!map || !startRequest) return;
+    const connectors = snapConnectorFeatures(startRequest, routeData, SNAP_CONNECTOR_MIN_METERS);
+    if (!connectors.features.length) return;
+    const sourceId = "greenwave-snap-connectors";
+    const layerId = "greenwave-snap-connectors-line";
+    map.addSource(sourceId, { type: "geojson", data: connectors });
+    map.addLayer({
+      id: layerId,
+      type: "line",
+      source: sourceId,
+      paint: {
+        "line-color": "#64748b",
+        "line-width": 2,
+        "line-dasharray": [2, 2],
+        "line-opacity": 0.9,
+      },
+      layout: { "line-cap": "round" },
+    });
+    return () => {
+      if (map.getLayer(layerId)) map.removeLayer(layerId);
+      if (map.getSource(sourceId)) map.removeSource(sourceId);
+    };
+  }, [map, routeData, startRequest, styleRevision]);
 
   return null;
 }

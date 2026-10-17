@@ -5,10 +5,14 @@ import { useState } from "react";
 import { useSimulationStream } from "@/lib/useSimulationStream";
 import { useSimulationState } from "@/components/simulation-provider";
 
+import { getFrontendConfig } from "@/lib/config";
+import { describeSimulationError } from "@/lib/simulation-copy";
+import type { SimulationPhase } from "@/lib/simulation-state";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import { IntersectionList } from "@/components/hud/IntersectionList";
 import { ItsConsole } from "@/components/hud/ItsConsole";
 import { KpiHeader } from "@/components/hud/KpiHeader";
+import { RunSummary } from "@/components/hud/RunSummary";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { MapContainer } from "@/components/map/MapContainer";
 import {
@@ -20,12 +24,31 @@ import {
 
 type DashboardMode = "setup" | "live";
 
+const PHASE_LABELS: Record<SimulationPhase, string> = {
+  SETUP: "System ready",
+  STARTING: "Computing route",
+  RUNNING: "Simulation running",
+  FINISHED: "Simulation finished",
+  CANCELLED: "Simulation cancelled",
+  ERROR: "Simulation error",
+};
+
 export function Dashboard() {
   const { startSimulation, stopSimulation } = useSimulationStream();
+  const { simulationState, routeData, error } = useSimulationState();
+  // A failed start has no route yet; errors after the start are shown in the live view.
+  const startErrorMessage =
+    simulationState === "ERROR" && !routeData && error
+      ? describeSimulationError(error, getFrontendConfig().apiBaseUrl)
+      : null;
   const [mode, setMode] = useState<DashboardMode>("setup");
   const [originId, setOriginId] = useState<OriginEndpointId>("hospital");
   const [destinationId, setDestinationId] = useState<DestinationEndpointId>("station");
   const [mapFocusRequest, setMapFocusRequest] = useState(0);
+  const backToSetup = () => {
+    stopSimulation();
+    setMode("setup");
+  };
   const origin =
     ORIGIN_ENDPOINTS.find((endpoint) => endpoint.id === originId) ?? ORIGIN_ENDPOINTS[0];
   const destination =
@@ -46,15 +69,20 @@ export function Dashboard() {
         <section className="grid min-h-0 flex-1 lg:grid-cols-[370px_minmax(0,1fr)]">
           <div className="order-2 lg:order-1">
             <DispatchForm
-              onInitialize={({ trafficDensity, cascadeEnabled }) => {
+              pending={simulationState === "STARTING"}
+              errorMessage={startErrorMessage}
+              onInitialize={({ trafficDensity, cascadeEnabled, playbackSpeed }) => {
                 const request = {
                   simulation_id: crypto.randomUUID(),
                   origin: { lng: origin.coordinates[0], lat: origin.coordinates[1] },
                   destination: { lng: destination.coordinates[0], lat: destination.coordinates[1] },
                   traffic_density_multiplier: trafficDensity,
                   enable_cascade_mode: cascadeEnabled,
+                  playback_speed: playbackSpeed,
                 };
-                void startSimulation(request).then(() => setMode("live"));
+                void startSimulation(request).then((started) => {
+                  if (started) setMode("live");
+                });
               }}
               originId={originId}
               destinationId={destinationId}
@@ -76,6 +104,7 @@ export function Dashboard() {
           origin={origin}
           destination={destination}
           mapFocusRequest={mapFocusRequest}
+          onBackToSetup={backToSetup}
         />
       )}
     </main>
@@ -130,13 +159,7 @@ function DashboardHeader({ mode, onModeChange }: DashboardHeaderProps) {
 
       <div className="ml-2 hidden items-center gap-2 text-[11px] text-muted-foreground xl:flex">
         <span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-        <span>
-          {simulationState === "RUNNING"
-            ? "Simulation running"
-            : simulationState === "FINISHED"
-              ? "Simulation finished"
-              : "System ready"}
-        </span>
+        <span>{PHASE_LABELS[simulationState]}</span>
         <span className="mx-1 h-4 w-px bg-border" />
         <span className="font-mono">SIMULATION ENVIRONMENT</span>
       </div>
@@ -177,11 +200,13 @@ function RoutePreview({
   origin,
   destination,
   mapFocusRequest,
+  onBackToSetup,
 }: {
   mode: DashboardMode;
   origin: (typeof ORIGIN_ENDPOINTS)[number];
   destination: (typeof DESTINATION_ENDPOINTS)[number];
   mapFocusRequest: number;
+  onBackToSetup?: () => void;
 }) {
   const isLive = mode === "live";
 
@@ -214,12 +239,18 @@ function RoutePreview({
           </div>
           <VehicleTelemetry />
           <div className="absolute top-36 right-6 bottom-28 z-20 hidden w-[440px] space-y-3 overflow-y-auto lg:block">
-            <div className="ml-auto w-[330px]">
+            <div className="ml-auto w-[330px] space-y-3">
+              {onBackToSetup && <RunSummary onBackToSetup={onBackToSetup} />}
               <IntersectionList />
             </div>
             <ItsConsole />
           </div>
           <div className="relative z-20 mt-[420px] grid gap-3 px-3 pb-3 sm:mt-[550px] sm:grid-cols-2 sm:px-4 lg:hidden">
+            {onBackToSetup && (
+              <div className="sm:col-span-2">
+                <RunSummary onBackToSetup={onBackToSetup} />
+              </div>
+            )}
             <IntersectionList />
             <ItsConsole />
           </div>
@@ -266,14 +297,16 @@ function VehicleTelemetry() {
           </strong>
           <span className="mb-1 text-[10px] text-muted-foreground">km/h</span>
           <b className="mb-1 ml-auto font-mono text-[10px] text-emerald-600 dark:text-emerald-400">
-            MOCK
+            {getFrontendConfig().transport === "mock" ? "MOCK" : "SIMULATED"}
           </b>
         </div>
         <div className="mt-2 h-1 rounded-full bg-muted">
           <span className="block h-full w-[72%] rounded-full bg-cyan-500" />
         </div>
         <div className="mt-3 flex justify-between font-mono text-[9px] text-muted-foreground">
-          <span>POSITION · SYNTHETIC</span>
+          <span>
+            POSITION · {getFrontendConfig().transport === "mock" ? "SYNTHETIC" : "SIMULATED"}
+          </span>
           <span>TICK · {liveTelemetry?.tick ?? 0}</span>
         </div>
       </div>
