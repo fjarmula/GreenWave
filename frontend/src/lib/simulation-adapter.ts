@@ -1,4 +1,6 @@
+import { getFrontendConfig, type FrontendConfig } from "@/lib/config";
 import { createMockSimulationAdapter } from "@/lib/mock-simulation-adapter";
+import { createBackendSimulationAdapter } from "@/lib/transport/backend-simulation-adapter";
 import type { SimulationErrorInfo } from "@/lib/transport/errors";
 import type {
   ItsDispatchEvent,
@@ -34,5 +36,15 @@ export type SimulationAdapter = {
   stop: (simulationId: string) => Promise<void>;
 };
 
-// Replace only this adapter selection when the backend stream is available.
-export const simulationAdapter: SimulationAdapter = createMockSimulationAdapter();
+export function selectSimulationAdapter(config: FrontendConfig): SimulationAdapter {
+  if (config.transport === "backend") {
+    return createBackendSimulationAdapter(config.apiBaseUrl, {
+      startTimeoutMilliseconds: config.startTimeoutMilliseconds,
+      reconnectAttemptLimit: config.reconnectAttemptLimit,
+    });
+  }
+  return createMockSimulationAdapter();
+}
+
+/** Module-level singleton chosen by `NEXT_PUBLIC_SIMULATION_TRANSPORT` (default: mock, D22). */
+export const simulationAdapter: SimulationAdapter = selectSimulationAdapter(getFrontendConfig());

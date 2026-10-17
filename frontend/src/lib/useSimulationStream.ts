@@ -8,9 +8,10 @@ import {
   requestSimulationStart,
   requestSimulationStop,
 } from "@/lib/simulation-controller";
+import { getFrontendConfig } from "@/lib/config";
 import type { SimulationStartRequest } from "@/types/telemetry";
 
-const STALE_AFTER_MILLISECONDS = 3000;
+const STALE_AFTER_MILLISECONDS = getFrontendConfig().staleAfterSeconds * 1000;
 
 export function useSimulationStream() {
   const { simulationState, startRequest } = useSimulationState();

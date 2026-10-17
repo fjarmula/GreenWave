@@ -89,7 +89,7 @@ frontend/src/
 
 - [x] Tests first (pure reducer): `TICK` with `tick` ≤ last tick is ignored; `TICK` with another `simulation_id` is ignored; `ITS_DISPATCH` appends a formatted log line (bounded to 20 entries as today); `TERMINAL{COMPLETED}` → `FINISHED` keeps route + last telemetry; `TERMINAL{CANCELLED, SUPERSEDED}` → `CANCELLED` with reason; `START_FAILED` → `ERROR` with the code; `RESET` from any state → `SETUP`.
 - [x] Hook: opens the subscription on `START_SUCCEEDED`, closes it on unmount/`RESET`/terminal; idempotent under React Strict Mode double effects (test with two mount cycles).
-- [ ] "Stale" indicator: if `open` but no event for N seconds, set connection `reconnecting`. N is **not specified anywhere** — propose 3 s (three missed 1 Hz ticks), put it in `config.ts`, and mention it in the PR so it is approved explicitly.
+- [x] "Stale" indicator: if `open` but no event for N seconds, set connection `reconnecting`. N is **not specified anywhere** — propose 3 s (three missed 1 Hz ticks), put it in `config.ts`, and mention it in the PR so it is approved explicitly.
 
 ### Task F3: Wire validation (D23)
 
@@ -121,8 +121,8 @@ frontend/src/
 **Interfaces:**
 - Produces: `getFrontendConfig(): { transport: "mock" | "backend"; apiBaseUrl: string; staleAfterSeconds: number }` read from `NEXT_PUBLIC_SIMULATION_TRANSPORT` (default `mock`) and `NEXT_PUBLIC_API_BASE_URL` (default `http://127.0.0.1:8000`, trailing slash stripped). Invalid values → fall back to defaults **and** warn once (never silently pick `backend`).
 
-- [ ] Read the Next 16 docs for how `NEXT_PUBLIC_*` is inlined at build time (it is baked into the client bundle; a change needs a rebuild/dev restart) and write that one fact in `.env.example`.
-- [ ] `simulationAdapter` selection by config; keep it a module-level singleton exactly as today so components are untouched.
+- [x] Read the Next 16 docs for how `NEXT_PUBLIC_*` is inlined at build time (it is baked into the client bundle; a change needs a rebuild/dev restart) and write that one fact in `.env.example`.
+- [x] `simulationAdapter` selection by config; keep it a module-level singleton exactly as today so components are untouched.
 
 ### Task F6: UX for real-world states
 
