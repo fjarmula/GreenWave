@@ -9,6 +9,7 @@ Simulation-only proof of concept for emergency-vehicle green corridors in Krakó
 - Git
 - [uv](https://docs.astral.sh/uv/) and Python 3.12
 - Node.js 22 and npm (`frontend/.nvmrc` pins the version)
+- Docker Desktop with Docker Compose (optional, for the Compose workflow below)
 
 ### Install
 
@@ -45,6 +46,40 @@ cd ..
 
 `intersections` must finish before `neighbours`. Re-run both after changing the raw-data manifest. The backend refuses to start without matching processed artifacts.
 
+### Run with Docker Compose
+
+After preparing the dataset above, start the dashboard and backend together:
+
+```bash
+docker compose up --build
+```
+
+Open the dashboard at <http://localhost:3000>. The FastAPI API and its interactive
+documentation are available at <http://localhost:8000/docs>. Compose selects the
+dashboard's backend transport automatically; HTTP and SSE updates use the local API.
+All routing, traffic-signal states, and priority dispatches remain simulated.
+
+The raw and processed GIS directories remain host-managed under `backend/data/` and
+are excluded from Docker images. If the processed artifacts are missing, stale, or
+inconsistent, backend startup stops with the existing ETL recovery guidance; Compose
+does not fall back to mock data.
+
+Source edits reload the FastAPI and Next.js development servers without rebuilding the
+images. Follow logs with:
+
+```bash
+docker compose logs -f backend
+```
+
+Stop the stack while keeping the dependency caches for the next run:
+
+```bash
+docker compose down
+```
+
+`docker compose down --volumes` removes only the Compose dependency volumes; it does
+not remove the host GIS data in `backend/data/`.
+
 ### Run locally
 
 Start each server in a separate terminal:
@@ -62,6 +97,9 @@ npm run dev
 ```
 
 Frontend: <http://localhost:3000>
+
+Docker Compose is optional. The native `uv` and `npm` commands above and in the
+subsystem READMEs remain the authoritative development workflow.
 
 ### Quality checks
 
