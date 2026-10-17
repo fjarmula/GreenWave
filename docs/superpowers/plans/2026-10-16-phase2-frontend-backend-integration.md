@@ -149,7 +149,8 @@ frontend/src/
 ### Task F8: Branch finish
 
 - [x] Full frontend checks green.
-- [ ] Local smoke against Piotr's branch **without merging** (he tells you when B7 works): run his worktree's backend, then `NEXT_PUBLIC_SIMULATION_TRANSPORT=backend npm run dev`; one full run at 10×, one stop mid-run, one second-tab supersede. Record what you saw in the PR. If something disagrees with the contract → coordination doc §5, don't patch around it.
+- [x] Local smoke against Piotr's branch **without merging** (he tells you when B7 works): run his worktree's backend, then `NEXT_PUBLIC_SIMULATION_TRANSPORT=backend npm run dev`; one full run at 10×, one stop mid-run, one second-tab supersede. Record what you saw in the PR. If something disagrees with the contract → coordination doc §5, don't patch around it.
+  - Done 2026-10-17 against `main` (b8a1877) with the real dataset: all three scenarios pass. Two backend engine defects found and reported, not patched here: the ambulance position is a straight origin→destination chord (`engine.py` `_ambulance`), and the time-saved KPI ignores `traffic_density_multiplier`, so it does not end at `T_normal - T_greenwave` (D15) unless the multiplier is 1.0. The Nowa Huta preset was off-network and was moved 450 m north.
   - **Not run (2026-10-17):** no raw/processed dataset on this machine (`backend/data/raw` holds only `MANIFEST.json`), so the backend cannot start. Verified instead: a `NEXT_PUBLIC_SIMULATION_TRANSPORT=backend` production build with no backend running fails the start in < 1 s with "Simulation backend unreachable at http://127.0.0.1:8000" and stays on setup (`.tmp/playwright/backend-unreachable.*`).
 - [x] Playwright CLI smoke script against the **mock** transport (outputs in `.tmp/playwright/`, per AGENTS.md); Phase 3 re-points it at the backend.
 - [x] `git diff --name-only contract-v1...HEAD` — every path under `frontend/` and not `api.generated.ts`, plus your own plan file.
