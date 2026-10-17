@@ -74,7 +74,7 @@ frontend/src/
 - [x] `name` can be `null` (D4/D5) — render "Unnamed intersection".
 - [x] `tti_seconds` can be `null` after passing — render "Passed".
 - [x] Tests: reducer and mock tests updated to v1 shapes; a type-level test (compile-only) that `telemetry.ts` defines no object type of its own.
-- [ ] `npm run build` green with `mock` transport — the dashboard looks and behaves as before.
+- [x] `npm run build` green with `mock` transport — the dashboard looks and behaves as before.
 
 ### Task F2: Adapter interface and reducer for a real network
 
@@ -148,11 +148,13 @@ frontend/src/
 
 ### Task F8: Branch finish
 
-- [ ] Full frontend checks green.
+- [x] Full frontend checks green.
 - [ ] Local smoke against Piotr's branch **without merging** (he tells you when B7 works): run his worktree's backend, then `NEXT_PUBLIC_SIMULATION_TRANSPORT=backend npm run dev`; one full run at 10×, one stop mid-run, one second-tab supersede. Record what you saw in the PR. If something disagrees with the contract → coordination doc §5, don't patch around it.
-- [ ] Playwright CLI smoke script against the **mock** transport (outputs in `.tmp/playwright/`, per AGENTS.md); Phase 3 re-points it at the backend.
-- [ ] `git diff --name-only contract-v1...HEAD` — every path under `frontend/` and not `api.generated.ts`, plus your own plan file.
+  - **Not run (2026-10-17):** no raw/processed dataset on this machine (`backend/data/raw` holds only `MANIFEST.json`), so the backend cannot start. Verified instead: a `NEXT_PUBLIC_SIMULATION_TRANSPORT=backend` production build with no backend running fails the start in < 1 s with "Simulation backend unreachable at http://127.0.0.1:8000" and stays on setup (`.tmp/playwright/backend-unreachable.*`).
+- [x] Playwright CLI smoke script against the **mock** transport (outputs in `.tmp/playwright/`, per AGENTS.md); Phase 3 re-points it at the backend.
+- [x] `git diff --name-only contract-v1...HEAD` — every path under `frontend/` and not `api.generated.ts`, plus your own plan file.
 - [ ] Rebase on `main` **after** the backend PR is merged; CI green; PR with merge commit (not squash).
+  - **Not done:** the owner asked for no rebase/push/PR yet; the backend is already merged on `main` (b8a1877). PR description drafted in `.tmp/pr-frontend-integration.md`.
 
 ## What you hand to Filip during the branch (messages only)
 
