@@ -41,18 +41,21 @@ export function KpiHeader() {
             liveTelemetry?.ambulance.status.replaceAll("_", " ") ??
             "WAITING"}
         </span>
-        {connection && (
-          <span
-            role="status"
-            aria-label={`Simulation stream: ${connectionLabel(connection)}`}
-            className={`ml-1 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[9px] font-bold ${CONNECTION_STYLES[connection]}`}
-          >
-            <i
-              className={`size-1.5 rounded-full bg-current ${connection === "open" ? "animate-pulse" : ""}`}
-            />
-            {connectionLabel(connection)}
-          </span>
-        )}
+        {/* Always mounted so screen readers announce every change, including the first. */}
+        <span role="status" className="contents">
+          {connection && (
+            <span
+              className={`ml-1 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[9px] font-bold ${CONNECTION_STYLES[connection]}`}
+            >
+              <i
+                aria-hidden
+                className={`size-1.5 rounded-full bg-current ${connection === "open" ? "animate-pulse" : ""}`}
+              />
+              <span className="sr-only">Simulation stream: </span>
+              {connectionLabel(connection)}
+            </span>
+          )}
+        </span>
       </div>
 
       <div className="col-span-2 row-start-1 text-center sm:col-span-1 sm:col-start-2">

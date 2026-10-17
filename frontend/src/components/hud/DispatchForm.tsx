@@ -224,26 +224,38 @@ export function DispatchForm({
       <div className="mt-5 rounded-xl border border-emerald-500/25 bg-emerald-500/7 p-4">
         <div className="flex items-center gap-2 text-[11px] font-medium">
           <TimerReset className="size-4 text-emerald-500" aria-hidden />
-          <span>
-            {isMockTransport ? "Mock pre-flight estimation" : "Sample pre-flight estimation"}
-          </span>
+          <span>{isMockTransport ? "Mock pre-flight estimation" : "Pre-flight estimation"}</span>
           <span className="ml-auto font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-            READY
+            {isMockTransport ? "READY" : "AFTER START"}
           </span>
         </div>
-        <div className="my-4 grid grid-cols-2 gap-3">
-          <Estimate label="Standard time" value={formatEstimate(normalSeconds)} />
-          <Estimate label="GreenWave time" value={formatEstimate(greenwaveSeconds)} highlighted />
-        </div>
-        <div className="flex items-center gap-2 border-t border-emerald-500/20 pt-3 text-emerald-600 dark:text-emerald-400">
-          <ArrowDownRight className="size-4" aria-hidden />
-          <strong className="text-[11px]">
-            {Math.round((savedSeconds / normalSeconds) * 100)}% TIME SAVED
-          </strong>
-          <span className="ml-auto font-mono text-[10px] text-muted-foreground">
-            −{formatEstimate(savedSeconds)}
-          </span>
-        </div>
+        {/* Backend estimates exist only once the route is planned; never show mock numbers as real. */}
+        {!isMockTransport ? (
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Standard and GreenWave travel times are computed by the simulation backend when the
+            route is initialized.
+          </p>
+        ) : (
+          <>
+            <div className="my-4 grid grid-cols-2 gap-3">
+              <Estimate label="Standard time" value={formatEstimate(normalSeconds)} />
+              <Estimate
+                label="GreenWave time"
+                value={formatEstimate(greenwaveSeconds)}
+                highlighted
+              />
+            </div>
+            <div className="flex items-center gap-2 border-t border-emerald-500/20 pt-3 text-emerald-600 dark:text-emerald-400">
+              <ArrowDownRight className="size-4" aria-hidden />
+              <strong className="text-[11px]">
+                {Math.round((savedSeconds / normalSeconds) * 100)}% TIME SAVED
+              </strong>
+              <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                −{formatEstimate(savedSeconds)}
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       <p className="mt-5 flex items-center gap-2 text-[10px] leading-relaxed text-muted-foreground">

@@ -101,7 +101,9 @@ export function createBackendSimulationAdapter(
 
   return {
     async start(request) {
-      // If the server finishes routing after we gave up, that run must not keep ticking.
+      // If the server finishes routing after we gave up, that run must not keep ticking. Best
+      // effort: a stop that lands before the run is registered gets 404, and that run keeps
+      // going until the next start supersedes it (one active run at a time).
       const stopAbandonedStart = () => {
         postJson(simulationUrl(request.simulation_id, "stop")).catch(() => undefined);
       };
@@ -231,6 +233,8 @@ function openStream(
         return;
       case "SIMULATION_COMPLETED":
       case "SIMULATION_CANCELLED":
+        // Only a backend bug sends a terminal older than the last tick; dropping it may mean a
+        // reconnect that re-sends it, bounded by the server closing a finished session.
         if (event.tick < lastTick) return;
         close();
         subscriber.onTerminal(event);

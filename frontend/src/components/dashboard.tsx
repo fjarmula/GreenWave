@@ -41,14 +41,14 @@ export function Dashboard() {
     simulationState === "ERROR" && !routeData && error
       ? describeSimulationError(error, getFrontendConfig().apiBaseUrl)
       : null;
-  const backToSetup = () => {
-    stopSimulation();
-    setMode("setup");
-  };
   const [mode, setMode] = useState<DashboardMode>("setup");
   const [originId, setOriginId] = useState<OriginEndpointId>("hospital");
   const [destinationId, setDestinationId] = useState<DestinationEndpointId>("station");
   const [mapFocusRequest, setMapFocusRequest] = useState(0);
+  const backToSetup = () => {
+    stopSimulation();
+    setMode("setup");
+  };
   const origin =
     ORIGIN_ENDPOINTS.find((endpoint) => endpoint.id === originId) ?? ORIGIN_ENDPOINTS[0];
   const destination =

@@ -31,6 +31,7 @@ export function AmbulanceMarker({
     const element = document.createElement("div");
     element.className =
       "grid size-9 place-items-center rounded-full border-2 border-cyan-300 bg-slate-950 text-cyan-100 shadow-[0_0_22px_rgba(6,182,212,0.7)]";
+    element.setAttribute("role", "img");
     element.setAttribute("aria-label", "Simulated ambulance position");
     element.style.zIndex = "3";
     element.innerHTML = `<span aria-hidden="true">🚑</span>`;

@@ -70,6 +70,21 @@ function formatUtcTime(isoTimestamp: string): string {
   return Number.isNaN(date.getTime()) ? isoTimestamp : `${date.toISOString().slice(11, 19)}Z`;
 }
 
+/**
+ * True when telemetry was flowing and stopped (reconnecting, lost, ended in an
+ * error): the map must not present the last position as live. The initial
+ * `connecting` is not stale; nothing has been received yet.
+ */
+export function isTelemetryStale({
+  simulationState,
+  connection,
+}: Pick<SimulationState, "simulationState" | "connection">): boolean {
+  return (
+    simulationState === "ERROR" ||
+    (simulationState === "RUNNING" && (connection === "reconnecting" || connection === "lost"))
+  );
+}
+
 function isCurrentRun(state: SimulationState, simulationId: string): boolean {
   return state.startRequest?.simulation_id === simulationId;
 }

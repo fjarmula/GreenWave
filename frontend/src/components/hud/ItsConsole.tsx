@@ -24,7 +24,9 @@ export function ItsConsole() {
           {getFrontendConfig().transport === "mock" ? "Mock" : "Simulated"} ITS gateway audit log
         </span>
         <span className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
-          <i className="size-1.5 animate-pulse rounded-full bg-current" />
+          <i
+            className={`size-1.5 rounded-full bg-current ${simulationState === "RUNNING" ? "animate-pulse" : ""}`}
+          />
           {PHASE_CHIPS[simulationState] ?? "IDLE"}
         </span>
       </div>

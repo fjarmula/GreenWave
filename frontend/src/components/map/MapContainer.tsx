@@ -11,6 +11,8 @@ import { RouteLayer } from "@/components/map/RouteLayer";
 import { SignalMarkers } from "@/components/map/SignalMarkers";
 import type { DestinationEndpoint, OriginEndpoint } from "@/components/map/dispatch-endpoints";
 import { useSimulationState } from "@/components/simulation-provider";
+import { isTelemetryStale } from "@/lib/simulation-state";
+import type { IntersectionTelemetry, RouteIntersection } from "@/types/telemetry";
 
 const MAP_STYLES: Record<"light" | "dark", string> = {
   light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
@@ -30,6 +32,11 @@ const DATA_ATTRIBUTION = [
   "All signal states are simulated",
 ];
 const ROUTE_FIT_DURATION_MILLISECONDS = 600;
+// The live HUD panels beside the map only exist from the `lg` breakpoint (1024 px).
+const SIDE_PANELS_MIN_WIDTH_PIXELS = 1024;
+// Stable empty lists so marker effects do not re-run on every render without a route.
+const NO_ROUTE_INTERSECTIONS: RouteIntersection[] = [];
+const NO_INTERSECTIONS: IntersectionTelemetry[] = [];
 const MAP_STYLE_FADE_OUT_MILLISECONDS = 220;
 
 type MapContainerProps = {
@@ -43,8 +50,7 @@ export function MapContainer({ live, origin, destination, focusRequest }: MapCon
   const { routeData, liveTelemetry, startRequest, simulationState, connection } =
     useSimulationState();
   const vehiclePosition = liveTelemetry?.ambulance.position ?? startRequest?.origin;
-  const telemetryStale =
-    simulationState === "ERROR" || (simulationState === "RUNNING" && connection !== "open");
+  const telemetryStale = isTelemetryStale({ simulationState, connection });
   const { resolvedTheme } = useTheme();
   const theme = resolvedTheme === "dark" ? "dark" : "light";
   const mapElement = useRef<HTMLDivElement>(null);
@@ -138,11 +144,11 @@ export function MapContainer({ live, origin, destination, focusRequest }: MapCon
     const bounds = new maplibregl.LngLatBounds(routeCoordinates[0], routeCoordinates[0]);
     routeCoordinates.forEach((coordinate) => bounds.extend(coordinate));
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const mobile = map.getContainer().clientWidth < 640;
+    const sidePanels = map.getContainer().clientWidth >= SIDE_PANELS_MIN_WIDTH_PIXELS;
     map.fitBounds(bounds, {
-      padding: mobile
-        ? { top: 180, right: 60, bottom: 80, left: 40 }
-        : { top: 160, right: 480, bottom: 120, left: 340 },
+      padding: sidePanels
+        ? { top: 160, right: 480, bottom: 120, left: 340 }
+        : { top: 180, right: 60, bottom: 80, left: 40 },
       maxZoom: 16,
       duration: reduceMotion ? 0 : ROUTE_FIT_DURATION_MILLISECONDS,
     });
@@ -189,8 +195,8 @@ export function MapContainer({ live, origin, destination, focusRequest }: MapCon
       <SignalMarkers
         map={map}
         visible={live}
-        routeIntersections={routeData?.route_intersections ?? []}
-        intersections={liveTelemetry?.intersections ?? []}
+        routeIntersections={routeData?.route_intersections ?? NO_ROUTE_INTERSECTIONS}
+        intersections={liveTelemetry?.intersections ?? NO_INTERSECTIONS}
       />
     </div>
   );

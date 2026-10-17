@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   initialSimulationState,
+  isTelemetryStale,
   simulationReducer,
   type SimulationAction,
   type SimulationState,
@@ -363,5 +364,15 @@ describe("reset", () => {
     for (const state of states) {
       expect(reduce(state, { type: "RESET" })).toEqual(initialSimulationState);
     }
+  });
+});
+
+describe("isTelemetryStale", () => {
+  it("is stale only when telemetry was flowing and stopped", () => {
+    expect(isTelemetryStale({ simulationState: "RUNNING", connection: "open" })).toBe(false);
+    expect(isTelemetryStale({ simulationState: "RUNNING", connection: "connecting" })).toBe(false);
+    expect(isTelemetryStale({ simulationState: "RUNNING", connection: "reconnecting" })).toBe(true);
+    expect(isTelemetryStale({ simulationState: "ERROR", connection: "lost" })).toBe(true);
+    expect(isTelemetryStale({ simulationState: "FINISHED", connection: null })).toBe(false);
   });
 });

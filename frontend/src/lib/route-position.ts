@@ -104,5 +104,8 @@ export function interpolateAlongRoute(
   const start = project(route, from);
   const end = project(route, to);
   if (start.offset > MAX_OFF_ROUTE_METERS || end.offset > MAX_OFF_ROUTE_METERS) return straight;
+  // The vehicle only moves forward; a backward projection means the nearest-segment match
+  // picked another pass of a self-overlapping route.
+  if (end.along < start.along) return straight;
   return pointAtDistance(route, start.along + (end.along - start.along) * t) ?? straight;
 }

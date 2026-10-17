@@ -92,6 +92,14 @@ describe("interpolateAlongRoute", () => {
     close(interpolateAlongRoute(corner, from, to, 1), to);
   });
 
+  it("never moves backwards along the route (self-overlapping routes): falls back to a straight line", () => {
+    const from: [number, number] = [19.932, 50.0605]; // second leg
+    const to: [number, number] = [19.931, 50.06]; // first leg, i.e. behind `from`
+    const halfway = interpolateAlongRoute(corner, from, to, 0.5);
+    expect(halfway[0]).toBeCloseTo(19.9315, 9);
+    expect(halfway[1]).toBeCloseTo(50.06025, 9);
+  });
+
   it("falls back to a straight line without a route", () => {
     expect(interpolateAlongRoute(null, [19, 50], [20, 50], 0.5)).toEqual([19.5, 50]);
   });
