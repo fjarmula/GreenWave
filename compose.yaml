@@ -1,0 +1,61 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    command:
+      - sh
+      - -c
+      - >-
+        uv sync --locked --all-groups &&
+        uv run uvicorn greenwave.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      GREENWAVE_CORS_ORIGINS: http://localhost:3000
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          from urllib.request import urlopen;
+          urlopen("http://127.0.0.1:8000/api/v1/health").read()
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 60s
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/workspace
+      - backend_uv_cache:/root/.cache/uv
+      - backend_venv:/opt/venv
+
+  frontend:
+    build:
+      context: ./frontend
+    command:
+      - sh
+      - -c
+      - >-
+        if [ ! -f node_modules/.greenwave-package-lock.sha256 ] ||
+        ! sha256sum --check node_modules/.greenwave-package-lock.sha256;
+        then
+          npm ci &&
+          sha256sum package-lock.json > node_modules/.greenwave-package-lock.sha256;
+        fi &&
+        npm run dev -- --hostname 0.0.0.0
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_SIMULATION_TRANSPORT: backend
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/workspace
+      - frontend_node_modules:/workspace/node_modules
+
+volumes:
+  backend_uv_cache:
+  backend_venv:
+  frontend_node_modules:
