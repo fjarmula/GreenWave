@@ -1,66 +1,30 @@
 /**
- * Temporary frontend contracts for the F3–F5 mock workflow, translated from
- * GreenWave_ARCHITECTURE.md §4. The backend currently exports only HealthResponse.
- * Replace these declarations with api.generated.ts aliases when the canonical
- * simulation schemas are available; do not maintain a second wire contract.
- * These types do not validate untrusted transport payloads at runtime.
+ * Frontend names for the canonical v1 simulation contract (ADR 0003).
+ * Every type is an alias of `api.generated.ts`, which is generated from the
+ * backend Pydantic schemas; this file must not declare wire shapes of its own.
+ * Types do not validate untrusted JSON: see `lib/transport/validate.ts`.
  */
-export type Position = {
-  lat: number;
-  lng: number;
-};
+import type { components } from "@/types/api.generated";
 
-export type RouteGeometry = {
-  type: "LineString";
-  coordinates: [longitude: number, latitude: number][];
-};
+type Schemas = components["schemas"];
 
-export type SimulationStartRequest = {
-  simulation_id: string;
-  origin: Position;
-  destination: Position;
-  traffic_density_multiplier: number;
-  enable_cascade_mode: boolean;
-};
-
-export type SimulationStartResponse = {
-  status: "INITIALIZED";
-  route_geometry: RouteGeometry;
-  total_distance_m: number;
-  estimated_normal_time_sec: number;
-  estimated_greenwave_time_sec: number;
-  intersections_on_route: string[];
-};
-
-export type SignalState =
-  "NORMAL" | "CLEARING" | "CLEARING_CASCADE" | "PRIORITY_GREEN" | "RECOVERY";
-
-export type AmbulanceTelemetry = {
-  id: string;
-  position: Position;
-  speed_kmh: number;
-  // The architecture gives an example, but does not define a status enum.
-  status: string;
-};
-
-export type KpiMetrics = {
-  current_time_saved_sec: number;
-  total_time_elapsed_sec: number;
-};
-
-export type IntersectionTelemetry = {
-  id: string;
-  name: string;
-  state: SignalState;
-  tti_seconds: number;
-  is_active_corridor: boolean;
-};
-
-export type SimulationTick = {
-  event_type: "SIMULATION_TICK";
-  tick: number;
-  timestamp: string;
-  ambulance: AmbulanceTelemetry;
-  kpi_metrics: KpiMetrics;
-  intersections: IntersectionTelemetry[];
-};
+export type Position = Schemas["Position"];
+export type RouteGeometry = Schemas["RouteGeometry"];
+export type SimulationStartRequest = Schemas["SimulationStartRequest"];
+export type SimulationStartResponse = Schemas["SimulationStartResponse"];
+export type RouteIntersection = Schemas["RouteIntersection"];
+export type SnappedEndpoint = Schemas["SnappedEndpoint"];
+export type IntersectionState = Schemas["IntersectionState"];
+export type IntersectionTelemetry = Schemas["IntersectionTelemetry"];
+export type AmbulanceStatus = Schemas["AmbulanceStatus"];
+export type AmbulanceTelemetry = Schemas["AmbulanceTelemetry"];
+export type KpiMetrics = Schemas["KpiMetrics"];
+export type SimulationTickEvent = Schemas["SimulationTickEvent"];
+export type ItsDispatchEvent = Schemas["ItsDispatchEvent"];
+export type SimulationCompletedEvent = Schemas["SimulationCompletedEvent"];
+export type SimulationCancelledEvent = Schemas["SimulationCancelledEvent"];
+export type SimulationStreamEvent = Schemas["SimulationStreamEvent"];
+export type CancelReason = Schemas["CancelReason"];
+export type ErrorCode = Schemas["ErrorCode"];
+export type ErrorResponse = Schemas["ErrorResponse"];
+export type StopResponse = Schemas["StopResponse"];

@@ -45,7 +45,7 @@ export const DESTINATION_ENDPOINTS = [
     id: "nowa-huta",
     label: "Nowa Huta Dispatch Point",
     mapLabel: "Nowa Huta",
-    coordinates: [20.037, 50.069] as MapCoordinates,
+    coordinates: [20.037, 50.073] as MapCoordinates,
   },
 ] as const satisfies readonly DispatchEndpoint[];
 

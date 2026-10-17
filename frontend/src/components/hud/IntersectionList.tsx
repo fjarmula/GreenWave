@@ -2,6 +2,7 @@
 
 import { Signal } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
+import { isCascadeClearing } from "@/lib/signal-visuals";
 import type { IntersectionTelemetry } from "@/types/telemetry";
 
 export function IntersectionList() {
@@ -31,14 +32,9 @@ export function IntersectionList() {
   );
 }
 
-function IntersectionCard({
-  id,
-  name,
-  state,
-  tti_seconds: ttiSeconds,
-  is_active_corridor: active,
-}: IntersectionTelemetry) {
-  const isCascade = state === "CLEARING_CASCADE";
+function IntersectionCard(intersection: IntersectionTelemetry) {
+  const { id, name, state, tti_seconds: ttiSeconds, is_active_corridor: active } = intersection;
+  const isCascade = isCascadeClearing(intersection);
   const detail = active ? "SIMULATED CORRIDOR ACTIVE" : "NO PRIORITY REQUEST";
 
   return (
@@ -46,7 +42,9 @@ function IntersectionCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <strong className="block font-mono text-xs">{id}</strong>
-          <span className="mt-1 block text-[10px] text-muted-foreground">{name}</span>
+          <span className="mt-1 block text-[10px] text-muted-foreground">
+            {name ?? "Unnamed intersection"}
+          </span>
         </div>
         <span
           className={`inline-flex items-center gap-1.5 font-mono text-[9px] font-bold ${
@@ -59,11 +57,15 @@ function IntersectionCard({
         >
           <i className="size-1.5 rounded-full bg-current shadow-[0_0_8px_currentColor]" />
           {state}
+          {isCascade && " · CASCADE"}
         </span>
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 font-mono">
         <strong className="text-[11px] text-muted-foreground">
-          TTI: <span className="text-foreground">{ttiSeconds}s</span>
+          TTI:{" "}
+          <span className="text-foreground">
+            {ttiSeconds === null ? "Passed" : `${ttiSeconds}s`}
+          </span>
         </strong>
         <span className="text-[9px] text-muted-foreground">{detail}</span>
       </div>
@@ -72,7 +74,7 @@ function IntersectionCard({
           className={`block h-full rounded-full shadow-[0_0_8px_currentColor] ${
             isCascade ? "bg-violet-500 text-violet-500" : "bg-emerald-500 text-emerald-500"
           }`}
-          style={{ width: `${Math.min(100, Math.max(0, ttiSeconds * 2.5))}%` }}
+          style={{ width: `${Math.min(100, Math.max(0, (ttiSeconds ?? 0) * 2.5))}%` }}
         />
       </div>
     </article>

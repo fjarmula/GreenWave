@@ -2,3 +2,5 @@
 node_modules
 package-lock.json
 src/types/api.generated.ts
+# playwright-cli run-code files must be a bare function expression (no trailing ";")
+scripts/smoke/*.js

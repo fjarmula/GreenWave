@@ -68,13 +68,13 @@ frontend/src/
 **Interfaces:**
 - Produces: `telemetry.ts` exports only aliases, e.g. `SimulationStartRequest = components["schemas"]["SimulationStartRequest"]`, likewise `SimulationStartResponse`, `SimulationTickEvent`, `ItsDispatchEvent`, `SimulationCompletedEvent`, `SimulationCancelledEvent`, `SimulationStreamEvent`, `IntersectionState`, `AmbulanceStatus`, `RouteIntersection`, `ErrorResponse`. Keep the old exported names (`SimulationTick`, `SignalState`, …) as aliases for one task so diffs stay small, then remove them in this same task once call sites compile.
 
-- [ ] Remove `CLEARING_CASCADE` everywhere. Cascade is now `state: "CLEARING"` + `is_cascade: true`; keep the purple cascade visual, driven by the flag (`IntersectionList`, `SignalMarkers` colour map keyed by the 4 states + a cascade override).
-- [ ] `ambulance.status` is the 4-value enum; `KpiHeader` formatting stays.
-- [ ] Mock: emits `schema_version`, `is_simulated: true`, `simulation_id`; fills `route_intersections` with **plausible fixed sample positions** along its straight line and marks them synthetic in a code comment; uses the real `INT-0360`/`INT-0366` ids from the architecture example instead of `INT-302/303`; emits at least one `ITS_DISPATCH` when a sample intersection enters `CLEARING`, and `SIMULATION_COMPLETED` at the end.
-- [ ] `name` can be `null` (D4/D5) — render "Unnamed intersection".
-- [ ] `tti_seconds` can be `null` after passing — render "Passed".
-- [ ] Tests: reducer and mock tests updated to v1 shapes; a type-level test (compile-only) that `telemetry.ts` defines no object type of its own.
-- [ ] `npm run build` green with `mock` transport — the dashboard looks and behaves as before.
+- [x] Remove `CLEARING_CASCADE` everywhere. Cascade is now `state: "CLEARING"` + `is_cascade: true`; keep the purple cascade visual, driven by the flag (`IntersectionList`, `SignalMarkers` colour map keyed by the 4 states + a cascade override).
+- [x] `ambulance.status` is the 4-value enum; `KpiHeader` formatting stays.
+- [x] Mock: emits `schema_version`, `is_simulated: true`, `simulation_id`; fills `route_intersections` with **plausible fixed sample positions** along its straight line and marks them synthetic in a code comment; uses the real `INT-0360`/`INT-0366` ids from the architecture example instead of `INT-302/303`; emits at least one `ITS_DISPATCH` when a sample intersection enters `CLEARING`, and `SIMULATION_COMPLETED` at the end.
+- [x] `name` can be `null` (D4/D5) — render "Unnamed intersection".
+- [x] `tti_seconds` can be `null` after passing — render "Passed".
+- [x] Tests: reducer and mock tests updated to v1 shapes; a type-level test (compile-only) that `telemetry.ts` defines no object type of its own.
+- [x] `npm run build` green with `mock` transport — the dashboard looks and behaves as before.
 
 ### Task F2: Adapter interface and reducer for a real network
 
@@ -87,9 +87,9 @@ frontend/src/
   - `SimulationAdapter.stop(simulationId) -> Promise<void>` (D-architecture: stop needs the id).
   - Reducer state machine: `SETUP → STARTING → RUNNING → FINISHED | CANCELLED | ERROR`, plus `connection` sub-field on `RUNNING`; actions `START_REQUESTED`, `START_SUCCEEDED`, `START_FAILED`, `TICK`, `ITS_DISPATCH`, `CONNECTION`, `TERMINAL`, `ERROR`, `RESET`.
 
-- [ ] Tests first (pure reducer): `TICK` with `tick` ≤ last tick is ignored; `TICK` with another `simulation_id` is ignored; `ITS_DISPATCH` appends a formatted log line (bounded to 20 entries as today); `TERMINAL{COMPLETED}` → `FINISHED` keeps route + last telemetry; `TERMINAL{CANCELLED, SUPERSEDED}` → `CANCELLED` with reason; `START_FAILED` → `ERROR` with the code; `RESET` from any state → `SETUP`.
-- [ ] Hook: opens the subscription on `START_SUCCEEDED`, closes it on unmount/`RESET`/terminal; idempotent under React Strict Mode double effects (test with two mount cycles).
-- [ ] "Stale" indicator: if `open` but no event for N seconds, set connection `reconnecting`. N is **not specified anywhere** — propose 3 s (three missed 1 Hz ticks), put it in `config.ts`, and mention it in the PR so it is approved explicitly.
+- [x] Tests first (pure reducer): `TICK` with `tick` ≤ last tick is ignored; `TICK` with another `simulation_id` is ignored; `ITS_DISPATCH` appends a formatted log line (bounded to 20 entries as today); `TERMINAL{COMPLETED}` → `FINISHED` keeps route + last telemetry; `TERMINAL{CANCELLED, SUPERSEDED}` → `CANCELLED` with reason; `START_FAILED` → `ERROR` with the code; `RESET` from any state → `SETUP`.
+- [x] Hook: opens the subscription on `START_SUCCEEDED`, closes it on unmount/`RESET`/terminal; idempotent under React Strict Mode double effects (test with two mount cycles).
+- [x] "Stale" indicator: if `open` but no event for N seconds, set connection `reconnecting`. N is **not specified anywhere** — propose 3 s (three missed 1 Hz ticks), put it in `config.ts`, and mention it in the PR so it is approved explicitly.
 
 ### Task F3: Wire validation (D23)
 
@@ -98,8 +98,8 @@ frontend/src/
 **Interfaces:**
 - Produces: `parseStartResponse(value: unknown): SimulationStartResponse`, `parseStreamEvent(value: unknown, expectedSimulationId: string): SimulationStreamEvent | null` (null = drop silently with a `console.warn` in dev), `parseErrorResponse(value: unknown): ErrorResponse | null`.
 
-- [ ] Tests: rejects `schema_version !== "1.0"`, `is_simulated !== true`, wrong `simulation_id`, missing `ambulance.position.lat`, a non-finite number, an unknown `state` string, a `route_geometry` with < 2 coordinates; returns `null` (ignore) for an unknown `event_type`; accepts the architecture §4 examples (as fixtures written under `src/lib/transport/__fixtures__/`, typed against generated types so a contract change breaks compilation, not runtime).
-- [ ] Guards check exactly what the UI dereferences plus the envelope — not a second full schema (no competing contract definition, `docs/engineering/domain-invariants.md`, “Contracts”).
+- [x] Tests: rejects `schema_version !== "1.0"`, `is_simulated !== true`, wrong `simulation_id`, missing `ambulance.position.lat`, a non-finite number, an unknown `state` string, a `route_geometry` with < 2 coordinates; returns `null` (ignore) for an unknown `event_type`; accepts the architecture §4 examples (as fixtures written under `src/lib/transport/__fixtures__/`, typed against generated types so a contract change breaks compilation, not runtime).
+- [x] Guards check exactly what the UI dereferences plus the envelope — not a second full schema (no competing contract definition, `docs/engineering/domain-invariants.md`, “Contracts”).
 
 ### Task F4: Backend adapter (fetch + EventSource)
 
@@ -109,10 +109,10 @@ frontend/src/
 - Consumes: `config.ts` (F5), `validate.ts` (F3).
 - Produces: `createBackendSimulationAdapter(baseUrl: string): SimulationAdapter`; `SimulationAdapterError { kind: "network" | "http"; code?: ErrorResponse["error_code"]; status?: number; message }`.
 
-- [ ] `start`: `POST {base}/api/v1/simulation/start` JSON; non-2xx → parse `ErrorResponse` (409/422/404 per D7); FastAPI validation 422 (no `error_code`) → `kind: "http"`, code `undefined`, generic message; network failure → `kind: "network"`; time out after a fixed limit via `AbortController` (propose 10 s — routing on the real graph may take a moment; confirm with Piotr's measured planning time).
-- [ ] `subscribe`: `new EventSource({base}/api/v1/simulation/{id}/stream)`; listen to the **named** events from D3 (`SIMULATION_TICK`, `ITS_DISPATCH`, `SIMULATION_COMPLETED`, `SIMULATION_CANCELLED`) — `onmessage` alone will not fire for named events; validate each `data` with F3; drop by `lastEventId` ≤ last tick; on terminal event call `onTerminal` and **close** (otherwise `EventSource` auto-reconnects to a finished stream forever); on `error` with `readyState === CONNECTING` → `reconnecting`; if reconnect attempts keep failing past a limit, or the server replies 404, → `lost` + `onError`. Note: `EventSource` cannot read HTTP status — detect 404 by a follow-up `fetch` GET to the stream URL that is aborted as soon as headers arrive (FastAPI does not answer HEAD on a GET route), or by "error with readyState CLOSED". Pick one, document it in the file header.
-- [ ] `stop`: `POST …/{id}/stop`, then close the `EventSource`; 404 on stop is not an error to the user (already gone).
-- [ ] Tests with a hand-written `FakeEventSource` (installed on `globalThis`, emits named events, simulates errors) and a stubbed `fetch`: happy path ordering; duplicate tick dropped; foreign `simulation_id` dropped; terminal closes; reconnect → `reconnecting` → `open`; 409 maps to `SIMULATION_ID_IN_USE`; network failure maps to `kind: "network"`.
+- [x] `start`: `POST {base}/api/v1/simulation/start` JSON; non-2xx → parse `ErrorResponse` (409/422/404 per D7); FastAPI validation 422 (no `error_code`) → `kind: "http"`, code `undefined`, generic message; network failure → `kind: "network"`; time out after a fixed limit via `AbortController` (propose 10 s — routing on the real graph may take a moment; confirm with Piotr's measured planning time).
+- [x] `subscribe`: `new EventSource({base}/api/v1/simulation/{id}/stream)`; listen to the **named** events from D3 (`SIMULATION_TICK`, `ITS_DISPATCH`, `SIMULATION_COMPLETED`, `SIMULATION_CANCELLED`) — `onmessage` alone will not fire for named events; validate each `data` with F3; drop by `lastEventId` ≤ last tick; on terminal event call `onTerminal` and **close** (otherwise `EventSource` auto-reconnects to a finished stream forever); on `error` with `readyState === CONNECTING` → `reconnecting`; if reconnect attempts keep failing past a limit, or the server replies 404, → `lost` + `onError`. Note: `EventSource` cannot read HTTP status — detect 404 by a follow-up `fetch` GET to the stream URL that is aborted as soon as headers arrive (FastAPI does not answer HEAD on a GET route), or by "error with readyState CLOSED". Pick one, document it in the file header.
+- [x] `stop`: `POST …/{id}/stop`, then close the `EventSource`; 404 on stop is not an error to the user (already gone).
+- [x] Tests with a hand-written `FakeEventSource` (installed on `globalThis`, emits named events, simulates errors) and a stubbed `fetch`: happy path ordering; duplicate tick dropped; foreign `simulation_id` dropped; terminal closes; reconnect → `reconnecting` → `open`; 409 maps to `SIMULATION_ID_IN_USE`; network failure maps to `kind: "network"`.
 
 ### Task F5: Configuration and adapter selection
 
@@ -121,40 +121,69 @@ frontend/src/
 **Interfaces:**
 - Produces: `getFrontendConfig(): { transport: "mock" | "backend"; apiBaseUrl: string; staleAfterSeconds: number }` read from `NEXT_PUBLIC_SIMULATION_TRANSPORT` (default `mock`) and `NEXT_PUBLIC_API_BASE_URL` (default `http://127.0.0.1:8000`, trailing slash stripped). Invalid values → fall back to defaults **and** warn once (never silently pick `backend`).
 
-- [ ] Read the Next 16 docs for how `NEXT_PUBLIC_*` is inlined at build time (it is baked into the client bundle; a change needs a rebuild/dev restart) and write that one fact in `.env.example`.
-- [ ] `simulationAdapter` selection by config; keep it a module-level singleton exactly as today so components are untouched.
+- [x] Read the Next 16 docs for how `NEXT_PUBLIC_*` is inlined at build time (it is baked into the client bundle; a change needs a rebuild/dev restart) and write that one fact in `.env.example`.
+- [x] `simulationAdapter` selection by config; keep it a module-level singleton exactly as today so components are untouched.
 
 ### Task F6: UX for real-world states
 
 **Files:** Modify `src/components/hud/DispatchForm.tsx`, `KpiHeader.tsx`, `ItsConsole.tsx`, `src/components/dashboard.tsx`; Create `src/components/hud/RunSummary.tsx`.
 
-- [ ] `STARTING`: disable the dispatch button, show "Computing route…".
-- [ ] Errors by code (English): `ORIGIN_OFF_NETWORK` / `DESTINATION_OFF_NETWORK` → "Origin/Destination is not on the simulated road network"; `NO_ROUTE` → "No drivable route between these points"; `SIMULATION_ID_IN_USE` → retry with a new id once automatically, then show the error; `network` → "Simulation backend unreachable at <url>".
-- [ ] Connection badge in `KpiHeader`: Live / Reconnecting… / Connection lost.
-- [ ] `ItsConsole`: entries from `ITS_DISPATCH` — "Simulated FORCE_GREEN_PHASE → INT-0360, INT-0366 · hold {hold_duration_sec} s (≥ 40, e.g. 55) · ETA 14:32:38Z". Remove the synthesized per-tick log lines.
-- [ ] `RunSummary` on `FINISHED`: estimated normal vs estimated GreenWave vs simulated elapsed, final time saved; on `CANCELLED`: reason ("Stopped" / "Superseded by another dispatch").
-- [ ] Playback speed selector (1×, 2×, 5×, 10×) in `DispatchForm` **only if D9 was accepted**; otherwise skip this bullet.
-- [ ] Every new string keeps "simulated" wording where it describes signal behaviour.
+- [x] `STARTING`: disable the dispatch button, show "Computing route…".
+- [x] Errors by code (English): `ORIGIN_OFF_NETWORK` / `DESTINATION_OFF_NETWORK` → "Origin/Destination is not on the simulated road network"; `NO_ROUTE` → "No drivable route between these points"; `SIMULATION_ID_IN_USE` → retry with a new id once automatically, then show the error; `network` → "Simulation backend unreachable at <url>".
+- [x] Connection badge in `KpiHeader`: Live / Reconnecting… / Connection lost.
+- [x] `ItsConsole`: entries from `ITS_DISPATCH` — "Simulated FORCE_GREEN_PHASE → INT-0360, INT-0366 · hold {hold_duration_sec} s (≥ 40, e.g. 55) · ETA 14:32:38Z". Remove the synthesized per-tick log lines.
+- [x] `RunSummary` on `FINISHED`: estimated normal vs estimated GreenWave vs simulated elapsed, final time saved; on `CANCELLED`: reason ("Stopped" / "Superseded by another dispatch").
+- [x] Playback speed selector (1×, 2×, 5×, 10×) in `DispatchForm` **only if D9 was accepted**; otherwise skip this bullet.
+- [x] Every new string keeps "simulated" wording where it describes signal behaviour.
 
 ### Task F7: Map uses real geometry
 
 **Files:** Modify `src/components/map/SignalMarkers.tsx`, `MapContainer.tsx`, `EndpointMarkers.tsx`, `dispatch-endpoints.ts` (only if Piotr reports a preset fails to snap).
 
-- [ ] `SignalMarkers`: position = `route_intersections[i].position` (from the start response, joined to tick intersections by `id`); delete the even-spacing fallback for the backend path (keep it nowhere — the mock now supplies positions too, F1).
-- [ ] `MapContainer`: fit bounds to `route_geometry` on `START_SUCCEEDED` (respect reduced motion: no animated fly).
-- [ ] `EndpointMarkers`: when `snap_distance_m` > a few metres, draw a thin dashed connector from the requested point to the snapped point so the user sees why the route starts elsewhere.
-- [ ] Attribution: the Carto basemap shows OSM attribution, but our **data** also needs "Road network & signals © OpenStreetMap contributors (ODbL) · Street registry © City of Kraków (MSIP)" (architecture §5). Add it as a MapLibre custom attribution, plus "All signal states are simulated".
-- [ ] Ambulance animation: interpolate between consecutive tick positions as today, but **along the route polyline** (not a straight chord) — at 10× playback a chord visibly cuts corners. Reuse `route-position.ts`; add a test for interpolation across a polyline bend.
+- [x] `SignalMarkers`: position = `route_intersections[i].position` (from the start response, joined to tick intersections by `id`); delete the even-spacing fallback for the backend path (keep it nowhere — the mock now supplies positions too, F1).
+- [x] `MapContainer`: fit bounds to `route_geometry` on `START_SUCCEEDED` (respect reduced motion: no animated fly).
+- [x] `EndpointMarkers`: when `snap_distance_m` > a few metres, draw a thin dashed connector from the requested point to the snapped point so the user sees why the route starts elsewhere.
+- [x] Attribution: the Carto basemap shows OSM attribution, but our **data** also needs "Road network & signals © OpenStreetMap contributors (ODbL) · Street registry © City of Kraków (MSIP)" (architecture §5). Add it as a MapLibre custom attribution, plus "All signal states are simulated".
+- [x] Ambulance animation: interpolate between consecutive tick positions as today, but **along the route polyline** (not a straight chord) — at 10× playback a chord visibly cuts corners. Reuse `route-position.ts`; add a test for interpolation across a polyline bend.
 
 ### Task F8: Branch finish
 
-- [ ] Full frontend checks green.
-- [ ] Local smoke against Piotr's branch **without merging** (he tells you when B7 works): run his worktree's backend, then `NEXT_PUBLIC_SIMULATION_TRANSPORT=backend npm run dev`; one full run at 10×, one stop mid-run, one second-tab supersede. Record what you saw in the PR. If something disagrees with the contract → coordination doc §5, don't patch around it.
-- [ ] Playwright CLI smoke script against the **mock** transport (outputs in `.tmp/playwright/`, per AGENTS.md); Phase 3 re-points it at the backend.
-- [ ] `git diff --name-only contract-v1...HEAD` — every path under `frontend/` and not `api.generated.ts`, plus your own plan file.
+- [x] Full frontend checks green.
+- [x] Local smoke against Piotr's branch **without merging** (he tells you when B7 works): run his worktree's backend, then `NEXT_PUBLIC_SIMULATION_TRANSPORT=backend npm run dev`; one full run at 10×, one stop mid-run, one second-tab supersede. Record what you saw in the PR. If something disagrees with the contract → coordination doc §5, don't patch around it.
+  - Done 2026-10-17 against `main` (b8a1877) with the real dataset: all three scenarios pass. Two backend engine defects found and reported, not patched here: the ambulance position is a straight origin→destination chord (`engine.py` `_ambulance`), and the time-saved KPI ignores `traffic_density_multiplier`, so it does not end at `T_normal - T_greenwave` (D15) unless the multiplier is 1.0. The Nowa Huta preset was off-network and was moved 450 m north.
+  - **Not run (2026-10-17):** no raw/processed dataset on this machine (`backend/data/raw` holds only `MANIFEST.json`), so the backend cannot start. Verified instead: a `NEXT_PUBLIC_SIMULATION_TRANSPORT=backend` production build with no backend running fails the start in < 1 s with "Simulation backend unreachable at http://127.0.0.1:8000" and stays on setup (`.tmp/playwright/backend-unreachable.*`).
+- [x] Playwright CLI smoke script against the **mock** transport (outputs in `.tmp/playwright/`, per AGENTS.md); Phase 3 re-points it at the backend.
+- [x] `git diff --name-only contract-v1...HEAD` — every path under `frontend/` and not `api.generated.ts`, plus your own plan file.
 - [ ] Rebase on `main` **after** the backend PR is merged; CI green; PR with merge commit (not squash).
+  - **Not done:** the owner asked for no rebase/push/PR yet; the backend is already merged on `main` (b8a1877). PR description drafted in `.tmp/pr-frontend-integration.md`.
 
 ## What you hand to Filip during the branch (messages only)
 
 - Early (after F1): confirm the generated types are pleasant to use — e.g. if the union didn't narrow on `event_type` in TS, that is a Pydantic-side fix (coordination doc §5), cheaper now than later.
 - After F4: your timeout and stale-threshold proposals, so he can check them against his measured planning time and tick duration.
+
+---
+
+## Implementation expansion (decisions made at execution time, 2026-10-17)
+
+Choices the tasks left open, fixed before coding. Non-blocking; challenge in review.
+
+### F1
+- Mock tests move from the misnamed `useSimulationStream.test.ts` to `mock-simulation-adapter.test.ts`.
+- Mock signal timeline is a **scripted sample** (synthetic, not the engine): arrival time at each sample intersection = `distance_along_route_m / total_distance_m × estimated_greenwave_time_sec`; TTI ≤ 40 → `CLEARING`, ≤ 25 → `PRIORITY_GREEN`, passed → `RECOVERY` (15 s) → `NORMAL`; INT-0366 cascades from INT-0360 when cascade is on. Sample positions sit at the architecture distances (1480 m, 1632 m of 5400 m) on the straight mock line.
+- `telemetry.ts` alias test = compile-time `Equal<>` assertions (typecheck) + a source scan asserting no `{` object literal / `interface` in the file.
+
+### F2 — state machine
+- `SimulationState` stays a flat record (keeps component diffs small): `simulationState: "SETUP" | "STARTING" | "RUNNING" | "FINISHED" | "CANCELLED" | "ERROR"`, `startRequest`, `routeData`, `liveTelemetry`, `lastTick`, `connection: ConnectionStatus | null`, `itsLog: ItsLogEntry[]` (≤ 20), `completion`, `cancelReason`, `error: SimulationErrorInfo | null`.
+- Every action except `START_REQUESTED`/`RESET` carries `simulationId` and is ignored unless it matches `startRequest.simulation_id` **and** the phase accepts it (`START_SUCCEEDED`/`START_FAILED` only in `STARTING`; `TICK`/`ITS_DISPATCH`/`CONNECTION`/`TERMINAL` only in `RUNNING`; `ERROR` in `STARTING`/`RUNNING`). This is what keeps run-1 results out of run 2.
+- Dedupe (reducer and adapter both): `TICK` dropped if `tick ≤ lastTick`; `ITS_DISPATCH` dropped if `tick ≤ lastTick` (it precedes its own tick, D3) or its `message_id` is already logged; terminal accepted if `tick ≥ lastTick` (it repeats the last id, D3).
+- Stream lifecycle lives in a pure `connectSimulationStream(adapter, simulationId, dispatch, staleAfterMilliseconds) → cleanup` (`src/lib/simulation-controller.ts`) that the hook's effect returns; it owns the stale watchdog (`open` + no event for `staleAfterSeconds` → `reconnecting`, next event → `open`) and an `active` flag so callbacks after cleanup are no-ops. Strict Mode double effects are tested as connect → cleanup → connect on this function (no DOM test environment in the repo; adding jsdom/testing-library would be a new dependency).
+- `startSimulation` never rejects: start failures become `START_FAILED`; `SIMULATION_ID_IN_USE` retries once with a fresh id (F6).
+
+### F4 — 404 detection and reconnect
+- **404 detection: `error` event with `readyState === EventSource.CLOSED`.** Per the WHATWG spec a non-200 status or non-`text/event-stream` response *fails* the connection (CLOSED, no retry), while a network drop *re-establishes* it (CONNECTING). The backend's only non-200 answer on the stream route is 404 `SIMULATION_NOT_FOUND`, so CLOSED → `lost` + `onError({kind:"http", status:404, code:"SIMULATION_NOT_FOUND"})`. No extra request, deterministic under test.
+- Reconnect limit: 5 consecutive `error` events in CONNECTING (≈ 10 s at `retry: 2000`) → close, `lost` + `onError({kind:"network"})`. Value in `config.ts`, listed for approval with the stale threshold and start timeout.
+- `SimulationAdapterError` keeps `kind: "network" | "http"`; a timeout is `network`, an invalid 2xx body is `http` with its status.
+
+### F7 — polyline interpolation
+- `src/lib/route-position.ts` gains `distanceAlongRoute(route, point)` (nearest-point projection, equirectangular metres), `pointAtDistance(route, metres)` and `interpolateAlongRoute(route, from, to, fraction)`; `AmbulanceMarker` animates with it when a route is present.

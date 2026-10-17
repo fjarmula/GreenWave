@@ -47,10 +47,10 @@ When implementing a plan from `docs/superpowers/plans/`:
    - Summarize completed changes, affected files, and verification results.
    - Report significant decisions, deviations, or blockers.
    - Propose a Conventional Commit message.
-   - Stop and wait for explicit human approval before proceeding.
-6. Incorporate human feedback before beginning the next milestone.
-7. Escalate significant architectural conflicts or blocking ambiguities immediately.
-8. Verify all acceptance criteria before declaring the complete plan finished.
+6. Continue to the next milestone unless the plan or user requires a checkpoint.
+7. Incorporate human feedback before continuing when it arrives.
+8. Escalate significant architectural conflicts or blocking ambiguities immediately.
+9. Verify all acceptance criteria before declaring the complete plan finished.
 
 Do not request approval for routine implementation steps within an approved milestone.
 
