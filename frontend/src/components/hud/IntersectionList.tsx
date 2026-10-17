@@ -2,6 +2,7 @@
 
 import { Signal } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
+import { isCascadeClearing } from "@/lib/signal-visuals";
 import type { IntersectionTelemetry } from "@/types/telemetry";
 
 export function IntersectionList() {
@@ -31,14 +32,9 @@ export function IntersectionList() {
   );
 }
 
-function IntersectionCard({
-  id,
-  name,
-  state,
-  is_cascade: isCascade,
-  tti_seconds: ttiSeconds,
-  is_active_corridor: active,
-}: IntersectionTelemetry) {
+function IntersectionCard(intersection: IntersectionTelemetry) {
+  const { id, name, state, tti_seconds: ttiSeconds, is_active_corridor: active } = intersection;
+  const isCascade = isCascadeClearing(intersection);
   const detail = active ? "SIMULATED CORRIDOR ACTIVE" : "NO PRIORITY REQUEST";
 
   return (

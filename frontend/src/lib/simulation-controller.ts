@@ -8,11 +8,16 @@ type Dispatch = (action: SimulationAction) => void;
 // The run each store last asked for; a start that resolves after it was replaced reports false.
 const latestRequestedRun = new WeakMap<Dispatch, string | null>();
 
+function isLatestRun(dispatch: Dispatch, simulationId: string): boolean {
+  return latestRequestedRun.get(dispatch) === simulationId;
+}
+
 /**
  * Starts a run and reports the outcome to the reducer. Never rejects. A
- * `SIMULATION_ID_IN_USE` answer is retried once with a fresh id. Resolves true
- * only if this run's start succeeded (the reducer still ignores it if the user
- * has meanwhile reset or started another run).
+ * `SIMULATION_ID_IN_USE` answer is retried once with a fresh id, unless the
+ * user has gone back or started another run meanwhile. Resolves true only if
+ * this run started and is still the one the user wants; a run that started
+ * after it was abandoned is stopped so it does not keep ticking on the server.
  */
 export async function requestSimulationStart(
   adapter: SimulationAdapter,
@@ -34,9 +39,14 @@ export async function requestSimulationStart(
         });
         return false;
       }
+      if (!isLatestRun(dispatch, current.simulation_id)) {
+        adapter.stop(current.simulation_id).catch(() => undefined);
+        return false;
+      }
       dispatch({ type: "START_SUCCEEDED", simulationId: current.simulation_id, response });
-      return latestRequestedRun.get(dispatch) === current.simulation_id;
+      return true;
     } catch (error) {
+      if (!isLatestRun(dispatch, current.simulation_id)) return false;
       const info = toSimulationErrorInfo(error);
       if (info.code === "SIMULATION_ID_IN_USE" && attempt === 0) {
         current = { ...current, simulation_id: createSimulationId() };

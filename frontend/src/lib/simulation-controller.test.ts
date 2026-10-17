@@ -192,6 +192,34 @@ describe("requestSimulationStart", () => {
     await expect(first).resolves.toBe(false);
     expect(store.state.simulationState).toBe("RUNNING");
     expect(store.state.routeData?.simulation_id).toBe("run-2");
+    // Run 1 started on the server after the user left it: it must not keep ticking there.
+    expect(adapter.stops.filter((id) => id === "run-1")).toHaveLength(2);
+    expect(adapter.stops).not.toContain("run-2");
+  });
+
+  it("does not retry SIMULATION_ID_IN_USE after the user went back or started another run", async () => {
+    const adapter = createFakeAdapter();
+    const store = createStore();
+    const first = requestSimulationStart(adapter, request("run-1"), store.dispatch, () => "retry");
+    requestSimulationStop(adapter, "run-1", store.dispatch);
+    const second = requestSimulationStart(adapter, request("run-2"), store.dispatch, () => "x");
+    adapter.pendingStarts[0].reject(
+      new SimulationAdapterError({
+        kind: "http",
+        status: 409,
+        code: "SIMULATION_ID_IN_USE",
+        message: "in use",
+      }),
+    );
+    await expect(first).resolves.toBe(false);
+    expect(adapter.pendingStarts.map((pending) => pending.request.simulation_id)).toEqual([
+      "run-1",
+      "run-2",
+    ]);
+    expect(store.state.simulationState).toBe("STARTING");
+    expect(store.state.startRequest?.simulation_id).toBe("run-2");
+    adapter.pendingStarts[1].resolve(response("run-2"));
+    await expect(second).resolves.toBe(true);
   });
 });
 

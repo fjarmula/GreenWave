@@ -221,6 +221,50 @@ describe("stream events", () => {
   });
 });
 
+describe("D3 stream ordering", () => {
+  it("accepts ITS(N) → TICK(N), drops a replayed ITS(N)/TICK(N), accepts TERMINAL(N)", () => {
+    const state = reduce(
+      running,
+      { type: "ITS_DISPATCH", event: itsDispatch(5) },
+      { type: "TICK", event: tick(5) },
+      { type: "ITS_DISPATCH", event: itsDispatch(5, "MSG-ITS-REPLAY") },
+      { type: "TICK", event: tick(5) },
+      {
+        type: "TERMINAL",
+        event: {
+          schema_version: "1.0",
+          is_simulated: true,
+          event_type: "SIMULATION_COMPLETED",
+          simulation_id: SIMULATION_ID,
+          tick: 5,
+          timestamp: "2026-10-25T14:37:51Z",
+          kpi_metrics: { current_time_saved_sec: 5, total_time_elapsed_sec: 5 },
+        },
+      },
+    );
+    expect(state.itsLog.map((entry) => entry.messageId)).toEqual(["MSG-ITS-5"]);
+    expect(state.lastTick).toBe(5);
+    expect(state.simulationState).toBe("FINISHED");
+  });
+
+  it("drops a terminal event older than the last tick", () => {
+    const afterSix = reduce(running, { type: "TICK", event: tick(6) });
+    const stale = reduce(afterSix, {
+      type: "TERMINAL",
+      event: {
+        schema_version: "1.0",
+        is_simulated: true,
+        event_type: "SIMULATION_CANCELLED",
+        simulation_id: SIMULATION_ID,
+        tick: 5,
+        timestamp: "2026-10-25T14:32:25Z",
+        reason: "STOPPED",
+      },
+    });
+    expect(stale).toBe(afterSix);
+  });
+});
+
 describe("terminal events", () => {
   it("SIMULATION_COMPLETED → FINISHED keeps the route and the last telemetry", () => {
     const withTick = reduce(running, { type: "TICK", event: tick(7) });
@@ -284,7 +328,38 @@ describe("reset", () => {
         simulationId: SIMULATION_ID,
         error: { kind: "network", message: "down" },
       }),
+      reduce(running, {
+        type: "TERMINAL",
+        event: {
+          schema_version: "1.0",
+          is_simulated: true,
+          event_type: "SIMULATION_COMPLETED",
+          simulation_id: SIMULATION_ID,
+          tick: 0,
+          timestamp: "2026-10-25T14:37:51Z",
+          kpi_metrics: { current_time_saved_sec: 0, total_time_elapsed_sec: 0 },
+        },
+      }),
+      reduce(running, {
+        type: "TERMINAL",
+        event: {
+          schema_version: "1.0",
+          is_simulated: true,
+          event_type: "SIMULATION_CANCELLED",
+          simulation_id: SIMULATION_ID,
+          tick: 0,
+          timestamp: "2026-10-25T14:32:25Z",
+          reason: "STOPPED",
+        },
+      }),
     ];
+    expect(states.map((state) => state.simulationState)).toEqual([
+      "RUNNING",
+      "STARTING",
+      "ERROR",
+      "FINISHED",
+      "CANCELLED",
+    ]);
     for (const state of states) {
       expect(reduce(state, { type: "RESET" })).toEqual(initialSimulationState);
     }
