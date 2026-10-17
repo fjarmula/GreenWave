@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 from collections import Counter
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from greenwave.etl.config import SIGNAL_SNAP_TOLERANCE_METERS
 from greenwave.etl.graph import build_graph
 from greenwave.etl.graph_io import write_graph
 from greenwave.etl.intersections import (
+    Assignment,
     AssignmentDistribution,
     GroupingReport,
     GroupingSettings,
@@ -134,6 +136,30 @@ def _file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+@dataclass(frozen=True, slots=True)
+class IntersectionsBuild:
+    """Everything the T4 step computes, before anything is written."""
+
+    prepared: PreparedScan
+    attached: AttachResult
+    assignments: list[Assignment]
+    intersections: list[IntersectionRecord]
+    grouping: GroupingReport
+    rings: list[Ring]
+    ring_problems: list[str]
+    override_entries: list[RoundaboutOverride]
+    largest_scc: set[str]
+    ulice_names: set[str]
+    delay_by_kind: dict[str, float]
+    intersections_frame: pl.DataFrame
+    approaches: pl.DataFrame
+    near_after_frame: pl.DataFrame
+    near_after: NearMissReport
+    tertiary: pl.DataFrame
+    settings: GroupingSettings
+    snap_tolerance_meters: float
+
+
 def run_intersections(
     raw_dir: Path,
     processed_dir: Path,
@@ -141,12 +167,24 @@ def run_intersections(
     snap_tolerance_meters: float = SIGNAL_SNAP_TOLERANCE_METERS,
     settings: GroupingSettings | None = None,
 ) -> IntersectionsSection:
-    settings = settings or GroupingSettings()
+    build = compute_intersections(
+        raw_dir, overrides_dir, snap_tolerance_meters, settings or GroupingSettings()
+    )
+    manifest_sha256 = write_intersection_artifacts(build, raw_dir, processed_dir)
+    return intersections_section(build, overrides_dir, processed_dir, manifest_sha256)
+
+
+def compute_intersections(
+    raw_dir: Path,
+    overrides_dir: Path,
+    snap_tolerance_meters: float,
+    settings: GroupingSettings,
+) -> IntersectionsBuild:
+    """Weld, build the graph, attach signals and group intersections; reads inputs only."""
     prepared = prepare_scan(raw_dir)
-    inputs_sha256 = prepared.inputs_sha256
     scan = prepared.scan
 
-    signals = build_signals(scan, inputs_sha256).frame
+    signals = build_signals(scan, prepared.inputs_sha256).frame
     base = build_graph(scan.drivable_ways).graph
     points = _signal_points(signals)
 
@@ -175,43 +213,80 @@ def run_intersections(
     routable = [way for way in scan.drivable_ways if is_routable_way(way)]
     near_after_frame, near_after = find_near_misses(base, routable)
     tertiary = tertiary_plus_cases(prepared.near_misses_before, prepared.weld_report)
+    return IntersectionsBuild(
+        prepared=prepared,
+        attached=attached,
+        assignments=assignments,
+        intersections=intersections,
+        grouping=grouping,
+        rings=rings,
+        ring_problems=ring_problems,
+        override_entries=overrides.entries,
+        largest_scc=largest_scc,
+        ulice_names=ulice_names,
+        delay_by_kind=delay_by_kind,
+        intersections_frame=intersections_frame,
+        approaches=approaches,
+        near_after_frame=near_after_frame,
+        near_after=near_after,
+        tertiary=tertiary,
+        settings=settings,
+        snap_tolerance_meters=snap_tolerance_meters,
+    )
 
+
+def write_intersection_artifacts(
+    build: IntersectionsBuild, raw_dir: Path, processed_dir: Path
+) -> str:
+    """Write the T4 artifacts; return the sha256 of the raw manifest the ids are valid for."""
     processed_dir.mkdir(parents=True, exist_ok=True)
-    write_graph(graph, processed_dir, NETWORK_NODES_FILENAME, NETWORK_EDGES_FILENAME)
-    intersections_frame.write_parquet(processed_dir / INTERSECTIONS_FILENAME)
-    approaches.write_parquet(processed_dir / APPROACHES_FILENAME)
-    near_after_frame.write_csv(processed_dir / NEAR_MISSES_FILENAME)
-    tertiary.write_csv(processed_dir / TERTIARY_PLUS_FILENAME)
-    welds_frame(prepared.weld_report).write_csv(processed_dir / WELDS_FILENAME)
+    write_graph(build.attached.graph, processed_dir, NETWORK_NODES_FILENAME, NETWORK_EDGES_FILENAME)
+    build.intersections_frame.write_parquet(processed_dir / INTERSECTIONS_FILENAME)
+    build.approaches.write_parquet(processed_dir / APPROACHES_FILENAME)
+    build.near_after_frame.write_csv(processed_dir / NEAR_MISSES_FILENAME)
+    build.tertiary.write_csv(processed_dir / TERTIARY_PLUS_FILENAME)
+    welds_frame(build.prepared.weld_report).write_csv(processed_dir / WELDS_FILENAME)
     manifest_sha256 = _file_sha256(raw_dir / MANIFEST_FILENAME)
-    _write_ids(processed_dir / IDS_FILENAME, intersections_frame, manifest_sha256, inputs_sha256)
+    _write_ids(
+        processed_dir / IDS_FILENAME,
+        build.intersections_frame,
+        manifest_sha256,
+        build.prepared.inputs_sha256,
+    )
+    return manifest_sha256
 
+
+def intersections_section(
+    build: IntersectionsBuild, overrides_dir: Path, processed_dir: Path, manifest_sha256: str
+) -> IntersectionsSection:
+    """The report section, including the hashes of the artifacts just written."""
+    prepared = build.prepared
     return IntersectionsSection(
         generated_at_utc=datetime.now(UTC).isoformat(timespec="seconds"),
-        inputs_sha256=inputs_sha256,
+        inputs_sha256=prepared.inputs_sha256,
         manifest_sha256=manifest_sha256,
         artifact_sha256=artifact_hashes(processed_dir, T4_ARTIFACT_FILENAMES),
-        delay_seconds_by_kind=delay_by_kind,
-        snapping=_snap_report(attached, snap_tolerance_meters, largest_scc),
+        delay_seconds_by_kind=build.delay_by_kind,
+        snapping=_snap_report(build.attached, build.snap_tolerance_meters, build.largest_scc),
         assignment_distance=distance_distribution(
-            attachments,
-            assignments,
-            intersection_index(intersections),
-            settings.assignment_limit_meters,
+            build.attached.attachments,
+            build.assignments,
+            intersection_index(build.intersections),
+            build.settings.assignment_limit_meters,
         ),
-        grouping=grouping,
+        grouping=build.grouping,
         rings=_ring_report(
             overrides_dir / OVERRIDE_FILENAME,
-            overrides.entries,
-            rings,
-            ring_problems,
-            intersections,
+            build.override_entries,
+            build.rings,
+            build.ring_problems,
+            build.intersections,
         ),
-        names=name_report(intersections, ulice_names),
+        names=name_report(build.intersections, build.ulice_names),
         welds=prepared.weld_report,
         near_misses_before_welding=prepared.near_miss_report_before,
-        near_misses_after_welding=near_after,
-        tertiary_plus_near_misses=tertiary.to_dicts(),
+        near_misses_after_welding=build.near_after,
+        tertiary_plus_near_misses=build.tertiary.to_dicts(),
         notes=_notes(prepared),
     )
 
