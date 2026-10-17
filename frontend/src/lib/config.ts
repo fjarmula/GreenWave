@@ -16,6 +16,8 @@ export type FrontendConfig = {
   startTimeoutMilliseconds: number;
   /** Consecutive failed stream reconnects (≈ 2 s apart, `retry: 2000`) before "connection lost". */
   reconnectAttemptLimit: number;
+  /** No telemetry at all for this long → "connection lost" (covers a silent, still-open stream). */
+  lostAfterSeconds: number;
 };
 
 export const DEFAULT_TRANSPORT: SimulationTransport = "mock";
@@ -23,6 +25,8 @@ export const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
 export const STALE_AFTER_SECONDS = 3;
 export const START_TIMEOUT_MILLISECONDS = 10_000;
 export const RECONNECT_ATTEMPT_LIMIT = 5;
+// Stale (3 s) + the reconnect budget (5 × 2 s) + slack: past this, nothing is coming back.
+export const LOST_AFTER_SECONDS = 15;
 
 function parseTransport(value: string | undefined, warn: (message: string) => void) {
   const transport = value?.trim();
@@ -63,6 +67,7 @@ export function parseFrontendConfig(
     staleAfterSeconds: STALE_AFTER_SECONDS,
     startTimeoutMilliseconds: START_TIMEOUT_MILLISECONDS,
     reconnectAttemptLimit: RECONNECT_ATTEMPT_LIMIT,
+    lostAfterSeconds: LOST_AFTER_SECONDS,
   };
 }
 

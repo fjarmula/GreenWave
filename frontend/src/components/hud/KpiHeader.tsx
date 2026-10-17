@@ -3,7 +3,7 @@
 import { Ambulance, TriangleAlert } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
 import type { ConnectionStatus } from "@/lib/simulation-adapter";
-import { connectionLabel } from "@/lib/simulation-copy";
+import { connectionLabel, formatSignedSeconds } from "@/lib/simulation-copy";
 import type { SimulationPhase } from "@/lib/simulation-state";
 
 const PHASE_BADGES: Partial<Record<SimulationPhase, string>> = {
@@ -61,7 +61,7 @@ export function KpiHeader() {
       <div className="col-span-2 row-start-1 text-center sm:col-span-1 sm:col-start-2">
         <span className="dashboard-eyebrow block">Time saved</span>
         <strong className="font-mono text-2xl text-emerald-600 drop-shadow-[0_0_12px_rgba(16,185,129,0.28)] dark:text-emerald-400">
-          +{liveTelemetry?.kpi_metrics.current_time_saved_sec ?? 0}s
+          {formatSignedSeconds(liveTelemetry?.kpi_metrics.current_time_saved_sec ?? 0)}
         </strong>
       </div>
 

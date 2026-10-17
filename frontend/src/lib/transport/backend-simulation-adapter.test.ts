@@ -197,6 +197,7 @@ describe("start", () => {
     await vi.advanceTimersByTimeAsync(10_000);
     expect(await started).toMatchObject({
       kind: "network",
+      reason: "timeout",
       message: `Simulation backend at ${BASE_URL} did not answer within 10 s`,
     });
   });
@@ -376,14 +377,23 @@ describe("subscribe", () => {
     expect(events.calls).toEqual(["tick:40", "its:MSG-ITS-1", "its:MSG-ITS-2", "tick:50"]);
   });
 
-  it("drops a terminal event older than the last tick, accepts one equal to it after reconnect", () => {
+  it("accepts a terminal event older than the last tick (it is final) and closes", () => {
     const events = recorder();
     adapter().subscribe(SIMULATION_ID, events.subscriber);
     const source = latestSource();
     source.open();
     source.emit(tickEventExample);
     source.emit({ ...cancelledEventExample, tick: 41 });
-    expect(events.calls).toEqual(["tick:42"]);
+    expect(events.calls).toEqual(["tick:42", "terminal:SIMULATION_CANCELLED"]);
+    expect(source.closed).toBe(true);
+  });
+
+  it("accepts a terminal equal to the last tick after a reconnect snapshot", () => {
+    const events = recorder();
+    adapter().subscribe(SIMULATION_ID, events.subscriber);
+    const source = latestSource();
+    source.open();
+    source.emit(tickEventExample);
     source.fail(FakeEventSource.CONNECTING);
     source.open();
     source.emit(tickEventExample); // reconnect snapshot repeats tick 42

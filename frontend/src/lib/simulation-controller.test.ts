@@ -20,6 +20,7 @@ import type {
 } from "@/types/telemetry";
 
 const STALE_AFTER_MILLISECONDS = 3000;
+const LOST_AFTER_MILLISECONDS = 15_000;
 
 function request(simulationId: string): SimulationStartRequest {
   return {
@@ -248,7 +249,13 @@ describe("connectSimulationStream", () => {
     const adapter = createFakeAdapter();
     const store = createStore();
     await startRunning(adapter, store, "run-1");
-    connectSimulationStream(adapter, "run-1", store.dispatch, STALE_AFTER_MILLISECONDS);
+    connectSimulationStream(
+      adapter,
+      "run-1",
+      store.dispatch,
+      STALE_AFTER_MILLISECONDS,
+      LOST_AFTER_MILLISECONDS,
+    );
     const { subscriber, simulationId } = adapter.subscriptions[0];
     expect(simulationId).toBe("run-1");
     subscriber.onConnectionChange("open");
@@ -269,6 +276,7 @@ describe("connectSimulationStream", () => {
       "run-1",
       store.dispatch,
       STALE_AFTER_MILLISECONDS,
+      LOST_AFTER_MILLISECONDS,
     );
     cleanup();
     expect(adapter.subscriptions[0].open).toBe(false);
@@ -281,9 +289,15 @@ describe("connectSimulationStream", () => {
     const adapter = createFakeAdapter();
     const store = createStore();
     await startRunning(adapter, store, "run-1");
-    const firstCleanup = connectSimulationStream(adapter, "run-1", store.dispatch, 3000);
+    const firstCleanup = connectSimulationStream(
+      adapter,
+      "run-1",
+      store.dispatch,
+      3000,
+      LOST_AFTER_MILLISECONDS,
+    );
     firstCleanup();
-    connectSimulationStream(adapter, "run-1", store.dispatch, 3000);
+    connectSimulationStream(adapter, "run-1", store.dispatch, 3000, LOST_AFTER_MILLISECONDS);
     expect(adapter.subscriptions.filter((subscription) => subscription.open)).toHaveLength(1);
     adapter.subscriptions[0].subscriber.onTick(tick("run-1", 1));
     adapter.subscriptions[1].subscriber.onTick(tick("run-1", 1));
@@ -295,7 +309,13 @@ describe("connectSimulationStream", () => {
     const adapter = createFakeAdapter();
     const store = createStore();
     await startRunning(adapter, store, "run-1");
-    connectSimulationStream(adapter, "run-1", store.dispatch, STALE_AFTER_MILLISECONDS);
+    connectSimulationStream(
+      adapter,
+      "run-1",
+      store.dispatch,
+      STALE_AFTER_MILLISECONDS,
+      LOST_AFTER_MILLISECONDS,
+    );
     const { subscriber } = adapter.subscriptions[0];
     subscriber.onConnectionChange("open");
     subscriber.onTick(tick("run-1", 1));
@@ -307,12 +327,68 @@ describe("connectSimulationStream", () => {
     expect(store.state.connection).toBe("open");
   });
 
+  it("escalates a stream that stays silent to lost with a network error", async () => {
+    vi.useFakeTimers();
+    const adapter = createFakeAdapter();
+    const store = createStore();
+    await startRunning(adapter, store, "run-1");
+    connectSimulationStream(adapter, "run-1", store.dispatch, 3000, 15_000);
+    expect(store.state.connection).toBe("connecting");
+    vi.advanceTimersByTime(14_999);
+    expect(store.state.simulationState).toBe("RUNNING");
+    vi.advanceTimersByTime(1);
+    expect(store.state.simulationState).toBe("ERROR");
+    expect(store.state.connection).toBe("lost");
+    expect(store.state.error).toMatchObject({ kind: "network" });
+    expect(adapter.subscriptions[0].open).toBe(false);
+  });
+
+  it("any event restarts the silence timer", async () => {
+    vi.useFakeTimers();
+    const adapter = createFakeAdapter();
+    const store = createStore();
+    await startRunning(adapter, store, "run-1");
+    connectSimulationStream(adapter, "run-1", store.dispatch, 3000, 15_000);
+    const { subscriber } = adapter.subscriptions[0];
+    subscriber.onConnectionChange("open");
+    vi.advanceTimersByTime(10_000);
+    subscriber.onTick(tick("run-1", 1));
+    vi.advanceTimersByTime(10_000);
+    expect(store.state.simulationState).toBe("RUNNING");
+  });
+
+  it("SUPERSEDED ends the run as CANCELLED without restarting or stopping anything", async () => {
+    const adapter = createFakeAdapter();
+    const store = createStore();
+    await startRunning(adapter, store, "run-1");
+    connectSimulationStream(adapter, "run-1", store.dispatch, 3000, 15_000);
+    adapter.subscriptions[0].subscriber.onTerminal({
+      schema_version: "1.0",
+      is_simulated: true,
+      event_type: "SIMULATION_CANCELLED",
+      simulation_id: "run-1",
+      tick: 3,
+      timestamp: "2026-10-25T14:32:25Z",
+      reason: "SUPERSEDED",
+    });
+    expect(store.state.simulationState).toBe("CANCELLED");
+    expect(store.state.cancelReason).toBe("SUPERSEDED");
+    expect(adapter.pendingStarts).toHaveLength(1);
+    expect(adapter.stops).toEqual([]);
+  });
+
   it("stops the stale watchdog on cleanup", async () => {
     vi.useFakeTimers();
     const adapter = createFakeAdapter();
     const store = createStore();
     await startRunning(adapter, store, "run-1");
-    const cleanup = connectSimulationStream(adapter, "run-1", store.dispatch, 3000);
+    const cleanup = connectSimulationStream(
+      adapter,
+      "run-1",
+      store.dispatch,
+      3000,
+      LOST_AFTER_MILLISECONDS,
+    );
     adapter.subscriptions[0].subscriber.onConnectionChange("open");
     cleanup();
     const before = store.actions.length;

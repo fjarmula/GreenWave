@@ -23,6 +23,7 @@ describe("parseFrontendConfig", () => {
     expect(config.staleAfterSeconds).toBe(3);
     expect(config.startTimeoutMilliseconds).toBe(10_000);
     expect(config.reconnectAttemptLimit).toBe(5);
+    expect(config.lostAfterSeconds).toBe(15);
     expect(warnings).toEqual([]);
   });
 

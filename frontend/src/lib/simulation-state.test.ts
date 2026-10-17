@@ -248,7 +248,7 @@ describe("D3 stream ordering", () => {
     expect(state.simulationState).toBe("FINISHED");
   });
 
-  it("drops a terminal event older than the last tick", () => {
+  it("accepts a terminal event older than the last tick: it is final for the run", () => {
     const afterSix = reduce(running, { type: "TICK", event: tick(6) });
     const stale = reduce(afterSix, {
       type: "TERMINAL",
@@ -262,7 +262,8 @@ describe("D3 stream ordering", () => {
         reason: "STOPPED",
       },
     });
-    expect(stale).toBe(afterSix);
+    expect(stale.simulationState).toBe("CANCELLED");
+    expect(stale.liveTelemetry?.tick).toBe(6);
   });
 });
 

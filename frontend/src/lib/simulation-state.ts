@@ -156,12 +156,8 @@ export function simulationReducer(
       return { ...state, connection: action.status };
     case "TERMINAL": {
       const { event } = action;
-      // A terminal event repeats the last tick id (D3).
-      if (
-        state.simulationState !== "RUNNING" ||
-        !isCurrentRun(state, event.simulation_id) ||
-        event.tick < state.lastTick
-      ) {
+      // Final for the run whatever its tick (it normally repeats the last tick id, D3).
+      if (state.simulationState !== "RUNNING" || !isCurrentRun(state, event.simulation_id)) {
         return state;
       }
       return event.event_type === "SIMULATION_COMPLETED"

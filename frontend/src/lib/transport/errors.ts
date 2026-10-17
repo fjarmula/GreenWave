@@ -10,6 +10,8 @@ export type SimulationErrorInfo = {
   kind: "network" | "http";
   code?: ErrorCode;
   status?: number;
+  /** `timeout`: the backend did not answer (or went silent) within the configured limit. */
+  reason?: "timeout";
   message: string;
 };
 
@@ -17,6 +19,7 @@ export class SimulationAdapterError extends Error implements SimulationErrorInfo
   readonly kind: SimulationErrorInfo["kind"];
   readonly code?: ErrorCode;
   readonly status?: number;
+  readonly reason?: "timeout";
 
   constructor(info: SimulationErrorInfo) {
     super(info.message);
@@ -24,10 +27,17 @@ export class SimulationAdapterError extends Error implements SimulationErrorInfo
     this.kind = info.kind;
     this.code = info.code;
     this.status = info.status;
+    this.reason = info.reason;
   }
 
   toInfo(): SimulationErrorInfo {
-    return { kind: this.kind, code: this.code, status: this.status, message: this.message };
+    return {
+      kind: this.kind,
+      code: this.code,
+      status: this.status,
+      reason: this.reason,
+      message: this.message,
+    };
   }
 }
 

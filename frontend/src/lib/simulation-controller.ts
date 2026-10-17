@@ -83,9 +83,12 @@ export function connectSimulationStream(
   simulationId: string,
   dispatch: Dispatch,
   staleAfterMilliseconds: number,
+  lostAfterMilliseconds: number,
 ): () => void {
   let active = true;
   let staleTimer: ReturnType<typeof setTimeout> | null = null;
+  let silenceTimer: ReturnType<typeof setTimeout> | null = null;
+  let unsubscribe: () => void = () => undefined;
   let reportedStale = false;
   let open = false;
 
@@ -102,7 +105,33 @@ export function connectSimulationStream(
       dispatch({ type: "CONNECTION", simulationId, status: "reconnecting" });
     }, staleAfterMilliseconds);
   };
+  // No data at all for this long (a backend that accepts the connection but stays silent,
+  // or a reconnect that never completes): stop showing a spinner and report the loss.
+  const armSilenceTimer = () => {
+    if (silenceTimer) clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(() => {
+      if (!active) return;
+      stop();
+      dispatch({
+        type: "ERROR",
+        simulationId,
+        error: {
+          kind: "network",
+          reason: "timeout",
+          message: `No simulated telemetry for ${Math.round(lostAfterMilliseconds / 1000)} s`,
+        },
+      });
+    }, lostAfterMilliseconds);
+  };
+  const stop = () => {
+    active = false;
+    clearStaleTimer();
+    if (silenceTimer) clearTimeout(silenceTimer);
+    silenceTimer = null;
+    unsubscribe();
+  };
   const onActivity = () => {
+    armSilenceTimer();
     if (reportedStale) {
       reportedStale = false;
       dispatch({ type: "CONNECTION", simulationId, status: "open" });
@@ -110,7 +139,8 @@ export function connectSimulationStream(
     armStaleTimer();
   };
 
-  const unsubscribe = adapter.subscribe(simulationId, {
+  armSilenceTimer();
+  unsubscribe = adapter.subscribe(simulationId, {
     onTick: (event) => {
       if (!active) return;
       dispatch({ type: "TICK", event });
@@ -123,7 +153,7 @@ export function connectSimulationStream(
     },
     onTerminal: (event) => {
       if (!active) return;
-      clearStaleTimer();
+      stop();
       dispatch({ type: "TERMINAL", event });
     },
     onConnectionChange: (status) => {
@@ -136,14 +166,10 @@ export function connectSimulationStream(
     },
     onError: (error) => {
       if (!active) return;
-      clearStaleTimer();
+      stop();
       dispatch({ type: "ERROR", simulationId, error });
     },
   });
 
-  return () => {
-    active = false;
-    clearStaleTimer();
-    unsubscribe();
-  };
+  return stop;
 }

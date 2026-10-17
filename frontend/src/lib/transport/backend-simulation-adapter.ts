@@ -15,8 +15,9 @@
  * (`readyState === CONNECTING`). Every failed connection is therefore treated
  * as "simulation no longer exists" (SIMULATION_NOT_FOUND): in practice the
  * stream route's only non-200 answer is 404, because ids are client-generated
- * to the D8 pattern (422 cannot occur) and a 500 is a backend bug. No
- * follow-up request is made.
+ * to the D8 pattern (422 cannot occur) and a 500 is a backend bug. Note that a
+ * misconfiguration on the stream (CORS origin mismatch, a proxy error page) also
+ * reads as "no longer exists". No follow-up request is made.
  */
 import type {
   ConnectionStatus,
@@ -63,6 +64,7 @@ export function createBackendSimulationAdapter(
       onTimeout?.();
       return new SimulationAdapterError({
         kind: "network",
+        reason: "timeout",
         message: `Simulation backend at ${baseUrl} did not answer within ${Math.round(options.startTimeoutMilliseconds / 1000)} s`,
       });
     };
@@ -233,9 +235,8 @@ function openStream(
         return;
       case "SIMULATION_COMPLETED":
       case "SIMULATION_CANCELLED":
-        // Only a backend bug sends a terminal older than the last tick; dropping it may mean a
-        // reconnect that re-sends it, bounded by the server closing a finished session.
-        if (event.tick < lastTick) return;
+        // A terminal is final for this run whatever its tick: dropping one would leave the
+        // server re-sending it on every reconnect.
         close();
         subscriber.onTerminal(event);
         return;

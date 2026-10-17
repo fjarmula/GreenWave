@@ -18,7 +18,11 @@ const ERROR_MESSAGES: Record<ErrorCode, string> = {
 };
 
 export function describeSimulationError(error: SimulationErrorInfo, apiBaseUrl: string): string {
-  if (error.kind === "network") return `Simulation backend unreachable at ${apiBaseUrl}`;
+  if (error.kind === "network") {
+    return error.reason === "timeout"
+      ? `Simulation backend at ${apiBaseUrl} did not answer in time`
+      : `Simulation backend unreachable at ${apiBaseUrl}`;
+  }
   if (error.code) return ERROR_MESSAGES[error.code];
   return error.status
     ? `The simulation backend rejected the request (HTTP ${error.status})`
@@ -45,9 +49,17 @@ export function cancelReasonLabel(reason: CancelReason): string {
   return CANCEL_REASON_LABELS[reason];
 }
 
+/** `mm`m `ss`s; negative values (D15 allows a small negative saving) get a minus sign. */
 export function formatDuration(seconds: number): string {
-  const whole = Math.max(0, Math.round(seconds));
-  return `${String(Math.floor(whole / 60)).padStart(2, "0")}m ${String(whole % 60).padStart(2, "0")}s`;
+  const rounded = Math.round(seconds);
+  const whole = Math.abs(rounded);
+  const sign = rounded < 0 ? "−" : "";
+  return `${sign}${String(Math.floor(whole / 60)).padStart(2, "0")}m ${String(whole % 60).padStart(2, "0")}s`;
+}
+
+export function formatSignedSeconds(seconds: number): string {
+  const rounded = Math.round(seconds);
+  return rounded < 0 ? `−${Math.abs(rounded)}s` : `+${rounded}s`;
 }
 
 export function summarizeFinishedRun(

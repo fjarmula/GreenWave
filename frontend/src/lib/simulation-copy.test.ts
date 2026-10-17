@@ -4,6 +4,8 @@ import {
   cancelReasonLabel,
   connectionLabel,
   describeSimulationError,
+  formatDuration,
+  formatSignedSeconds,
   summarizeFinishedRun,
 } from "@/lib/simulation-copy";
 
@@ -22,6 +24,15 @@ describe("describeSimulationError", () => {
     ],
   ] as const)("maps %s", (code, status, text) => {
     expect(describeSimulationError({ kind: "http", status, code, message: "raw" }, API)).toBe(text);
+  });
+
+  it("says a slow backend did not answer, instead of calling it unreachable", () => {
+    expect(
+      describeSimulationError(
+        { kind: "network", reason: "timeout", message: "Simulation backend at X did not answer" },
+        API,
+      ),
+    ).toBe("Simulation backend at http://127.0.0.1:8000 did not answer in time");
   });
 
   it("names the backend URL for network failures", () => {
@@ -51,6 +62,15 @@ describe("labels", () => {
   it("labels cancel reasons", () => {
     expect(cancelReasonLabel("STOPPED")).toBe("Stopped");
     expect(cancelReasonLabel("SUPERSEDED")).toBe("Superseded by another dispatch");
+  });
+});
+
+describe("signed durations", () => {
+  it("formats negative time saved with a minus sign instead of clamping", () => {
+    expect(formatDuration(-3)).toBe("−00m 03s");
+    expect(formatSignedSeconds(145)).toBe("+145s");
+    expect(formatSignedSeconds(-3)).toBe("−3s");
+    expect(formatSignedSeconds(0)).toBe("+0s");
   });
 });
 

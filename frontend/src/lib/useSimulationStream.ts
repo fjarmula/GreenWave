@@ -12,6 +12,7 @@ import { getFrontendConfig } from "@/lib/config";
 import type { SimulationStartRequest } from "@/types/telemetry";
 
 const STALE_AFTER_MILLISECONDS = getFrontendConfig().staleAfterSeconds * 1000;
+const LOST_AFTER_MILLISECONDS = getFrontendConfig().lostAfterSeconds * 1000;
 
 export function useSimulationStream() {
   const { simulationState, startRequest } = useSimulationState();
@@ -38,6 +39,7 @@ export function useSimulationStream() {
       simulationId,
       dispatch,
       STALE_AFTER_MILLISECONDS,
+      LOST_AFTER_MILLISECONDS,
     );
   }, [dispatch, isStreaming, simulationId]);
 
