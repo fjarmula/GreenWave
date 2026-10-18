@@ -2,7 +2,7 @@
 #   uv run --project backend pre-commit install --install-hooks
 # post-checkout/post-merge/post-rewrite only refresh the local code graph (ADR 0004).
 minimum_pre_commit_version: "4.0.0"
-default_install_hook_types: [pre-commit, pre-push, post-checkout, post-merge, post-rewrite]
+default_install_hook_types: [pre-commit, pre-push, commit-msg, post-checkout, post-merge, post-rewrite]
 default_stages: [pre-commit]
 
 repos:
@@ -43,6 +43,12 @@ repos:
 
   - repo: local
     hooks:
+      - id: commit-message-format
+        name: git · Commit-message format
+        entry: scripts/check-commit-message.sh
+        language: script
+        stages: [commit-msg]
+
       - id: backend-ruff-check
         name: backend · Ruff lint
         entry: uv run --project backend ruff check --fix

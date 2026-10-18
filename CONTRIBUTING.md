@@ -6,7 +6,7 @@ Use focused branches. Run `scripts/check-agent-readiness.sh` before agent-workfl
 
 - One agent owns one branch and one worktree at a time.
 - Use `codex/<task>` for Codex work. Do not reuse another agent's dirty worktree.
-- Before handoff, commit coherent work or state exactly which files remain uncommitted.
+- Before handoff, commit coherent work when permitted by the applicable repository or task policy, or state exactly which files remain uncommitted.
 - Do not merge, push, or delete a branch without explicit maintainer approval.
 
 ## Handoff protocol
