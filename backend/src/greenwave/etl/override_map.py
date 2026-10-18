@@ -3,6 +3,7 @@
 import html
 import math
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 import networkx as nx
@@ -42,6 +43,71 @@ def _arrow(geometry: shapely.LineString, to_px: Projector, size: float = 15.0) -
     return " ".join(f"{px:.1f},{py:.1f}" for px, py in points)
 
 
+@dataclass(frozen=True, slots=True)
+class _Frame:
+    """Square panel window around the listed edges (plus a margin) and its metre → pixel map."""
+
+    min_x: float
+    min_y: float
+    max_x: float
+    max_y: float
+    scale: float
+
+    @classmethod
+    def around(cls, focus: list[shapely.Geometry]) -> "_Frame":
+        min_x, min_y, max_x, max_y = shapely.total_bounds(np.array(focus, dtype=object))
+        min_x, min_y = min_x - _MARGIN_METERS, min_y - _MARGIN_METERS
+        max_x, max_y = max_x + _MARGIN_METERS, max_y + _MARGIN_METERS
+        span = max(max_x - min_x, max_y - min_y)
+        return cls(min_x, min_y, max_x, max_y, _PANEL_PIXELS / span)
+
+    def to_px(self, x: float, y: float) -> tuple[float, float]:
+        return (x - self.min_x) * self.scale, (self.max_y - y) * self.scale
+
+
+def _signal_circles(frame: _Frame, signals_xy: NDArray[np.float64]) -> list[str]:
+    inside = (
+        (signals_xy[:, 0] >= frame.min_x)
+        & (signals_xy[:, 0] <= frame.max_x)
+        & (signals_xy[:, 1] >= frame.min_y)
+        & (signals_xy[:, 1] <= frame.max_y)
+    )
+    circles = []
+    for x, y in signals_xy[inside]:
+        px, py = frame.to_px(float(x), float(y))
+        circles.append(f'<circle class="signal" cx="{px:.1f}" cy="{py:.1f}" r="4.5"/>')
+    return circles
+
+
+def _panel_svg(
+    frame: _Frame,
+    ring: list[shapely.Geometry],
+    arms: list[shapely.Geometry],
+    all_geometries: NDArray[np.object_],
+    signals_xy: NDArray[np.float64],
+) -> str:
+    to_px = frame.to_px
+    window = shapely.box(frame.min_x, frame.min_y, frame.max_x, frame.max_y)
+    parts = [f'<svg viewBox="0 0 {_PANEL_PIXELS} {_PANEL_PIXELS}" role="img">']
+    for geometry in all_geometries[shapely.intersects(all_geometries, window)]:
+        parts.append(_polyline("road", geometry, to_px))
+    for geometry in arms:
+        parts.append(_polyline("arm", geometry, to_px))
+    for geometry in ring:
+        parts.append(
+            _polyline("ring", geometry, to_px)
+            + f'<polygon class="arrow" points="{_arrow(geometry, to_px)}"/>'
+        )
+    parts += _signal_circles(frame, signals_xy)
+    scale_px = 50 * frame.scale
+    parts.append(
+        f'<line class="scale" x1="12" y1="{_PANEL_PIXELS - 14}" x2="{12 + scale_px:.1f}" '
+        f'y2="{_PANEL_PIXELS - 14}"/>'
+        f'<text class="scale-text" x="12" y="{_PANEL_PIXELS - 20}">50 m</text></svg>'
+    )
+    return "".join(parts)
+
+
 def _panel(
     entry: RoundaboutOverride,
     graph: nx.MultiDiGraph,
@@ -57,47 +123,13 @@ def _panel(
             f"<section><h2>{html.escape(entry.name)}</h2>"
             f"<p class='note'>No edges listed. {html.escape(entry.notes or '')}</p></section>"
         )
-    min_x, min_y, max_x, max_y = shapely.total_bounds(np.array(focus, dtype=object))
-    min_x, min_y = min_x - _MARGIN_METERS, min_y - _MARGIN_METERS
-    max_x, max_y = max_x + _MARGIN_METERS, max_y + _MARGIN_METERS
-    span = max(max_x - min_x, max_y - min_y)
-    scale = _PANEL_PIXELS / span
-
-    def to_px(x: float, y: float) -> tuple[float, float]:
-        return (x - min_x) * scale, (max_y - y) * scale
-
-    window = shapely.box(min_x, min_y, max_x, max_y)
-    parts = [f'<svg viewBox="0 0 {_PANEL_PIXELS} {_PANEL_PIXELS}" role="img">']
-    for geometry in all_geometries[shapely.intersects(all_geometries, window)]:
-        parts.append(_polyline("road", geometry, to_px))
-    for geometry in arms:
-        parts.append(_polyline("arm", geometry, to_px))
-    for geometry in ring:
-        parts.append(
-            _polyline("ring", geometry, to_px)
-            + f'<polygon class="arrow" points="{_arrow(geometry, to_px)}"/>'
-        )
-    inside = (
-        (signals_xy[:, 0] >= min_x)
-        & (signals_xy[:, 0] <= max_x)
-        & (signals_xy[:, 1] >= min_y)
-        & (signals_xy[:, 1] <= max_y)
-    )
-    for x, y in signals_xy[inside]:
-        px, py = to_px(float(x), float(y))
-        parts.append(f'<circle class="signal" cx="{px:.1f}" cy="{py:.1f}" r="4.5"/>')
-    scale_px = 50 * scale
-    parts.append(
-        f'<line class="scale" x1="12" y1="{_PANEL_PIXELS - 14}" x2="{12 + scale_px:.1f}" '
-        f'y2="{_PANEL_PIXELS - 14}"/>'
-        f'<text class="scale-text" x="12" y="{_PANEL_PIXELS - 20}">50 m</text></svg>'
-    )
+    svg = _panel_svg(_Frame.around(focus), ring, arms, all_geometries, signals_xy)
     status = "verified" if entry.verified else "NOT verified"
     return (
         f"<section><h2>{html.escape(entry.name)} <small>{status} · "
         f"{len(entry.ring_edge_ids)} ring edges · "
         f"{len(entry.entry_arm_edge_ids)} entry-arm edges</small></h2>"
-        f"<p class='note'>{html.escape(entry.notes or '')}</p>{''.join(parts)}</section>"
+        f"<p class='note'>{html.escape(entry.notes or '')}</p>{svg}</section>"
     )
 
 
