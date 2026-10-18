@@ -1,6 +1,6 @@
 # Clean-code / SOLID refactor: design
 
-Date: 2026-10-17 · Status: approved 2026-10-17
+Date: 2026-10-17 · Status: approved 2026-10-17; implemented 2026-10-18 (M1 b7f9fe1, M2 30dde35, golden fix eed9534, M3 71f7637, M4 c886de5, ETL harness 972ac78, M5 587ad64, M4b 854f082, M6 bfca50b)
 
 ## Intent
 
