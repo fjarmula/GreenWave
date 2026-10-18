@@ -163,3 +163,26 @@ async def test_failed_replacement_keeps_active_session(manager: SessionManager) 
     assert manager._active is not None
     assert manager._active.simulation_id == "first"
     await manager.shutdown()
+
+
+class _FailingEngine(_Engine):
+    def run_tick(
+        self, state: SimpleNamespace, _: datetime, __: int
+    ) -> tuple[SimpleNamespace, list[object]]:
+        raise RuntimeError("engine bug")
+
+
+@pytest.mark.asyncio
+async def test_engine_failure_is_logged_with_the_simulation_id(
+    manager: SessionManager, caplog: pytest.LogCaptureFixture
+) -> None:
+    """An unlogged loop crash leaves a silent, frozen run that nobody can diagnose."""
+    manager._planner = _planner(_FailingEngine)
+    with caplog.at_level("ERROR", logger="greenwave.simulation.session"):
+        await manager.start(_request("first"))
+        await asyncio.sleep(0)
+
+    [record] = [r for r in caplog.records if r.getMessage() == "simulation_loop_failed"]
+    assert record.exc_info is not None
+    assert getattr(record, "simulation_id", None) == "first"
+    await manager.shutdown()

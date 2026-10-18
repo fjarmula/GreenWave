@@ -173,8 +173,12 @@ class SessionManager:
                     logger.warning(
                         "simulation_tick_deadline_missed", extra={"overrun_ms": -remaining * 1000}
                     )
-        except asyncio.CancelledError:
-            raise
+        except Exception:
+            # The run freezes without a terminal event; clients fall back to their stale/lost
+            # timeouts. Log so the frozen run can be diagnosed.
+            logger.exception(
+                "simulation_loop_failed", extra={"simulation_id": session.simulation_id}
+            )
         finally:
             if self._active is session and session.terminal is not None:
                 self._active = None
