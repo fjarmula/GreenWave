@@ -170,6 +170,26 @@ def _handle_linestring_with_highway(scan: OsmScan, feature: OsmFeature, highway:
     )
 
 
+def _scan_point(scan: OsmScan, feature: OsmFeature, highway: str | None) -> None:
+    """Point bookkeeping: bbox, all point coordinates, signal nodes and signalised crossings."""
+    lon_lat = _point_lon_lat(feature.coordinates)
+    if lon_lat is None:
+        _record_invalid(scan, feature, "point with non-numeric or out-of-range coordinates")
+        return
+    lon, lat = lon_lat
+    scan._extend_bbox(lon, lat, lon, lat)
+    scan.point_lons.append(lon)
+    scan.point_lats.append(lat)
+    is_signalised_crossing = tag(feature.properties, "crossing") == "traffic_signals"
+    if highway == "traffic_signals":
+        scan.signal_nodes.append(PointFeature(feature.line_number, lon, lat, feature.properties))
+        scan.signal_nodes_also_tagged_crossing += is_signalised_crossing
+    elif is_signalised_crossing:
+        scan.signalised_crossings.append(
+            PointFeature(feature.line_number, lon, lat, feature.properties)
+        )
+
+
 def scan_osm(path: Path) -> OsmScan:
     """Single streaming pass; keeps only what later profile steps need (roads, signals, points)."""
     scan = OsmScan()
@@ -186,24 +206,7 @@ def scan_osm(path: Path) -> OsmScan:
         highway = tag(record.properties, "highway")
 
         if record.geometry_type == "Point":
-            lon_lat = _point_lon_lat(record.coordinates)
-            if lon_lat is None:
-                _record_invalid(scan, record, "point with non-numeric or out-of-range coordinates")
-                continue
-            lon, lat = lon_lat
-            scan._extend_bbox(lon, lat, lon, lat)
-            scan.point_lons.append(lon)
-            scan.point_lats.append(lat)
-            is_signalised_crossing = tag(record.properties, "crossing") == "traffic_signals"
-            if highway == "traffic_signals":
-                scan.signal_nodes.append(
-                    PointFeature(record.line_number, lon, lat, record.properties)
-                )
-                scan.signal_nodes_also_tagged_crossing += is_signalised_crossing
-            elif is_signalised_crossing:
-                scan.signalised_crossings.append(
-                    PointFeature(record.line_number, lon, lat, record.properties)
-                )
+            _scan_point(scan, record, highway)
             continue
 
         geometry = _validate_non_point(scan, record)

@@ -59,6 +59,9 @@ def write_overrides(overrides: OverrideFile, path: Path) -> None:
     path.write_text(overrides.model_dump_json(indent=2) + "\n", encoding="utf-8")
 
 
+_EdgeRecord = tuple[object, object, str, dict[str, object]]
+
+
 def draft_override_entries(
     graph: nx.MultiDiGraph, names: tuple[str, ...] = UNTAGGED_RONDO_NAMES
 ) -> tuple[OverrideFile, dict[str, object]]:
@@ -71,68 +74,79 @@ def draft_override_entries(
     entries: list[RoundaboutOverride] = []
     features: list[dict[str, object]] = []
     for name in names:
-        named = [
-            (u, v, key, data)
-            for u, v, key, data in graph.edges(keys=True, data=True)
-            if data["name"] == name
-        ]
-        directed = nx.DiGraph()
-        for u, v, _, data in named:
-            if u != v:
-                directed.add_edge(u, v, length=data["length_m"])
-        components = sorted(
-            (c for c in nx.strongly_connected_components(directed) if len(c) >= 2),
-            key=lambda c: -sum(d["length"] for _, _, d in directed.subgraph(c).edges(data=True)),
+        entry, edge_features = _draft_entry(graph, name)
+        entries.append(entry)
+        features.extend(edge_features)
+    return OverrideFile(entries=entries), _features_geojson(features)
+
+
+def _largest_ring_nodes(named: list[_EdgeRecord]) -> set[object] | None:
+    """Nodes of the longest closed directed loop among the named edges, if there is one."""
+    directed = nx.DiGraph()
+    for u, v, _, data in named:
+        if u != v:
+            directed.add_edge(u, v, length=data["length_m"])
+    components = sorted(
+        (c for c in nx.strongly_connected_components(directed) if len(c) >= 2),
+        key=lambda c: -sum(d["length"] for _, _, d in directed.subgraph(c).edges(data=True)),
+    )
+    return components[0] if components else None
+
+
+def _draft_entry(
+    graph: nx.MultiDiGraph, name: str
+) -> tuple[RoundaboutOverride, list[dict[str, object]]]:
+    named: list[_EdgeRecord] = [
+        (u, v, key, data)
+        for u, v, key, data in graph.edges(keys=True, data=True)
+        if data["name"] == name
+    ]
+    ring_nodes = _largest_ring_nodes(named)
+    if ring_nodes is None:
+        entry = RoundaboutOverride(
+            name=name,
+            notes=f"no closed directed ring among {len(named)} edges named {name!r}; "
+            "fill in by hand",
         )
-        if not components:
-            entries.append(
-                RoundaboutOverride(
-                    name=name,
-                    notes=f"no closed directed ring among {len(named)} edges named {name!r}; "
-                    "fill in by hand",
-                )
-            )
-            continue
-        ring_nodes = components[0]
-        ring = [
-            (u, v, key, data) for u, v, key, data in named if u in ring_nodes and v in ring_nodes
-        ]
-        ring_ids = {key for _, _, key, _ in ring}
-        arms = [
-            (u, v, key, data)
-            for u, v, key, data in graph.edges(keys=True, data=True)
-            if (u in ring_nodes or v in ring_nodes) and key not in ring_ids
-        ]
-        entries.append(
-            RoundaboutOverride(
-                name=name,
-                ring_edge_ids=sorted(ring_ids),
-                entry_arm_edge_ids=sorted(key for _, _, key, _ in arms),
-                notes=(
-                    f"DRAFT: {len(ring)} ring edges (largest closed loop among edges named "
-                    f"{name!r}), {len(arms)} edges touching it; check on a map"
-                ),
-            )
-        )
-        for role, group in (("ring", ring), ("entry_arm", arms)):
-            for _, _, key, data in group:
-                features.append(
-                    {
-                        "role": role,
-                        "rondo": name,
-                        "edge_id": key,
-                        "street": data["name"],
-                        "geometry": data["geometry"],
-                    }
-                )
+        return entry, []
+    ring = [(u, v, key, data) for u, v, key, data in named if u in ring_nodes and v in ring_nodes]
+    ring_ids = {key for _, _, key, _ in ring}
+    arms = [
+        (u, v, key, data)
+        for u, v, key, data in graph.edges(keys=True, data=True)
+        if (u in ring_nodes or v in ring_nodes) and key not in ring_ids
+    ]
+    entry = RoundaboutOverride(
+        name=name,
+        ring_edge_ids=sorted(ring_ids),
+        entry_arm_edge_ids=sorted(key for _, _, key, _ in arms),
+        notes=(
+            f"DRAFT: {len(ring)} ring edges (largest closed loop among edges named "
+            f"{name!r}), {len(arms)} edges touching it; check on a map"
+        ),
+    )
+    features = [
+        {
+            "role": role,
+            "rondo": name,
+            "edge_id": key,
+            "street": data["name"],
+            "geometry": data["geometry"],
+        }
+        for role, group in (("ring", ring), ("entry_arm", arms))
+        for _, _, key, data in group
+    ]
+    return entry, features
+
+
+def _features_geojson(features: list[dict[str, object]]) -> dict[str, object]:
     frame = gpd.GeoDataFrame(
         [{k: v for k, v in f.items() if k != "geometry"} for f in features],
         geometry=[f["geometry"] for f in features],
         crs=METRIC_CRS,
     ).to_crs(SOURCE_CRS)
-    geojson = (
+    return (
         json.loads(frame.to_json(drop_id=True))
         if len(frame)
         else {"type": "FeatureCollection", "features": []}
     )
-    return OverrideFile(entries=entries), geojson

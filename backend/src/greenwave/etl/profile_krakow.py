@@ -19,9 +19,19 @@ def profile_krakow(krakow_dir: Path) -> tuple[KrakowProfile, shapely.Geometry]:
     The hull is only a proxy for the city outline (the OSM extract has no city polygon); it is
     already in the metric CRS because Ulice.geojson is published in EPSG:2178.
     """
-    document = cast(
-        "dict[str, object]", json.loads((krakow_dir / "Ulice.geojson").read_text(encoding="utf-8"))
+    ulice, hull = _profile_ulice(krakow_dir / "Ulice.geojson")
+    profile = KrakowProfile(
+        ulice=ulice,
+        csv_files=_profile_csv_files(krakow_dir),
+        export_timestamp_line=(krakow_dir / "__Aktualnosc__.txt")
+        .read_text(encoding="utf-8")
+        .strip(),
     )
+    return profile, hull
+
+
+def _profile_ulice(path: Path) -> tuple[UliceProfile, shapely.Geometry]:
+    document = cast("dict[str, object]", json.loads(path.read_text(encoding="utf-8")))
     crs = cast("dict[str, dict[str, str]]", document.get("crs", {}))
     declared_crs = crs.get("properties", {}).get("name")
     features = cast("list[dict[str, object]]", document["features"])
@@ -42,7 +52,20 @@ def profile_krakow(krakow_dir: Path) -> tuple[KrakowProfile, shapely.Geometry]:
     array = np.array(geometries, dtype=object)
     hull = shapely.convex_hull(shapely.union_all(array))
     min_x, min_y, max_x, max_y = (float(v) for v in shapely.total_bounds(array))
+    profile = UliceProfile(
+        declared_crs=declared_crs,
+        features=len(features),
+        features_by_geometry_type=dict(type_counts),
+        total_length_km=float(shapely.length(array).sum()) / 1000,
+        property_names=sorted(property_names),
+        null_street_names=null_names,
+        invalid_geometries=invalid,
+        bbox_in_metric_crs=[min_x, min_y, max_x, max_y],
+    )
+    return profile, hull
 
+
+def _profile_csv_files(krakow_dir: Path) -> list[CsvProfile]:
     csv_files = []
     for csv_path in sorted(krakow_dir.glob("*.csv")):
         with csv_path.open(encoding="utf-8-sig", newline="") as handle:
@@ -51,21 +74,4 @@ def profile_krakow(krakow_dir: Path) -> tuple[KrakowProfile, shapely.Geometry]:
             csv_files.append(
                 CsvProfile(file=csv_path.name, rows=sum(1 for _ in reader), columns=columns)
             )
-
-    profile = KrakowProfile(
-        ulice=UliceProfile(
-            declared_crs=declared_crs,
-            features=len(features),
-            features_by_geometry_type=dict(type_counts),
-            total_length_km=float(shapely.length(array).sum()) / 1000,
-            property_names=sorted(property_names),
-            null_street_names=null_names,
-            invalid_geometries=invalid,
-            bbox_in_metric_crs=[min_x, min_y, max_x, max_y],
-        ),
-        csv_files=csv_files,
-        export_timestamp_line=(krakow_dir / "__Aktualnosc__.txt")
-        .read_text(encoding="utf-8")
-        .strip(),
-    )
-    return profile, hull
+    return csv_files

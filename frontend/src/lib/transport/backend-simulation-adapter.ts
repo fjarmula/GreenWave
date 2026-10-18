@@ -204,16 +204,8 @@ function openStream(
 
   const handle = (eventType: SimulationStreamEvent["event_type"], message: MessageEvent) => {
     if (closed) return;
-    let payload: unknown = undefined;
-    try {
-      payload = JSON.parse(String(message.data));
-    } catch {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn(`[simulation stream] dropped ${eventType}: invalid JSON`);
-      }
-    }
-    const event = payload === undefined ? null : parseStreamEvent(payload, simulationId);
-    if (!event || event.event_type !== eventType) {
+    const event = decodeStreamFrame(eventType, message, simulationId);
+    if (!event) {
       // The server closes the stream after a terminal frame and re-sends the same retained
       // terminal on every reconnect; dropping it silently would reconnect forever.
       if (eventType === "SIMULATION_COMPLETED" || eventType === "SIMULATION_CANCELLED") {
@@ -248,4 +240,22 @@ function openStream(
 
   report("connecting");
   return close;
+}
+
+/** The validated event of one named SSE frame, or null when it is not valid JSON of that type. */
+function decodeStreamFrame(
+  eventType: SimulationStreamEvent["event_type"],
+  message: MessageEvent,
+  simulationId: string,
+): SimulationStreamEvent | null {
+  let payload: unknown = undefined;
+  try {
+    payload = JSON.parse(String(message.data));
+  } catch {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(`[simulation stream] dropped ${eventType}: invalid JSON`);
+    }
+  }
+  const event = payload === undefined ? null : parseStreamEvent(payload, simulationId);
+  return event && event.event_type === eventType ? event : null;
 }

@@ -119,117 +119,145 @@ def weld_ways(
     """Return the ways with welds applied (inputs are not modified) and a log of every decision."""
     if tolerance_meters <= 0:
         raise ValueError("weld tolerance must be positive (metres)")
-    by_line = {way.line_number: way for way in ways}
-    coordinates = {way.line_number: list(way.coordinates) for way in ways}
-    lines_at_vertex: dict[str, set[int]] = {}
-    for way in ways:
-        for lon, lat in way.coordinates:
-            lines_at_vertex.setdefault(node_key(lon, lat), set()).add(way.line_number)
-
     candidates = near_misses.filter(pl.col("distance_m") <= tolerance_meters).sort(
         "distance_m", "way_line", "other_way_line"
     )
-    welds: list[WeldRecord] = []
-    skipped: list[SkippedWeld] = []
-    touched_ends: set[tuple[int, int]] = set()  # (way line, 0 = first vertex / -1 = last)
-
+    welder = _Welder(ways)
     for row in candidates.iter_rows(named=True):
-        c = _Candidate(**row)
-        way, other = by_line[c.way_line], by_line[c.other_way_line]
+        welder.consider(_Candidate(**row))
+    report = WeldReport(
+        tolerance_m=tolerance_meters,
+        candidates=candidates.height,
+        welded=len(welder.welds),
+        skipped=len(welder.skipped),
+        welded_by_action=_count(w.action for w in welder.welds),
+        skipped_by_reason=_count(s.reason for s in welder.skipped),
+        welds=welder.welds,
+        skipped_candidates=welder.skipped,
+    )
+    return welder.welded_ways(ways), report
+
+
+@dataclass(frozen=True, slots=True)
+class _Weld:
+    action: str
+    end_index: int  # 0 = the way's first vertex moves, -1 = its last
+    end_point: LonLat
+    new_point: LonLat
+    moved: list[LonLat]  # the welded way's coordinates after the move
+    insert_at: int | None  # where the new vertex goes into the other way, if one is inserted
+
+
+class _Welder:
+    """Applies welds closest-first to working copies of the ways' coordinates."""
+
+    def __init__(self, ways: list[DrivableWay]) -> None:
+        self.by_line = {way.line_number: way for way in ways}
+        self.coordinates = {way.line_number: list(way.coordinates) for way in ways}
+        self.lines_at_vertex: dict[str, set[int]] = {}
+        for way in ways:
+            for lon, lat in way.coordinates:
+                self.lines_at_vertex.setdefault(node_key(lon, lat), set()).add(way.line_number)
+        self.touched_ends: set[tuple[int, int]] = set()  # (way line, 0 = first / -1 = last)
+        self.welds: list[WeldRecord] = []
+        self.skipped: list[SkippedWeld] = []
+
+    def consider(self, c: _Candidate) -> None:
+        decision = self._decide(c)
+        if isinstance(decision, str):
+            self.skipped.append(_skip_record(c, decision))
+        else:
+            self._apply(c, decision)
+
+    def _decide(self, c: _Candidate) -> _Weld | str:
+        """The weld to make, or the reason to skip (checked in this order)."""
+        way, other = self.by_line[c.way_line], self.by_line[c.other_way_line]
         end_point = _rounded((c.lon, c.lat))
-
-        def skip(reason: str, c: _Candidate = c) -> None:
-            skipped.append(
-                SkippedWeld(
-                    reason=reason,
-                    kind=c.kind,
-                    distance_m=c.distance_m,
-                    way_line=c.way_line,
-                    other_way_line=c.other_way_line,
-                    street=c.street,
-                    other_street=c.other_street,
-                    highway=c.highway,
-                    other_highway=c.other_highway,
-                    lon=c.lon,
-                    lat=c.lat,
-                )
-            )
-
-        own = coordinates[c.way_line]
+        own = self.coordinates[c.way_line]
         end_index = 0 if own[0] == end_point else (-1 if own[-1] == end_point else None)
-        if end_index is None or (c.way_line, end_index) in touched_ends:
-            skip("endpoint already moved by another weld")
-            continue
+        if end_index is None or (c.way_line, end_index) in self.touched_ends:
+            return "endpoint already moved by another weld"
 
         insert_at: int | None = None
         if c.kind == KIND_END_TO_NODE:
             new_point = _rounded((c.other_lon, c.other_lat))
-            involved = lines_at_vertex.get(node_key(*new_point), {c.other_way_line})
-            if any(level_signature(by_line[n]) != level_signature(way) for n in involved):
-                skip(_LEVEL_SKIP)
-                continue
+            involved = self.lines_at_vertex.get(node_key(*new_point), {c.other_way_line})
+            if any(level_signature(self.by_line[n]) != level_signature(way) for n in involved):
+                return _LEVEL_SKIP
             action = ACTION_MOVED_TO_NODE
         elif c.kind == KIND_END_TO_SEGMENT:
             if level_signature(other) != level_signature(way):
-                skip(_LEVEL_SKIP)
-                continue
-            position, new_point = _insert_position(coordinates[c.other_way_line], end_point)
-            if new_point in coordinates[c.other_way_line]:
+                return _LEVEL_SKIP
+            position, new_point = _insert_position(self.coordinates[c.other_way_line], end_point)
+            if new_point in self.coordinates[c.other_way_line]:
                 action = ACTION_MOVED_TO_VERTEX
             else:
                 action, insert_at = ACTION_INSERTED_VERTEX, position
         else:
-            skip(f"unknown near-miss kind {c.kind!r}")
-            continue
+            return f"unknown near-miss kind {c.kind!r}"
 
         moved = list(own)
         moved[end_index] = new_point
         if len({*moved}) < 2:
-            skip("welding would collapse the way to a point")
-            continue
-        coordinates[c.way_line] = moved
-        if insert_at is not None:
-            coordinates[c.other_way_line].insert(insert_at, new_point)
-        touched_ends.add((c.way_line, end_index))
-        lines_at_vertex.setdefault(node_key(*new_point), set()).update(
+            return "welding would collapse the way to a point"
+        return _Weld(action, end_index, end_point, new_point, moved, insert_at)
+
+    def _apply(self, c: _Candidate, weld: _Weld) -> None:
+        self.coordinates[c.way_line] = weld.moved
+        if weld.insert_at is not None:
+            self.coordinates[c.other_way_line].insert(weld.insert_at, weld.new_point)
+        self.touched_ends.add((c.way_line, weld.end_index))
+        self.lines_at_vertex.setdefault(node_key(*weld.new_point), set()).update(
             {c.way_line, c.other_way_line}
         )
-        welds.append(
-            WeldRecord(
-                action=action,
-                kind=c.kind,
-                distance_m=c.distance_m,
-                way_line=c.way_line,
-                other_way_line=c.other_way_line,
-                street=c.street,
-                other_street=c.other_street,
-                highway=c.highway,
-                other_highway=c.other_highway,
-                old_lon=end_point[0],
-                old_lat=end_point[1],
-                new_lon=new_point[0],
-                new_lat=new_point[1],
-            )
-        )
+        self.welds.append(_weld_record(c, weld))
 
-    changed = {line for line, coords in coordinates.items() if coords != by_line[line].coordinates}
-    welded_ways = [
-        replace(way, coordinates=coordinates[way.line_number])
-        if way.line_number in changed
-        else way
-        for way in ways
-    ]
-    report = WeldReport(
-        tolerance_m=tolerance_meters,
-        candidates=candidates.height,
-        welded=len(welds),
-        skipped=len(skipped),
-        welded_by_action=_count(w.action for w in welds),
-        skipped_by_reason=_count(s.reason for s in skipped),
-        welds=welds,
-        skipped_candidates=skipped,
+    def welded_ways(self, ways: list[DrivableWay]) -> list[DrivableWay]:
+        changed = {
+            line
+            for line, coords in self.coordinates.items()
+            if coords != self.by_line[line].coordinates
+        }
+        return [
+            replace(way, coordinates=self.coordinates[way.line_number])
+            if way.line_number in changed
+            else way
+            for way in ways
+        ]
+
+
+def _skip_record(c: _Candidate, reason: str) -> SkippedWeld:
+    return SkippedWeld(
+        reason=reason,
+        kind=c.kind,
+        distance_m=c.distance_m,
+        way_line=c.way_line,
+        other_way_line=c.other_way_line,
+        street=c.street,
+        other_street=c.other_street,
+        highway=c.highway,
+        other_highway=c.other_highway,
+        lon=c.lon,
+        lat=c.lat,
     )
-    return welded_ways, report
+
+
+def _weld_record(c: _Candidate, weld: _Weld) -> WeldRecord:
+    return WeldRecord(
+        action=weld.action,
+        kind=c.kind,
+        distance_m=c.distance_m,
+        way_line=c.way_line,
+        other_way_line=c.other_way_line,
+        street=c.street,
+        other_street=c.other_street,
+        highway=c.highway,
+        other_highway=c.other_highway,
+        old_lon=weld.end_point[0],
+        old_lat=weld.end_point[1],
+        new_lon=weld.new_point[0],
+        new_lat=weld.new_point[1],
+    )
 
 
 def _count(values: Iterable[str]) -> dict[str, int]:

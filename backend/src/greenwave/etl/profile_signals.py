@@ -3,6 +3,7 @@
 import statistics
 from collections import Counter
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 import numpy as np
 import shapely
@@ -89,17 +90,21 @@ def _count_within(
     return len(np.unique(pairs[0]))
 
 
-def _probe(
-    label: str,
+@dataclass(frozen=True, slots=True)
+class _ProbeContext:
+    """What every junction probe searches: the ways, the signals and their cluster labels."""
+
+    ways: list[DrivableWay]
+    signals: list[PointFeature]
+    signals_xy: NDArray[np.float64]
+    labels_by_radius: dict[float, NDArray[np.int64]]
+
+
+def _probe_vertices(
+    ways: list[DrivableWay],
     name_fragments_a: tuple[str, ...],
     name_fragments_b: tuple[str, ...] | None,
-    ways: list[DrivableWay],
-    signals: list[PointFeature],
-    signals_xy: NDArray[np.float64],
-    labels_by_radius: dict[float, NDArray[np.int64]],
-) -> ProbeResult:
-    """Locate a known junction from street names, then list the signal nodes around it."""
-
+) -> set[LonLat]:
     def vertices_of(fragments: tuple[str, ...]) -> set[LonLat]:
         found: set[LonLat] = set()
         for way in ways:
@@ -111,6 +116,17 @@ def _probe(
     vertices = vertices_of(name_fragments_a)
     if name_fragments_b is not None:
         vertices &= vertices_of(name_fragments_b)
+    return vertices
+
+
+def _probe(
+    label: str,
+    name_fragments_a: tuple[str, ...],
+    name_fragments_b: tuple[str, ...] | None,
+    context: _ProbeContext,
+) -> ProbeResult:
+    """Locate a known junction from street names, then list the signal nodes around it."""
+    vertices = _probe_vertices(context.ways, name_fragments_a, name_fragments_b)
     if not vertices:
         return ProbeResult(
             label=label, found=False, center_lon=None, center_lat=None, signals_within_100m=[]
@@ -118,13 +134,13 @@ def _probe(
     center_lon = float(np.mean([lon for lon, _ in vertices]))
     center_lat = float(np.mean([lat for _, lat in vertices]))
     center_xy = project_points(np.array([center_lon]), np.array([center_lat]))[0]
-    distances = np.hypot(*(signals_xy - center_xy).T)
+    distances = np.hypot(*(context.signals_xy - center_xy).T)
     nearby = []
     for index in np.flatnonzero(distances <= _PROBE_SEARCH_RADIUS_METERS).tolist():
-        signal = signals[index]
+        signal = context.signals[index]
         cluster_sizes = {
             f"{radius:g}": int((radius_labels == radius_labels[index]).sum())
-            for radius, radius_labels in labels_by_radius.items()
+            for radius, radius_labels in context.labels_by_radius.items()
         }
         nearby.append(
             ProbeSignal(
@@ -146,38 +162,29 @@ def _probe(
     )
 
 
-def analyse_signals(
-    scan: OsmScan, roads: RoadAnalysis, city_outline: shapely.Geometry
-) -> SignalsProfile:
-    signals = scan.signal_nodes
-    signals_xy = project_points(
-        np.array([s.lon for s in signals]), np.array([s.lat for s in signals])
-    )
-    positions = [_vertex_position((s.lon, s.lat), roads) for s in signals]
-
+def _off_network_distances(
+    signals_xy: NDArray[np.float64], positions: list[str], roads: RoadAnalysis
+) -> list[float]:
+    """Distance from each off-network signal to its nearest drivable way."""
     off_network = [i for i, position in enumerate(positions) if position == "off_network"]
-    off_distances: list[float] = []
-    if off_network and len(roads.projected_lines):
-        tree = shapely.STRtree(roads.projected_lines)
-        _, distances = tree.query_nearest(
-            shapely.points(signals_xy[off_network]), return_distance=True, all_matches=False
-        )
-        off_distances = [float(d) for d in distances]
-
-    non_blocking = np.array(
-        [tag(s.properties, "traffic_signals") in NON_BLOCKING_SIGNAL_TAGS for s in signals],
-        dtype=np.bool_,
+    if not (off_network and len(roads.projected_lines)):
+        return []
+    tree = shapely.STRtree(roads.projected_lines)
+    _, distances = tree.query_nearest(
+        shapely.points(signals_xy[off_network]), return_distance=True, all_matches=False
     )
-    labels_by_radius = {
-        radius: single_linkage_labels(signals_xy, radius) for radius in CLUSTER_PROBE_RADII_METERS
-    }
+    return [float(d) for d in distances]
 
+
+def _crossings_profile(
+    scan: OsmScan, roads: RoadAnalysis, signals_xy: NDArray[np.float64], positions: list[str]
+) -> CrossingsProfile:
     crossings = scan.signalised_crossings
     crossings_xy = project_points(
         np.array([c.lon for c in crossings]), np.array([c.lat for c in crossings])
     )
     junction_mask = np.array([p == "junction" for p in positions], dtype=np.bool_)
-    crossings_profile = CrossingsProfile(
+    return CrossingsProfile(
         total=len(crossings),
         by_kind=dict(Counter(crossing_kind(c) for c in crossings).most_common()),
         signal_nodes_also_tagged_crossing=scan.signal_nodes_also_tagged_crossing,
@@ -193,32 +200,33 @@ def analyse_signals(
         },
     )
 
+
+def analyse_signals(
+    scan: OsmScan, roads: RoadAnalysis, city_outline: shapely.Geometry
+) -> SignalsProfile:
+    signals = scan.signal_nodes
+    signals_xy = project_points(
+        np.array([s.lon for s in signals]), np.array([s.lat for s in signals])
+    )
+    positions = [_vertex_position((s.lon, s.lat), roads) for s in signals]
+    off_distances = _off_network_distances(signals_xy, positions, roads)
+    non_blocking = np.array(
+        [tag(s.properties, "traffic_signals") in NON_BLOCKING_SIGNAL_TAGS for s in signals],
+        dtype=np.bool_,
+    )
+    labels_by_radius = {
+        radius: single_linkage_labels(signals_xy, radius) for radius in CLUSTER_PROBE_RADII_METERS
+    }
+    crossings_profile = _crossings_profile(scan, roads, signals_xy, positions)
     inside = (
         shapely.contains_xy(city_outline, signals_xy[:, 0], signals_xy[:, 1])
         if len(signals_xy)
         else np.empty(0, dtype=np.bool_)
     )
-
-    ways = scan.drivable_ways
+    context = _ProbeContext(scan.drivable_ways, signals, signals_xy, labels_by_radius)
     probes = [
-        _probe(
-            "Rondo Mogilskie",
-            ("Rondo Mogilskie",),
-            None,
-            ways,
-            signals,
-            signals_xy,
-            labels_by_radius,
-        ),
-        _probe(
-            "Czarnowiejska x Mickiewicza",
-            ("Czarnowiejska",),
-            ("Mickiewicza",),
-            ways,
-            signals,
-            signals_xy,
-            labels_by_radius,
-        ),
+        _probe("Rondo Mogilskie", ("Rondo Mogilskie",), None, context),
+        _probe("Czarnowiejska x Mickiewicza", ("Czarnowiejska",), ("Mickiewicza",), context),
     ]
 
     return SignalsProfile(

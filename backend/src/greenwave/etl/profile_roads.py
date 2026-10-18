@@ -83,6 +83,23 @@ def _class_profile(
     )
 
 
+def _tag_value_tallies(
+    ways: list[DrivableWay],
+) -> tuple[Counter[str], Counter[str], Counter[str]]:
+    """Unparsed maxspeed values, oneway values and service subtypes, counted per way."""
+    maxspeed_unparsed: Counter[str] = Counter()
+    oneway_values: Counter[str] = Counter()
+    service_subtypes: Counter[str] = Counter()
+    for way in ways:
+        maxspeed = tag(way.properties, "maxspeed")
+        if maxspeed is not None and not _NUMERIC_MAXSPEED.match(maxspeed):
+            maxspeed_unparsed[maxspeed] += 1
+        oneway_values[tag(way.properties, "oneway") or "<absent>"] += 1
+        if way.highway == "service":
+            service_subtypes[tag(way.properties, "service") or "<absent>"] += 1
+    return maxspeed_unparsed, oneway_values, service_subtypes
+
+
 def analyse_roads(scan: OsmScan) -> RoadAnalysis:
     ways = scan.drivable_ways
     projected = project_lines([shapely.LineString(way.coordinates) for way in ways])
@@ -108,16 +125,7 @@ def analyse_roads(scan: OsmScan) -> RoadAnalysis:
         reverse=True,
     )
 
-    maxspeed_unparsed: Counter[str] = Counter()
-    oneway_values: Counter[str] = Counter()
-    service_subtypes: Counter[str] = Counter()
-    for way in ways:
-        maxspeed = tag(way.properties, "maxspeed")
-        if maxspeed is not None and not _NUMERIC_MAXSPEED.match(maxspeed):
-            maxspeed_unparsed[maxspeed] += 1
-        oneway_values[tag(way.properties, "oneway") or "<absent>"] += 1
-        if way.highway == "service":
-            service_subtypes[tag(way.properties, "service") or "<absent>"] += 1
+    maxspeed_unparsed, oneway_values, service_subtypes = _tag_value_tallies(ways)
 
     return RoadAnalysis(
         projected_lines=projected,

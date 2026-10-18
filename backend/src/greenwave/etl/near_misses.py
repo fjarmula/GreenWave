@@ -61,88 +61,147 @@ def find_near_misses(
     """Find way ends within ``tolerance_meters`` of a different way that share no vertex with it."""
     if tolerance_meters <= 0:
         raise ValueError("near-miss tolerance must be positive (metres)")
-    way_by_line = {way.line_number: way for way in ways}
-    ends: list[tuple[str, int]] = []  # (node key, way source line)
-    for way in ways:
-        for lon, lat in (way.coordinates[0], way.coordinates[-1]):
-            key = node_key(lon, lat)
-            if key in graph:
-                ends.append((key, way.line_number))
-    ends = sorted(set(ends))
+    finder = _NearMissFinder(graph, ways, tolerance_meters)
+    frame = pl.DataFrame(finder.rows(), schema=_COLUMNS).sort(
+        "distance_m", "way_line", "other_way_line"
+    )
+    return frame, _near_miss_report(frame, len(finder.ends), tolerance_meters)
 
-    lines_at: dict[str, set[int]] = defaultdict(set)
-    for u, v, data in graph.edges(data=True):
-        lines_at[u].add(data["source_line"])
-        lines_at[v].add(data["source_line"])
 
-    node_keys = sorted(graph.nodes)
-    node_xy = np.array(
-        [[graph.nodes[k]["x_m"], graph.nodes[k]["y_m"]] for k in node_keys], dtype=np.float64
-    ).reshape(-1, 2)
-    node_tree = shapely.STRtree(shapely.points(node_xy))
-    canonical = [(u, v, data) for u, v, data in graph.edges(data=True) if not data["reverse_twin"]]
-    edge_tree = shapely.STRtree([data["geometry"] for *_, data in canonical])
+class _NearMissFinder:
+    """Spatial indexes over the graph's nodes and canonical edges, queried at every way end."""
 
-    rows: list[dict[str, object]] = []
-    seen_node_pairs: set[tuple[str, str]] = set()
-    for key, line in ends:
-        point = shapely.Point(graph.nodes[key]["x_m"], graph.nodes[key]["y_m"])
-        # Other nodes close by: report when they belong to a different way and are not linked.
-        for index in node_tree.query(
-            point, predicate="dwithin", distance=tolerance_meters
-        ).tolist():
-            other = node_keys[index]
-            if other == key or lines_at[other] <= {line}:
+    def __init__(
+        self, graph: nx.MultiDiGraph, ways: list[DrivableWay], tolerance_meters: float
+    ) -> None:
+        self.graph = graph
+        self.tolerance_meters = tolerance_meters
+        self.way_by_line = {way.line_number: way for way in ways}
+        ends: list[tuple[str, int]] = []  # (node key, way source line)
+        for way in ways:
+            for lon, lat in (way.coordinates[0], way.coordinates[-1]):
+                key = node_key(lon, lat)
+                if key in graph:
+                    ends.append((key, way.line_number))
+        self.ends = sorted(set(ends))
+        self.lines_at: dict[str, set[int]] = defaultdict(set)
+        for u, v, data in graph.edges(data=True):
+            self.lines_at[u].add(data["source_line"])
+            self.lines_at[v].add(data["source_line"])
+        self.node_keys = sorted(graph.nodes)
+        self.node_xy = np.array(
+            [[graph.nodes[k]["x_m"], graph.nodes[k]["y_m"]] for k in self.node_keys],
+            dtype=np.float64,
+        ).reshape(-1, 2)
+        self.node_tree = shapely.STRtree(shapely.points(self.node_xy))
+        self.canonical = [
+            (u, v, data) for u, v, data in graph.edges(data=True) if not data["reverse_twin"]
+        ]
+        self.edge_tree = shapely.STRtree([data["geometry"] for *_, data in self.canonical])
+        self._seen_node_pairs: set[tuple[str, str]] = set()
+
+    def rows(self) -> list[dict[str, object]]:
+        rows: list[dict[str, object]] = []
+        for key, line in self.ends:
+            point = shapely.Point(self.graph.nodes[key]["x_m"], self.graph.nodes[key]["y_m"])
+            rows += self._node_rows(key, line, point)
+            rows += self._segment_rows(key, line, point)
+        return rows
+
+    def _node_rows(self, key: str, line: int, point: shapely.Point) -> list[dict[str, object]]:
+        """Other nodes close by that belong to a different way and are not linked to this end."""
+        rows: list[dict[str, object]] = []
+        nearby = self.node_tree.query(point, predicate="dwithin", distance=self.tolerance_meters)
+        for index in nearby.tolist():
+            other = self.node_keys[index]
+            if other == key or self.lines_at[other] <= {line}:
                 continue
-            if graph.has_edge(key, other) or graph.has_edge(other, key):
+            if self.graph.has_edge(key, other) or self.graph.has_edge(other, key):
                 continue
             pair = (key, other) if key < other else (other, key)
-            if pair in seen_node_pairs:
+            if pair in self._seen_node_pairs:
                 continue
-            seen_node_pairs.add(pair)
-            other_line = min(lines_at[other] - {line})
+            self._seen_node_pairs.add(pair)
             rows.append(
-                _row(
-                    graph,
+                self._row(
                     KIND_END_TO_NODE,
                     key,
                     line,
-                    way_by_line,
-                    other_line,
-                    float(point.distance(shapely.Point(*node_xy[index]))),
+                    min(self.lines_at[other] - {line}),
+                    float(point.distance(shapely.Point(*self.node_xy[index]))),
                     other_node=other,
                 )
             )
-        # Bodies of other ways: the end is near an interior point of an edge that does not end here.
-        for index in edge_tree.query(
-            point, predicate="dwithin", distance=tolerance_meters
-        ).tolist():
-            u, v, data = canonical[index]
+        return rows
+
+    def _segment_rows(self, key: str, line: int, point: shapely.Point) -> list[dict[str, object]]:
+        """Interior points of other ways' edges that do not end at this end."""
+        rows: list[dict[str, object]] = []
+        nearby = self.edge_tree.query(point, predicate="dwithin", distance=self.tolerance_meters)
+        for index in nearby.tolist():
+            u, v, data = self.canonical[index]
             if data["source_line"] == line or key in (u, v):
                 continue
             geometry = data["geometry"]
             along = float(shapely.line_locate_point(geometry, point))
             if along <= _END_EPSILON_METERS or geometry.length - along <= _END_EPSILON_METERS:
-                continue  # near an end of that edge: covered by the node check above
+                continue  # near an end of that edge: covered by the node check
             nearest = geometry.interpolate(along)
             rows.append(
-                _row(
-                    graph,
+                self._row(
                     KIND_END_TO_SEGMENT,
                     key,
                     line,
-                    way_by_line,
                     data["source_line"],
                     float(point.distance(geometry)),
                     other_xy=(nearest.x, nearest.y),
                 )
             )
+        return rows
 
-    frame = pl.DataFrame(rows, schema=_COLUMNS).sort("distance_m", "way_line", "other_way_line")
+    def _row(
+        self,
+        kind: str,
+        key: str,
+        line: int,
+        other_line: int,
+        distance: float,
+        other_node: str | None = None,
+        other_xy: tuple[float, float] | None = None,
+    ) -> dict[str, object]:
+        graph = self.graph
+        if other_node is not None:
+            other_lon, other_lat = graph.nodes[other_node]["lon"], graph.nodes[other_node]["lat"]
+        else:
+            assert other_xy is not None
+            other_lon, other_lat = (float(c) for c in unproject_points(np.array([other_xy]))[0])
+        way, other_way = self.way_by_line[line], self.way_by_line[other_line]
+        return {
+            "kind": kind,
+            "distance_m": distance,
+            "lon": graph.nodes[key]["lon"],
+            "lat": graph.nodes[key]["lat"],
+            "other_lon": other_lon,
+            "other_lat": other_lat,
+            "way_line": line,
+            "other_way_line": other_line,
+            "street": _street(way),
+            "other_street": _street(other_way),
+            "highway": way.highway,
+            "other_highway": other_way.highway,
+        }
+
+
+def _street(way: DrivableWay) -> str | None:
+    name = way.properties.get("name")
+    return name if isinstance(name, str) else None
+
+
+def _near_miss_report(frame: pl.DataFrame, ends_checked: int, tolerance: float) -> NearMissReport:
     kinds = dict(frame["kind"].value_counts().iter_rows()) if frame.height else {}
-    report = NearMissReport(
-        tolerance_m=tolerance_meters,
-        way_ends_checked=len(ends),
+    return NearMissReport(
+        tolerance_m=tolerance,
+        way_ends_checked=ends_checked,
         near_misses=frame.height,
         by_kind=dict(sorted(kinds.items())),
         by_distance_m=_distance_buckets(frame),
@@ -154,46 +213,6 @@ def find_near_misses(
         ),
         closest=frame.head(_LISTED).to_dicts(),
     )
-    return frame, report
-
-
-def _row(
-    graph: nx.MultiDiGraph,
-    kind: str,
-    key: str,
-    line: int,
-    way_by_line: dict[int, DrivableWay],
-    other_line: int,
-    distance: float,
-    other_node: str | None = None,
-    other_xy: tuple[float, float] | None = None,
-) -> dict[str, object]:
-    if other_node is not None:
-        other_lon, other_lat = graph.nodes[other_node]["lon"], graph.nodes[other_node]["lat"]
-    else:
-        assert other_xy is not None
-        other_lon, other_lat = (float(c) for c in unproject_points(np.array([other_xy]))[0])
-    way, other_way = way_by_line[line], way_by_line[other_line]
-    return {
-        "kind": kind,
-        "distance_m": distance,
-        "lon": graph.nodes[key]["lon"],
-        "lat": graph.nodes[key]["lat"],
-        "other_lon": other_lon,
-        "other_lat": other_lat,
-        "way_line": line,
-        "other_way_line": other_line,
-        "street": way.properties.get("name")
-        if isinstance(way.properties.get("name"), str)
-        else None,
-        "other_street": (
-            other_way.properties.get("name")
-            if isinstance(other_way.properties.get("name"), str)
-            else None
-        ),
-        "highway": way.highway,
-        "other_highway": other_way.highway,
-    }
 
 
 def _distance_buckets(frame: pl.DataFrame) -> dict[str, int]:

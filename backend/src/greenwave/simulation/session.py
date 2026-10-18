@@ -11,34 +11,27 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import cast
 
 from greenwave.its.gateway import ItsGateway
-from greenwave.routing.estimates import estimate_times
 from greenwave.routing.network_index import RoutingIndex
-from greenwave.routing.planner import plan_route
 from greenwave.schemas import (
     CancelReason,
     SimulationCancelledEvent,
-    SimulationCompletedEvent,
     SimulationStartRequest,
     SimulationStartResponse,
     StopResponse,
 )
-from greenwave.simulation.engine import EngineState, SimulationEngine
-from greenwave.simulation.events import SimulationEvent
-from greenwave.simulation.route_model import build_route_model, to_start_response
+from greenwave.simulation.assembly import SimulationPlanner, plan_simulation
+from greenwave.simulation.engine import SimulationEngine
+from greenwave.simulation.events import SimulationEvent, TerminalEvent, is_terminal
+from greenwave.simulation.state import EngineState
+from greenwave.simulation.subscriber_queue import offer
 from greenwave.simulation_settings import SimulationSettings
 
 logger = logging.getLogger(__name__)
 
 Clock = Callable[[], datetime]
 Sleep = Callable[[float], Awaitable[None]]
-TerminalEvent = SimulationCancelledEvent | SimulationCompletedEvent
-
-
-def _is_terminal(event: SimulationEvent) -> bool:
-    return isinstance(event, (SimulationCancelledEvent, SimulationCompletedEvent))
 
 
 class SimulationIdInUseError(Exception):
@@ -71,12 +64,14 @@ class SessionManager:
         gateway: ItsGateway,
         clock: Clock | None = None,
         sleep: Sleep = asyncio.sleep,
+        planner: SimulationPlanner = plan_simulation,
     ) -> None:
         self._index = index
         self._settings = settings
         self._gateway = gateway
         self._clock = clock or (lambda: datetime.now(UTC))
         self._sleep = sleep
+        self._planner = planner
         self._active: _Session | None = None
         self._sessions: dict[str, _Session] = {}
         self._lock = asyncio.Lock()
@@ -91,30 +86,16 @@ class SessionManager:
             ):
                 raise SimulationIdInUseError(request.simulation_id)
 
-            route = await asyncio.to_thread(
-                plan_route, self._index, request.origin, request.destination, self._settings
-            )
-            route_model = build_route_model(
-                route, self._index, self._settings, request.enable_cascade_mode
-            )
-            estimates = estimate_times(
-                route, route_model, request.traffic_density_multiplier, self._settings
-            )
-            engine = SimulationEngine(
-                request.simulation_id,
-                route,
-                route_model,
-                estimates,
-                request.traffic_density_multiplier,
-                self._settings,
-                self._gateway,
+            # Route search is CPU-bound; keep it off the event loop that runs live sessions.
+            planned = await asyncio.to_thread(
+                self._planner, self._index, request, self._settings, self._gateway
             )
             if self._active is not None and self._active.terminal is None:
                 await self._cancel(self._active, CancelReason.SUPERSEDED)
             session = _Session(
                 simulation_id=request.simulation_id,
-                engine=engine,
-                state=engine.initial_state(),
+                engine=planned.engine,
+                state=planned.engine.initial_state(),
                 playback_speed=request.playback_speed,
             )
             self._sessions[session.simulation_id] = session
@@ -122,9 +103,7 @@ class SessionManager:
             session.task = asyncio.create_task(
                 self._run(session), name=f"simulation-{session.simulation_id}"
             )
-            return to_start_response(
-                request.simulation_id, route, route_model, estimates, self._index
-            )
+            return planned.response
 
     async def stop(self, simulation_id: str) -> StopResponse:
         """Stop a live run; a completed retained run is a successful no-op."""
@@ -151,12 +130,12 @@ class SessionManager:
         )
         session.subscribers.add(queue)
         if session.latest is not None:
-            self._put(queue, session.latest, terminal=False)
+            offer(queue, session.latest)
         try:
             while True:
                 event = await queue.get()
                 yield event
-                if _is_terminal(event):
+                if is_terminal(event):
                     return
         finally:
             session.subscribers.discard(queue)
@@ -224,30 +203,9 @@ class SessionManager:
             self._active = None
 
     def _publish(self, session: _Session, event: SimulationEvent) -> None:
-        terminal = _is_terminal(event)
-        if terminal:
-            session.terminal = cast(TerminalEvent, event)
+        if is_terminal(event):
+            session.terminal = event
         else:
             session.latest = event
         for queue in tuple(session.subscribers):
-            self._put(queue, event, terminal=terminal)
-
-    @staticmethod
-    def _put(
-        queue: asyncio.Queue[SimulationEvent], event: SimulationEvent, *, terminal: bool
-    ) -> None:
-        if not queue.full():
-            queue.put_nowait(event)
-            return
-        buffered: list[SimulationEvent] = []
-        dropped = False
-        while not queue.empty():
-            item = queue.get_nowait()
-            if not dropped and (not terminal or not _is_terminal(item)):
-                dropped = True
-                continue
-            buffered.append(item)
-        for item in buffered:
-            queue.put_nowait(item)
-        if dropped:
-            queue.put_nowait(event)
+            offer(queue, event)

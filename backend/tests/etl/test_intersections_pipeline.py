@@ -4,8 +4,13 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from greenwave.etl.config import PEDESTRIAN_CROSSING_DELAY_SECONDS, SIGNAL_DELAY_SECONDS
+from greenwave.etl.config import (
+    PEDESTRIAN_CROSSING_DELAY_SECONDS,
+    SIGNAL_DELAY_SECONDS,
+    SIGNAL_SNAP_TOLERANCE_METERS,
+)
 from greenwave.etl.graph_io import read_graph
+from greenwave.etl.intersections import GroupingSettings
 from greenwave.etl.intersections_pipeline import (
     APPROACHES_FILENAME,
     IDS_FILENAME,
@@ -13,6 +18,7 @@ from greenwave.etl.intersections_pipeline import (
     NETWORK_EDGES_FILENAME,
     NETWORK_NODES_FILENAME,
     T4_ARTIFACT_FILENAMES,
+    compute_intersections,
     run_intersections,
 )
 from greenwave.etl.io import REPORT_FILENAME, update_report_section
@@ -205,3 +211,15 @@ def test_the_neighbours_step_asks_for_a_rerun_when_there_is_no_report(tmp_path: 
 
     with pytest.raises(StaleArtifactError, match="re-run the intersections step"):
         run_neighbours(raw, processed)
+
+
+def test_compute_writes_nothing(tmp_path: Path) -> None:
+    raw = make_raw(tmp_path)
+    before = sorted(tmp_path.rglob("*"))
+
+    build = compute_intersections(
+        raw, tmp_path / "overrides", SIGNAL_SNAP_TOLERANCE_METERS, GroupingSettings()
+    )
+
+    assert sorted(tmp_path.rglob("*")) == before
+    assert build.intersections_frame.height > 0

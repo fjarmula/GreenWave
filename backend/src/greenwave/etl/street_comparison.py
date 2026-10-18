@@ -97,13 +97,52 @@ def ulice_street_lengths(path: Path) -> dict[str, StreetLength]:
     return streets
 
 
+_TABLE_SCHEMA = {
+    "normalised_name": pl.String,
+    "graph_name": pl.String,
+    "ulice_name": pl.String,
+    "graph_km": pl.Float64,
+    "ulice_km": pl.Float64,
+    "ratio": pl.Float64,
+    "status": pl.String,
+}
+
+
 def compare_streets(
     graph_streets: dict[str, StreetLength],
     graph_unnamed_m: float,
     ulice_streets: dict[str, StreetLength],
     ratio_range: tuple[float, float] = STREET_LENGTH_RATIO_RANGE,
 ) -> StreetComparison:
+    table = _comparison_table(graph_streets, ulice_streets, ratio_range)
+    report = _comparison_report(table, graph_streets, graph_unnamed_m, ulice_streets, ratio_range)
+    return StreetComparison(report=report, table=table.sort("status", "normalised_name"))
+
+
+def _street_status(
+    graph_entry: StreetLength | None,
+    ulice_entry: StreetLength | None,
+    ratio: float | None,
+    ratio_range: tuple[float, float],
+) -> str:
     low, high = ratio_range
+    if graph_entry is None:
+        return "ulice_only"
+    if ulice_entry is None:
+        return "graph_only"
+    if ratio is not None and ratio < low:
+        return "graph_shorter"
+    if ratio is not None and ratio > high:
+        return "graph_longer"
+    return "within_range"
+
+
+def _comparison_table(
+    graph_streets: dict[str, StreetLength],
+    ulice_streets: dict[str, StreetLength],
+    ratio_range: tuple[float, float],
+) -> pl.DataFrame:
+    """One row per normalised name present in either source, with its status."""
     rows: list[dict[str, object]] = []
     for key in sorted(graph_streets.keys() | ulice_streets.keys()):
         graph_entry, ulice_entry = graph_streets.get(key), ulice_streets.get(key)
@@ -112,16 +151,6 @@ def compare_streets(
             if graph_entry and ulice_entry and ulice_entry.length_m
             else None
         )
-        if graph_entry is None:
-            status = "ulice_only"
-        elif ulice_entry is None:
-            status = "graph_only"
-        elif ratio is not None and ratio < low:
-            status = "graph_shorter"
-        elif ratio is not None and ratio > high:
-            status = "graph_longer"
-        else:
-            status = "within_range"
         rows.append(
             {
                 "normalised_name": key,
@@ -130,43 +159,41 @@ def compare_streets(
                 "graph_km": graph_entry.length_m / 1000 if graph_entry else None,
                 "ulice_km": ulice_entry.length_m / 1000 if ulice_entry else None,
                 "ratio": ratio,
-                "status": status,
+                "status": _street_status(graph_entry, ulice_entry, ratio, ratio_range),
             }
         )
-    table = pl.DataFrame(
-        rows,
-        schema={
-            "normalised_name": pl.String,
-            "graph_name": pl.String,
-            "ulice_name": pl.String,
-            "graph_km": pl.Float64,
-            "ulice_km": pl.Float64,
-            "ratio": pl.Float64,
-            "status": pl.String,
-        },
-    )
+    return pl.DataFrame(rows, schema=_TABLE_SCHEMA)
 
+
+def _sum_km(frame: pl.DataFrame, column: str) -> float:
+    return float(frame[column].fill_null(0.0).sum())
+
+
+def _top(frame: pl.DataFrame, sort_column: str, descending: bool = True) -> list[StreetMismatch]:
+    ranked = frame.sort(sort_column, descending=descending, nulls_last=True).head(_LISTED)
+    return [
+        StreetMismatch(
+            street=str(row["graph_name"] or row["ulice_name"]),
+            graph_km=row["graph_km"],
+            ulice_km=row["ulice_km"],
+            ratio=row["ratio"],
+        )
+        for row in ranked.iter_rows(named=True)
+    ]
+
+
+def _comparison_report(
+    table: pl.DataFrame,
+    graph_streets: dict[str, StreetLength],
+    graph_unnamed_m: float,
+    ulice_streets: dict[str, StreetLength],
+    ratio_range: tuple[float, float],
+) -> StreetComparisonReport:
     matched = table.filter(
         pl.col("status").is_in(["within_range", "graph_longer", "graph_shorter"])
     )
     ratios = matched["ratio"].drop_nulls().to_list()
     in_range = matched.filter(pl.col("status") == "within_range")
-
-    def sum_km(frame: pl.DataFrame, column: str) -> float:
-        return float(frame[column].fill_null(0.0).sum())
-
-    def top(frame: pl.DataFrame, sort_column: str, descending: bool = True) -> list[StreetMismatch]:
-        ranked = frame.sort(sort_column, descending=descending, nulls_last=True).head(_LISTED)
-        return [
-            StreetMismatch(
-                street=str(row["graph_name"] or row["ulice_name"]),
-                graph_km=row["graph_km"],
-                ulice_km=row["ulice_km"],
-                ratio=row["ratio"],
-            )
-            for row in ranked.iter_rows(named=True)
-        ]
-
     longer = matched.filter(pl.col("status") == "graph_longer").with_columns(
         (pl.col("graph_km") - pl.col("ulice_km")).alias("excess_km")
     )
@@ -175,9 +202,9 @@ def compare_streets(
     )
     ulice_only = table.filter(pl.col("status") == "ulice_only")
     graph_only = table.filter(pl.col("status") == "graph_only")
-    matched_ulice_km = sum_km(matched, "ulice_km")
+    matched_ulice_km = _sum_km(matched, "ulice_km")
 
-    report = StreetComparisonReport(
+    return StreetComparisonReport(
         ratio_range=ratio_range,
         ulice_streets=len(ulice_streets),
         ulice_km=sum(s.length_m for s in ulice_streets.values()) / 1000,
@@ -186,21 +213,20 @@ def compare_streets(
         graph_unnamed_km=graph_unnamed_m / 1000,
         matched_streets=matched.height,
         ulice_km_matched=matched_ulice_km,
-        graph_km_matched=sum_km(matched, "graph_km"),
+        graph_km_matched=_sum_km(matched, "graph_km"),
         ulice_only_streets=ulice_only.height,
-        ulice_only_km=sum_km(ulice_only, "ulice_km"),
+        ulice_only_km=_sum_km(ulice_only, "ulice_km"),
         graph_only_streets=graph_only.height,
-        graph_only_km=sum_km(graph_only, "graph_km"),
+        graph_only_km=_sum_km(graph_only, "graph_km"),
         matched_in_range_streets=in_range.height,
         matched_in_range_share_of_matched_ulice_km=(
-            sum_km(in_range, "ulice_km") / matched_ulice_km if matched_ulice_km else 0.0
+            _sum_km(in_range, "ulice_km") / matched_ulice_km if matched_ulice_km else 0.0
         ),
         median_ratio=median(ratios) if ratios else None,
         graph_longer_streets=longer.height,
         graph_shorter_streets=shorter.height,
-        worst_graph_longer=top(longer, "excess_km"),
-        worst_graph_shorter=top(shorter, "shortfall_km"),
-        largest_ulice_only=top(ulice_only, "ulice_km"),
-        largest_graph_only=top(graph_only, "graph_km"),
+        worst_graph_longer=_top(longer, "excess_km"),
+        worst_graph_shorter=_top(shorter, "shortfall_km"),
+        largest_ulice_only=_top(ulice_only, "ulice_km"),
+        largest_graph_only=_top(graph_only, "graph_km"),
     )
-    return StreetComparison(report=report, table=table.sort("status", "normalised_name"))
