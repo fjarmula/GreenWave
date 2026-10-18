@@ -15,7 +15,7 @@ Store shared skills in `.agent/skills/`, with `.claude/skills` and `.codex/skill
 
 ## Consequences
 
-All contributors must run the bootstrap and readiness scripts on a new machine. Graphify output is a tracked repository artifact. Project instructions, ADRs, and durable state stay separate from one-off handoffs.
+All contributors must run the bootstrap and readiness scripts on a new machine. The graph-artifact decision is superseded by ADR 0004: Graphify output is generated locally and never committed. Project instructions, ADRs, and durable state stay separate from one-off handoffs.
 
 ## Alternatives considered
 

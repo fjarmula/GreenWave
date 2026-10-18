@@ -8,7 +8,7 @@ Kraków emergency-vehicle green-corridor PoC. Simulation only; never add real si
 - **Workflow:** Start with a spec and short plan; use TDD and small verifiable steps. Verify before claiming completion.
 - **Browser/E2E:** Use `@playwright/cli` through bash and the `playwright-cli` skill. Never use `@playwright/mcp`, dump DOM/a11y trees, or write output outside `.tmp/playwright/`.
 - **Docs:** Use Context7 or a project skill for library documentation. Do not generic-web-fetch library docs.
-- **Git:** Check status and preserve existing changes. Keep diffs focused; never reformat unrelated work. Do not commit, push, create branches, switch branches, or open pull requests without explicit authorization. Tell the human before editing this file or `GreenWave_ARCHITECTURE.md`.
+- **Git:** Check status and preserve existing changes. Keep diffs focused; never reformat unrelated work. Agents may create local commits after running relevant checks and reviewing the staged diff. Commit subjects must match `<category>: <message>`; allowed categories are `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `build`, `ci`, `perf`, `style`, and `revert`. Stage explicit paths only; never use `git add -A` in a dirty worktree. Do not push, create, switch, delete, amend, or rebase branches, or open pull requests without explicit authorization. This Git rule supersedes conflicting Git directions in feature plans. Tell the human before editing this file or `GreenWave_ARCHITECTURE.md`.
 - **Style:** Use terse, exact explanations, handoffs, and subagent prompts.
 
 ## Read when relevant
@@ -54,4 +54,4 @@ When implementing a plan from `docs/superpowers/plans/`:
 
 Do not request approval for routine implementation steps within an approved milestone.
 
-Never commit, push, or create a PR without explicit authorization.
+Follow the Git rule above for all commits, pushes, and pull requests.

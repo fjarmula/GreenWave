@@ -24,7 +24,7 @@ cd frontend && npm ci && cd ..
 uv run --project backend pre-commit install --install-hooks
 ```
 
-The last command installs the git hooks once per clone. Besides the usual pre-commit and pre-push checks, `post-checkout`, `post-merge` and `post-rewrite` hooks refresh the local code graph (`graphify-out/`, never committed; see ADR 0004), so it stays current after `git switch`, `git pull` and `git worktree add`. Claude Code refreshes it at session start and end through the project hooks (accept them if prompted). Codex users open Codex in the repo, run `/hooks` and trust the two project hooks; re-trust whenever `.codex/hooks.json` changes. To refresh by hand, run `scripts/graphify-refresh.sh`; its log is `.tmp/graphify-refresh.log`.
+The last command installs the git hooks once per clone. Besides the usual pre-commit and pre-push checks, the `commit-msg` hook requires a `<category>: <message>` subject, and `post-checkout`, `post-merge` and `post-rewrite` hooks refresh the local code graph (`graphify-out/`, never committed; see ADR 0004), so it stays current after `git switch`, `git pull` and `git worktree add`. Claude Code refreshes it at session start and end through the project hooks (accept them if prompted). Codex users open Codex in the repo, run `/hooks` and trust the two project hooks; re-trust whenever `.codex/hooks.json` changes. To refresh by hand, run `scripts/graphify-refresh.sh`; its log is `.tmp/graphify-refresh.log`.
 
 ### Prepare the simulation dataset
 

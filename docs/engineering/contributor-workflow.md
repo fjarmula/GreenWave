@@ -48,4 +48,4 @@ A task is done only when requested behavior, contracts, and relevant documentati
 
 Be concise, technically precise, and evidence-led. Explain consequential trade-offs. Do not claim inspection or verification that did not occur.
 
-Do not discard or reformat unrelated work, change secrets unnecessarily, commit, push, deploy, publish, or open a pull request unless asked. Use `uv add` / `uv add --dev` and the established frontend package manager for approved dependencies.
+Do not discard or reformat unrelated work or change secrets unnecessarily. Agents may create local commits after relevant checks and staged-diff review, using the commit format required by `AGENTS.md`. Do not push, deploy, publish, or open a pull request unless asked. Use `uv add` / `uv add --dev` and the established frontend package manager for approved dependencies.

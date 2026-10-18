@@ -55,6 +55,5 @@ playwright-report/
 test-results/
 # Generated locally by `graphify update .`, never committed (ADR 0004)
 graphify-out/
-.claude/settings.local.json
 # Playwright CLI output (may contain credentials)
 .playwright-cli/

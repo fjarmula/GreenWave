@@ -46,7 +46,7 @@ import yaml
 
 config = yaml.safe_load(open(sys.argv[1]))
 types = config["default_install_hook_types"]
-for stage in ("pre-commit", "pre-push", "post-checkout", "post-merge", "post-rewrite"):
+for stage in ("pre-commit", "pre-push", "commit-msg", "post-checkout", "post-merge", "post-rewrite"):
     assert stage in types, stage
 hooks = {h["id"]: h for repo in config["repos"] for h in repo["hooks"]}
 refresh = hooks["graphify-refresh"]
