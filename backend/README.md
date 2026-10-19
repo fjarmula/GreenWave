@@ -99,6 +99,21 @@ development overrides include `GREENWAVE_SIM_TICK_INTERVAL_SECONDS`,
 `GREENWAVE_SIM_SUBSCRIBER_QUEUE_SIZE` (default 32), and
 `GREENWAVE_SIM_MAX_SNAP_DISTANCE_METERS` (default 150). All values are validated at startup.
 
+Road-attribute time factors (`routing/edge_times.py`; values approved in
+`docs/adr/0005-road-attribute-time-factors.md`). Factors must be at least 1.0 and seconds at least
+0; setting all six to 1.0 / 0 makes road attributes have no effect:
+
+| Variable | Default | Effect |
+|---|---:|---|
+| `GREENWAVE_SIM_NORMAL_SINGLE_LANE_FACTOR` | 1.15 | normal time multiplier when `lanes_per_direction == 1` |
+| `GREENWAVE_SIM_NORMAL_UNPAVED_FACTOR` | 1.3 | normal time multiplier when `surface_class == "unpaved"` |
+| `GREENWAVE_SIM_NORMAL_CALMING_SECONDS` | 3.0 | normal seconds added per traffic-calming feature |
+| `GREENWAVE_SIM_AMBULANCE_CALMING_SECONDS` | 2.0 | ambulance seconds added per traffic-calming feature |
+| `GREENWAVE_SIM_AMBULANCE_BUS_LANE_FACTOR` | 1.05 | ambulance speed boost on `bus_lane` edges |
+| `GREENWAVE_SIM_AMBULANCE_TRAM_TRACK_FACTOR` | 1.05 | ambulance speed boost on `tram_track` edges |
+
+Bus-lane and tram boosts do not multiply: the larger one applies, before the 30-90 km/h clamp.
+
 The stream endpoint is `GET /api/v1/simulation/{simulation_id}/stream`. It uses SSE with a
 `retry: 2000` control frame followed by framed contract events. Slow clients receive bounded,
 drop-oldest telemetry; terminal events are preserved.
