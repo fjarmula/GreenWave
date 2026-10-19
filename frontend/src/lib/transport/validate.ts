@@ -11,6 +11,7 @@ import type {
   ErrorCode,
   ErrorResponse,
   IntersectionState,
+  RouteIntersection,
   SimulationStartResponse,
   SimulationStreamEvent,
 } from "@/types/telemetry";
@@ -20,6 +21,11 @@ const INTERSECTION_STATES: Record<IntersectionState, true> = {
   CLEARING: true,
   PRIORITY_GREEN: true,
   RECOVERY: true,
+};
+const INTERSECTION_KINDS: Record<RouteIntersection["kind"], true> = {
+  signalised_junction: true,
+  midblock_signal: true,
+  pedestrian_crossing: true,
 };
 const AMBULANCE_STATUSES: Record<AmbulanceStatus, true> = {
   EN_ROUTE: true,
@@ -152,6 +158,7 @@ export function parseStartResponse(value: unknown): SimulationStartResponse {
     const intersection = record(item, path);
     text(intersection.id, `${path}.id`);
     nullableText(intersection.name, `${path}.name`);
+    member(INTERSECTION_KINDS, intersection.kind, `${path}.kind`);
     position(intersection.position, `${path}.position`);
     finite(intersection.distance_along_route_m, `${path}.distance_along_route_m`);
     positiveInteger(intersection.signal_count, `${path}.signal_count`);

@@ -73,6 +73,20 @@ describe("parseStartResponse", () => {
       (c: Record<string, unknown>) =>
         delete record((c.route_intersections as unknown[])[0]).position,
     ],
+    [
+      "a route intersection without a kind",
+      (c: Record<string, unknown>) => delete record((c.route_intersections as unknown[])[0]).kind,
+    ],
+    [
+      "a route intersection with an unknown kind",
+      (c: Record<string, unknown>) =>
+        (record((c.route_intersections as unknown[])[0]).kind = "roundabout"),
+    ],
+    [
+      "a route intersection with a prototype-property kind",
+      (c: Record<string, unknown>) =>
+        (record((c.route_intersections as unknown[])[0]).kind = "__proto__"),
+    ],
     ["a missing snapped endpoint", (c: Record<string, unknown>) => delete c.origin_snapped],
   ])("rejects %s", (_label, mutate) => {
     expect(() => parseStartResponse(wire(startResponseExample, mutate))).toThrow(TypeError);
