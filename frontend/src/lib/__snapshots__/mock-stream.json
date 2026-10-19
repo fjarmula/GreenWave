@@ -36309,5 +36309,175 @@
     "total_time_elapsed_sec": 380
    }
   }
+ },
+ {
+  "scenario": 3,
+  "callback": "start",
+  "payload": {
+   "schema_version": "1.0",
+   "is_simulated": true,
+   "simulation_id": "SIM-golden-3",
+   "status": "INITIALIZED",
+   "route_geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      19.955,
+      50.015
+     ],
+     [
+      19.96,
+      50.063
+     ]
+    ]
+   },
+   "total_distance_m": 5400,
+   "estimated_normal_time_sec": 780,
+   "estimated_greenwave_time_sec": 380,
+   "intersections_on_route": [
+    "INT-0360",
+    "INT-0366"
+   ],
+   "route_intersections": [
+    {
+     "id": "INT-0360",
+     "name": "Aleja 29 Listopada / Lublańska / Opolska",
+     "kind": "signalised_junction",
+     "distance_along_route_m": 1480,
+     "position": {
+      "lat": 50.02815555555556,
+      "lng": 19.95637037037037
+     }
+    },
+    {
+     "id": "INT-0366",
+     "name": "Aleja 29 Listopada / Jana Woronicza",
+     "kind": "signalised_junction",
+     "distance_along_route_m": 1632,
+     "position": {
+      "lat": 50.02950666666667,
+      "lng": 19.95651111111111
+     }
+    }
+   ],
+   "origin_snapped": {
+    "position": {
+     "lng": 19.955,
+     "lat": 50.015
+    },
+    "snap_distance_m": 0
+   },
+   "destination_snapped": {
+    "position": {
+     "lng": 19.96,
+     "lat": 50.063
+    },
+    "snap_distance_m": 0
+   }
+  }
+ },
+ {
+  "scenario": 3,
+  "callback": "onConnectionChange",
+  "payload": "open"
+ },
+ {
+  "scenario": 3,
+  "callback": "onTick",
+  "payload": {
+   "schema_version": "1.0",
+   "is_simulated": true,
+   "event_type": "SIMULATION_TICK",
+   "simulation_id": "SIM-golden-3",
+   "tick": 1,
+   "timestamp": "2026-10-17T00:13:57.000Z",
+   "ambulance": {
+    "id": "AMB-KRA-01",
+    "position": {
+     "lat": 50.01512631578947,
+     "lng": 19.955013157894737
+    },
+    "speed_kmh": 63,
+    "status": "EN_ROUTE"
+   },
+   "kpi_metrics": {
+    "current_time_saved_sec": 1,
+    "total_time_elapsed_sec": 1
+   },
+   "intersections": [
+    {
+     "id": "INT-0360",
+     "name": "Aleja 29 Listopada / Lublańska / Opolska",
+     "state": "NORMAL",
+     "is_cascade": false,
+     "tti_seconds": 103,
+     "is_active_corridor": false
+    },
+    {
+     "id": "INT-0366",
+     "name": "Aleja 29 Listopada / Jana Woronicza",
+     "state": "NORMAL",
+     "is_cascade": false,
+     "tti_seconds": 114,
+     "is_active_corridor": false
+    }
+   ]
+  }
+ },
+ {
+  "scenario": 3,
+  "callback": "onTick",
+  "payload": {
+   "schema_version": "1.0",
+   "is_simulated": true,
+   "event_type": "SIMULATION_TICK",
+   "simulation_id": "SIM-golden-3",
+   "tick": 2,
+   "timestamp": "2026-10-17T00:13:58.000Z",
+   "ambulance": {
+    "id": "AMB-KRA-01",
+    "position": {
+     "lat": 50.015252631578946,
+     "lng": 19.95502631578947
+    },
+    "speed_kmh": 63.6,
+    "status": "EN_ROUTE"
+   },
+   "kpi_metrics": {
+    "current_time_saved_sec": 2,
+    "total_time_elapsed_sec": 2
+   },
+   "intersections": [
+    {
+     "id": "INT-0360",
+     "name": "Aleja 29 Listopada / Lublańska / Opolska",
+     "state": "NORMAL",
+     "is_cascade": false,
+     "tti_seconds": 102,
+     "is_active_corridor": false
+    },
+    {
+     "id": "INT-0366",
+     "name": "Aleja 29 Listopada / Jana Woronicza",
+     "state": "NORMAL",
+     "is_cascade": false,
+     "tti_seconds": 113,
+     "is_active_corridor": false
+    }
+   ]
+  }
+ },
+ {
+  "scenario": 3,
+  "callback": "onTerminal",
+  "payload": {
+   "schema_version": "1.0",
+   "is_simulated": true,
+   "event_type": "SIMULATION_CANCELLED",
+   "simulation_id": "SIM-golden-3",
+   "tick": 2,
+   "timestamp": "2026-10-17T00:13:58.000Z",
+   "reason": "STOPPED"
+  }
  }
 ]

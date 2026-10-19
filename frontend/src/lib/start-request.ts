@@ -1,5 +1,5 @@
 import type { DestinationEndpoint, OriginEndpoint } from "@/components/map/dispatch-endpoints";
-import type { PlaybackSpeed } from "@/components/hud/dispatch/PlaybackSpeedSelector";
+import type { PlaybackSpeed } from "@/lib/playback-speed";
 import type { SimulationStartRequest } from "@/types/telemetry";
 
 export type DispatchSettings = {

@@ -5,10 +5,7 @@ import { useState } from "react";
 
 import { CascadeToggle } from "@/components/hud/dispatch/CascadeToggle";
 import { NodeSelect } from "@/components/hud/dispatch/NodeSelect";
-import {
-  PlaybackSpeedSelector,
-  type PlaybackSpeed,
-} from "@/components/hud/dispatch/PlaybackSpeedSelector";
+import { PlaybackSpeedSelector } from "@/components/hud/dispatch/PlaybackSpeedSelector";
 import { PreflightEstimate } from "@/components/hud/dispatch/PreflightEstimate";
 import { TrafficDensityControl } from "@/components/hud/dispatch/TrafficDensityControl";
 import {
@@ -19,6 +16,7 @@ import {
 } from "@/components/map/dispatch-endpoints";
 import { getFrontendConfig } from "@/lib/config";
 import { DEFAULT_TRAFFIC_DENSITY_MULTIPLIER } from "@/lib/mock-simulation-config";
+import type { PlaybackSpeed } from "@/lib/playback-speed";
 import type { DispatchSettings } from "@/lib/start-request";
 
 type DispatchFormProps = {
