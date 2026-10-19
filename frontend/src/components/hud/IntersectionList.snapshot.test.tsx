@@ -86,6 +86,6 @@ describe("IntersectionList", () => {
     expect(markup).toContain("Mid-block signal");
     expect(markup).toContain("2 signals");
     expect(markup).toContain("Source data flagged for review");
-    await expect(markup).toMatchFileSnapshot("./__snapshots__/IntersectionList.review.html");
+    await expect(`${markup}\n`).toMatchFileSnapshot("./__snapshots__/IntersectionList.review.html");
   });
 });
