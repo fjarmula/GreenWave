@@ -9,13 +9,28 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import networkx as nx
+import numpy as np
 import polars as pl
 from pydantic import BaseModel
 
 from greenwave import artifacts
-from greenwave.etl.config import SIGNAL_SNAP_TOLERANCE_METERS
+from greenwave.etl.config import (
+    SIGNAL_SNAP_TOLERANCE_METERS,
+    TRAM_TRACK_MATCH_METERS,
+    TRAM_TRACK_MIN_OVERLAP_SHARE,
+)
+from greenwave.etl.edge_enrichment import (
+    CalmingStats,
+    RoadAttributesSection,
+    TramStats,
+    annotate_calming,
+    annotate_tram_tracks,
+    project_lonlat_lines,
+    road_attributes_section,
+)
+from greenwave.etl.geo import project_points
 from greenwave.etl.graph import build_graph
-from greenwave.etl.graph_io import write_graph
+from greenwave.etl.graph_io import NETWORK_EDGE_COLUMNS, write_graph
 from greenwave.etl.intersections import (
     Assignment,
     AssignmentDistribution,
@@ -158,6 +173,9 @@ class IntersectionsBuild:
     tertiary: pl.DataFrame
     settings: GroupingSettings
     snap_tolerance_meters: float
+    calming: CalmingStats
+    tram: TramStats
+    unknown_surface_values: dict[str, int]
 
 
 def run_intersections(
@@ -167,11 +185,30 @@ def run_intersections(
     snap_tolerance_meters: float = SIGNAL_SNAP_TOLERANCE_METERS,
     settings: GroupingSettings | None = None,
 ) -> IntersectionsSection:
+    section, _ = run_intersections_with_road_attributes(
+        raw_dir, processed_dir, overrides_dir, snap_tolerance_meters, settings
+    )
+    return section
+
+
+def run_intersections_with_road_attributes(
+    raw_dir: Path,
+    processed_dir: Path,
+    overrides_dir: Path,
+    snap_tolerance_meters: float = SIGNAL_SNAP_TOLERANCE_METERS,
+    settings: GroupingSettings | None = None,
+) -> tuple[IntersectionsSection, RoadAttributesSection]:
+    """The T4 step plus its top-level ``road_attributes`` report section."""
     build = compute_intersections(
         raw_dir, overrides_dir, snap_tolerance_meters, settings or GroupingSettings()
     )
     manifest_sha256 = write_intersection_artifacts(build, raw_dir, processed_dir)
-    return intersections_section(build, overrides_dir, processed_dir, manifest_sha256)
+    return (
+        intersections_section(build, overrides_dir, processed_dir, manifest_sha256),
+        road_attributes_section(
+            build.attached.graph, build.calming, build.tram, build.unknown_surface_values
+        ),
+    )
 
 
 def compute_intersections(
@@ -185,13 +222,27 @@ def compute_intersections(
     scan = prepared.scan
 
     signals = build_signals(scan, prepared.inputs_sha256).frame
-    base = build_graph(scan.drivable_ways).graph
+    base_build = build_graph(scan.drivable_ways)
+    base = base_build.graph
     points = _signal_points(signals)
 
     logger.info("attaching %d counted signal nodes", len(points))
     attached = attach_signals(base, points, snap_tolerance_meters)
     graph = attached.graph
     attachments = attached.attachments
+    calming = annotate_calming(
+        graph,
+        project_points(
+            np.array([p.lon for p in scan.calming_points], dtype=np.float64),
+            np.array([p.lat for p in scan.calming_points], dtype=np.float64),
+        ),
+    )
+    tram = annotate_tram_tracks(
+        graph,
+        project_lonlat_lines(scan.tram_lines),
+        TRAM_TRACK_MATCH_METERS,
+        TRAM_TRACK_MIN_OVERLAP_SHARE,
+    )
 
     adjacency = undirected_adjacency(graph)
     junctions = find_junction_nodes(adjacency)
@@ -232,6 +283,9 @@ def compute_intersections(
         tertiary=tertiary,
         settings=settings,
         snap_tolerance_meters=snap_tolerance_meters,
+        calming=calming,
+        tram=tram,
+        unknown_surface_values=base_build.report.unknown_surface_values,
     )
 
 
@@ -240,7 +294,13 @@ def write_intersection_artifacts(
 ) -> str:
     """Write the T4 artifacts; return the sha256 of the raw manifest the ids are valid for."""
     processed_dir.mkdir(parents=True, exist_ok=True)
-    write_graph(build.attached.graph, processed_dir, NETWORK_NODES_FILENAME, NETWORK_EDGES_FILENAME)
+    write_graph(
+        build.attached.graph,
+        processed_dir,
+        NETWORK_NODES_FILENAME,
+        NETWORK_EDGES_FILENAME,
+        NETWORK_EDGE_COLUMNS,
+    )
     build.intersections_frame.write_parquet(processed_dir / INTERSECTIONS_FILENAME)
     build.approaches.write_parquet(processed_dir / APPROACHES_FILENAME)
     build.near_after_frame.write_csv(processed_dir / NEAR_MISSES_FILENAME)

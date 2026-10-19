@@ -195,3 +195,43 @@ CASCADE_THRESHOLD_METERS = 250.0
 # node). The graph has no turn restrictions, so U-turns would create spurious "neighbours" such as
 # the opposing approach of the next signal. Off by default; the report counts the difference.
 CASCADE_ALLOW_U_TURNS = False
+
+# --- Road attributes ------------------------------------------------------------------------
+# Analysis: OSM `surface` values grouped as on the OSM wiki Key:surface page (paved / unpaved).
+# A value in neither set is unknown: surface_class stays null and the value is counted in the
+# report.
+PAVED_SURFACE_VALUES: frozenset[str] = frozenset(
+    {
+        "asphalt",
+        "concrete",
+        "paving_stones",
+        "sett",
+        "concrete:plates",
+        "concrete:lanes",
+        "paved",
+        "cobblestone",
+        "metal",
+        "wood",
+        "unhewn_cobblestone",
+    }
+)
+UNPAVED_SURFACE_VALUES: frozenset[str] = frozenset(
+    {
+        "unpaved",
+        "gravel",
+        "fine_gravel",
+        "compacted",
+        "dirt",
+        "earth",
+        "ground",
+        "grass",
+        "sand",
+        "mud",
+        "pebblestone",
+        "grass_paver",
+    }
+)
+# Placeholder (pending the road-attributes approval checkpoint): an edge is on a tram track when
+# at least this share of its length lies within this distance of an OSM railway=tram line.
+TRAM_TRACK_MATCH_METERS = 6.0
+TRAM_TRACK_MIN_OVERLAP_SHARE = 0.5

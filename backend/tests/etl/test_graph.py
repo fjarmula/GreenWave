@@ -233,3 +233,66 @@ def test_graph_roundtrips_through_parquet(tmp_path: Path) -> None:
         assert other["length_m"] == data["length_m"]
         assert other["name"] == data["name"] and other["lanes"] == data["lanes"]
         assert other["geometry"].equals(data["geometry"])
+
+
+def test_two_way_way_with_forward_bus_lane_marks_only_plus_edge() -> None:
+    graph = build_graph(
+        [way(1, [at(0, 0), at(1, 0)], **{"bus:lanes:forward": "|designated", "lanes": "4"})]
+    ).graph
+
+    edges = {data["edge_id"]: data for *_, data in graph.edges(data=True)}
+
+    assert edges["W1.0+"]["bus_lane"] is True
+    assert edges["W1.0-"]["bus_lane"] is False
+    assert edges["W1.0+"]["lanes_per_direction"] == edges["W1.0-"]["lanes_per_direction"] == 2
+
+
+def test_backward_oneway_edge_takes_against_direction_attributes() -> None:
+    graph = build_graph(
+        [
+            way(
+                1,
+                [at(0, 0), at(1, 0)],
+                oneway="-1",
+                lanes="2",
+                surface="sett",
+                **{"busway:left": "lane"},
+            )
+        ]
+    ).graph
+
+    (data,) = (d for *_, d in graph.edges(data=True))
+
+    assert data["edge_id"] == "W1.0-"
+    assert (data["bus_lane"], data["lanes_per_direction"], data["surface_class"]) == (
+        True,
+        2,
+        "paved",
+    )
+
+
+def test_unknown_surface_values_are_counted_in_the_report() -> None:
+    build = build_graph(
+        [
+            way(1, [at(0, 0), at(1, 0)], surface="weird"),
+            way(2, [at(0, 1), at(1, 1)], surface="weird"),
+            way(3, [at(0, 2), at(1, 2)], surface="gravel"),
+        ]
+    )
+
+    assert build.report.unknown_surface_values == {"weird": 2}
+    assert {d["surface_class"] for *_, d in build.graph.edges(data=True)} == {None, "unpaved"}
+
+
+def test_road_attributes_roundtrip_through_parquet(tmp_path: Path) -> None:
+    original = build_graph(
+        [way(1, [at(0, 0), at(1, 0)], lanes="3", surface="dirt", **{"busway:right": "lane"})]
+    ).graph
+
+    write_graph(original, tmp_path)
+    restored = read_graph(tmp_path)
+
+    for u, v, edge_id, data in original.edges(keys=True, data=True):
+        other = restored.edges[u, v, edge_id]
+        for column in ("bus_lane", "lanes_per_direction", "surface_class"):
+            assert other[column] == data[column]

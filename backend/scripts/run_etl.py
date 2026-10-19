@@ -24,7 +24,7 @@ import polars as pl
 from greenwave.etl.cluster_map import render_cluster_map
 from greenwave.etl.graph import build_graph
 from greenwave.etl.graph_pipeline import run_graph
-from greenwave.etl.intersections_pipeline import run_intersections
+from greenwave.etl.intersections_pipeline import run_intersections_with_road_attributes
 from greenwave.etl.io import update_report_section
 from greenwave.etl.neighbours_pipeline import run_neighbours
 from greenwave.etl.override_map import render_override_map
@@ -104,8 +104,11 @@ def main() -> int:
         )
         print(f"wrote {target}")
     elif args.step == "intersections":
-        section = run_intersections(DATA_DIR / "raw", DATA_DIR / "processed", OVERRIDES_DIR)
+        section, road_attributes = run_intersections_with_road_attributes(
+            DATA_DIR / "raw", DATA_DIR / "processed", OVERRIDES_DIR
+        )
         update_report_section(REPORT_PATH, "intersections", section)
+        update_report_section(REPORT_PATH, "road_attributes", road_attributes)
         print(
             "wrote network, intersections, approaches, ids, welds, near-misses and the report "
             f"section ({section.grouping.intersections_total} intersections)"

@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from greenwave.etl.geo import project_points
 from greenwave.etl.profile_osm import DrivableWay, LonLat, tag
+from greenwave.etl.road_attributes import bus_lane_directions, lanes_per_direction, surface_class
 from greenwave.etl.road_rules import (
     OnewayResolution,
     SpeedResolution,
@@ -65,6 +66,8 @@ class GraphBuildReport(BaseModel):
     class_default_length_km_by_highway: dict[str, float]
     total_directed_length_km: float
     total_road_length_km: float
+    # Ways whose `surface` value is in neither surface set (surface_class null), most common first.
+    unknown_surface_values: dict[str, int]
 
 
 @dataclass(slots=True)
@@ -162,6 +165,10 @@ class _WayRules:
     speed: SpeedResolution
     lanes: int | None
     name: str | None
+    # (along the digitised direction, against it)
+    bus_lane: tuple[bool, bool]
+    lanes_per_direction: tuple[int | None, int | None]
+    surface_class: str | None
 
 
 class _GraphBuilder:
@@ -179,6 +186,7 @@ class _GraphBuilder:
         self.default_length_m: defaultdict[str, float] = defaultdict(float)
         self.highway_edges: Counter[str] = Counter()
         self.total_road_m = 0.0
+        self.unknown_surface_values: Counter[str] = Counter()
 
     def add_way(self, way: DrivableWay, keys: list[str]) -> None:
         try:
@@ -202,11 +210,20 @@ class _GraphBuilder:
         cut_indices = [
             i for i, key in enumerate(keys) if i in (0, len(keys) - 1) or key in self.vertices.split
         ]
+        surface = surface_class(way.properties)
+        surface_tag = tag(way.properties, "surface")
+        if surface is None and surface_tag is not None:
+            self.unknown_surface_values[surface_tag] += 1
         rules = _WayRules(
             oneway=oneway,
             speed=speed,
             lanes=_parse_lanes(tag(way.properties, "lanes")),
             name=tag(way.properties, "name"),
+            bus_lane=bus_lane_directions(way.properties),
+            lanes_per_direction=lanes_per_direction(
+                way.properties, oneway=oneway.direction != "both"
+            ),
+            surface_class=surface,
         )
         for segment_index, (start, end) in enumerate(itertools.pairwise(cut_indices)):
             self._add_segment(way, segment_index, keys[start : end + 1], rules)
@@ -230,19 +247,32 @@ class _GraphBuilder:
             "oneway_source": rules.oneway.source,
             "lanes": rules.lanes,
             "name": rules.name,
+            "surface_class": rules.surface_class,
             "junction": tag(way.properties, "junction"),
             "source_line": way.line_number,
             "segment_index": segment_index,
         }
         self.total_road_m += length_m
-        directions: list[tuple[str, str, str, shapely.LineString, bool]] = []
+        lanes_along, lanes_against = rules.lanes_per_direction
+        along: dict[str, object] = {
+            "bus_lane": rules.bus_lane[0],
+            "lanes_per_direction": lanes_along,
+        }
+        against: dict[str, object] = {
+            "bus_lane": rules.bus_lane[1],
+            # A backward one-way has its `lanes` total in the "along" slot (one-way rule).
+            "lanes_per_direction": lanes_against
+            if lanes_against is not None or rules.oneway.direction == "both"
+            else lanes_along,
+        }
+        directions: list[tuple[str, str, str, shapely.LineString, bool, dict[str, object]]] = []
         if rules.oneway.direction in ("forward", "both"):
-            directions.append((u, v, "+", geometry, False))
+            directions.append((u, v, "+", geometry, False, along))
         if rules.oneway.direction == "backward":
-            directions.append((v, u, "-", shapely.reverse(geometry), False))
+            directions.append((v, u, "-", shapely.reverse(geometry), False, against))
         elif rules.oneway.direction == "both":
-            directions.append((v, u, "-", shapely.reverse(geometry), True))
-        for from_key, to_key, sign, edge_geometry, is_twin in directions:
+            directions.append((v, u, "-", shapely.reverse(geometry), True, against))
+        for from_key, to_key, sign, edge_geometry, is_twin, directional in directions:
             edge_id = f"W{way.line_number}.{segment_index}{sign}"
             self.graph.add_edge(
                 from_key,
@@ -253,6 +283,7 @@ class _GraphBuilder:
                 geometry=edge_geometry,
                 reverse_twin=is_twin,
                 **attributes,
+                **directional,
             )
             self.highway_edges[way.highway] += 1
             self.oneway_length_m[rules.oneway.source] += length_m
@@ -307,4 +338,5 @@ def _graph_report(
         class_default_length_km_by_highway=_km_by_length(builder.default_length_m),
         total_directed_length_km=total_directed_m / 1000,
         total_road_length_km=builder.total_road_m / 1000,
+        unknown_surface_values=dict(builder.unknown_surface_values.most_common(_SAMPLE_LIMIT)),
     )
