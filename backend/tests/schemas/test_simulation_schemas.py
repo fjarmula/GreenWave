@@ -17,6 +17,7 @@ from greenwave.schemas import (
     SimulationTickEvent,
     StopResponse,
 )
+from greenwave.schemas.simulation import Position, RouteIntersection
 
 ARCHITECTURE = Path(__file__).resolve().parents[3] / "GreenWave_ARCHITECTURE.md"
 STREAM_EVENT = SimulationStreamEvent
@@ -266,3 +267,18 @@ def test_position_bounds() -> None:
     body["origin"]["lat"] = 91
     with pytest.raises(ValidationError):
         SimulationStartRequest.model_validate(body)
+
+
+def test_route_intersection_rejects_zero_signal_count() -> None:
+    with pytest.raises(ValidationError):
+        RouteIntersection(
+            id="INT-1",
+            name=None,
+            kind="signalised_junction",
+            position=Position(lat=50.0, lng=19.9),
+            distance_along_route_m=10.0,
+            signal_count=0,
+            approach_count=1,
+            needs_review=False,
+            cascade_targets=[],
+        )

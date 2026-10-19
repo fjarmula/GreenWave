@@ -33,20 +33,30 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "kind": "signalised_junction",
      "distance_along_route_m": 1480,
+     "signal_count": 3,
+     "approach_count": 3,
+     "needs_review": false,
      "position": {
       "lat": 50.02815555555556,
       "lng": 19.95637037037037
-     }
+     },
+     "cascade_targets": [
+      "INT-0366"
+     ]
     },
     {
      "id": "INT-0366",
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "kind": "signalised_junction",
      "distance_along_route_m": 1632,
+     "signal_count": 1,
+     "approach_count": 2,
+     "needs_review": true,
      "position": {
       "lat": 50.02950666666667,
       "lng": 19.95651111111111
-     }
+     },
+     "cascade_targets": []
     }
    ],
    "origin_snapped": {
@@ -16486,20 +16496,28 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "kind": "signalised_junction",
      "distance_along_route_m": 1480,
+     "signal_count": 3,
+     "approach_count": 3,
+     "needs_review": false,
      "position": {
       "lat": 50.02815555555556,
       "lng": 19.95637037037037
-     }
+     },
+     "cascade_targets": []
     },
     {
      "id": "INT-0366",
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "kind": "signalised_junction",
      "distance_along_route_m": 1632,
+     "signal_count": 1,
+     "approach_count": 2,
+     "needs_review": true,
      "position": {
       "lat": 50.02950666666667,
       "lng": 19.95651111111111
-     }
+     },
+     "cascade_targets": []
     }
    ],
    "origin_snapped": {
@@ -32963,20 +32981,30 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "kind": "signalised_junction",
      "distance_along_route_m": 1480,
+     "signal_count": 3,
+     "approach_count": 3,
+     "needs_review": false,
      "position": {
       "lat": 50.02815555555556,
       "lng": 19.95637037037037
-     }
+     },
+     "cascade_targets": [
+      "INT-0366"
+     ]
     },
     {
      "id": "INT-0366",
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "kind": "signalised_junction",
      "distance_along_route_m": 1632,
+     "signal_count": 1,
+     "approach_count": 2,
+     "needs_review": true,
      "position": {
       "lat": 50.02950666666667,
       "lng": 19.95651111111111
-     }
+     },
+     "cascade_targets": []
     }
    ],
    "origin_snapped": {
@@ -36344,20 +36372,30 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "kind": "signalised_junction",
      "distance_along_route_m": 1480,
+     "signal_count": 3,
+     "approach_count": 3,
+     "needs_review": false,
      "position": {
       "lat": 50.02815555555556,
       "lng": 19.95637037037037
-     }
+     },
+     "cascade_targets": [
+      "INT-0366"
+     ]
     },
     {
      "id": "INT-0366",
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "kind": "signalised_junction",
      "distance_along_route_m": 1632,
+     "signal_count": 1,
+     "approach_count": 2,
+     "needs_review": true,
      "position": {
       "lat": 50.02950666666667,
       "lng": 19.95651111111111
-     }
+     },
+     "cascade_targets": []
     }
    ],
    "origin_snapped": {

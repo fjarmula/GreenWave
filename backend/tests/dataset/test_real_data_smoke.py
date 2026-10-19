@@ -1,15 +1,49 @@
 import pytest
 
-from greenwave.dataset import DatasetSettings, load_dataset
+from greenwave.dataset import DatasetSettings, ProcessedDataset, load_dataset
+from greenwave.routing.network_index import RoutingIndex, build_routing_index
+from greenwave.routing.planner import plan_route
+from greenwave.schemas import Position
+from greenwave.simulation.cascade_check import find_cascade_mismatches
+from greenwave.simulation.route_model import build_route_model
+from greenwave.simulation_settings import SimulationSettings
+
+ORIGINS = [(19.955, 50.015), (20.011, 50.005), (19.949, 50.093)]
+DESTINATIONS = [(19.96, 50.063), (19.934, 50.08), (20.037, 50.073)]
 
 
-def test_real_processed_data_loads() -> None:
-    """Skipped where data/processed is absent (CI, demo machines without a build)."""
+@pytest.fixture(scope="module")
+def real_dataset() -> ProcessedDataset:
     settings = DatasetSettings()
     if not (settings.processed_dir / "intersection_ids.json").is_file():
         pytest.skip("processed data not present on this machine")
+    return load_dataset(settings.processed_dir, settings.raw_manifest_path)
 
-    dataset = load_dataset(settings.processed_dir, settings.raw_manifest_path)
 
-    assert dataset.counts.intersections == dataset.intersections.height > 0
-    assert dataset.provenance.sources
+@pytest.fixture(scope="module")
+def real_index(real_dataset: ProcessedDataset) -> RoutingIndex:
+    return build_routing_index(real_dataset, SimulationSettings())
+
+
+def test_real_processed_data_loads(real_dataset: ProcessedDataset) -> None:
+    """Skipped where data/processed is absent (CI, demo machines without a build)."""
+    assert real_dataset.counts.intersections == real_dataset.intersections.height > 0
+    assert real_dataset.provenance.sources
+
+
+@pytest.mark.parametrize(("origin", "destination"), [(o, d) for o in ORIGINS for d in DESTINATIONS])
+def test_demo_routes_have_no_cascade_mismatches(
+    real_index: RoutingIndex,
+    origin: tuple[float, float],
+    destination: tuple[float, float],
+) -> None:
+    settings = SimulationSettings()
+    route = plan_route(
+        real_index,
+        Position(lng=origin[0], lat=origin[1]),
+        Position(lng=destination[0], lat=destination[1]),
+        settings,
+    )
+    route_model = build_route_model(route, real_index, settings, cascade_enabled=True)
+
+    assert find_cascade_mismatches(route, route_model, real_index) == ()

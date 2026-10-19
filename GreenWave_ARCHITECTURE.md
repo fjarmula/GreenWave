@@ -116,7 +116,7 @@ The system compares normal routing with ER-GreenWave routing to estimate potenti
 
 $$T_{\mathrm{normal}} = \sum_{e \in \mathrm{Edges}} \left( \frac{L_e \cdot \mu_{\mathrm{traffic}} \cdot f_{\mathrm{lane}}(e) \cdot f_{\mathrm{surface}}(e)}{V_e} + n_e \cdot s_{\mathrm{normal}} \right) + \sum_{u \in \mathrm{Intersections}} D_u$$
 
-Where $V_e$ is the edge speed (`speed_kmh`: the OSM `maxspeed` where it parses, otherwise a road-class default, recorded in `speed_source`), $\mu_{\mathrm{traffic}} \in [1.0, 3.0]$ is the traffic-density multiplier ($\mu_{\mathrm{traffic}} = 1.0$ is free-flow; $1.5$ increases edge traversal time by 50%), and $D_u$ is the delay of intersection $u$ (`delay_seconds` in the ETL's `intersections` table, 35 s for every kind in the current configuration). $D_u$ is applied once per unique intersection (`INT-xxxx`) whose controlled approach the route passes: a route that passes two approaches of one intersection pays it once, and the per-signal `signal_approaches.delay_seconds` is never summed along a route.
+Where $V_e$ is the edge speed (`speed_kmh`: the OSM `maxspeed` where it parses, otherwise a road-class default, recorded in `speed_source`), $\mu_{\mathrm{traffic}} \in [1.0, 3.0]$ is the traffic-density multiplier ($\mu_{\mathrm{traffic}} = 1.0$ is free-flow; $1.5$ increases edge traversal time by 50%), and $D_u$ is the delay of intersection $u$ (`delay_seconds` in the ETL's `intersections` table). Signalised junctions, mid-block signals and pedestrian crossings have independent configuration keys; each is provisionally 35 s. These values are modeling assumptions, not empirical measurements. Calibration is deferred to a dedicated modeling task after dynamic ambulance dispatch is implemented and before final end-to-end performance evaluation. $D_u$ is applied once per unique intersection (`INT-xxxx`) whose controlled approach the route passes: a route that passes two approaches of one intersection pays it once, and the per-signal `signal_approaches.delay_seconds` is never summed along a route.
 
 Road attributes per directed edge (ETL, `network_edges.parquet`): $f_{\mathrm{lane}}(e) = 1.15$ when `lanes_per_direction == 1`, else 1; $f_{\mathrm{surface}}(e) = 1.3$ when `surface_class == "unpaved"`, else 1; $n_e$ is `calming_count` (OSM `traffic_calming` points on the edge) and $s_{\mathrm{normal}} = 3\text{ s}$ per feature. An unknown attribute has no effect. Values and evidence: `docs/adr/0005-road-attribute-time-factors.md`.
 
@@ -234,14 +234,22 @@ threshold (40 / 25 / 0 / 15 s) is skipped.
       "name": "Aleja 29 Listopada / Lublańska / Opolska",
       "kind": "signalised_junction",
       "position": { "lat": 50.0661, "lng": 19.9221 },
-      "distance_along_route_m": 1480
+      "distance_along_route_m": 1480,
+      "signal_count": 4,
+      "approach_count": 4,
+      "needs_review": false,
+      "cascade_targets": ["INT-0366"]
     },
     {
       "id": "INT-0366",
       "name": "Aleja 29 Listopada / Jana Woronicza",
       "kind": "signalised_junction",
       "position": { "lat": 50.0655, "lng": 19.9243 },
-      "distance_along_route_m": 1632
+      "distance_along_route_m": 1632,
+      "signal_count": 2,
+      "approach_count": 2,
+      "needs_review": false,
+      "cascade_targets": []
     }
   ],
   "origin_snapped": {

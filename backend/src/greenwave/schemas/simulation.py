@@ -85,6 +85,10 @@ class RouteIntersection(BaseModel):
     kind: IntersectionKind
     position: Position
     distance_along_route_m: Annotated[float, Field(ge=0.0)]  # to the first controlled stop line
+    signal_count: Annotated[int, Field(ge=1)]
+    approach_count: Annotated[int, Field(ge=1)]
+    needs_review: bool
+    cascade_targets: list[str]
 
 
 class SimulationStartResponse(BaseModel):

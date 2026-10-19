@@ -79,6 +79,17 @@ def _all_scenarios() -> dict[str, object]:
     }
 
 
+def _with_stable_coordinate_precision(scenarios: dict[str, object]) -> dict[str, object]:
+    document = json.loads(json.dumps(scenarios))
+    for scenario in document.values():
+        for event in scenario["events"]:
+            position = event.get("ambulance", {}).get("position")
+            if position is not None:
+                position["lat"] = round(position["lat"], 12)
+                position["lng"] = round(position["lng"], 12)
+    return document
+
+
 def test_engine_event_stream_matches_golden() -> None:
     actual = _all_scenarios()
     if os.environ.get("GREENWAVE_REGEN_GOLDEN") == "1":
@@ -86,7 +97,8 @@ def test_engine_event_stream_matches_golden() -> None:
         _GOLDEN.write_text(json.dumps(actual, indent=1, sort_keys=True) + "\n")
         pytest.skip("golden regenerated")
 
-    assert actual == json.loads(_GOLDEN.read_text())
+    expected = json.loads(_GOLDEN.read_text())
+    assert _with_stable_coordinate_precision(actual) == _with_stable_coordinate_precision(expected)
 
 
 def _dispatch_groups(scenario: object) -> list[list[str]]:

@@ -23,19 +23,34 @@ export const MOCK_HOLD_BUFFER_SECONDS = 5;
  * line at these distances, not at the real junction coordinates.
  */
 export const MOCK_SAMPLE_INTERSECTIONS: ReadonlyArray<
-  Pick<RouteIntersection, "id" | "name" | "kind" | "distance_along_route_m">
+  Pick<
+    RouteIntersection,
+    | "id"
+    | "name"
+    | "kind"
+    | "distance_along_route_m"
+    | "signal_count"
+    | "approach_count"
+    | "needs_review"
+  >
 > = [
   {
     id: "INT-0360",
     name: "Aleja 29 Listopada / Lublańska / Opolska",
     kind: "signalised_junction",
     distance_along_route_m: 1480,
+    signal_count: 3,
+    approach_count: 3,
+    needs_review: false,
   },
   {
     id: "INT-0366",
     name: "Aleja 29 Listopada / Jana Woronicza",
     kind: "signalised_junction",
     distance_along_route_m: 1632,
+    signal_count: 1,
+    approach_count: 2,
+    needs_review: true,
   },
 ];
 

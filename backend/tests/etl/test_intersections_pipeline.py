@@ -5,6 +5,7 @@ import polars as pl
 import pytest
 
 from greenwave.etl.config import (
+    MIDBLOCK_SIGNAL_DELAY_SECONDS,
     PEDESTRIAN_CROSSING_DELAY_SECONDS,
     SIGNAL_DELAY_SECONDS,
     SIGNAL_SNAP_TOLERANCE_METERS,
@@ -139,7 +140,7 @@ def test_the_section_records_the_hash_of_every_artifact_and_the_delays_used(
     }
     assert section.delay_seconds_by_kind == {
         "signalised_junction": SIGNAL_DELAY_SECONDS,
-        "midblock_signal": SIGNAL_DELAY_SECONDS,
+        "midblock_signal": MIDBLOCK_SIGNAL_DELAY_SECONDS,
         "pedestrian_crossing": PEDESTRIAN_CROSSING_DELAY_SECONDS,
     }
     delays = pl.read_parquet(processed / INTERSECTIONS_FILENAME).select("kind", "delay_seconds")

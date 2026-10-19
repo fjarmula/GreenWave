@@ -9,6 +9,7 @@ import {
   startResponseExample,
   tickEventExample,
 } from "@/lib/transport/__fixtures__/architecture-examples";
+import { createMockSession } from "@/lib/mock-session";
 import { parseErrorResponse, parseStartResponse, parseStreamEvent } from "@/lib/transport/validate";
 
 /** Round-trips through JSON like a real payload, then applies a mutation. */
@@ -33,6 +34,29 @@ describe("parseStartResponse", () => {
     expect(parseStartResponse(wire(startResponseExample))).toEqual(startResponseExample);
   });
 
+  it("accepts the frontend mock start response", () => {
+    const route = createMockSession({
+      simulation_id: "validation-mock",
+      origin: { lat: 50.0612, lng: 19.9571 },
+      destination: { lat: 50.0134, lng: 19.9982 },
+      traffic_density_multiplier: 1.5,
+      enable_cascade_mode: true,
+      playback_speed: 1,
+    }).route;
+
+    expect(parseStartResponse(wire(route))).toEqual(route);
+  });
+
+  it("rejects a start response missing cascade_targets", () => {
+    expect(() =>
+      parseStartResponse(
+        wire(startResponseExample, (copy) => {
+          delete record((copy.route_intersections as unknown[])[0]).cascade_targets;
+        }),
+      ),
+    ).toThrow(TypeError);
+  });
+
   it.each([
     ["schema_version !== 1.0", (c: Record<string, unknown>) => (c.schema_version = "2.0")],
     ["is_simulated !== true", (c: Record<string, unknown>) => (c.is_simulated = false)],
@@ -48,6 +72,20 @@ describe("parseStartResponse", () => {
       "a route intersection without a position",
       (c: Record<string, unknown>) =>
         delete record((c.route_intersections as unknown[])[0]).position,
+    ],
+    [
+      "a route intersection without a kind",
+      (c: Record<string, unknown>) => delete record((c.route_intersections as unknown[])[0]).kind,
+    ],
+    [
+      "a route intersection with an unknown kind",
+      (c: Record<string, unknown>) =>
+        (record((c.route_intersections as unknown[])[0]).kind = "roundabout"),
+    ],
+    [
+      "a route intersection with a prototype-property kind",
+      (c: Record<string, unknown>) =>
+        (record((c.route_intersections as unknown[])[0]).kind = "__proto__"),
     ],
     ["a missing snapped endpoint", (c: Record<string, unknown>) => delete c.origin_snapped],
   ])("rejects %s", (_label, mutate) => {

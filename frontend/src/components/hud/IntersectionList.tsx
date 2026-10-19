@@ -3,11 +3,20 @@
 import { Signal } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
 import { isCascadeClearing } from "@/lib/signal-visuals";
-import type { IntersectionTelemetry } from "@/types/telemetry";
+import type { IntersectionTelemetry, RouteIntersection } from "@/types/telemetry";
+
+const KIND_LABELS: Record<RouteIntersection["kind"], string> = {
+  signalised_junction: "Junction",
+  midblock_signal: "Mid-block signal",
+  pedestrian_crossing: "Pedestrian crossing",
+};
 
 export function IntersectionList() {
-  const { liveTelemetry } = useSimulationState();
+  const { liveTelemetry, routeData } = useSimulationState();
   const intersections = liveTelemetry?.intersections ?? [];
+  const routeIntersections = new Map(
+    (routeData?.route_intersections ?? []).map((intersection) => [intersection.id, intersection]),
+  );
   return (
     <section className="rounded-xl border border-border/80 bg-card/92 p-4 shadow-2xl backdrop-blur-xl">
       <div className="flex items-center justify-between gap-4">
@@ -24,15 +33,24 @@ export function IntersectionList() {
         {!intersections.length && (
           <p className="text-xs text-muted-foreground">Waiting for simulation telemetry.</p>
         )}
-        {intersections.map((intersection) => (
-          <IntersectionCard key={intersection.id} {...intersection} />
-        ))}
+        {intersections.map((intersection) => {
+          const detail = routeIntersections.get(intersection.id);
+          return (
+            <IntersectionCard key={intersection.id} telemetry={intersection} detail={detail} />
+          );
+        })}
       </div>
     </section>
   );
 }
 
-function IntersectionCard(intersection: IntersectionTelemetry) {
+function IntersectionCard({
+  telemetry: intersection,
+  detail: routeDetail,
+}: {
+  telemetry: IntersectionTelemetry;
+  detail: RouteIntersection | undefined;
+}) {
   const { id, name, state, tti_seconds: ttiSeconds, is_active_corridor: active } = intersection;
   const isCascade = isCascadeClearing(intersection);
   const detail = active ? "SIMULATED CORRIDOR ACTIVE" : "NO PRIORITY REQUEST";
@@ -45,6 +63,16 @@ function IntersectionCard(intersection: IntersectionTelemetry) {
           <span className="mt-1 block text-[10px] text-muted-foreground">
             {name ?? "Unnamed intersection"}
           </span>
+          {routeDetail && (
+            <span className="mt-1 block text-[9px] text-muted-foreground">
+              {KIND_LABELS[routeDetail.kind]} · {routeDetail.signal_count} signals
+            </span>
+          )}
+          {routeDetail?.needs_review && (
+            <span className="mt-1 block text-[9px] font-semibold text-amber-600 dark:text-amber-300">
+              Source data flagged for review
+            </span>
+          )}
         </div>
         <span
           className={`inline-flex items-center gap-1.5 font-mono text-[9px] font-bold ${

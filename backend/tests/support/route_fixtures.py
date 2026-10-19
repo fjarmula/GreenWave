@@ -98,7 +98,14 @@ def _builders(
     return node, edge
 
 
-def corridor_index(road_attributes: RoadAttributes | None = None) -> RoutingIndex:
+def corridor_index(
+    road_attributes: RoadAttributes | None = None,
+    *,
+    signal_count: int = 1,
+    approach_count: int = 1,
+    needs_review: bool = False,
+    neighbour_candidates: Mapping[tuple[str, str], float] | None = None,
+) -> RoutingIndex:
     """An index with a fast detour, corridor stop lines, a one-way edge, and an island.
 
     ``road_attributes`` overrides the neutral road attributes per edge id, e.g.
@@ -149,6 +156,9 @@ def corridor_index(road_attributes: RoadAttributes | None = None) -> RoutingInde
             lon=position_at(x).lng,
             lat=position_at(x).lat,
             delay_seconds=delay,
+            signal_count=signal_count,
+            approach_count=approach_count,
+            needs_review=needs_review,
         )
         for identifier, x, delay in (
             ("INT-A", _X + 1_100, 10),
@@ -157,7 +167,7 @@ def corridor_index(road_attributes: RoadAttributes | None = None) -> RoutingInde
             ("INT-B", _X + 1_850.02, 40),
         )
     }
-    return _index(graph, approaches, intersections)
+    return _index(graph, approaches, intersections, neighbour_candidates)
 
 
 def branch_index(road_attributes: RoadAttributes | None = None) -> RoutingIndex:
@@ -172,13 +182,14 @@ def branch_index(road_attributes: RoadAttributes | None = None) -> RoutingIndex:
     for side in ("north", "south"):
         edge(f"{side}-a", "branch-start", f"{side}-mid", 120, 30)
         edge(f"{side}-b", f"{side}-mid", "branch-end", 120, 30)
-    return _index(graph, {}, {})
+    return _index(graph, {}, {}, None)
 
 
 def _index(
     graph: nx.MultiDiGraph,
     approaches: dict[str, tuple[ApproachRef, ...]],
     intersections: dict[str, IntersectionInfo],
+    neighbour_candidates: Mapping[tuple[str, str], float] | None,
 ) -> RoutingIndex:
     edges = {
         data["edge_id"]: EdgeView(
@@ -210,4 +221,5 @@ def _index(
         _edges=MappingProxyType(edges),
         _approaches=MappingProxyType(approaches),
         _intersections=MappingProxyType(intersections),
+        _neighbour_candidates=MappingProxyType(dict(neighbour_candidates or {})),
     )

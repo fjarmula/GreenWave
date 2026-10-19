@@ -35,4 +35,12 @@ describe("stepMockSignals", () => {
       expect([...enteredClearing]).toEqual(enableCascadeMode ? [0, 1] : [0]);
     },
   );
+
+  it("leaves every route cascade target empty when cascade mode is disabled", () => {
+    const session = createMockSession(requestWithCascade(false));
+
+    expect(
+      session.route.route_intersections.map(({ cascade_targets: targets }) => targets),
+    ).toEqual([[], []]);
+  });
 });

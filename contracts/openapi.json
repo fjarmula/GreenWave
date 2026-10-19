@@ -368,6 +368,18 @@
       },
       "RouteIntersection": {
         "properties": {
+          "approach_count": {
+            "minimum": 1.0,
+            "title": "Approach Count",
+            "type": "integer"
+          },
+          "cascade_targets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Cascade Targets",
+            "type": "array"
+          },
           "distance_along_route_m": {
             "minimum": 0.0,
             "title": "Distance Along Route M",
@@ -391,8 +403,17 @@
             ],
             "title": "Name"
           },
+          "needs_review": {
+            "title": "Needs Review",
+            "type": "boolean"
+          },
           "position": {
             "$ref": "#/components/schemas/Position"
+          },
+          "signal_count": {
+            "minimum": 1.0,
+            "title": "Signal Count",
+            "type": "integer"
           }
         },
         "required": [
@@ -400,7 +421,11 @@
           "name",
           "kind",
           "position",
-          "distance_along_route_m"
+          "distance_along_route_m",
+          "signal_count",
+          "approach_count",
+          "needs_review",
+          "cascade_targets"
         ],
         "title": "RouteIntersection",
         "type": "object"

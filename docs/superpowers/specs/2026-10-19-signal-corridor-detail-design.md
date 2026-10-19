@@ -60,10 +60,12 @@ independent check of the cascade gives it a job without making it a second sourc
 ## Delay keys
 
 `etl/config.py`: keep `SIGNAL_DELAY_SECONDS` (signalised junction), add
-`MIDBLOCK_SIGNAL_DELAY_SECONDS = 35.0`, keep `PEDESTRIAN_CROSSING_DELAY_SECONDS`. The plan ends
-with a human approval checkpoint for the three values (evidence: count per kind, share of each kind
-on the demo routes, estimate deltas). Approved values get an `APPROVED <date>` comment;
-`GreenWave_ARCHITECTURE.md` §3 (`D_u`, "35 s for every kind") is updated after telling the human.
+`MIDBLOCK_SIGNAL_DELAY_SECONDS = 35.0`, and keep `PEDESTRIAN_CROSSING_DELAY_SECONDS`. The keys remain
+independent even while their values are equal. At the 2026-10-19 human checkpoint, all three were
+retained at 35 s as provisional modeling assumptions, not empirical measurements. Calibration is
+outside this plan: it will occur in a dedicated modeling task after dynamic ambulance dispatch is
+implemented and before final end-to-end performance evaluation. `GreenWave_ARCHITECTURE.md` §3
+records this provenance and deferral.
 
 ## Constraints
 

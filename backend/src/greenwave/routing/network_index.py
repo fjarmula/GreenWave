@@ -50,6 +50,9 @@ class IntersectionInfo:
     lon: float
     lat: float
     delay_seconds: float
+    signal_count: int
+    approach_count: int
+    needs_review: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +68,7 @@ class RoutingIndex:
     _edges: Mapping[str, EdgeView]
     _approaches: Mapping[str, tuple[ApproachRef, ...]]
     _intersections: Mapping[str, IntersectionInfo]
+    _neighbour_candidates: Mapping[tuple[str, str], float]
 
     def snap(self, x_m: float, y_m: float) -> tuple[str, float] | None:
         """Return the nearest routable node within the configured metric distance."""
@@ -86,6 +90,10 @@ class RoutingIndex:
     def intersection(self, intersection_id: str) -> IntersectionInfo:
         """Get canonical metadata for one route intersection."""
         return self._intersections[intersection_id]
+
+    def neighbour_candidate(self, from_edge_id: str, to_edge_id: str) -> float | None:
+        """Return the shortest candidate distance for an approach-edge pair, if present."""
+        return self._neighbour_candidates.get((from_edge_id, to_edge_id))
 
 
 def _optional_int(value: object) -> int | None:
@@ -126,11 +134,15 @@ def build_routing_index(dataset: ProcessedDataset, settings: SimulationSettings)
             calming_count=int(attributes["calming_count"]),
         )
 
-    delays = {
-        str(row["intersection_id"]): float(row["delay_seconds"])
-        for row in dataset.intersections.select("intersection_id", "delay_seconds").iter_rows(
-            named=True
-        )
+    details = {
+        str(row["intersection_id"]): row
+        for row in dataset.intersections.select(
+            "intersection_id",
+            "delay_seconds",
+            "signal_count",
+            "approaches",
+            "needs_review",
+        ).iter_rows(named=True)
     }
     intersections = {
         record.id: IntersectionInfo(
@@ -139,7 +151,10 @@ def build_routing_index(dataset: ProcessedDataset, settings: SimulationSettings)
             kind=record.kind,
             lon=record.lon,
             lat=record.lat,
-            delay_seconds=delays[record.id],
+            delay_seconds=float(details[record.id]["delay_seconds"]),
+            signal_count=int(details[record.id]["signal_count"]),
+            approach_count=int(details[record.id]["approaches"]),
+            needs_review=bool(details[record.id]["needs_review"]),
         )
         for record in dataset.intersection_ids
     }
@@ -155,6 +170,13 @@ def build_routing_index(dataset: ProcessedDataset, settings: SimulationSettings)
         edge_id: tuple(sorted(refs, key=lambda ref: (ref.intersection_id, ref.signal_key)))
         for edge_id, refs in approaches.items()
     }
+    neighbour_candidates: dict[tuple[str, str], float] = {}
+    for row in dataset.approach_neighbours.select(
+        "from_approach_edge_id", "to_approach_edge_id", "distance_m"
+    ).iter_rows(named=True):
+        key = (str(row["from_approach_edge_id"]), str(row["to_approach_edge_id"]))
+        distance = float(row["distance_m"])
+        neighbour_candidates[key] = min(distance, neighbour_candidates.get(key, float("inf")))
     return RoutingIndex(
         graph=dataset.graph,
         cascade_threshold_m=dataset.cascade_threshold_m,
@@ -165,4 +187,5 @@ def build_routing_index(dataset: ProcessedDataset, settings: SimulationSettings)
         _edges=MappingProxyType(edges),
         _approaches=MappingProxyType(sorted_approaches),
         _intersections=MappingProxyType(intersections),
+        _neighbour_candidates=MappingProxyType(neighbour_candidates),
     )
