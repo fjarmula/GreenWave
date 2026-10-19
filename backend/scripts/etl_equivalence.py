@@ -22,6 +22,8 @@ import sys
 import time
 from pathlib import Path
 
+from greenwave.etl.overrides import OVERRIDE_FILENAME
+
 BACKEND = Path(__file__).resolve().parents[1]
 STEPS = (
     "profile",
@@ -48,7 +50,16 @@ def _strip(value: object) -> object:
     return value
 
 
+def require_committed_override() -> Path:
+    """The hand-verified override is an input; never let ``draft-overrides`` stand in for it."""
+    path = BACKEND / "data" / "overrides" / OVERRIDE_FILENAME
+    if not path.is_file():
+        raise SystemExit(f"committed override file is missing: {path}")
+    return path
+
+
 def run(scratch: Path, out: Path) -> int:
+    require_committed_override()
     data = scratch.resolve() / "data"
     if BACKEND.parent in data.parents:
         raise SystemExit("the scratch directory must be outside the repository")
