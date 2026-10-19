@@ -9,6 +9,7 @@ import {
   startResponseExample,
   tickEventExample,
 } from "@/lib/transport/__fixtures__/architecture-examples";
+import { createMockSession } from "@/lib/mock-session";
 import { parseErrorResponse, parseStartResponse, parseStreamEvent } from "@/lib/transport/validate";
 
 /** Round-trips through JSON like a real payload, then applies a mutation. */
@@ -31,6 +32,29 @@ afterEach(() => warn.mockRestore());
 describe("parseStartResponse", () => {
   it("accepts the architecture §4 example", () => {
     expect(parseStartResponse(wire(startResponseExample))).toEqual(startResponseExample);
+  });
+
+  it("accepts the frontend mock start response", () => {
+    const route = createMockSession({
+      simulation_id: "validation-mock",
+      origin: { lat: 50.0612, lng: 19.9571 },
+      destination: { lat: 50.0134, lng: 19.9982 },
+      traffic_density_multiplier: 1.5,
+      enable_cascade_mode: true,
+      playback_speed: 1,
+    }).route;
+
+    expect(parseStartResponse(wire(route))).toEqual(route);
+  });
+
+  it("rejects a start response missing cascade_targets", () => {
+    expect(() =>
+      parseStartResponse(
+        wire(startResponseExample, (copy) => {
+          delete record((copy.route_intersections as unknown[])[0]).cascade_targets;
+        }),
+      ),
+    ).toThrow(TypeError);
   });
 
   it.each([

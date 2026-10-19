@@ -62,6 +62,11 @@ function finite(value: unknown, path: string): number {
     : fail(path, "a finite number");
 }
 
+function positiveInteger(value: unknown, path: string): number {
+  const number = finite(value, path);
+  return Number.isInteger(number) && number >= 1 ? number : fail(path, "a positive integer");
+}
+
 function text(value: unknown, path: string): string {
   return typeof value === "string" ? value : fail(path, "a string");
 }
@@ -149,6 +154,12 @@ export function parseStartResponse(value: unknown): SimulationStartResponse {
     nullableText(intersection.name, `${path}.name`);
     position(intersection.position, `${path}.position`);
     finite(intersection.distance_along_route_m, `${path}.distance_along_route_m`);
+    positiveInteger(intersection.signal_count, `${path}.signal_count`);
+    positiveInteger(intersection.approach_count, `${path}.approach_count`);
+    bool(intersection.needs_review, `${path}.needs_review`);
+    list(intersection.cascade_targets, `${path}.cascade_targets`).forEach((id, targetIndex) =>
+      text(id, `${path}.cascade_targets[${targetIndex}]`),
+    );
   });
   snappedEndpoint(body.origin_snapped, "origin_snapped");
   snappedEndpoint(body.destination_snapped, "destination_snapped");

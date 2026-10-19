@@ -67,14 +67,27 @@ function createMockRoute(request: SimulationStartRequest): SimulationStartRespon
       [request.destination.lng, request.destination.lat],
     ],
   };
-  const routeIntersections = MOCK_SAMPLE_INTERSECTIONS.map((intersection) => {
+  const routeIntersections = MOCK_SAMPLE_INTERSECTIONS.map((intersection, sourceIndex) => {
     // Synthetic position: the sample distance projected onto the straight mock line.
     const coordinates = positionOnRoute(
       routeGeometry,
       intersection.distance_along_route_m / MOCK_ROUTE_DISTANCE_METERS,
     );
     if (!coordinates) throw new Error("Mock route requires two coordinates");
-    return { ...intersection, position: toPosition(coordinates) };
+    const cascadeTargets = request.enable_cascade_mode
+      ? MOCK_SAMPLE_INTERSECTIONS.slice(sourceIndex + 1)
+          .filter(
+            (target) =>
+              target.distance_along_route_m - intersection.distance_along_route_m <=
+              MOCK_CASCADE_DISTANCE_METERS,
+          )
+          .map((target) => target.id)
+      : [];
+    return {
+      ...intersection,
+      position: toPosition(coordinates),
+      cascade_targets: cascadeTargets,
+    };
   });
 
   return {
