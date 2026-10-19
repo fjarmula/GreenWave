@@ -2,13 +2,14 @@ from datetime import UTC, datetime
 from math import cos, radians
 
 import pytest
+from tests.support.route_fixtures import corridor_index, position_at, route_edges
 
 from greenwave.its import MockItsGateway
 from greenwave.routing.estimates import Estimates, estimate_times
-from greenwave.routing.planner import PlannedRoute, SnappedRouteEndpoint
+from greenwave.routing.planner import PlannedRoute, SnappedRouteEndpoint, plan_route
 from greenwave.schemas import Position, SimulationTickEvent
 from greenwave.simulation.engine import SimulationEngine
-from greenwave.simulation.route_model import RouteIntersection, RouteModel
+from greenwave.simulation.route_model import RouteIntersection, RouteModel, build_route_model
 from greenwave.simulation_settings import SimulationSettings
 
 
@@ -16,7 +17,7 @@ def engine_for_single_stop() -> SimulationEngine:
     route = PlannedRoute(
         edge_ids=("first", "second"),
         edge_lengths_m=(100.0, 100.0),
-        edge_speeds_kmh=(36.0, 36.0),
+        edges=route_edges(("first", "second"), (100.0, 100.0), (36.0, 36.0)),
         cumulative_m=(0.0, 100.0),
         total_distance_m=200.0,
         polyline_wgs84=[(19.0, 50.0), (19.1, 50.0)],
@@ -54,7 +55,7 @@ def engine_for_l_shaped_route() -> SimulationEngine:
     route = PlannedRoute(
         edge_ids=("north", "east"),
         edge_lengths_m=(100.0, 100.0),
-        edge_speeds_kmh=(36.0, 36.0),
+        edges=route_edges(("north", "east"), (100.0, 100.0), (36.0, 36.0)),
         cumulative_m=(0.0, 100.0),
         total_distance_m=200.0,
         polyline_wgs84=[(19.0, 50.0), (19.0, 50.0 + leg_lat), (19.0 + leg_lng, 50.0 + leg_lat)],
@@ -128,7 +129,7 @@ def engine_for_mixed_speeds(multiplier: float = 1.0) -> SimulationEngine:
     route = PlannedRoute(
         edge_ids=("slow", "fast"),
         edge_lengths_m=(10.0, 190.0),
-        edge_speeds_kmh=(36.0, 72.0),
+        edges=route_edges(("slow", "fast"), (10.0, 190.0), (36.0, 72.0)),
         cumulative_m=(0.0, 10.0),
         total_distance_m=200.0,
         polyline_wgs84=[(19.0, 50.0), (19.003, 50.0)],
@@ -218,3 +219,25 @@ def test_playback_returns_only_last_tick_and_keeps_terminal_events() -> None:
 
     assert state.tick == 10
     assert sum(event.event_type == "SIMULATION_TICK" for event in events) == 1
+
+
+def test_simulated_elapsed_matches_greenwave_estimate_with_calming() -> None:
+    """Calming seconds reach the estimate and the simulated motion alike (one edge-time model)."""
+    settings = SimulationSettings(ambulance_calming_seconds=2.0)
+    index = corridor_index({"corridor-twin-1": {"calming_count": 3}})
+    # Ends past INT-B: a route ending on a stop line arrives before that last D_min dwell.
+    origin, destination = position_at(7_422_000), position_at(7_422_950.02)
+    route = plan_route(index, origin, destination, settings)
+    model = build_route_model(route, index, settings, cascade_enabled=True)
+    estimates = estimate_times(route, model, 1.0, settings)
+    neutral = estimate_times(route, model, 1.0, SimulationSettings())
+    engine = SimulationEngine("SIM-CALM", route, model, estimates, 1.0, settings, MockItsGateway())
+    state = engine.initial_state()
+
+    while not state.arrived:
+        state, _ = engine.step(state, datetime(2026, 10, 19, tzinfo=UTC))
+
+    assert len(model.intersections) == 4  # D_min is part of both numbers
+    assert estimates.greenwave_seconds == pytest.approx(neutral.greenwave_seconds + 6.0)
+    assert state.arrived_at_s is not None
+    assert abs(state.arrived_at_s - estimates.greenwave_seconds) <= settings.tick_interval_seconds

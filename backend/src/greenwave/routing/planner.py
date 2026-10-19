@@ -9,8 +9,9 @@ import networkx as nx
 import numpy as np
 
 from greenwave.etl.geo import project_points, unproject_points
+from greenwave.routing.edge_times import ambulance_edge_seconds
 from greenwave.routing.errors import DestinationOffNetwork, NoRoute, OriginOffNetwork
-from greenwave.routing.network_index import RoutingIndex
+from greenwave.routing.network_index import EdgeView, RoutingIndex
 from greenwave.schemas.simulation import Position
 from greenwave.simulation_settings import SimulationSettings
 
@@ -39,7 +40,7 @@ class PlannedRoute:
 
     edge_ids: tuple[str, ...]
     edge_lengths_m: tuple[float, ...]
-    edge_speeds_kmh: tuple[float, ...]
+    edges: tuple[EdgeView, ...]  # route order; the edge-time model reads attributes from here
     cumulative_m: tuple[float, ...]
     total_distance_m: float
     polyline_wgs84: list[tuple[float, float]]
@@ -48,25 +49,15 @@ class PlannedRoute:
     stop_lines: tuple[StopLineEvent, ...]
 
 
-def ambulance_speed_kmh(speed_kmh: float, settings: SimulationSettings) -> float:
-    """Return the bounded emergency-vehicle speed used for route weighting."""
-    return min(
-        max(settings.ambulance_speed_factor * speed_kmh, settings.ambulance_min_speed_kmh),
-        settings.ambulance_max_speed_kmh,
-    )
-
-
 def _edge_weight(
-    _: str, __: str, data: Mapping[object, object], settings: SimulationSettings
+    index: RoutingIndex, data: Mapping[object, object], settings: SimulationSettings
 ) -> float:
     """NetworkX MultiDiGraph callback: minimum ambulance time among parallel edges."""
     weights: list[float] = []
     for candidate in data.values():
         if not isinstance(candidate, Mapping):
             continue
-        length = float(candidate["length_m"])
-        speed = ambulance_speed_kmh(float(candidate["speed_kmh"]), settings)
-        weights.append(length / (speed / 3.6))
+        weights.append(ambulance_edge_seconds(index.edge(str(candidate["edge_id"])), settings))
     return min(weights, default=inf)
 
 
@@ -84,9 +75,7 @@ def _best_edge_id(
 
 
 def _edge_key(index: RoutingIndex, edge_id: str, settings: SimulationSettings) -> tuple[float, str]:
-    edge = index.edge(edge_id)
-    duration = edge.length_m / (ambulance_speed_kmh(edge.speed_kmh, settings) / 3.6)
-    return duration, edge_id
+    return ambulance_edge_seconds(index.edge(edge_id), settings), edge_id
 
 
 def _snap_endpoint(index: RoutingIndex, position: Position, origin: bool) -> SnappedRouteEndpoint:
@@ -123,7 +112,7 @@ def plan_route(
             index.graph,
             origin_snap.node_key,
             destination_snap.node_key,
-            weight=lambda source, target, data: _edge_weight(source, target, data, settings),
+            weight=lambda _source, _target, data: _edge_weight(index, data, settings),
         )
     except nx.NetworkXNoPath as error:
         raise NoRoute("no directed route connects the snapped origin and destination") from error
@@ -154,7 +143,7 @@ def plan_route(
     return PlannedRoute(
         edge_ids=edge_ids,
         edge_lengths_m=lengths,
-        edge_speeds_kmh=tuple(edge.speed_kmh for edge in edges),
+        edges=edges,
         cumulative_m=tuple(cumulative),
         total_distance_m=distance,
         polyline_wgs84=[(float(lon), float(lat)) for lon, lat in wgs84],

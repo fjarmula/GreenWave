@@ -26,6 +26,13 @@ class SimulationSettings(BaseSettings):
     max_snap_distance_meters: float = Field(default=150, ge=0)
     max_playback_speed: int = Field(default=10, ge=1)
     subscriber_queue_size: int = Field(default=32, ge=1)
+    # Road-attribute time factors (routing/edge_times.py). Neutral until the human approves values.
+    normal_single_lane_factor: float = Field(default=1.0, ge=1.0)
+    normal_unpaved_factor: float = Field(default=1.0, ge=1.0)
+    normal_calming_seconds: float = Field(default=0.0, ge=0)
+    ambulance_calming_seconds: float = Field(default=0.0, ge=0)
+    ambulance_bus_lane_factor: float = Field(default=1.0, ge=1.0)
+    ambulance_tram_track_factor: float = Field(default=1.0, ge=1.0)
 
     @model_validator(mode="after")
     def priority_precedes_clearing(self) -> Self:

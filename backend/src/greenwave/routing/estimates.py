@@ -3,7 +3,8 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from greenwave.routing.planner import PlannedRoute, ambulance_speed_kmh
+from greenwave.routing.edge_times import ambulance_edge_seconds, normal_edge_seconds
+from greenwave.routing.planner import PlannedRoute
 from greenwave.simulation_settings import SimulationSettings
 
 if TYPE_CHECKING:
@@ -25,14 +26,8 @@ def estimate_times(
     settings: SimulationSettings,
 ) -> Estimates:
     """Estimate normal and priority travel times for the exact already-selected route."""
-    normal_motion = sum(
-        length_m * multiplier / (speed_kmh / 3.6)
-        for length_m, speed_kmh in zip(route.edge_lengths_m, route.edge_speeds_kmh, strict=True)
-    )
-    greenwave_motion = sum(
-        length_m / (ambulance_speed_kmh(speed_kmh, settings) / 3.6)
-        for length_m, speed_kmh in zip(route.edge_lengths_m, route.edge_speeds_kmh, strict=True)
-    )
+    normal_motion = sum(normal_edge_seconds(edge, multiplier, settings) for edge in route.edges)
+    greenwave_motion = sum(ambulance_edge_seconds(edge, settings) for edge in route.edges)
     return Estimates(
         normal_seconds=normal_motion
         + sum(intersection.delay_seconds for intersection in route_model.intersections),

@@ -1,6 +1,7 @@
 from dataclasses import replace
 
 import pytest
+from tests.support.route_fixtures import route_edges
 
 from greenwave.routing.planner import PlannedRoute, SnappedRouteEndpoint
 from greenwave.schemas import AmbulanceStatus, IntersectionState, Position
@@ -17,7 +18,7 @@ def _track() -> RouteTrack:
     route = PlannedRoute(
         edge_ids=("only",),
         edge_lengths_m=(100.0,),
-        edge_speeds_kmh=(36.0,),
+        edges=route_edges(("only",), (100.0,), (36.0,)),
         cumulative_m=(0.0,),
         total_distance_m=100.0,
         polyline_wgs84=[(19.0, 50.0), (19.1, 50.0)],

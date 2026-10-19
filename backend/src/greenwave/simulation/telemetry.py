@@ -2,6 +2,7 @@
 
 from datetime import datetime
 
+from greenwave.routing.edge_times import normal_edge_seconds
 from greenwave.routing.planner import PlannedRoute
 from greenwave.schemas import (
     AmbulanceStatus,
@@ -15,6 +16,7 @@ from greenwave.simulation.corridor import ACTIVE_STATES, route_runtimes, time_to
 from greenwave.simulation.route_model import RouteModel
 from greenwave.simulation.route_track import RouteTrack
 from greenwave.simulation.state import EngineState
+from greenwave.simulation_settings import SimulationSettings
 
 
 def ambulance_telemetry(
@@ -64,16 +66,14 @@ def kpi_metrics(
     route_model: RouteModel,
     state: EngineState,
     traffic_density_multiplier: float,
+    settings: SimulationSettings,
 ) -> KpiMetrics:
     normal = sum(
-        # Same normal-mode model as estimate_times: motion scales with traffic density.
-        min(length, max(0.0, state.distance_travelled_m - start))
-        * traffic_density_multiplier
-        * 3.6
-        / speed
-        for length, speed, start in zip(
-            route.edge_lengths_m, route.edge_speeds_kmh, route.cumulative_m, strict=True
-        )
+        # Same normal-mode edge times as estimate_times, for the share of each edge covered.
+        normal_edge_seconds(edge, traffic_density_multiplier, settings)
+        * min(edge.length_m, max(0.0, state.distance_travelled_m - start))
+        / edge.length_m
+        for edge, start in zip(route.edges, route.cumulative_m, strict=True)
     )
     normal += sum(
         item.delay_seconds for item, runtime in route_runtimes(route_model, state) if runtime.passed
