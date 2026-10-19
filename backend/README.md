@@ -40,6 +40,27 @@ manual: the tests use tiny synthetic fixtures only.
 
 Everything the ETL produces is a simulation input, not a verified physical signal state.
 
+### ETL equivalence check (refactor guard)
+
+`scripts/etl_equivalence.py` proves a refactor leaves every ETL output byte-identical. Use a
+scratch directory outside the repository; `run` refuses one inside it.
+
+```bash
+S=$(mktemp -d)                                                       # outside the repository
+uv run python scripts/etl_equivalence.py run $S/base1 $S/base1.json  # two runs on unchanged code
+uv run python scripts/etl_equivalence.py run $S/base2 $S/base2.json
+uv run python scripts/etl_equivalence.py compare $S/base1.json $S/base2.json  # finds volatile entries
+# ...apply the refactor...
+uv run python scripts/etl_equivalence.py run $S/new $S/new.json
+uv run python scripts/etl_equivalence.py compare $S/base1.json $S/new.json --allow etl_report.json
+```
+
+`run` needs the committed `data/overrides/roundabouts.json` and exits before creating any scratch
+state if it is missing. Restore it from git; never use the harness to generate or repair it. The
+harness symlinks `data/raw/` and `data/overrides/` into the scratch directory and only reads them;
+outputs go to the scratch `data/processed/`. `compare` exits 1 when any entry not named with
+`--allow` differs; step timings are reported but never compared.
+
 ## Running the server needs built data
 
 The server loads and validates `data/processed/` once at startup (`greenwave.dataset`). Build it
