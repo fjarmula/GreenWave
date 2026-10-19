@@ -1,3 +1,6 @@
+from dataclasses import replace
+
+import polars as pl
 import pytest
 from pydantic import ValidationError
 
@@ -57,3 +60,34 @@ def test_index_does_not_snap_beyond_configured_limit(tiny_dataset) -> None:
     node = tiny_dataset.graph.nodes[node_key]
 
     assert index.snap(node["x_m"] + 10_000, node["y_m"]) is None
+
+
+def test_index_exposes_signal_detail(tiny_dataset) -> None:
+    from greenwave.routing.network_index import build_routing_index
+
+    index = build_routing_index(tiny_dataset, SimulationSettings())
+    row = tiny_dataset.intersections.row(0, named=True)
+
+    assert index.intersection(row["intersection_id"]).signal_count == row["signal_count"]
+    assert index.intersection(row["intersection_id"]).approach_count == row["approaches"]
+    assert index.intersection(row["intersection_id"]).needs_review is row["needs_review"]
+
+
+def test_neighbour_candidate_returns_min_distance_or_none(tiny_dataset) -> None:
+    from greenwave.routing.network_index import build_routing_index
+
+    row = tiny_dataset.approach_neighbours.row(0, named=True)
+    shorter = pl.DataFrame([row], schema=tiny_dataset.approach_neighbours.schema).with_columns(
+        pl.lit(row["distance_m"] - 1.0).alias("distance_m")
+    )
+    dataset = replace(
+        tiny_dataset,
+        approach_neighbours=pl.concat([tiny_dataset.approach_neighbours, shorter]),
+    )
+
+    index = build_routing_index(dataset, SimulationSettings())
+
+    assert index.neighbour_candidate(
+        row["from_approach_edge_id"], row["to_approach_edge_id"]
+    ) == pytest.approx(row["distance_m"] - 1.0)
+    assert index.neighbour_candidate("missing-from", "missing-to") is None
