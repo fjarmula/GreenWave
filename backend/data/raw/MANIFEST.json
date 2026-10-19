@@ -32,7 +32,7 @@
       "retrieved_on": "2026-10-13",
       "licence": "Polish Open Data Act (Ustawa z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu informacji sektora publicznego, Dz.U. 2021 poz. 1641) — free re-use with source attribution",
       "attribution": "Źródło: Urząd Miasta Krakowa / Zarząd Dróg Miasta Krakowa (ZDMK) / MSIP, zestaw danych 'Buspasy' (stan danych: 2026-10-13 00:47:34).",
-      "notes": "Raw input recorded in MANIFEST.json; parked/unused in PoC simulation (T6 skipped)."
+      "notes": "Cross-check only: matched by street name against OSM bus-lane edges (bus_lane_crosscheck.csv); never changes the network."
     },
     {
       "path": "krakow/Linie_KMK_-1530449249114032553.csv",

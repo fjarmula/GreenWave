@@ -16,6 +16,7 @@ from greenwave.etl.manifest import (
 from greenwave.etl.profile_osm import scan_osm
 from greenwave.etl.profile_roads import analyse_roads, tag_present
 from greenwave.etl.profile_signals import analyse_signals
+from tests.support.osm_fixtures import line, point, write_osm
 
 # Roughly 111.2 m per 0.001 degree of latitude at Krakow's latitude.
 METERS_PER_MILLI_DEGREE_LAT = 111.2
@@ -208,3 +209,24 @@ def test_verify_inputs_rejects_files_that_differ_from_the_manifest(tmp_path: Pat
     data_file.write_text("tampered")
     with pytest.raises(InputIntegrityError, match=r"a\.txt"):
         verify_raw_inputs(tmp_path)
+
+
+def test_scan_collects_traffic_calming_points(tmp_path: Path) -> None:
+    path = write_osm(
+        tmp_path,
+        point(19.90, 50.05, traffic_calming="bump"),
+        point(19.91, 50.05, traffic_calming="table"),
+        point(19.92, 50.05, traffic_calming="no"),
+    )
+    scan = scan_osm(path)
+    assert [p.properties["traffic_calming"] for p in scan.calming_points] == ["bump", "table"]
+
+
+def test_scan_collects_tram_lines(tmp_path: Path) -> None:
+    path = write_osm(
+        tmp_path,
+        line([(19.90, 50.05), (19.91, 50.05)], railway="tram"),
+        line([(19.90, 50.06), (19.91, 50.06)], railway="rail"),
+    )
+    scan = scan_osm(path)
+    assert scan.tram_lines == [[(19.90, 50.05), (19.91, 50.05)]]

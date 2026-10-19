@@ -31,6 +31,24 @@ uv run python scripts/run_etl.py intersections   # T4: network_*, intersections,
 uv run python scripts/run_etl.py neighbours      # T5: approach_neighbours.parquet (candidate set only)
 ```
 
+`intersections` also derives road attributes per network edge (`bus_lane`, `lanes_per_direction`,
+`surface_class`, `calming_count`, `tram_track` in `network_edges.parquet`), writes the
+`road_attributes` report section, and writes `bus_lane_crosscheck.csv`: each row of the Kraków
+bus-lane register (`krakow/Buspasy_*.csv`, exactly one file) matched by street name against OSM
+bus-lane edges, with a `status` of `osm_has_bus_lane`, `osm_street_without_bus_lane`,
+`street_not_found` or `unparsed`. The cross-check is analysis only; it never changes an edge.
+
+`scripts/road_attribute_evidence.py` prints a Markdown evidence table for choosing the road-attribute
+time factors: km and edge counts per attribute value, the bus-lane cross-check counts, and the
+normal and GreenWave estimates for every dashboard origin x destination under each profile. It
+reads the built `data/processed/` and writes nothing. A `neutral` profile is always included; add
+candidates with `--profile NAME --set FIELD=VALUE ...` (any `SimulationSettings` field):
+
+```bash
+uv run python scripts/road_attribute_evidence.py --profile mild \
+  --set normal_single_lane_factor=1.1 --set ambulance_bus_lane_factor=1.1
+```
+
 Three more steps exist as decision aids: `draft-overrides` (drafts the override file, never
 overwrites an existing one), `roundabouts` (an inventory report) and `cluster-map` (a check page). See the docstring of
 `scripts/run_etl.py` for what each step writes.
@@ -80,6 +98,21 @@ Simulation tunables use the `GREENWAVE_SIM_` prefix. The defaults are suitable f
 development overrides include `GREENWAVE_SIM_TICK_INTERVAL_SECONDS`,
 `GREENWAVE_SIM_SUBSCRIBER_QUEUE_SIZE` (default 32), and
 `GREENWAVE_SIM_MAX_SNAP_DISTANCE_METERS` (default 150). All values are validated at startup.
+
+Road-attribute time factors (`routing/edge_times.py`; values approved in
+`docs/adr/0005-road-attribute-time-factors.md`). Factors must be at least 1.0 and seconds at least
+0; setting all six to 1.0 / 0 makes road attributes have no effect:
+
+| Variable | Default | Effect |
+|---|---:|---|
+| `GREENWAVE_SIM_NORMAL_SINGLE_LANE_FACTOR` | 1.15 | normal time multiplier when `lanes_per_direction == 1` |
+| `GREENWAVE_SIM_NORMAL_UNPAVED_FACTOR` | 1.3 | normal time multiplier when `surface_class == "unpaved"` |
+| `GREENWAVE_SIM_NORMAL_CALMING_SECONDS` | 3.0 | normal seconds added per traffic-calming feature |
+| `GREENWAVE_SIM_AMBULANCE_CALMING_SECONDS` | 2.0 | ambulance seconds added per traffic-calming feature |
+| `GREENWAVE_SIM_AMBULANCE_BUS_LANE_FACTOR` | 1.05 | ambulance speed boost on `bus_lane` edges |
+| `GREENWAVE_SIM_AMBULANCE_TRAM_TRACK_FACTOR` | 1.05 | ambulance speed boost on `tram_track` edges |
+
+Bus-lane and tram boosts do not multiply: the larger one applies, before the 30-90 km/h clamp.
 
 The stream endpoint is `GET /api/v1/simulation/{simulation_id}/stream`. It uses SSE with a
 `retry: 2000` control frame followed by framed contract events. Slow clients receive bounded,

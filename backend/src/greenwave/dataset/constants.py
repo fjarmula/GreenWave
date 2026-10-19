@@ -41,6 +41,11 @@ REQUIRED_COLUMNS: dict[str, dict[str, pl.DataType | type[pl.DataType] | None]] =
         "v": pl.String,
         "edge_id": pl.String,
         "geometry_wkb": pl.Binary,
+        "bus_lane": pl.Boolean,
+        "tram_track": pl.Boolean,
+        "lanes_per_direction": pl.Int64,
+        "surface_class": pl.String,
+        "calming_count": pl.Int64,
     },
     INTERSECTIONS_FILENAME: {
         "intersection_id": pl.String,

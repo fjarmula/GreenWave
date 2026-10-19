@@ -62,6 +62,21 @@ def test_index_does_not_snap_beyond_configured_limit(tiny_dataset) -> None:
     assert index.snap(node["x_m"] + 10_000, node["y_m"]) is None
 
 
+def test_edge_view_exposes_road_attributes(tiny_dataset) -> None:
+    from greenwave.routing.network_index import build_routing_index
+
+    index = build_routing_index(tiny_dataset, SimulationSettings())
+
+    for *_, data in tiny_dataset.graph.edges(data=True):
+        view = index.edge(data["edge_id"])
+        assert view.bus_lane is data["bus_lane"]
+        assert view.tram_track is data["tram_track"]
+        assert view.lanes_per_direction == data["lanes_per_direction"]
+        assert view.surface_class == data["surface_class"]
+        assert view.calming_count == data["calming_count"]
+        assert isinstance(view.calming_count, int)
+
+
 def test_index_exposes_signal_detail(tiny_dataset) -> None:
     from greenwave.routing.network_index import build_routing_index
 

@@ -20,7 +20,7 @@ def at(x: float, y: float) -> tuple[float, float]:
     return round(19.9 + x * STEP, 7), round(50.0 + y * STEP, 7)
 
 
-def make_raw(tmp_path: Path) -> Path:
+def make_raw(tmp_path: Path, extra: tuple[str, ...] = ()) -> Path:
     raw = tmp_path / "raw"
     osm_path = raw / OSM_RELATIVE_PATH
     osm_path.parent.mkdir(parents=True)
@@ -40,6 +40,7 @@ def make_raw(tmp_path: Path) -> Path:
         point(*at(1.5, 0), highway="traffic_signals"),
         point(*at(2.5, 0), highway="traffic_signals", **{"traffic_signals:direction": "forward"}),
         point(*at(3.5, 0), highway="crossing", crossing="traffic_signals"),
+        *extra,
     )
     source.rename(osm_path)
     ulice = raw / "krakow" / "Ulice.geojson"
@@ -58,6 +59,12 @@ def make_raw(tmp_path: Path) -> Path:
         ),
         encoding="utf-8",
     )
+    buspasy = raw / "krakow" / "Buspasy_test.csv"
+    buspasy.write_text(
+        "OBJECTID,Kategoria,Znak,Opis,Zasady,Organizacja,Długość [m]\n"
+        "1,pas autobusowy,,ul. Poprzeczna od ul. A do ul. B,,stała,200.0\n",
+        encoding="utf-8-sig",
+    )
     entries = [
         ManifestEntry(
             path=path.relative_to(raw).as_posix(),
@@ -69,7 +76,7 @@ def make_raw(tmp_path: Path) -> Path:
             licence=None,
             attribution=None,
         )
-        for path in (osm_path, ulice)
+        for path in (osm_path, ulice, buspasy)
     ]
     write_manifest(Manifest(entries=entries), raw / MANIFEST_FILENAME)
     return raw

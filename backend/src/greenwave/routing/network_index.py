@@ -3,6 +3,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
+from typing import cast
 
 import networkx as nx
 import numpy as np
@@ -23,6 +24,11 @@ class EdgeView:
     length_m: float
     speed_kmh: float
     geometry: LineString
+    bus_lane: bool = False
+    tram_track: bool = False
+    lanes_per_direction: int | None = None
+    surface_class: str | None = None
+    calming_count: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,6 +96,10 @@ class RoutingIndex:
         return self._neighbour_candidates.get((from_edge_id, to_edge_id))
 
 
+def _optional_int(value: object) -> int | None:
+    return None if value is None else int(cast("int", value))
+
+
 def build_routing_index(dataset: ProcessedDataset, settings: SimulationSettings) -> RoutingIndex:
     """Build O(nodes + edges) immutable indexes once at application startup."""
     node_keys = tuple(str(node_key) for node_key in dataset.graph.nodes)
@@ -117,6 +127,11 @@ def build_routing_index(dataset: ProcessedDataset, settings: SimulationSettings)
             length_m=float(attributes["length_m"]),
             speed_kmh=float(attributes["speed_kmh"]),
             geometry=geometry,
+            bus_lane=bool(attributes["bus_lane"]),
+            tram_track=bool(attributes["tram_track"]),
+            lanes_per_direction=_optional_int(attributes["lanes_per_direction"]),
+            surface_class=attributes["surface_class"],
+            calming_count=int(attributes["calming_count"]),
         )
 
     details = {

@@ -428,3 +428,17 @@ def test_null_negative_or_non_finite_delay_is_rejected(layout: Layout, bad: floa
 
     with pytest.raises(MalformedArtifactError, match=rf"{INTERSECTIONS_FILENAME}.*delay_seconds"):
         load_dataset(layout.processed, layout.manifest)
+
+
+@pytest.mark.parametrize(
+    "column",
+    ["bus_lane", "tram_track", "lanes_per_direction", "surface_class", "calming_count"],
+)
+def test_loader_rejects_edges_without_road_attribute_columns(layout: Layout, column: str) -> None:
+    edit_parquet(layout.processed / NETWORK_EDGES_FILENAME, lambda f: f.drop(column))
+
+    with pytest.raises(
+        MalformedArtifactError,
+        match=rf"{NETWORK_EDGES_FILENAME} has no column '{column}'.*run_etl\.py intersections",
+    ):
+        load_dataset(layout.processed, layout.manifest)

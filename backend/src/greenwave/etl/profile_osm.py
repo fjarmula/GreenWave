@@ -61,6 +61,10 @@ class OsmScan:
     # Points tagged crossing=traffic_signals that are not also highway=traffic_signals.
     signalised_crossings: list[PointFeature] = field(default_factory=list)
     signal_nodes_also_tagged_crossing: int = 0
+    # Points tagged traffic_calming (any value except "no").
+    calming_points: list[PointFeature] = field(default_factory=list)
+    # Valid LineStrings tagged railway=tram, with or without a highway tag.
+    tram_lines: list[list[LonLat]] = field(default_factory=list)
 
     @property
     def total_features(self) -> int:
@@ -171,7 +175,7 @@ def _handle_linestring_with_highway(scan: OsmScan, feature: OsmFeature, highway:
 
 
 def _scan_point(scan: OsmScan, feature: OsmFeature, highway: str | None) -> None:
-    """Point bookkeeping: bbox, all point coordinates, signal nodes and signalised crossings."""
+    """Point bookkeeping: bbox, point coordinates, signals, signalised crossings, calming."""
     lon_lat = _point_lon_lat(feature.coordinates)
     if lon_lat is None:
         _record_invalid(scan, feature, "point with non-numeric or out-of-range coordinates")
@@ -188,10 +192,13 @@ def _scan_point(scan: OsmScan, feature: OsmFeature, highway: str | None) -> None
         scan.signalised_crossings.append(
             PointFeature(feature.line_number, lon, lat, feature.properties)
         )
+    calming = tag(feature.properties, "traffic_calming")
+    if calming is not None and calming != "no":
+        scan.calming_points.append(PointFeature(feature.line_number, lon, lat, feature.properties))
 
 
 def scan_osm(path: Path) -> OsmScan:
-    """Single streaming pass; keeps only what later profile steps need (roads, signals, points)."""
+    """Single streaming pass; keeps what later steps need (roads, signals, points, trams)."""
     scan = OsmScan()
     for record in iter_osm_records(path):
         if isinstance(record, MalformedRecord):
@@ -212,6 +219,13 @@ def scan_osm(path: Path) -> OsmScan:
         geometry = _validate_non_point(scan, record)
         if highway == "traffic_signals":
             scan.signal_features_not_points += 1
+        if (
+            geometry is not None
+            and record.geometry_type == "LineString"
+            and tag(record.properties, "railway") == "tram"
+        ):
+            raw = cast("list[list[float]]", record.coordinates)
+            scan.tram_lines.append([(float(c[0]), float(c[1])) for c in raw])
         if geometry is None or highway is None:
             continue
         if record.geometry_type == "LineString":

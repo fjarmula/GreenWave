@@ -6,7 +6,8 @@ from itertools import pairwise
 from math import cos, hypot, radians
 from typing import Self
 
-from greenwave.routing.planner import PlannedRoute, ambulance_speed_kmh
+from greenwave.routing.edge_times import ambulance_effective_speed_mps
+from greenwave.routing.planner import PlannedRoute
 from greenwave.schemas import Position
 from greenwave.simulation_settings import SimulationSettings
 
@@ -43,7 +44,7 @@ class RouteTrack:
                 for start, length in zip(route.cumulative_m, route.edge_lengths_m, strict=True)
             ),
             _speeds_mps=tuple(
-                ambulance_speed_kmh(speed, settings) / 3.6 for speed in route.edge_speeds_kmh
+                ambulance_effective_speed_mps(edge, settings) for edge in route.edges
             ),
             _polyline=tuple(route.polyline_wgs84),
             _polyline_offsets_m=_polyline_offsets_m(route.polyline_wgs84),

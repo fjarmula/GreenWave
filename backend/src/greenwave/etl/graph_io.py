@@ -4,6 +4,7 @@ Parquet instead of a pickle: the artifact is inspectable and cannot execute code
 The server loader (T7) rebuilds the ``MultiDiGraph`` with ``read_graph``.
 """
 
+from collections.abc import Mapping
 from pathlib import Path
 
 import networkx as nx
@@ -28,7 +29,15 @@ _EDGE_ATTRIBUTES = (
     "source_line",
     "segment_index",
     "reverse_twin",
+    "bus_lane",
+    "lanes_per_direction",
+    "surface_class",
 )
+# Columns only the network graph (after the intersections step) carries; read when present.
+NETWORK_EDGE_COLUMNS: Mapping[str, type[pl.DataType]] = {
+    "calming_count": pl.Int64,
+    "tram_track": pl.Boolean,
+}
 
 
 def write_graph(
@@ -36,7 +45,9 @@ def write_graph(
     directory: Path,
     nodes_filename: str = NODES_FILENAME,
     edges_filename: str = EDGES_FILENAME,
+    extra_columns: Mapping[str, type[pl.DataType]] | None = None,
 ) -> None:
+    extra = dict(extra_columns or {})
     directory.mkdir(parents=True, exist_ok=True)
     nodes = pl.DataFrame(
         {
@@ -57,6 +68,7 @@ def write_graph(
             "u": [u for u, _, _ in edges_rows],
             "v": [v for _, v, _ in edges_rows],
             **{attr: [data[attr] for _, _, data in edges_rows] for attr in _EDGE_ATTRIBUTES},
+            **{col: [data[col] for _, _, data in edges_rows] for col in extra},
             "geometry_wkb": [shapely.to_wkb(data["geometry"]) for _, _, data in edges_rows],
         },
         schema={
@@ -75,6 +87,10 @@ def write_graph(
             "source_line": pl.Int64,
             "segment_index": pl.Int64,
             "reverse_twin": pl.Boolean,
+            "bus_lane": pl.Boolean,
+            "lanes_per_direction": pl.Int64,
+            "surface_class": pl.String,
+            **extra,
             "geometry_wkb": pl.Binary,
         },
     )
@@ -90,8 +106,10 @@ def read_graph(
     graph: nx.MultiDiGraph = nx.MultiDiGraph()
     for row in pl.read_parquet(directory / nodes_filename).iter_rows(named=True):
         graph.add_node(row["node_key"], **{c: row[c] for c in _NODE_COLUMNS[1:]})
-    for row in pl.read_parquet(directory / edges_filename).iter_rows(named=True):
-        attributes = {attr: row[attr] for attr in _EDGE_ATTRIBUTES}
+    edges = pl.read_parquet(directory / edges_filename)
+    present = [col for col in NETWORK_EDGE_COLUMNS if col in edges.columns]
+    for row in edges.iter_rows(named=True):
+        attributes = {attr: row[attr] for attr in (*_EDGE_ATTRIBUTES, *present)}
         graph.add_edge(
             row["u"],
             row["v"],

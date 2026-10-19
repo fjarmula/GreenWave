@@ -67,7 +67,8 @@ _SOURCES: list[tuple[str, str, str | None, str, str | None, str | None, str | No
         KRAKOW_LICENCE,
         "Źródło: Urząd Miasta Krakowa / Zarząd Dróg Miasta Krakowa (ZDMK) / MSIP, "
         "zestaw danych 'Buspasy' (stan danych: 2026-10-13 00:47:34).",
-        "Raw input recorded in MANIFEST.json; parked/unused in PoC simulation (T6 skipped).",
+        "Cross-check only: matched by street name against OSM bus-lane edges "
+        "(bus_lane_crosscheck.csv); never changes the network.",
     ),
     (
         "krakow/Linie_KMK_-1530449249114032553.csv",

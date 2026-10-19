@@ -14,6 +14,7 @@ from greenwave.etl.graph_io import read_graph
 from greenwave.etl.intersections import GroupingSettings
 from greenwave.etl.intersections_pipeline import (
     APPROACHES_FILENAME,
+    BUS_LANE_CROSSCHECK_FILENAME,
     IDS_FILENAME,
     INTERSECTIONS_FILENAME,
     NETWORK_EDGES_FILENAME,
@@ -21,6 +22,7 @@ from greenwave.etl.intersections_pipeline import (
     T4_ARTIFACT_FILENAMES,
     compute_intersections,
     run_intersections,
+    run_intersections_with_road_attributes,
 )
 from greenwave.etl.io import REPORT_FILENAME, update_report_section
 from greenwave.etl.manifest import MANIFEST_FILENAME, sha256_of_file
@@ -29,7 +31,8 @@ from greenwave.etl.neighbours_pipeline import (
     StaleArtifactError,
     run_neighbours,
 )
-from tests.support.pipeline_fixtures import make_raw
+from tests.support.osm_fixtures import line, point
+from tests.support.pipeline_fixtures import at, make_raw
 
 
 def test_pipeline_writes_all_artifacts_and_ties_ids_to_the_manifest(tmp_path: Path) -> None:
@@ -224,3 +227,41 @@ def test_compute_writes_nothing(tmp_path: Path) -> None:
 
     assert sorted(tmp_path.rglob("*")) == before
     assert build.intersections_frame.height > 0
+
+
+def test_network_edges_carry_road_attribute_columns(tmp_path: Path) -> None:
+    raw = make_raw(
+        tmp_path,
+        extra=(
+            point(*at(1, 0), traffic_calming="bump"),
+            line([at(0, 0.02), at(4, 0.02)], railway="tram"),
+        ),
+    )
+    processed = tmp_path / "processed"
+
+    _, road_attributes = run_intersections_with_road_attributes(
+        raw, processed, tmp_path / "overrides"
+    )
+
+    edges = pl.read_parquet(processed / NETWORK_EDGES_FILENAME)
+    for column, dtype in {
+        "bus_lane": pl.Boolean,
+        "lanes_per_direction": pl.Int64,
+        "surface_class": pl.String,
+        "calming_count": pl.Int64,
+        "tram_track": pl.Boolean,
+    }.items():
+        assert edges.schema[column] == dtype
+    assert edges["calming_count"].sum() == 2  # both directions of Aleja Testowa
+    assert edges.filter(pl.col("name") == "Aleja Testowa")["tram_track"].all()
+    assert not edges.filter(pl.col("name") == "Poprzeczna")["tram_track"].any()
+    graph = read_graph(processed, NETWORK_NODES_FILENAME, NETWORK_EDGES_FILENAME)
+    assert {d["calming_count"] for *_, d in graph.edges(data=True)} == {0, 1}
+    assert road_attributes.calming.points_on_edges == 1
+    assert road_attributes.tram.edges_marked > 0
+    crosscheck = pl.read_csv(processed / BUS_LANE_CROSSCHECK_FILENAME)
+    assert crosscheck["status"].to_list() == ["osm_street_without_bus_lane"]
+    assert road_attributes.bus_lane_crosscheck == {"osm_street_without_bus_lane": 1}
+    assert road_attributes.km_by_surface_class == {
+        "unknown": pytest.approx(road_attributes.total_directed_km)
+    }
