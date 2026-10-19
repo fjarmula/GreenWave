@@ -8,3 +8,4 @@ frontend/package-lock.json
 backend/uv.lock
 backend/data/
 *.lock
+docs/superpowers/plans/archive/

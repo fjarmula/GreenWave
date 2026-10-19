@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 16 / React 19 / TypeScript strict / vitest 5 (node env) / Tailwind; Python 3.12 / polars / networkx / shapely / pytest / ruff / mypy strict (mypy covers `greenwave` only, not `scripts/`).
 
-**Spec:** `docs/superpowers/specs/2026-10-17-clean-code-solid-refactor-design.md` (M5, M4b = the "later plan" of `docs/superpowers/plans/2026-10-17-refactor-etl.md`, M6).
+**Spec:** `docs/superpowers/specs/2026-10-17-clean-code-solid-refactor-design.md` (M5, M4b = the "later plan" of `docs/superpowers/plans/archive/2026-10-17-refactor-etl.md`, M6).
 
 **Done so far (branch `refactor/clean-code`, not pushed):** M1 engine `b7f9fe1`, M2 session `30dde35`, golden fix `eed9534`, M3 intersections `71f7637`, M4 ETL builders `c886de5`, close-out tooling + this plan (next commit).
 

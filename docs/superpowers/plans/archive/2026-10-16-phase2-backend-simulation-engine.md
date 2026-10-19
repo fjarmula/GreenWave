@@ -10,7 +10,7 @@
 
 **Tech Stack:** Python 3.12, FastAPI, Pydantic v2, NetworkX (frozen `MultiDiGraph`), Shapely 2 (`STRtree`, `line_interpolate_point`), GeoPandas/pyproj via the existing `greenwave.etl.geo` helpers, pytest + pytest-asyncio, `httpx2` for API tests.
 
-**Spec:** `GreenWave_ARCHITECTURE.md` §3–§6 + `docs/adr/0003-simulation-contract-v1.md` + `docs/superpowers/plans/2026-10-16-phase2-00-contract-freeze-and-coordination.md` (decisions D2–D23).
+**Spec:** `GreenWave_ARCHITECTURE.md` §3–§6 + `docs/adr/0003-simulation-contract-v1.md` + `docs/superpowers/plans/archive/2026-10-16-phase2-00-contract-freeze-and-coordination.md` (decisions D2–D23).
 
 ## Global Constraints
 
