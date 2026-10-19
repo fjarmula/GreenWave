@@ -230,14 +230,22 @@ threshold (40 / 25 / 0 / 15 s) is skipped.
       "name": "Aleja 29 Listopada / Lublańska / Opolska",
       "kind": "signalised_junction",
       "position": { "lat": 50.0661, "lng": 19.9221 },
-      "distance_along_route_m": 1480
+      "distance_along_route_m": 1480,
+      "signal_count": 4,
+      "approach_count": 4,
+      "needs_review": false,
+      "cascade_targets": ["INT-0366"]
     },
     {
       "id": "INT-0366",
       "name": "Aleja 29 Listopada / Jana Woronicza",
       "kind": "signalised_junction",
       "position": { "lat": 50.0655, "lng": 19.9243 },
-      "distance_along_route_m": 1632
+      "distance_along_route_m": 1632,
+      "signal_count": 2,
+      "approach_count": 2,
+      "needs_review": false,
+      "cascade_targets": []
     }
   ],
   "origin_snapped": {

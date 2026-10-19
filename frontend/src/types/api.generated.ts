@@ -246,6 +246,10 @@ export interface components {
         };
         /** RouteIntersection */
         RouteIntersection: {
+            /** Approach Count */
+            approach_count: number;
+            /** Cascade Targets */
+            cascade_targets: string[];
             /** Distance Along Route M */
             distance_along_route_m: number;
             /** Id */
@@ -253,7 +257,11 @@ export interface components {
             kind: components["schemas"]["IntersectionKind"];
             /** Name */
             name: string | null;
+            /** Needs Review */
+            needs_review: boolean;
             position: components["schemas"]["Position"];
+            /** Signal Count */
+            signal_count: number;
         };
         /** SimulationCancelledEvent */
         SimulationCancelledEvent: {
