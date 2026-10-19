@@ -38,6 +38,17 @@ bus-lane register (`krakow/Buspasy_*.csv`, exactly one file) matched by street n
 bus-lane edges, with a `status` of `osm_has_bus_lane`, `osm_street_without_bus_lane`,
 `street_not_found` or `unparsed`. The cross-check is analysis only; it never changes an edge.
 
+`scripts/road_attribute_evidence.py` prints a Markdown evidence table for choosing the road-attribute
+time factors: km and edge counts per attribute value, the bus-lane cross-check counts, and the
+normal and GreenWave estimates for every dashboard origin x destination under each profile. It
+reads the built `data/processed/` and writes nothing. A `neutral` profile is always included; add
+candidates with `--profile NAME --set FIELD=VALUE ...` (any `SimulationSettings` field):
+
+```bash
+uv run python scripts/road_attribute_evidence.py --profile mild \
+  --set normal_single_lane_factor=1.1 --set ambulance_bus_lane_factor=1.1
+```
+
 Three more steps exist as decision aids: `draft-overrides` (drafts the override file, never
 overwrites an existing one), `roundabouts` (an inventory report) and `cluster-map` (a check page). See the docstring of
 `scripts/run_etl.py` for what each step writes.
