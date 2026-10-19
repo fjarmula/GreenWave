@@ -6,6 +6,7 @@ import networkx as nx
 import polars as pl
 
 from greenwave.etl.config import (
+    MIDBLOCK_SIGNAL_DELAY_SECONDS,
     PEDESTRIAN_CROSSING_DELAY_SECONDS,
     SIGNAL_DELAY_SECONDS,
 )
@@ -30,12 +31,13 @@ from greenwave.etl.street_names import normalise_street_name
 
 def kind_delay_seconds(
     signal_delay_seconds: float = SIGNAL_DELAY_SECONDS,
+    midblock_signal_delay_seconds: float = MIDBLOCK_SIGNAL_DELAY_SECONDS,
     pedestrian_crossing_delay_seconds: float = PEDESTRIAN_CROSSING_DELAY_SECONDS,
 ) -> dict[str, float]:
     """D_v of one intersection by kind. A kind that is not listed here has no delay: it raises."""
     return {
         KIND_SIGNALISED_JUNCTION: signal_delay_seconds,
-        KIND_MIDBLOCK_SIGNAL: signal_delay_seconds,
+        KIND_MIDBLOCK_SIGNAL: midblock_signal_delay_seconds,
         KIND_PEDESTRIAN_CROSSING: pedestrian_crossing_delay_seconds,
     }
 
@@ -53,10 +55,12 @@ def intersection_frame(
     rings: list[Ring],
     ulice_names: set[str],
     reachable_nodes: set[str],
+    signals: pl.DataFrame,
     delay_by_kind: Mapping[str, float] | None = None,
 ) -> pl.DataFrame:
     delay_by_kind = kind_delay_seconds() if delay_by_kind is None else delay_by_kind
     ring_by_id = {ring.ring_id: ring for ring in rings}
+    review_by_signal = dict(signals.select("node_key", "needs_review").iter_rows())
     rows = []
     for record in intersections:
         data = graph.nodes[record.representative]
@@ -80,6 +84,11 @@ def intersection_frame(
                     normalise_street_name(n) in ulice_names for n in record.street_names
                 ],
                 "approaches": len(approaches),
+                "signal_count": len({approach.signal.node_key for approach in approaches}),
+                "needs_review": any(
+                    review_by_signal[approach.signal.node_key] or approach.issue is not None
+                    for approach in approaches
+                ),
                 "best_incident_road_class": best_incident_class(graph, record.nodes),
                 "ring_id": record.ring_id,
                 "ring_edge_ids": sorted(ring.edge_ids) if ring else [],
@@ -113,6 +122,8 @@ def intersection_frame(
             "street_names": pl.List(pl.String),
             "street_names_in_ulice": pl.List(pl.Boolean),
             "approaches": pl.Int64,
+            "signal_count": pl.Int64,
+            "needs_review": pl.Boolean,
             "best_incident_road_class": pl.String,
             "ring_id": pl.Int64,
             "ring_edge_ids": pl.List(pl.String),

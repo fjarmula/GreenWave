@@ -206,7 +206,14 @@ def compute_intersections(
     ulice_names = set(ulice_street_lengths(raw_dir / "krakow" / "Ulice.geojson"))
     delay_by_kind = kind_delay_seconds()
     intersections_frame = intersection_frame(
-        graph, intersections, attachments, rings, ulice_names, largest_scc, delay_by_kind
+        graph,
+        intersections,
+        attachments,
+        rings,
+        ulice_names,
+        largest_scc,
+        signals,
+        delay_by_kind,
     )
     approaches = approach_frame(attachments, assignments, intersections, largest_scc, settings)
 

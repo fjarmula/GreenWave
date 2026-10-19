@@ -92,6 +92,8 @@ SIGNAL_CLUSTER_RADIUS_METERS = 40.0
 # crossing) whose controlled approach a route passes, never once per signal node or per approach.
 # `intersections.parquet` gets its `delay_seconds` from these keys by kind.
 SIGNAL_DELAY_SECONDS = 35.0
+# placeholder equal to SIGNAL_DELAY_SECONDS until approved
+MIDBLOCK_SIGNAL_DELAY_SECONDS = 35.0
 PEDESTRIAN_CROSSING_DELAY_SECONDS = 35.0
 
 # Keyed by the value of the `traffic_signals` tag on highway=traffic_signals nodes.
