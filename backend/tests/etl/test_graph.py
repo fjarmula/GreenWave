@@ -296,3 +296,13 @@ def test_road_attributes_roundtrip_through_parquet(tmp_path: Path) -> None:
         other = restored.edges[u, v, edge_id]
         for column in ("bus_lane", "lanes_per_direction", "surface_class"):
             assert other[column] == data[column]
+
+
+def test_one_way_with_left_side_busway_keeps_its_bus_lane() -> None:
+    graph = build_graph(
+        [way(1, [at(0, 0), at(1, 0)], oneway="yes", **{"busway:left": "lane"})]
+    ).graph
+
+    (data,) = (d for *_, d in graph.edges(data=True))
+
+    assert (data["edge_id"], data["bus_lane"]) == ("W1.0+", True)

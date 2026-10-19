@@ -219,7 +219,7 @@ class _GraphBuilder:
             speed=speed,
             lanes=_parse_lanes(tag(way.properties, "lanes")),
             name=tag(way.properties, "name"),
-            bus_lane=bus_lane_directions(way.properties),
+            bus_lane=bus_lane_directions(way.properties, oneway.direction),
             lanes_per_direction=lanes_per_direction(
                 way.properties, oneway=oneway.direction != "both"
             ),

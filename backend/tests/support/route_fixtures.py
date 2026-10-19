@@ -9,6 +9,7 @@ from shapely.geometry import LineString, Point
 from shapely.strtree import STRtree
 
 from greenwave.etl.geo import unproject_points
+from greenwave.routing.edge_times import NEUTRAL_ROAD_FACTORS
 from greenwave.routing.network_index import ApproachRef, EdgeView, IntersectionInfo, RoutingIndex
 from greenwave.schemas.simulation import Position
 from greenwave.simulation_settings import SimulationSettings
@@ -17,6 +18,10 @@ _X = 7_421_000.0
 _Y = 5_541_000.0
 
 RoadAttributes = Mapping[str, Mapping[str, object]]
+
+
+def neutral_settings(**overrides: float) -> SimulationSettings:
+    return SimulationSettings(**(NEUTRAL_ROAD_FACTORS | overrides))
 
 
 def position_at(x_m: float, y_m: float = _Y) -> Position:

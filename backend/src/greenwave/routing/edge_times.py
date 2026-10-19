@@ -8,6 +8,17 @@ simulated run apply the same road-attribute factors. With neutral settings they 
 from greenwave.routing.network_index import EdgeView
 from greenwave.simulation_settings import SimulationSettings
 
+# Road-attribute factor values at which no attribute has an effect (the defaults are the approved
+# values of ADR 0005). Pass as ``SimulationSettings(**NEUTRAL_ROAD_FACTORS)``.
+NEUTRAL_ROAD_FACTORS: dict[str, float] = {
+    "normal_single_lane_factor": 1.0,
+    "normal_unpaved_factor": 1.0,
+    "normal_calming_seconds": 0.0,
+    "ambulance_calming_seconds": 0.0,
+    "ambulance_bus_lane_factor": 1.0,
+    "ambulance_tram_track_factor": 1.0,
+}
+
 
 def ambulance_speed_kmh(
     speed_kmh: float, settings: SimulationSettings, boost: float = 1.0

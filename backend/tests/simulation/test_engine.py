@@ -2,7 +2,12 @@ from datetime import UTC, datetime
 from math import cos, radians
 
 import pytest
-from tests.support.route_fixtures import corridor_index, position_at, route_edges
+from tests.support.route_fixtures import (
+    corridor_index,
+    neutral_settings,
+    position_at,
+    route_edges,
+)
 
 from greenwave.its import MockItsGateway
 from greenwave.routing.estimates import Estimates, estimate_times
@@ -223,14 +228,14 @@ def test_playback_returns_only_last_tick_and_keeps_terminal_events() -> None:
 
 def test_simulated_elapsed_matches_greenwave_estimate_with_calming() -> None:
     """Calming seconds reach the estimate and the simulated motion alike (one edge-time model)."""
-    settings = SimulationSettings(ambulance_calming_seconds=2.0)
+    settings = neutral_settings(ambulance_calming_seconds=2.0)
     index = corridor_index({"corridor-twin-1": {"calming_count": 3}})
     # Ends past INT-B: a route ending on a stop line arrives before that last D_min dwell.
     origin, destination = position_at(7_422_000), position_at(7_422_950.02)
     route = plan_route(index, origin, destination, settings)
     model = build_route_model(route, index, settings, cascade_enabled=True)
     estimates = estimate_times(route, model, 1.0, settings)
-    neutral = estimate_times(route, model, 1.0, SimulationSettings())
+    neutral = estimate_times(route, model, 1.0, neutral_settings())
     engine = SimulationEngine("SIM-CALM", route, model, estimates, 1.0, settings, MockItsGateway())
     state = engine.initial_state()
 

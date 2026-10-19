@@ -26,13 +26,20 @@ class SimulationSettings(BaseSettings):
     max_snap_distance_meters: float = Field(default=150, ge=0)
     max_playback_speed: int = Field(default=10, ge=1)
     subscriber_queue_size: int = Field(default=32, ge=1)
-    # Road-attribute time factors (routing/edge_times.py). Neutral until the human approves values.
-    normal_single_lane_factor: float = Field(default=1.0, ge=1.0)
-    normal_unpaved_factor: float = Field(default=1.0, ge=1.0)
-    normal_calming_seconds: float = Field(default=0.0, ge=0)
-    ambulance_calming_seconds: float = Field(default=0.0, ge=0)
-    ambulance_bus_lane_factor: float = Field(default=1.0, ge=1.0)
-    ambulance_tram_track_factor: float = Field(default=1.0, ge=1.0)
+    # Road-attribute time factors (routing/edge_times.py; ADR 0005). Neutral is 1.0 / 0.0.
+    # APPROVED 2026-10-19 (human): one lane per direction cannot pass stopped/turning vehicles.
+    normal_single_lane_factor: float = Field(default=1.15, ge=1.0)
+    # APPROVED 2026-10-19 (human): unpaved roads are driven well below their speed.
+    normal_unpaved_factor: float = Field(default=1.3, ge=1.0)
+    # APPROVED 2026-10-19 (human): slowing to ~15-20 km/h and back costs a car ~2-4 s per feature.
+    normal_calming_seconds: float = Field(default=3.0, ge=0)
+    # APPROVED 2026-10-19 (human): ambulances slow for the patient; cushions let them straddle.
+    ambulance_calming_seconds: float = Field(default=2.0, ge=0)
+    # APPROVED 2026-10-19 (human): small gain; 1.10 already moved 3 of 9 demo routes onto routes
+    # with more signals, 1.05 moved none.
+    ambulance_bus_lane_factor: float = Field(default=1.05, ge=1.0)
+    # APPROVED 2026-10-19 (human): small gain; the match includes reserved track with kerbs/islands.
+    ambulance_tram_track_factor: float = Field(default=1.05, ge=1.0)
 
     @model_validator(mode="after")
     def priority_precedes_clearing(self) -> Self:

@@ -1,5 +1,10 @@
 import pytest
-from tests.support.route_fixtures import branch_index, corridor_index, position_at
+from tests.support.route_fixtures import (
+    branch_index,
+    corridor_index,
+    neutral_settings,
+    position_at,
+)
 
 from greenwave.routing.errors import DestinationOffNetwork, NoRoute, OriginOffNetwork
 from greenwave.routing.planner import plan_route
@@ -63,16 +68,16 @@ def test_planner_builds_contiguous_polyline_and_ordered_stop_lines() -> None:
 
 def test_planner_prefers_bus_lane_branch_when_boosted() -> None:
     origin, destination = position_at(7_421_000), position_at(7_421_200)
-    neutral = plan_route(branch_index(), origin, destination, SimulationSettings())
+    neutral = plan_route(branch_index(), origin, destination, neutral_settings())
     other = "south" if neutral.edge_ids[0].startswith("north") else "north"
     bus_lanes = {f"{other}-a": {"bus_lane": True}, f"{other}-b": {"bus_lane": True}}
 
-    unboosted = plan_route(branch_index(bus_lanes), origin, destination, SimulationSettings())
+    unboosted = plan_route(branch_index(bus_lanes), origin, destination, neutral_settings())
     boosted = plan_route(
         branch_index(bus_lanes),
         origin,
         destination,
-        SimulationSettings(ambulance_bus_lane_factor=1.5),
+        neutral_settings(ambulance_bus_lane_factor=1.5),
     )
 
     assert unboosted.edge_ids == neutral.edge_ids

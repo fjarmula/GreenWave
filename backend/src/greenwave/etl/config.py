@@ -231,7 +231,10 @@ UNPAVED_SURFACE_VALUES: frozenset[str] = frozenset(
         "grass_paver",
     }
 )
-# Placeholder (pending the road-attributes approval checkpoint): an edge is on a tram track when
-# at least this share of its length lies within this distance of an OSM railway=tram line.
+# An edge is on a tram track when at least this share of its length lies within this distance of
+# an OSM railway=tram line. Reserved track beside the road also matches (accepted, ADR 0005).
+# APPROVED 2026-10-19 (human): street-running track lies within about one lane of the road
+# centreline; 44.8 directed km match on the snapshot.
 TRAM_TRACK_MATCH_METERS = 6.0
+# APPROVED 2026-10-19 (human): keeps short crossings and touching ends from counting.
 TRAM_TRACK_MIN_OVERLAP_SHARE = 0.5

@@ -8,8 +8,11 @@
 Prints Markdown to stdout: (a) km and edge counts per road-attribute value on the loaded network,
 (b) the bus-lane register cross-check counts, (c) for every dashboard origin x destination and every
 profile, the normal and GreenWave estimates (as the start response rounds them) and the time saved.
-A ``neutral`` profile (all factors at their defaults) always comes first. Each ``--set`` applies to
-the most recent ``--profile``; values are validated by ``SimulationSettings``. Reads the built
+Two profiles always come first: ``neutral`` (every road-attribute factor at its no-effect value,
+``NEUTRAL_ROAD_FACTORS``) and ``approved`` (the ``SimulationSettings`` defaults, ADR 0005). Each
+``--profile`` starts from neutral; each ``--set`` applies to the most recent ``--profile``; values
+are validated by ``SimulationSettings``. ``GREENWAVE_SIM_*`` variables apply to fields no profile
+sets. Reads the built
 ``data/processed/`` (run ``intersections`` then ``neighbours`` first); writes nothing.
 """
 
@@ -21,6 +24,7 @@ from typing import Any
 
 from greenwave.artifacts import REPORT_FILENAME
 from greenwave.dataset import DatasetSettings, load_dataset
+from greenwave.routing.edge_times import NEUTRAL_ROAD_FACTORS
 from greenwave.routing.errors import RoutePlanningError
 from greenwave.routing.estimates import estimate_times
 from greenwave.routing.network_index import RoutingIndex, build_routing_index
@@ -44,6 +48,7 @@ DESTINATIONS: tuple[tuple[str, float, float], ...] = (
 # frontend/src/lib/mock-simulation-config.ts DEFAULT_TRAFFIC_DENSITY_MULTIPLIER
 DEFAULT_DENSITY = 1.5
 NEUTRAL = "neutral"
+APPROVED = "approved"
 
 
 class _ProfileAction(argparse.Action):
@@ -56,7 +61,7 @@ class _ProfileAction(argparse.Action):
     ) -> None:
         profiles: list[tuple[str, dict[str, float]]] = namespace.profiles
         if option_string == "--profile":
-            if values == NEUTRAL or any(name == values for name, _ in profiles):
+            if values in (NEUTRAL, APPROVED) or any(name == values for name, _ in profiles):
                 parser.error(f"duplicate profile name {values!r}")
             profiles.append((str(values), {}))
             return
@@ -121,8 +126,13 @@ def _position(lon: float, lat: float) -> Position:
 
 def main() -> int:
     args = _parse_args()
-    profiles = [(NEUTRAL, {}), *args.profiles]
-    settings_by_profile = {name: SimulationSettings(**values) for name, values in profiles}
+    profiles = [(NEUTRAL, NEUTRAL_ROAD_FACTORS), (APPROVED, {}), *args.profiles]
+    settings_by_profile = {
+        name: SimulationSettings(**values)
+        if name == APPROVED
+        else SimulationSettings(**(NEUTRAL_ROAD_FACTORS | values))
+        for name, values in profiles
+    }
     dataset_settings = DatasetSettings()
     dataset = load_dataset(dataset_settings.processed_dir, dataset_settings.raw_manifest_path)
     report = json.loads((dataset_settings.processed_dir / REPORT_FILENAME).read_text("utf-8"))
@@ -131,7 +141,10 @@ def main() -> int:
 
     out = ["# Road-attribute evidence", ""]
     out += ["## Profiles", "", "| profile | settings |", "|---|---|"]
-    out += [f"| {name} | {values or '(defaults)'} |" for name, values in profiles]
+    out += [
+        f"| {name} | {'(SimulationSettings defaults)' if name == APPROVED else values} |"
+        for name, values in profiles
+    ]
     out += ["", "## (a) Attributes on the network", ""]
     out += _attribute_table(index)
     calming, tram = road["calming"], road["tram"]

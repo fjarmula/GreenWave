@@ -7,7 +7,8 @@ give ``False`` / ``None``: they never imply the property.
 from greenwave.etl.config import PAVED_SURFACE_VALUES, UNPAVED_SURFACE_VALUES
 from greenwave.etl.profile_osm import tag
 
-# Suffix -> (applies forward, applies backward). The unsuffixed tag applies to both directions.
+# Suffix -> (applies forward, applies backward) on a two-way road (right-hand traffic: the right
+# side is the digitised direction). The unsuffixed tag applies to both directions.
 _DIRECTION_SUFFIXES: dict[str, tuple[bool, bool]] = {
     "": (True, True),
     ":both": (True, True),
@@ -16,6 +17,10 @@ _DIRECTION_SUFFIXES: dict[str, tuple[bool, bool]] = {
     ":backward": (False, True),
     ":left": (False, True),
 }
+# On a one-way road a side (left/right/both) lane runs with the traffic unless it is a contraflow
+# lane: OSM `busway:left=lane` on `oneway=yes` is a with-flow bus lane on the left.
+_SIDE_SUFFIXES = frozenset({":left", ":right", ":both"})
+_CONTRAFLOW = "opposite_lane"
 
 
 def _positive_int(value: str | None) -> int | None:
@@ -37,18 +42,35 @@ def _positive_lane_count(value: str) -> bool:
 _BUS_LANE_TAGS = (
     ("busway", _busway),
     ("bus:lanes", _designated_lane),
+    ("psv:lanes", _designated_lane),
     ("lanes:bus", _positive_lane_count),
     ("lanes:psv", _positive_lane_count),
 )
 
 
-def bus_lane_directions(properties: dict[str, object]) -> tuple[bool, bool]:
-    """(bus lane along the digitised direction, bus lane against it)."""
+def _applies(suffix: str, value: str, oneway_direction: str) -> tuple[bool, bool]:
+    if oneway_direction == "both" or suffix not in _SIDE_SUFFIXES:
+        return _DIRECTION_SUFFIXES[suffix]
+    with_traffic = oneway_direction == "forward"
+    if value == _CONTRAFLOW:
+        with_traffic = not with_traffic
+    return with_traffic, not with_traffic
+
+
+def bus_lane_directions(
+    properties: dict[str, object], oneway_direction: str = "both"
+) -> tuple[bool, bool]:
+    """(bus lane along the digitised direction, bus lane against it).
+
+    ``oneway_direction`` is the way's resolved direction (``forward`` / ``backward`` / ``both``);
+    on a one-way way, side suffixes follow the travel direction.
+    """
     forward = backward = False
     for base, has_lane in _BUS_LANE_TAGS:
-        for suffix, (applies_forward, applies_backward) in _DIRECTION_SUFFIXES.items():
+        for suffix in _DIRECTION_SUFFIXES:
             value = tag(properties, base + suffix)
             if value is not None and has_lane(value):
+                applies_forward, applies_backward = _applies(suffix, value, oneway_direction)
                 forward |= applies_forward
                 backward |= applies_backward
     return forward, backward

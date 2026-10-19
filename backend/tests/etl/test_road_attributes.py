@@ -20,6 +20,9 @@ from greenwave.etl.road_attributes import bus_lane_directions, lanes_per_directi
         ({"lanes:psv:forward": "1"}, (True, False)),
         ({"lanes:bus:backward": "1"}, (False, True)),
         ({"lanes:bus": "x"}, (False, False)),
+        ({"psv:lanes": "||designated"}, (True, True)),
+        ({"psv:lanes:forward": "designated|"}, (True, False)),
+        ({"psv:lanes:backward": "yes|no"}, (False, False)),
         ({}, (False, False)),
     ],
 )
@@ -58,3 +61,27 @@ def test_lanes_per_direction(
 )
 def test_surface_class(tags: dict[str, object], expected: str | None) -> None:
     assert surface_class(tags) == expected
+
+
+@pytest.mark.parametrize(
+    ("tags", "direction", "expected"),
+    [
+        # Pawia: oneway=yes with busway:left=lane is a with-flow bus lane on the left side.
+        ({"busway:left": "lane"}, "forward", (True, False)),
+        ({"busway:right": "lane"}, "forward", (True, False)),
+        ({"busway:both": "lane"}, "forward", (True, False)),
+        ({"busway:left": "opposite_lane"}, "forward", (False, True)),
+        ({"busway:right": "lane"}, "backward", (False, True)),
+        ({"busway:left": "lane"}, "backward", (False, True)),
+        ({"busway:right": "opposite_lane"}, "backward", (True, False)),
+        # forward/backward suffixes keep the digitised direction on one-way roads.
+        ({"bus:lanes:forward": "designated"}, "forward", (True, False)),
+        ({"bus:lanes:backward": "designated"}, "backward", (False, True)),
+        # Two-way roads keep the side rule (right = digitised, left = reverse).
+        ({"busway:left": "lane"}, "both", (False, True)),
+    ],
+)
+def test_side_suffixes_on_one_way_roads_follow_the_travel_direction(
+    tags: dict[str, object], direction: str, expected: tuple[bool, bool]
+) -> None:
+    assert bus_lane_directions(tags, direction) == expected
