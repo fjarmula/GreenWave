@@ -85,3 +85,10 @@ These fill details the list does not cover. Challenge them in review.
 - `backend/tests/api/`: OpenAPI contains the three paths and every model.
 - CI `contract-drift` regeneration check for `contracts/openapi.json` and `api.generated.ts`.
 - `api.generated.ts` inspected: enums and literals are TS string-literal unions and `SimulationStreamEvent` narrows on `event_type`.
+
+## Additive change 2026-10-19
+
+`RouteIntersection` adds four required fields while retaining `schema_version: "1.0"`:
+`signal_count` (integer, at least 1), `approach_count` (integer, at least 1), `needs_review`
+(boolean), and `cascade_targets` (later intersection ids in route order; empty when cascade mode
+is disabled or there are no targets).

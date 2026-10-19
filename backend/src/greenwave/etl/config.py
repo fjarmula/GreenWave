@@ -1,9 +1,9 @@
 """ETL configuration: every operationally tunable value, with units in the names.
 
 Comments say where a value comes from: "APPROVED" values were decided by the human, "analysis"
-values only drive reports and checks, and "placeholder" values are known guesses affecting almost
-no data. ``docs/engineering/data-pipeline.md`` describes this provenance policy. Nothing here is
-read by request handlers; the ETL reads it at build time.
+values only drive reports and checks, and "placeholder" values are uncalibrated modeling
+assumptions rather than empirical measurements. ``docs/engineering/data-pipeline.md`` describes
+this provenance policy. Nothing here is read by request handlers; the ETL reads it at build time.
 """
 
 from enum import StrEnum
@@ -87,11 +87,14 @@ ABSENT_TAG = "<absent>"
 # the cluster map: under-merging is fixable in T4, over-merging is not.
 SIGNAL_CLUSTER_RADIUS_METERS = 40.0
 
-# D_v per type, one key each so they can diverge later. The architecture gives about 35 s.
+# D_v per type, one independent key each so calibration can change them separately later.
 # Applied once per unique intersection INT-xxxx (signalised junction, mid-block signal or pedestrian
 # crossing) whose controlled approach a route passes, never once per signal node or per approach.
 # `intersections.parquet` gets its `delay_seconds` from these keys by kind.
+# PROVISIONAL 2026-10-19 (human): 35 s is a modeling assumption, not an empirical measurement.
+# Calibrate after dynamic ambulance dispatch and before final end-to-end performance evaluation.
 SIGNAL_DELAY_SECONDS = 35.0
+MIDBLOCK_SIGNAL_DELAY_SECONDS = 35.0
 PEDESTRIAN_CROSSING_DELAY_SECONDS = 35.0
 
 # Keyed by the value of the `traffic_signals` tag on highway=traffic_signals nodes.

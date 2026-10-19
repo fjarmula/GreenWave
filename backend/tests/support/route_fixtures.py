@@ -1,5 +1,6 @@
 """Hand-built metric graphs with exact route and stop-line distances for simulation tests."""
 
+from collections.abc import Mapping
 from types import MappingProxyType
 
 import networkx as nx
@@ -21,7 +22,13 @@ def position_at(x_m: float, y_m: float = _Y) -> Position:
     return Position(lat=float(lat), lng=float(lon))
 
 
-def corridor_index() -> RoutingIndex:
+def corridor_index(
+    *,
+    signal_count: int = 1,
+    approach_count: int = 1,
+    needs_review: bool = False,
+    neighbour_candidates: Mapping[tuple[str, str], float] | None = None,
+) -> RoutingIndex:
     """An index with a fast detour, corridor stop lines, a one-way edge, and an island."""
     graph = nx.MultiDiGraph()
 
@@ -94,6 +101,9 @@ def corridor_index() -> RoutingIndex:
             lon=position_at(x).lng,
             lat=position_at(x).lat,
             delay_seconds=delay,
+            signal_count=signal_count,
+            approach_count=approach_count,
+            needs_review=needs_review,
         )
         for identifier, x, delay in (
             ("INT-A", _X + 1_100, 10),
@@ -116,4 +126,5 @@ def corridor_index() -> RoutingIndex:
         _edges=MappingProxyType(edges),
         _approaches=MappingProxyType(approaches),
         _intersections=MappingProxyType(intersections),
+        _neighbour_candidates=MappingProxyType(dict(neighbour_candidates or {})),
     )

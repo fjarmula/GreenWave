@@ -99,6 +99,10 @@ def to_start_response(
             kind=info.kind,
             position=Position(lat=info.lat, lng=info.lon),
             distance_along_route_m=intersection.first_stop_line_m,
+            signal_count=info.signal_count,
+            approach_count=info.approach_count,
+            needs_review=info.needs_review,
+            cascade_targets=list(route_model.cascade_targets(intersection.id)),
         )
         for intersection in route_model.intersections
     ]

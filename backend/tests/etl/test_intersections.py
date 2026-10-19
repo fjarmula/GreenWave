@@ -3,7 +3,11 @@ import numpy as np
 import polars as pl
 import pytest
 
-from greenwave.etl.config import PEDESTRIAN_CROSSING_DELAY_SECONDS, SIGNAL_DELAY_SECONDS
+from greenwave.etl.config import (
+    MIDBLOCK_SIGNAL_DELAY_SECONDS,
+    PEDESTRIAN_CROSSING_DELAY_SECONDS,
+    SIGNAL_DELAY_SECONDS,
+)
 from greenwave.etl.geo import project_points
 from greenwave.etl.graph import build_graph, node_key
 from greenwave.etl.intersections import (
@@ -22,7 +26,7 @@ from greenwave.etl.intersections import (
     reach_within,
 )
 from greenwave.etl.junctions import find_junction_nodes, undirected_adjacency
-from greenwave.etl.network import SignalPoint, attach_signals
+from greenwave.etl.network import Attachment, SignalPoint, attach_signals
 from greenwave.etl.overrides import OverrideFile, RoundaboutOverride
 from greenwave.etl.profile_osm import DrivableWay, LonLat
 
@@ -411,7 +415,13 @@ def test_output_frames_have_stable_schemas_and_roundtrip(tmp_path) -> None:  # t
     nodes = set(attached.graph.nodes)
 
     ix = intersection_frame(
-        attached.graph, intersections, attached.attachments, rings, {"aleja testowa"}, nodes
+        attached.graph,
+        intersections,
+        attached.attachments,
+        rings,
+        {"aleja testowa"},
+        nodes,
+        _signal_review_frame(attached.attachments),
     )
     ap = approach_frame(attached.attachments, assignments, intersections, nodes)
 
@@ -460,7 +470,13 @@ def test_an_internal_edge_belongs_to_the_intersection_and_its_approaches_join_th
         [*quarters, chord, arm, side], [on_chord], overrides
     )
     frame = intersection_frame(
-        attached.graph, intersections, attached.attachments, rings, set(), set(attached.graph.nodes)
+        attached.graph,
+        intersections,
+        attached.attachments,
+        rings,
+        set(),
+        set(attached.graph.nodes),
+        _signal_review_frame(attached.attachments),
     )
 
     assert problems == []
@@ -559,18 +575,95 @@ def test_the_crossing_merge_respects_the_diameter_cap_and_reports_the_refusal() 
 
 
 def test_delay_by_kind_comes_from_config_and_an_unknown_kind_raises() -> None:
-    delays = kind_delay_seconds(signal_delay_seconds=11.0, pedestrian_crossing_delay_seconds=7.0)
+    delays = kind_delay_seconds(
+        signal_delay_seconds=11.0,
+        midblock_signal_delay_seconds=9.0,
+        pedestrian_crossing_delay_seconds=7.0,
+    )
 
     assert delays == {
         "signalised_junction": 11.0,
-        "midblock_signal": 11.0,
+        "midblock_signal": 9.0,
         "pedestrian_crossing": 7.0,
     }
     assert kind_delay_seconds() == {
         "signalised_junction": SIGNAL_DELAY_SECONDS,
-        "midblock_signal": SIGNAL_DELAY_SECONDS,
+        "midblock_signal": MIDBLOCK_SIGNAL_DELAY_SECONDS,
         "pedestrian_crossing": PEDESTRIAN_CROSSING_DELAY_SECONDS,
     }
+
+
+def test_kind_delay_seconds_has_independent_midblock_key() -> None:
+    delays = kind_delay_seconds(
+        signal_delay_seconds=35.0,
+        midblock_signal_delay_seconds=20.0,
+        pedestrian_crossing_delay_seconds=35.0,
+    )
+
+    assert delays["signalised_junction"] == 35.0
+    assert delays["midblock_signal"] == 20.0
+
+
+def _signal_review_frame(
+    attachments: list[Attachment], reviewed_keys: set[str] | None = None
+) -> pl.DataFrame:
+    reviewed_keys = reviewed_keys or set()
+    return pl.DataFrame(
+        {
+            "node_key": [attachment.signal.node_key for attachment in attachments],
+            "needs_review": [
+                attachment.signal.node_key in reviewed_keys for attachment in attachments
+            ],
+        },
+        schema={"node_key": pl.String, "needs_review": pl.Boolean},
+    )
+
+
+def _detail_frame(
+    signal_points: list[SignalPoint],
+    reviewed_keys: set[str] | None = None,
+    issue_keys: set[str] | None = None,
+) -> pl.DataFrame:
+    attached, _, rings, _, _, intersections, _ = run(two_junction_ways(), signal_points)
+    issue_keys = issue_keys or set()
+    for attachment in attached.attachments:
+        if attachment.signal.node_key in issue_keys:
+            attachment.issue = "ambiguous direction"
+    return intersection_frame(
+        attached.graph,
+        intersections,
+        attached.attachments,
+        rings,
+        set(),
+        set(attached.graph.nodes),
+        signals=_signal_review_frame(attached.attachments, reviewed_keys),
+    )
+
+
+def test_intersection_frame_counts_distinct_member_signals() -> None:
+    frame = _detail_frame([signal(at(1.5, 0), "OSM-L70"), signal(at(2, 0), "OSM-L71")])
+
+    assert frame["signal_count"].to_list() == [2]
+    assert frame.schema["signal_count"] == pl.Int64
+
+
+def test_needs_review_true_when_member_signal_flagged() -> None:
+    frame = _detail_frame([signal(at(1.5, 0), "OSM-L70")], {"OSM-L70"})
+
+    assert frame["needs_review"].to_list() == [True]
+
+
+def test_needs_review_true_when_approach_has_issue() -> None:
+    frame = _detail_frame([signal(at(1.5, 0), "OSM-L70")], issue_keys={"OSM-L70"})
+
+    assert frame["needs_review"].to_list() == [True]
+
+
+def test_needs_review_false_otherwise() -> None:
+    frame = _detail_frame([signal(at(1.5, 0), "OSM-L70")])
+
+    assert frame["needs_review"].to_list() == [False]
+    assert frame.schema["needs_review"] == pl.Boolean
 
 
 def test_the_frame_has_a_delay_per_intersection_and_refuses_an_unmapped_kind() -> None:
@@ -589,11 +682,16 @@ def test_the_frame_has_a_delay_per_intersection_and_refuses_an_unmapped_kind() -
         rings,
         set(),
         nodes,
-        kind_delay_seconds(signal_delay_seconds=30.0, pedestrian_crossing_delay_seconds=12.0),
+        _signal_review_frame(attached.attachments),
+        kind_delay_seconds(
+            signal_delay_seconds=30.0,
+            midblock_signal_delay_seconds=20.0,
+            pedestrian_crossing_delay_seconds=12.0,
+        ),
     )
     assert dict(frame.select("kind", "delay_seconds").iter_rows()) == {
         "signalised_junction": 30.0,
-        "midblock_signal": 30.0,
+        "midblock_signal": 20.0,
         "pedestrian_crossing": 12.0,
     }
     assert frame.schema["delay_seconds"] == pl.Float64
@@ -605,5 +703,6 @@ def test_the_frame_has_a_delay_per_intersection_and_refuses_an_unmapped_kind() -
             rings,
             set(),
             nodes,
+            _signal_review_frame(attached.attachments),
             {"signalised_junction": 30.0, "pedestrian_crossing": 12.0},
         )

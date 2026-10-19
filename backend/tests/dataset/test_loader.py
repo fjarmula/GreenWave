@@ -401,6 +401,19 @@ def test_missing_delay_column_names_file_and_column(layout: Layout) -> None:
         load_dataset(layout.processed, layout.manifest)
 
 
+@pytest.mark.parametrize("column", ["signal_count", "needs_review", "approaches"])
+def test_loader_rejects_intersections_without_signal_detail_columns(
+    layout: Layout, column: str
+) -> None:
+    edit_parquet(layout.processed / INTERSECTIONS_FILENAME, lambda frame: frame.drop(column))
+
+    with pytest.raises(
+        MalformedArtifactError, match=rf"{INTERSECTIONS_FILENAME}.*{column}"
+    ) as error:
+        load_dataset(layout.processed, layout.manifest)
+    assert "run_etl.py intersections" in str(error.value)
+
+
 @pytest.mark.parametrize("bad", [None, -1.0, float("nan"), float("inf")])
 def test_null_negative_or_non_finite_delay_is_rejected(layout: Layout, bad: float | None) -> None:
     edit_parquet(

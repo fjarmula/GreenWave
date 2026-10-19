@@ -3,6 +3,7 @@
 import { useTheme } from "next-themes";
 
 import { AmbulanceMarker } from "@/components/map/AmbulanceMarker";
+import { CascadeLinksLayer, CascadeLinksMapProvider } from "@/components/map/CascadeLinksLayer";
 import { EndpointMarkers } from "@/components/map/EndpointMarkers";
 import { RouteLayer } from "@/components/map/RouteLayer";
 import { SignalMarkers } from "@/components/map/SignalMarkers";
@@ -70,6 +71,9 @@ export function MapContainer({ live, origin, destination, focusRequest }: MapCon
         routeGeometry={routeData?.route_geometry ?? null}
         styleRevision={styleRevision}
       />
+      <CascadeLinksMapProvider map={map} styleRevision={styleRevision}>
+        <CascadeLinksLayer route={routeData} />
+      </CascadeLinksMapProvider>
       <SignalMarkers
         map={map}
         visible={live}

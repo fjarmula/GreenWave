@@ -47,6 +47,9 @@ REQUIRED_COLUMNS: dict[str, dict[str, pl.DataType | type[pl.DataType] | None]] =
         "kind": pl.String,
         "node_key": pl.String,
         "delay_seconds": pl.Float64,
+        "signal_count": pl.Int64,
+        "needs_review": pl.Boolean,
+        "approaches": pl.Int64,
     },
     APPROACHES_FILENAME: {
         "signal_key": pl.String,
