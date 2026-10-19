@@ -59,6 +59,12 @@ def make_raw(tmp_path: Path, extra: tuple[str, ...] = ()) -> Path:
         ),
         encoding="utf-8",
     )
+    buspasy = raw / "krakow" / "Buspasy_test.csv"
+    buspasy.write_text(
+        "OBJECTID,Kategoria,Znak,Opis,Zasady,Organizacja,Długość [m]\n"
+        "1,pas autobusowy,,ul. Poprzeczna od ul. A do ul. B,,stała,200.0\n",
+        encoding="utf-8-sig",
+    )
     entries = [
         ManifestEntry(
             path=path.relative_to(raw).as_posix(),
@@ -70,7 +76,7 @@ def make_raw(tmp_path: Path, extra: tuple[str, ...] = ()) -> Path:
             licence=None,
             attribution=None,
         )
-        for path in (osm_path, ulice)
+        for path in (osm_path, ulice, buspasy)
     ]
     write_manifest(Manifest(entries=entries), raw / MANIFEST_FILENAME)
     return raw

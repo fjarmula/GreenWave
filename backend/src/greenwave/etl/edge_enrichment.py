@@ -115,6 +115,8 @@ class RoadAttributesSection(BaseModel):
     # Ways with a surface value outside both surface sets, most common first (at most 20).
     unknown_surface_values: dict[str, int]
     edges_by_lanes_per_direction: dict[str, int]
+    # Rows of the Kraków bus-lane register per cross-check status (bus_lane_crosscheck.csv).
+    bus_lane_crosscheck: dict[str, int]
 
 
 def road_attributes_section(
@@ -122,6 +124,7 @@ def road_attributes_section(
     calming: CalmingStats,
     tram: TramStats,
     unknown_surface_values: dict[str, int],
+    bus_lane_crosscheck: dict[str, int],
 ) -> RoadAttributesSection:
     bus_m: defaultdict[str, float] = defaultdict(float)
     surface_m: defaultdict[str, float] = defaultdict(float)
@@ -144,4 +147,5 @@ def road_attributes_section(
             "unknown" if k is None else str(k): n
             for k, n in sorted(lanes.items(), key=lambda kv: (kv[0] is None, kv[0] or 0))
         },
+        bus_lane_crosscheck=bus_lane_crosscheck,
     )

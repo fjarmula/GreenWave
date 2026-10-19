@@ -13,6 +13,7 @@ from greenwave.etl.graph_io import read_graph
 from greenwave.etl.intersections import GroupingSettings
 from greenwave.etl.intersections_pipeline import (
     APPROACHES_FILENAME,
+    BUS_LANE_CROSSCHECK_FILENAME,
     IDS_FILENAME,
     INTERSECTIONS_FILENAME,
     NETWORK_EDGES_FILENAME,
@@ -257,6 +258,9 @@ def test_network_edges_carry_road_attribute_columns(tmp_path: Path) -> None:
     assert {d["calming_count"] for *_, d in graph.edges(data=True)} == {0, 1}
     assert road_attributes.calming.points_on_edges == 1
     assert road_attributes.tram.edges_marked > 0
+    crosscheck = pl.read_csv(processed / BUS_LANE_CROSSCHECK_FILENAME)
+    assert crosscheck["status"].to_list() == ["osm_street_without_bus_lane"]
+    assert road_attributes.bus_lane_crosscheck == {"osm_street_without_bus_lane": 1}
     assert road_attributes.km_by_surface_class == {
         "unknown": pytest.approx(road_attributes.total_directed_km)
     }

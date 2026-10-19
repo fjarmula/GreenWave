@@ -31,6 +31,13 @@ uv run python scripts/run_etl.py intersections   # T4: network_*, intersections,
 uv run python scripts/run_etl.py neighbours      # T5: approach_neighbours.parquet (candidate set only)
 ```
 
+`intersections` also derives road attributes per network edge (`bus_lane`, `lanes_per_direction`,
+`surface_class`, `calming_count`, `tram_track` in `network_edges.parquet`), writes the
+`road_attributes` report section, and writes `bus_lane_crosscheck.csv`: each row of the Kraków
+bus-lane register (`krakow/Buspasy_*.csv`, exactly one file) matched by street name against OSM
+bus-lane edges, with a `status` of `osm_has_bus_lane`, `osm_street_without_bus_lane`,
+`street_not_found` or `unparsed`. The cross-check is analysis only; it never changes an edge.
+
 Three more steps exist as decision aids: `draft-overrides` (drafts the override file, never
 overwrites an existing one), `roundabouts` (an inventory report) and `cluster-map` (a check page). See the docstring of
 `scripts/run_etl.py` for what each step writes.

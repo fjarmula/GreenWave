@@ -14,6 +14,7 @@ import polars as pl
 from pydantic import BaseModel
 
 from greenwave import artifacts
+from greenwave.etl.bus_lanes import crosscheck_bus_lanes, find_bus_lane_csv, read_bus_lane_csv
 from greenwave.etl.config import (
     SIGNAL_SNAP_TOLERANCE_METERS,
     TRAM_TRACK_MATCH_METERS,
@@ -85,6 +86,7 @@ IDS_FILENAME = artifacts.IDS_FILENAME
 T4_ARTIFACT_FILENAMES = artifacts.T4_ARTIFACT_FILENAMES
 artifact_hashes = artifacts.artifact_hashes
 NEAR_MISSES_FILENAME = "near_misses.csv"
+BUS_LANE_CROSSCHECK_FILENAME = artifacts.BUS_LANE_CROSSCHECK_FILENAME
 
 
 class SnapReport(BaseModel):
@@ -176,6 +178,7 @@ class IntersectionsBuild:
     calming: CalmingStats
     tram: TramStats
     unknown_surface_values: dict[str, int]
+    bus_lane_crosscheck: pl.DataFrame
 
 
 def run_intersections(
@@ -206,7 +209,16 @@ def run_intersections_with_road_attributes(
     return (
         intersections_section(build, overrides_dir, processed_dir, manifest_sha256),
         road_attributes_section(
-            build.attached.graph, build.calming, build.tram, build.unknown_surface_values
+            build.attached.graph,
+            build.calming,
+            build.tram,
+            build.unknown_surface_values,
+            {
+                status: count
+                for status, count in build.bus_lane_crosscheck["status"]
+                .value_counts(sort=True)
+                .iter_rows()
+            },
         ),
     )
 
@@ -255,6 +267,9 @@ def compute_intersections(
 
     largest_scc = max(nx.strongly_connected_components(graph), key=len)
     ulice_names = set(ulice_street_lengths(raw_dir / "krakow" / "Ulice.geojson"))
+    bus_lane_crosscheck = crosscheck_bus_lanes(
+        read_bus_lane_csv(find_bus_lane_csv(raw_dir)), graph, ulice_names
+    )
     delay_by_kind = kind_delay_seconds()
     intersections_frame = intersection_frame(
         graph, intersections, attachments, rings, ulice_names, largest_scc, delay_by_kind
@@ -286,6 +301,7 @@ def compute_intersections(
         calming=calming,
         tram=tram,
         unknown_surface_values=base_build.report.unknown_surface_values,
+        bus_lane_crosscheck=bus_lane_crosscheck,
     )
 
 
@@ -304,6 +320,7 @@ def write_intersection_artifacts(
     build.intersections_frame.write_parquet(processed_dir / INTERSECTIONS_FILENAME)
     build.approaches.write_parquet(processed_dir / APPROACHES_FILENAME)
     build.near_after_frame.write_csv(processed_dir / NEAR_MISSES_FILENAME)
+    build.bus_lane_crosscheck.write_csv(processed_dir / BUS_LANE_CROSSCHECK_FILENAME)
     build.tertiary.write_csv(processed_dir / TERTIARY_PLUS_FILENAME)
     welds_frame(build.prepared.weld_report).write_csv(processed_dir / WELDS_FILENAME)
     manifest_sha256 = _file_sha256(raw_dir / MANIFEST_FILENAME)
