@@ -1,6 +1,7 @@
 """The ETL equivalence harness, loaded from its script path like the CLI runs it."""
 
 import importlib.util
+import json
 from pathlib import Path
 from types import ModuleType
 
@@ -53,3 +54,34 @@ def test_committed_override_preflight_accepts_regular_file(
     override.write_text('{"entries": []}\n', encoding="utf-8")
 
     assert harness.require_committed_override() == override
+
+
+BASE = {"_timing": {"graph": 1.0}, "graph.json": "aaa", "signals.json": "bbb"}
+
+
+@pytest.mark.parametrize(
+    ("new", "allow", "expected_status", "expected_line"),
+    [
+        ({**BASE, "graph.json": "ccc"}, set(), 1, "DIFF    graph.json"),
+        ({"_timing": {}, "graph.json": "aaa"}, set(), 1, "DIFF    signals.json"),
+        ({**BASE, "extra.json": "ddd"}, set(), 1, "DIFF    extra.json"),
+        ({**BASE, "graph.json": "ccc"}, {"graph.json"}, 0, "allowed graph.json"),
+        ({**BASE, "_timing": {"graph": 9.0}}, set(), 0, "2 entries, 0 differ"),
+    ],
+    ids=["changed", "removed", "added", "allowed", "timing-only"],
+)
+def test_compare_reports_differences_and_exit_status(
+    harness: ModuleType,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    new: dict[str, object],
+    allow: set[str],
+    expected_status: int,
+    expected_line: str,
+) -> None:
+    base_path, new_path = tmp_path / "base.json", tmp_path / "new.json"
+    base_path.write_text(json.dumps(BASE), encoding="utf-8")
+    new_path.write_text(json.dumps(new), encoding="utf-8")
+
+    assert harness.compare(base_path, new_path, allow) == expected_status
+    assert expected_line in capsys.readouterr().out.splitlines()
