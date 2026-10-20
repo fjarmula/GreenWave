@@ -93,16 +93,19 @@ def _named(value: object) -> str:
 
 
 def _near_miss_sample(row: dict[str, Any]) -> str:
-    return (
+    sample = (
         f"{_named(row.get('street'))} ({row.get('highway')}) / "
         f"{_named(row.get('other_street'))} ({row.get('other_highway')}): "
         f"{float(row['distance_m']):.1f} m gap"
     )
+    return f"{sample}, {row['weld_status']}" if row.get("weld_status") else sample
 
 
 def _near_misses(processed_dir: Path) -> QualityCheck:
     after = _read_csv(processed_dir / NEAR_MISSES_FILENAME)
     tertiary = _read_csv(processed_dir / TERTIARY_PLUS_FILENAME)
+    # The tertiary-plus file lists cases found before welding, each with its weld outcome.
+    welded = sum(str(status).startswith("welded") for status in _column(tertiary, "weld_status"))
     shown = tertiary if tertiary.height else after
     if shown.height:
         shown = shown.sort("distance_m", maintain_order=True)
@@ -112,11 +115,13 @@ def _near_misses(processed_dir: Path) -> QualityCheck:
         status=QualityStatus.WARN if tertiary.height else QualityStatus.INFO,
         headline=(
             f"{after.height} near misses (road ends close to a road they do not join) remain "
-            f"after welding; {tertiary.height} involve tertiary-or-higher roads."
+            f"after welding. Before welding, {tertiary.height} involved tertiary-or-higher "
+            f"roads; {welded} of them were welded."
         ),
         metrics={
             "near_misses_after_welding": after.height,
             "tertiary_plus_cases": tertiary.height,
+            "tertiary_plus_welded": welded,
         },
         samples=[_near_miss_sample(row) for row in shown.head(MAX_SAMPLES).iter_rows(named=True)],
     )
@@ -132,7 +137,8 @@ def _street_lengths(processed_dir: Path) -> QualityCheck:
         (r for r in matched if r not in within and r["ratio"]),
         key=lambda r: (-abs(math.log(r["ratio"])), str(r["normalised_name"])),
     )
-    share = len(within) / len(matched) if matched else 0.0
+    # Whole percent, so the metric and the headline show the same number.
+    share = round(len(within) / len(matched), 2) if matched else 0.0
     return QualityCheck(
         id="street_lengths",
         title="Street lengths vs city register",
@@ -144,7 +150,7 @@ def _street_lengths(processed_dir: Path) -> QualityCheck:
         ),
         metrics={
             "streets_compared": len(matched),
-            "share_within_range": _round(share),
+            "share_within_range": share,
             "ulice_only_streets": sum(r["graph_km"] is None for r in rows),
             "graph_only_streets": sum(r["ulice_km"] is None for r in rows),
         },
@@ -258,7 +264,7 @@ def _bus_lane_crosscheck(processed_dir: Path) -> QualityCheck:
             f"{counts[STATUS_OSM_HAS_BUS_LANE]} of {table.height} sections of the city bus-lane "
             "register have an OSM bus lane on the same street."
         ),
-        metrics={"register_sections": table.height} | counts,
+        metrics=counts,  # the register total is in the headline (the panel shows four metrics)
         samples=[
             f"{r['street']} ({r['from']} - {r['to']}): {str(r['status']).replace('_', ' ')}"
             if r["street"]

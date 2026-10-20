@@ -71,12 +71,17 @@ def near_miss_rows(count: int, street: str = "Testowa") -> list[dict[str, object
     ]
 
 
-def write_near_misses(layout: Layout, after_welding: int, tertiary_plus: int) -> None:
+def write_near_misses(
+    layout: Layout, after_welding: int, tertiary_plus: int, welded: int = 0
+) -> None:
     pl.DataFrame(near_miss_rows(after_welding), schema=NEAR_MISS_SCHEMA).write_csv(
         layout.processed / NEAR_MISSES_FILENAME
     )
     pl.DataFrame(
-        [row | {"weld_status": "not welded"} for row in near_miss_rows(tertiary_plus)],
+        [
+            row | {"weld_status": "welded (inserted_vertex)" if i < welded else "not welded: far"}
+            for i, row in enumerate(near_miss_rows(tertiary_plus))
+        ],
         schema=NEAR_MISS_SCHEMA | {"weld_status": pl.String},
     ).write_csv(layout.processed / TERTIARY_PLUS_FILENAME)
 
@@ -130,6 +135,18 @@ def test_near_misses_warn_only_with_tertiary_plus_rows(
     assert result.status == QualityStatus(status)
     assert result.metrics["near_misses_after_welding"] == 3
     assert result.metrics["tertiary_plus_cases"] == tertiary_plus
+
+
+def test_near_misses_say_tertiary_plus_cases_were_found_before_welding(layout: Layout) -> None:
+    write_near_misses(layout, after_welding=3, tertiary_plus=4, welded=1)
+
+    result = check(layout, "near_misses")
+
+    assert result.metrics["tertiary_plus_cases"] == 4
+    assert result.metrics["tertiary_plus_welded"] == 1
+    assert "Before welding, 4 involved tertiary-or-higher roads" in result.headline
+    assert "1 of them were welded" in result.headline
+    assert any(sample.endswith("welded (inserted_vertex)") for sample in result.samples)
 
 
 def test_street_lengths_share_uses_the_configured_ratio_range(layout: Layout) -> None:
@@ -216,7 +233,6 @@ def test_bus_lane_crosscheck_counts_each_status(layout: Layout) -> None:
 
     assert result.status == QualityStatus.INFO
     assert result.metrics == {
-        "register_sections": 3,
         "osm_has_bus_lane": 2,
         "osm_street_without_bus_lane": 0,
         "street_not_found": 1,
@@ -232,6 +248,26 @@ def test_empty_bus_lane_crosscheck_is_info_with_zero_counts(layout: Layout) -> N
     assert result.status == QualityStatus.INFO
     assert set(result.metrics.values()) == {0}
     assert result.samples == []
+
+
+def test_every_check_has_at_most_four_metrics(layout: Layout) -> None:
+    """The panel shows four metrics per check; a fifth would be silently hidden."""
+    assert all(len(c.metrics) <= 4 for c in summary(layout).checks)
+
+
+def test_street_share_metric_matches_the_headline_percent(layout: Layout) -> None:
+    rows = [
+        {"normalised_name": name, "graph_name": name, "ulice_name": name, "ratio": ratio}
+        for name, ratio in (("a", 1.0), ("b", 1.0), ("c", 5.0))
+    ]
+    for row in rows:
+        row |= {"graph_km": 1.0, "ulice_km": 1.0, "status": "x"}
+    write_street_table(layout.processed, rows)
+
+    result = check(layout, "street_lengths")
+
+    assert result.metrics["share_within_range"] == 0.67
+    assert result.headline.startswith("67% of 3 streets")
 
 
 def test_road_attributes_summarise_the_report_section(layout: Layout) -> None:
