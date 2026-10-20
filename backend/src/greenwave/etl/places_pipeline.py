@@ -4,11 +4,14 @@ import hashlib
 import json
 import logging
 from collections.abc import Iterator
+from dataclasses import replace
 from pathlib import Path
 
+import networkx as nx
 import numpy as np
 import polars as pl
 import shapely
+import shapely.ops
 from pydantic import BaseModel
 
 from greenwave import artifacts
@@ -18,7 +21,8 @@ from greenwave.etl.config import (
     PLACES_MAX_SNAP_DISTANCE_M,
     STATION_DEDUP_RADIUS_M,
 )
-from greenwave.etl.geo import project_points
+from greenwave.etl.connectivity import main_component_nodes
+from greenwave.etl.geo import project_points, unproject_points
 from greenwave.etl.ingest_osm import OsmFeature, iter_osm_records
 from greenwave.etl.intersections_pipeline import (
     IDS_FILENAME,
@@ -31,6 +35,7 @@ from greenwave.etl.manifest import MANIFEST_FILENAME
 from greenwave.etl.neighbours_pipeline import StaleArtifactError, _recorded_t4_hashes
 from greenwave.etl.profile import OSM_RELATIVE_PATH
 from greenwave.etl.stations import (
+    StationCandidate,
     assign_station_ids,
     classify_station,
     collapse_encoding_twins,
@@ -60,6 +65,9 @@ class StationsReport(BaseModel):
     duplicates_merged: int
     dropped: list[DroppedPlace]
     police_names: list[str]
+    # Polygon stations whose centre was beyond the snap limit, moved to the outline point nearest
+    # the network (their access point) instead of being dropped.
+    relocated_to_outline: list[str]
     excluded: list[str]  # police and ambulance names left out by the exclusion fragments
     no_usable_point: int
 
@@ -109,6 +117,36 @@ def _snap_distances(node_xy: np.ndarray, lons: list[float], lats: list[float]) -
     return np.asarray(distances, dtype=np.float64)
 
 
+def _relocate_to_access_points(
+    candidates: list[StationCandidate], node_xy: np.ndarray, limit_m: float
+) -> tuple[list[StationCandidate], list[str]]:
+    """Move a polygon station whose centre is beyond ``limit_m`` to the point of its outline
+    nearest the network, when that is within ``limit_m`` (a large campus with a road at its edge).
+    """
+    if not candidates:
+        return candidates, []
+    distances = _snap_distances(node_xy, [c.lon for c in candidates], [c.lat for c in candidates])
+    tree = shapely.STRtree(shapely.points(node_xy))
+    relocated: list[StationCandidate] = []
+    moved: list[str] = []
+    for candidate, distance in zip(candidates, distances, strict=True):
+        if distance <= limit_m or candidate.outline is None:
+            relocated.append(candidate)
+            continue
+        metric = shapely.transform(
+            candidate.outline, lambda xy: project_points(xy[:, 0].copy(), xy[:, 1].copy())
+        )
+        node = shapely.points(node_xy[int(tree.nearest(metric))])
+        if float(shapely.distance(metric, node)) > limit_m:
+            relocated.append(candidate)
+            continue
+        access, _ = shapely.ops.nearest_points(metric, node)
+        lon, lat = unproject_points(np.array([[access.x, access.y]], dtype=np.float64))[0]
+        relocated.append(replace(candidate, lon=float(lon), lat=float(lat)))
+        moved.append(candidate.name)
+    return relocated, sorted(moved)
+
+
 def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
     manifest_sha256 = hashlib.sha256((raw_dir / MANIFEST_FILENAME).read_bytes()).hexdigest()
     ids = json.loads((processed_dir / IDS_FILENAME).read_text(encoding="utf-8"))
@@ -127,8 +165,18 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
             f"{REPORT_FILENAME}; re-run the intersections step"
         )
 
-    nodes = pl.read_parquet(processed_dir / NETWORK_NODES_FILENAME, columns=["x_m", "y_m"])
-    node_xy = nodes.select("x_m", "y_m").to_numpy().astype(np.float64)
+    # Snap like the runtime router: only to the main component, so no place sits on an island.
+    edges = pl.read_parquet(processed_dir / NETWORK_EDGES_FILENAME, columns=["u", "v"])
+    routable = main_component_nodes(nx.MultiDiGraph(edges.rows()))
+    nodes = pl.read_parquet(
+        processed_dir / NETWORK_NODES_FILENAME, columns=["node_key", "x_m", "y_m"]
+    )
+    node_xy = (
+        nodes.filter(pl.col("node_key").is_in(list(routable)))
+        .select("x_m", "y_m")
+        .to_numpy()
+        .astype(np.float64)
+    )
 
     features = list(_relevant_features(raw_dir / OSM_RELATIVE_PATH))
     logger.info("%d station- or address-tagged features", len(features))
@@ -137,7 +185,8 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
     excluded: list[str] = []
     candidates = extract_station_candidates(features, stations_without_point, excluded)
     singles, twins = collapse_encoding_twins(candidates)
-    kept, merged = dedupe_stations(singles, radius_m=STATION_DEDUP_RADIUS_M)
+    deduped, merged = dedupe_stations(singles, radius_m=STATION_DEDUP_RADIUS_M)
+    kept, relocated = _relocate_to_access_points(deduped, node_xy, PLACES_MAX_SNAP_DISTANCE_M)
     distances = _snap_distances(node_xy, [c.lon for c in kept], [c.lat for c in kept])
     distance_by_ref = {c.osm_ref: float(d) for c, d in zip(kept, distances, strict=True)}
     on_network = [c for c in kept if distance_by_ref[c.osm_ref] <= PLACES_MAX_SNAP_DISTANCE_M]
@@ -188,6 +237,7 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
             encoding_twins=twins,
             duplicates_merged=merged,
             dropped=dropped,
+            relocated_to_outline=relocated,
             police_names=sorted(
                 stations.filter(pl.col("vehicle_type") == "POLICE_CAR")["name"].to_list()
             ),

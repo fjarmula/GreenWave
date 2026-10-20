@@ -25,7 +25,7 @@ from greenwave.etl.places_pipeline import (
     run_places,
 )
 from greenwave.simulation_settings import SimulationSettings
-from tests.support.osm_fixtures import closed_way, point, polygon
+from tests.support.osm_fixtures import closed_way, line, point, polygon
 from tests.support.pipeline_fixtures import at, make_raw
 
 
@@ -202,3 +202,35 @@ def test_parameters_recorded(tmp_path: Path) -> None:
 
     assert section.snap_limit_m == PLACES_MAX_SNAP_DISTANCE_M
     assert section.station_dedup_radius_m == STATION_DEDUP_RADIUS_M
+
+
+# A two-way road far from the main network: its own island component.
+_ISLAND_ROAD = line([at(0, 8), at(1, 8)], highway="residential", name="Wyspa")
+
+
+def test_place_near_only_an_island_is_off_network(tmp_path: Path) -> None:
+    raw, processed = _prepare(
+        tmp_path, _ISLAND_ROAD, _station(0.5, 8.1, "PSP Wyspa"), _addr(0.5, 8.1, "9")
+    )
+
+    section = run_places(raw, processed)
+
+    assert [d.name for d in section.stations.dropped] == ["PSP Wyspa"]
+    assert section.stations.dropped[0].reason == "off_network"
+    assert section.addresses.dropped_off_network == 1
+
+
+def test_large_polygon_station_moves_to_its_access_point(tmp_path: Path) -> None:
+    # Centre ~230 m north of Aleja Testowa (y=0), south edge ~22 m from it.
+    campus = [at(4.1, 0.2), at(4.9, 0.2), at(4.9, 4), at(4.1, 4), at(4.1, 0.2)]
+    raw, processed = _prepare(tmp_path, polygon(campus, amenity="fire_station", name="PSP Kampus"))
+
+    section = run_places(raw, processed)
+
+    stations = pl.read_parquet(processed / STATIONS_FILENAME)
+    kampus = stations.filter(pl.col("name") == "PSP Kampus")
+    assert kampus.height == 1
+    assert kampus["snap_distance_m"][0] <= PLACES_MAX_SNAP_DISTANCE_M
+    assert kampus["lat"][0] == pytest.approx(at(4.1, 0.2)[1], abs=1e-6)  # on the south edge
+    assert section.stations.relocated_to_outline == ["PSP Kampus"]
+    assert section.stations.dropped == []

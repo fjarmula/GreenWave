@@ -11,6 +11,7 @@ from shapely.geometry import LineString, Point
 from shapely.strtree import STRtree
 
 from greenwave.dataset import ProcessedDataset
+from greenwave.etl.connectivity import main_component_nodes
 from greenwave.simulation_settings import SimulationSettings
 
 
@@ -101,8 +102,15 @@ def _optional_int(value: object) -> int | None:
 
 
 def build_routing_index(dataset: ProcessedDataset, settings: SimulationSettings) -> RoutingIndex:
-    """Build O(nodes + edges) immutable indexes once at application startup."""
-    node_keys = tuple(str(node_key) for node_key in dataset.graph.nodes)
+    """Build O(nodes + edges) immutable indexes once at application startup.
+
+    Endpoints snap only to the main (largest strongly connected) component, so a start or an
+    incident on a road island still gets a route; the graph itself keeps every node.
+    """
+    routable = main_component_nodes(dataset.graph)
+    node_keys = tuple(
+        str(node_key) for node_key in dataset.graph.nodes if str(node_key) in routable
+    )
     node_points = tuple(
         Point(
             float(dataset.graph.nodes[node_key]["x_m"]),

@@ -4,10 +4,11 @@ import json
 import math
 import re
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import polars as pl
+from shapely.geometry import MultiPolygon, Polygon
 
 from greenwave.etl.config import (
     AMBULANCE_EXCLUDED_NAMES,
@@ -16,7 +17,7 @@ from greenwave.etl.config import (
     POLICE_EXCLUDED_NAME_FRAGMENTS,
     STATION_DEDUP_RADIUS_M,
 )
-from greenwave.etl.feature_points import feature_point
+from greenwave.etl.feature_points import feature_outline, feature_point
 from greenwave.etl.geo import project_points
 from greenwave.etl.ingest_osm import OsmFeature
 from greenwave.etl.street_names import normalise_street_name
@@ -46,6 +47,8 @@ class StationCandidate:
     properties_key: str = ""
     # Same-name candidates merge at any distance (police, allow-listed hospitals).
     merge_any_distance: bool = False
+    # (lon, lat) area of a polygonal feature: lets the ETL move a large site to its access point.
+    outline: Polygon | MultiPolygon | None = field(default=None, compare=False)
 
 
 def _text(value: object) -> str:
@@ -141,6 +144,7 @@ def extract_station_candidates(
                 properties_key=json.dumps(feature.properties, sort_keys=True, default=str),
                 merge_any_distance=vehicle_type in MERGE_SAME_NAME_AT_ANY_DISTANCE
                 or _allow_listed_hospital(feature.properties),
+                outline=None if feature.geometry_type == "Point" else feature_outline(feature),
             )
         )
     return candidates

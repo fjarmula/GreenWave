@@ -1,4 +1,4 @@
-"""Representative WGS84 points for OSM features."""
+"""Representative WGS84 points and outlines for OSM features."""
 
 from typing import cast
 
@@ -7,17 +7,15 @@ from shapely.geometry import MultiPolygon, Polygon
 from greenwave.etl.ingest_osm import OsmFeature
 
 
-def feature_point(feature: OsmFeature) -> tuple[float, float] | None:
-    """Return ``(lon, lat)``: the point itself, ``point_on_surface`` for polygons, else None.
+def feature_outline(feature: OsmFeature) -> Polygon | MultiPolygon | None:
+    """The ``(lon, lat)`` area of a polygonal feature, repaired if invalid; None otherwise.
 
     The extract encodes closed OSM ways (buildings, station outlines) as ``LineString`` with the
-    first coordinate repeated last; those are polygon rings. Open lines have no point (None).
+    first coordinate repeated last; those are polygon rings. Points and open lines have no outline.
     """
     coordinates = cast("list[object]", feature.coordinates)
+    geometry: Polygon | MultiPolygon
     try:
-        if feature.geometry_type == "Point":
-            lon, lat = cast("list[float]", coordinates)[:2]
-            return float(lon), float(lat)
         if feature.geometry_type == "Polygon":
             geometry = Polygon(
                 cast("list[float]", coordinates[0]), cast("list[list[float]]", coordinates[1:])
@@ -41,8 +39,22 @@ def feature_point(feature: OsmFeature) -> tuple[float, float] | None:
     if geometry.is_empty:
         return None
     if not geometry.is_valid:
-        geometry = geometry.buffer(0)
+        geometry = cast("Polygon | MultiPolygon", geometry.buffer(0))
         if geometry.is_empty:
             return None
-    surface = geometry.point_on_surface()
+    return geometry
+
+
+def feature_point(feature: OsmFeature) -> tuple[float, float] | None:
+    """Return ``(lon, lat)``: the point itself, ``point_on_surface`` of an outline, else None."""
+    if feature.geometry_type == "Point":
+        try:
+            lon, lat = cast("list[float]", feature.coordinates)[:2]
+        except (ValueError, TypeError):
+            return None
+        return float(lon), float(lat)
+    outline = feature_outline(feature)
+    if outline is None:
+        return None
+    surface = outline.point_on_surface()
     return float(surface.x), float(surface.y)

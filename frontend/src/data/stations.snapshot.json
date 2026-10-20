@@ -17,8 +17,8 @@
       "source_kind": "hospital_ed",
       "name": "Szpital Uniwersytecki",
       "position": {
-        "lat": 50.0082247,
-        "lng": 20.000377900759013
+        "lat": 50.008772099999995,
+        "lng": 20.004044500000006
       }
     },
     {
@@ -27,8 +27,8 @@
       "source_kind": "hospital_ed",
       "name": "Uniwersytecki Szpital Dziecięcy",
       "position": {
-        "lat": 50.011527,
-        "lng": 20.001506863653017
+        "lat": 50.00965709500575,
+        "lng": 20.00270152921418
       }
     },
     {

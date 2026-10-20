@@ -1,9 +1,11 @@
 import pytest
 
 from greenwave.dataset import DatasetSettings, ProcessedDataset, load_dataset
+from greenwave.etl.connectivity import main_component_nodes
 from greenwave.routing.network_index import RoutingIndex, build_routing_index
 from greenwave.routing.planner import plan_route
-from greenwave.schemas import Position
+from greenwave.routing.station_ranking import build_station_nodes, rank_stations
+from greenwave.schemas import Position, VehicleType
 from greenwave.simulation.cascade_check import find_cascade_mismatches
 from greenwave.simulation.route_model import build_route_model
 from greenwave.simulation_settings import SimulationSettings
@@ -47,3 +49,18 @@ def test_demo_routes_have_no_cascade_mismatches(
     route_model = build_route_model(route, real_index, settings, cascade_enabled=True)
 
     assert find_cascade_mismatches(route, route_model, real_index) == ()
+
+
+def test_pedestrian_island_incident_snaps_into_the_main_network(
+    real_dataset: ProcessedDataset, real_index: RoutingIndex
+) -> None:
+    """Floriańska's nearest node is a 5-node pedestrian island; snapping must skip it."""
+    settings = SimulationSettings()
+    stations = build_station_nodes(real_dataset.stations, real_index)
+    incident = Position(lat=50.0620218, lng=19.9391928)
+
+    ranking = rank_stations(real_index, stations, incident, VehicleType.FIRE_TRUCK, settings)
+
+    assert ranking.incident_snap.node_key in main_component_nodes(real_dataset.graph)
+    assert ranking.incident_snap.snap_distance_m <= settings.max_snap_distance_meters
+    assert ranking.candidates
