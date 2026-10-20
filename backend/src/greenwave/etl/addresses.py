@@ -3,9 +3,12 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+import numpy as np
 import polars as pl
 
+from greenwave.etl.config import ADDRESS_DEDUP_RADIUS_M
 from greenwave.etl.feature_points import feature_point
+from greenwave.etl.geo import project_points
 from greenwave.etl.ingest_osm import OsmFeature
 from greenwave.etl.street_names import normalise_street_name
 
@@ -72,16 +75,34 @@ def extract_addresses(features: Iterable[OsmFeature]) -> tuple[pl.DataFrame, int
     return frame, skipped, no_point
 
 
-def dedupe_addresses(frame: pl.DataFrame) -> tuple[pl.DataFrame, int]:
-    """One row per (search_key, case-folded house number): the first by (lat, lng).
+def dedupe_addresses(
+    frame: pl.DataFrame, radius_m: float = ADDRESS_DEDUP_RADIUS_M
+) -> tuple[pl.DataFrame, int]:
+    """Merge rows with the same (search_key, case-folded house number) within ``radius_m``.
 
-    Also collapses a building emitted twice (closed way and multipolygon). Returns
-    ``(frame, merged_count)``.
+    Rows are visited in (search_key, house number, lat, lng) order; a row within ``radius_m`` of an
+    already kept row of its key merges into it. The same street and number farther apart (another
+    locality) stay distinct. Also collapses a building emitted twice (closed way and multipolygon).
+    Returns ``(frame, merged_count)``.
     """
-    deduped = (
-        frame.with_columns(pl.col("housenumber").str.to_lowercase().alias("_hn"))
-        .sort("search_key", "_hn", "lat", "lng")
-        .unique(subset=["search_key", "_hn"], keep="first", maintain_order=True)
-        .drop("_hn")
+    ordered = frame.with_columns(pl.col("housenumber").str.to_lowercase().alias("_hn")).sort(
+        "search_key", "_hn", "lat", "lng"
     )
+    keys = list(zip(ordered["search_key"].to_list(), ordered["_hn"].to_list(), strict=True))
+    keep = np.ones(len(keys), dtype=bool)
+    if keys:
+        xy = project_points(ordered["lng"].to_numpy(), ordered["lat"].to_numpy())
+        start = 0
+        while start < len(keys):
+            end = start + 1
+            while end < len(keys) and keys[end] == keys[start]:
+                end += 1
+            kept = [start]
+            for i in range(start + 1, end):
+                if any(float(np.hypot(*(xy[i] - xy[j]))) <= radius_m for j in kept):
+                    keep[i] = False
+                else:
+                    kept.append(i)
+            start = end
+    deduped = ordered.filter(pl.Series(keep)).drop("_hn")
     return deduped, frame.height - deduped.height

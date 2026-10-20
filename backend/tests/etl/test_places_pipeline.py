@@ -5,7 +5,11 @@ import numpy as np
 import polars as pl
 import pytest
 
-from greenwave.etl.config import PLACES_MAX_SNAP_DISTANCE_M, STATION_DEDUP_RADIUS_M
+from greenwave.etl.config import (
+    ADDRESS_DEDUP_RADIUS_M,
+    PLACES_MAX_SNAP_DISTANCE_M,
+    STATION_DEDUP_RADIUS_M,
+)
 from greenwave.etl.geo import project_points
 from greenwave.etl.intersections_pipeline import (
     NETWORK_EDGES_FILENAME,
@@ -96,6 +100,22 @@ def test_police_names_listed(tmp_path: Path) -> None:
     raw, processed = _prepare(tmp_path, police)
 
     assert run_places(raw, processed).stations.police_names == ["Komisariat I"]
+
+
+def test_excluded_police_reported(tmp_path: Path) -> None:
+    guard = point(*at(1, 0.2), amenity="police", name="Straż Miejska Oddział I")
+    raw, processed = _prepare(tmp_path, guard, guard)  # one feature emitted twice
+
+    section = run_places(raw, processed)
+
+    assert section.stations.police_names == []
+    assert section.stations.police_excluded == ["Straż Miejska Oddział I"]
+
+
+def test_address_dedup_radius_recorded(tmp_path: Path) -> None:
+    raw, processed = _prepare(tmp_path)
+
+    assert run_places(raw, processed).address_dedup_radius_m == ADDRESS_DEDUP_RADIUS_M
 
 
 def test_snap_limit_matches_settings() -> None:

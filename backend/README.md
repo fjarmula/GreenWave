@@ -37,10 +37,12 @@ uv run python scripts/run_etl.py quality         # data_quality.json (run after 
 within 150 m of a network node (`PLACES_MAX_SNAP_DISTANCE_M`, equal to the simulation snap limit).
 Beyond the road features used elsewhere it uses: `emergency=ambulance_station`, `amenity=hospital` +
 `emergency=yes`, `amenity=fire_station`, `amenity=police` (points and polygons; stations of one type
-and name within `STATION_DEDUP_RADIUS_M` merge) and any feature with `addr:street`/`addr:place` plus
-`addr:housenumber`. It refuses to run if the network files differ from the `intersections` report
-section. The `places` report section lists dropped stations and the police station names (to decide
-`POLICE_EXCLUDED_NAMES`).
+and name within `STATION_DEDUP_RADIUS_M` merge, police of one name merge at any distance; police that
+do not answer 112 calls are excluded by `POLICE_EXCLUDED_NAME_FRAGMENTS`) and any feature with
+`addr:street`/`addr:place` plus `addr:housenumber` (the same street and number merge only within
+`ADDRESS_DEDUP_RADIUS_M`). It refuses to run if the network files differ from the `intersections`
+report section. The `places` report section lists dropped stations, the kept police names and the
+excluded ones.
 
 `quality` reads the outputs of `graph`, `intersections` and `neighbours` (near misses, street
 lengths, route checks, signal snapping, signals needing review, the bus-lane cross-check and the

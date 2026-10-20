@@ -13,7 +13,11 @@ from pydantic import BaseModel
 
 from greenwave import artifacts
 from greenwave.etl.addresses import dedupe_addresses, extract_addresses
-from greenwave.etl.config import PLACES_MAX_SNAP_DISTANCE_M, STATION_DEDUP_RADIUS_M
+from greenwave.etl.config import (
+    ADDRESS_DEDUP_RADIUS_M,
+    PLACES_MAX_SNAP_DISTANCE_M,
+    STATION_DEDUP_RADIUS_M,
+)
 from greenwave.etl.geo import project_points
 from greenwave.etl.ingest_osm import OsmFeature, iter_osm_records
 from greenwave.etl.intersections_pipeline import (
@@ -56,6 +60,7 @@ class StationsReport(BaseModel):
     duplicates_merged: int
     dropped: list[DroppedPlace]
     police_names: list[str]
+    police_excluded: list[str]
     no_usable_point: int
 
 
@@ -73,6 +78,7 @@ class PlacesSection(BaseModel):
     manifest_sha256: str
     snap_limit_m: float
     station_dedup_radius_m: float
+    address_dedup_radius_m: float
     consumed_sha256: dict[str, str]
     artifact_sha256: dict[str, str]
     stations: StationsReport
@@ -128,7 +134,8 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
     logger.info("%d station- or address-tagged features", len(features))
 
     stations_without_point: list[str] = []
-    candidates = extract_station_candidates(features, stations_without_point)
+    police_excluded: list[str] = []
+    candidates = extract_station_candidates(features, stations_without_point, police_excluded)
     singles, twins = collapse_encoding_twins(candidates)
     kept, merged = dedupe_stations(singles, radius_m=STATION_DEDUP_RADIUS_M)
     distances = _snap_distances(node_xy, [c.lon for c in kept], [c.lat for c in kept])
@@ -158,7 +165,7 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
     near = address_distances <= PLACES_MAX_SNAP_DISTANCE_M
     # Filter before de-duplicating, so an off-network twin cannot displace the on-network one.
     addresses_on_network, address_twins = dedupe_addresses(
-        addresses.filter(pl.Series(near, dtype=pl.Boolean))
+        addresses.filter(pl.Series(near, dtype=pl.Boolean)), ADDRESS_DEDUP_RADIUS_M
     )
 
     stations.write_parquet(processed_dir / STATIONS_FILENAME)
@@ -171,6 +178,7 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
         manifest_sha256=manifest_sha256,
         snap_limit_m=PLACES_MAX_SNAP_DISTANCE_M,
         station_dedup_radius_m=STATION_DEDUP_RADIUS_M,
+        address_dedup_radius_m=ADDRESS_DEDUP_RADIUS_M,
         consumed_sha256=consumed,
         artifact_sha256=artifact_hashes(processed_dir, PLACES_ARTIFACT_FILENAMES),
         stations=StationsReport(
@@ -182,6 +190,7 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
             police_names=sorted(
                 stations.filter(pl.col("vehicle_type") == "POLICE_CAR")["name"].to_list()
             ),
+            police_excluded=sorted(set(police_excluded)),
             no_usable_point=len(stations_without_point),
         ),
         addresses=AddressesReport(

@@ -38,13 +38,25 @@ def test_search_key_folds() -> None:
 def test_dedup_keeps_first_in_stable_sort(tmp_path: Path) -> None:
     tags = {"addr:street": "Floriańska", "addr:housenumber": "15"}
     a = point(19.9, 50.0, **tags)
-    b = point(19.95, 50.05, **tags)
-    forward, merged = dedupe_addresses(extract_addresses(_features(tmp_path, a, b))[0])
-    backward, _ = dedupe_addresses(extract_addresses(_features(tmp_path, b, a))[0])
+    b = point(19.9005, 50.0005, **tags)  # ~66 m apart: one address
+    forward, merged = dedupe_addresses(extract_addresses(_features(tmp_path, a, b))[0], 150.0)
+    backward, _ = dedupe_addresses(extract_addresses(_features(tmp_path, b, a))[0], 150.0)
     assert merged == 1
     assert forward.height == 1
     assert forward.equals(backward)
     assert forward["lng"][0] == 19.9
+
+
+def test_dedup_keeps_same_address_far_apart(tmp_path: Path) -> None:
+    tags = {"addr:street": "Polna", "addr:housenumber": "3"}
+    near_a = point(19.9, 50.0, **tags)
+    near_b = point(19.9001, 50.0, **tags)  # ~7 m: same building
+    far = point(19.95, 50.05, **tags)  # ~6.7 km: another locality
+    frame, merged = dedupe_addresses(
+        extract_addresses(_features(tmp_path, far, near_b, near_a))[0], 150.0
+    )
+    assert merged == 1
+    assert sorted(frame["lng"].to_list()) == [19.9, 19.95]
 
 
 def test_building_polygon_address(tmp_path: Path) -> None:

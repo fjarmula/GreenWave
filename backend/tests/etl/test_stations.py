@@ -115,14 +115,57 @@ def test_dedupe_tie_lowest_osm_ref() -> None:
     assert [c.osm_ref for c in kept] == ["b"]
 
 
-def test_police_exclusion_list(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_police_exclusion_fragments(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     feats = _features(
         tmp_path,
-        point(19.9, 50.0, amenity="police", name="Biuro"),
+        point(19.9, 50.0, amenity="police", name="Biuro Przepustek"),
         point(19.91, 50.0, amenity="police", name="Komisariat"),
     )
-    monkeypatch.setattr(stations_module, "POLICE_EXCLUDED_NAMES", ("Biuro",))
-    assert [c.name for c in extract_station_candidates(feats)] == ["Komisariat"]
+    monkeypatch.setattr(stations_module, "POLICE_EXCLUDED_NAME_FRAGMENTS", ("biuro",))
+    excluded: list[str] = []
+    names = [c.name for c in extract_station_candidates(feats, excluded=excluded)]
+    assert names == ["Komisariat"]
+    assert excluded == ["Biuro Przepustek"]
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Straż Miejska - Oddział II Krowodrza",
+        "Posterunek Straży Miejskiej Kraków - Nowa Huta (Wzgórza Krzesławickie)",
+        "Straż miejska",
+        "Komenda Regionalna Straży Ochrony Kolei w Krakowie",
+        "Wojewódzki Inspektorat Transportu Drogowego",
+        "Komisariat Wodny Policji w Krakowie",
+    ],
+)
+def test_non_112_police_excluded_by_default(tmp_path: Path, name: str) -> None:
+    feats = _features(tmp_path, point(19.9, 50.0, amenity="police", name=name))
+    assert extract_station_candidates(feats) == []
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["Komenda Miejska Policji", "Komisariat Policji I w Krakowie", "Komenda Wojewódzka Policji"],
+)
+def test_real_police_kept_by_default(tmp_path: Path, name: str) -> None:
+    feats = _features(tmp_path, point(19.9, 50.0, amenity="police", name=name))
+    assert [c.name for c in extract_station_candidates(feats)] == [name]
+
+
+def test_same_name_police_merge_at_any_distance() -> None:
+    far = [
+        StationCandidate("POLICE_CAR", "police", "Komisariat Policji I", 19.9, 50.0, "a", False),
+        StationCandidate("POLICE_CAR", "police", "Komisariat Policji I", 19.9, 50.05, "b", True),
+    ]
+    kept, merged = dedupe_stations(far, 150.0)
+    assert (len(kept), merged) == (1, 1)
+    assert kept[0].osm_ref == "b"
+    fire = [
+        StationCandidate("FIRE_TRUCK", "fire_state", "PSP 1", 19.9, 50.0, "a", True),
+        StationCandidate("FIRE_TRUCK", "fire_state", "PSP 1", 19.9, 50.05, "b", True),
+    ]
+    assert dedupe_stations(fire, 150.0)[1] == 0
 
 
 def test_ids_stable_and_per_type() -> None:

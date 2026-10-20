@@ -245,9 +245,23 @@ TRAM_TRACK_MIN_OVERLAP_SHARE = 0.5
 # PLACEHOLDER (uncalibrated, human to confirm): a point and a polygon with the same folded name,
 # same vehicle type and closer than this are one station (the point marks the entrance).
 STATION_DEDUP_RADIUS_M = 150.0
-# PLACEHOLDER (empty by default): folded-name matches excluded from police stations. The ETL report
-# lists the police names so the human can decide what belongs here.
-POLICE_EXCLUDED_NAMES: tuple[str, ...] = ()
+# APPROVED (human, 2026-10-20): `amenity=police` features that do not answer 112 calls (city guard,
+# railway guard, road transport inspectorate, water police). A police feature whose folded name
+# (`normalise_street_name`) contains any fragment is excluded and listed in the ETL report.
+POLICE_EXCLUDED_NAME_FRAGMENTS: tuple[str, ...] = (
+    "straz miejska",
+    "strazy miejskiej",
+    "straz ochrony kolei",
+    "strazy ochrony kolei",
+    "inspektorat transportu drogowego",
+    "komisariat wodny",
+)
+# APPROVED (human, 2026-10-20): same-name stations of these types are one station at any distance
+# (dispatch picks the station, not the building).
+MERGE_SAME_NAME_AT_ANY_DISTANCE: tuple[str, ...] = ("POLICE_CAR",)
+# PLACEHOLDER (uncalibrated, human to confirm): two addresses with the same folded street and house
+# number closer than this are one address; farther apart they are distinct (another locality).
+ADDRESS_DEDUP_RADIUS_M = 150.0
 
 # PLACEHOLDER (mirrors the SimulationSettings default; human to confirm). Must equal
 # SimulationSettings.max_snap_distance_meters (a test enforces it): stations and addresses farther

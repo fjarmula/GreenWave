@@ -1,6 +1,7 @@
 """Rescue-station extraction from OSM features: classify, name, dedupe and number."""
 
 import json
+import math
 import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -8,7 +9,11 @@ from dataclasses import dataclass
 import numpy as np
 import polars as pl
 
-from greenwave.etl.config import POLICE_EXCLUDED_NAMES, STATION_DEDUP_RADIUS_M
+from greenwave.etl.config import (
+    MERGE_SAME_NAME_AT_ANY_DISTANCE,
+    POLICE_EXCLUDED_NAME_FRAGMENTS,
+    STATION_DEDUP_RADIUS_M,
+)
 from greenwave.etl.feature_points import feature_point
 from greenwave.etl.geo import project_points
 from greenwave.etl.ingest_osm import OsmFeature
@@ -75,15 +80,22 @@ def _osm_ref(feature: OsmFeature) -> str:
     return ref
 
 
+def _excluded_police(name: str) -> bool:
+    folded = normalise_street_name(name)
+    return any(normalise_street_name(f) in folded for f in POLICE_EXCLUDED_NAME_FRAGMENTS)
+
+
 def extract_station_candidates(
-    features: Iterable[OsmFeature], no_point: list[str] | None = None
+    features: Iterable[OsmFeature],
+    no_point: list[str] | None = None,
+    excluded: list[str] | None = None,
 ) -> list[StationCandidate]:
     """Station candidates in input order.
 
     Station features without a usable point are left out; their names are appended to
-    ``no_point`` when given, so the caller can report them.
+    ``no_point`` when given. Police features matching ``POLICE_EXCLUDED_NAME_FRAGMENTS`` are left
+    out; their names are appended to ``excluded`` when given. Both lists feed the ETL report.
     """
-    excluded = {normalise_street_name(name) for name in POLICE_EXCLUDED_NAMES}
     candidates: list[StationCandidate] = []
     for feature in features:
         classified = classify_station(feature.properties)
@@ -91,7 +103,9 @@ def extract_station_candidates(
             continue
         vehicle_type, source_kind = classified
         name = _text(feature.properties.get("name")) or _text(feature.properties.get("operator"))
-        if vehicle_type == "POLICE_CAR" and name and normalise_street_name(name) in excluded:
+        if vehicle_type == "POLICE_CAR" and name and _excluded_police(name):
+            if excluded is not None:
+                excluded.append(name)
             continue
         coords = feature_point(feature)
         if coords is None:
@@ -153,6 +167,7 @@ def dedupe_stations(
 ) -> tuple[list[StationCandidate], int]:
     """Merge same-type, same-folded-name candidates within ``radius_m``; keep points first.
 
+    Types in ``MERGE_SAME_NAME_AT_ANY_DISTANCE`` merge same-name candidates at any distance.
     Unnamed (fallback-labelled) candidates are never merged. Returns ``(kept, merged_count)``.
     """
     unnamed = set(_UNNAMED.values())
@@ -165,7 +180,8 @@ def dedupe_stations(
         else:
             groups.setdefault((cand.vehicle_type, folded), []).append(cand)
     merged = 0
-    for group in groups.values():
+    for (vehicle_type, _), group in groups.items():
+        limit = math.inf if vehicle_type in MERGE_SAME_NAME_AT_ANY_DISTANCE else radius_m
         ordered = sorted(group, key=lambda c: (not c.is_point, c.osm_ref, c.lat, c.lon))
         xy = project_points(
             np.array([c.lon for c in ordered], dtype=np.float64),
@@ -173,7 +189,7 @@ def dedupe_stations(
         )
         kept_idx: list[int] = []
         for i, cand in enumerate(ordered):
-            if any(float(np.hypot(*(xy[i] - xy[j]))) <= radius_m for j in kept_idx):
+            if any(float(np.hypot(*(xy[i] - xy[j]))) <= limit for j in kept_idx):
                 merged += 1
             else:
                 kept_idx.append(i)
