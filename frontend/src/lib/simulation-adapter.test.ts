@@ -11,6 +11,7 @@ const request: SimulationStartRequest = {
   traffic_density_multiplier: 1.5,
   enable_cascade_mode: true,
   playback_speed: 1,
+  vehicle_type: "AMBULANCE",
 };
 
 afterEach(() => vi.unstubAllGlobals());

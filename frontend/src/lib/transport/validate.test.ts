@@ -48,6 +48,7 @@ describe("parseStartResponse", () => {
       traffic_density_multiplier: 1.5,
       enable_cascade_mode: true,
       playback_speed: 1,
+      vehicle_type: "AMBULANCE",
     }).route;
 
     expect(parseStartResponse(wire(route))).toEqual(route);

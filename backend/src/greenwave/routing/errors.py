@@ -15,3 +15,7 @@ class DestinationOffNetwork(RoutePlanningError):
 
 class NoRoute(RoutePlanningError):
     """Both endpoints snapped but no directed route joins them."""
+
+
+class NoStationReachable(RoutePlanningError):
+    """No station of the requested vehicle type has a directed route to the incident."""

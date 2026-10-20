@@ -9,13 +9,18 @@ import type {
   AmbulanceStatus,
   CancelReason,
   DatasetQualityResponse,
+  DispatchRankResponse,
   ErrorCode,
   ErrorResponse,
+  GeocodeResponse,
   IntersectionState,
   QualityStatus,
   RouteIntersection,
   SimulationStartResponse,
   SimulationStreamEvent,
+  StationSourceKind,
+  StationsResponse,
+  VehicleType,
 } from "@/types/telemetry";
 
 const INTERSECTION_STATES: Record<IntersectionState, true> = {
@@ -42,7 +47,22 @@ const ERROR_CODES: Record<ErrorCode, true> = {
   NO_ROUTE: true,
   SIMULATION_ID_IN_USE: true,
   SIMULATION_NOT_FOUND: true,
+  NO_STATION_REACHABLE: true,
 };
+const VEHICLE_TYPES: Record<VehicleType, true> = {
+  AMBULANCE: true,
+  FIRE_TRUCK: true,
+  POLICE_CAR: true,
+};
+const STATION_SOURCE_KINDS: Record<StationSourceKind, true> = {
+  ambulance_base: true,
+  hospital_ed: true,
+  fire_state: true,
+  fire_volunteer: true,
+  fire_other: true,
+  police: true,
+};
+const STATION_ID = /^STN-[AFP]-\d{4}$/;
 const STREAM_EVENT_TYPES: Record<SimulationStreamEvent["event_type"], true> = {
   SIMULATION_TICK: true,
   ITS_DISPATCH: true,
@@ -295,4 +315,61 @@ export function validateDatasetQuality(body: unknown): DatasetQualityResponse {
     }
   });
   return summary as DatasetQualityResponse;
+}
+
+function station(value: unknown, path: string): void {
+  const item = record(value, path);
+  if (!STATION_ID.test(text(item.station_id, `${path}.station_id`))) {
+    fail(`${path}.station_id`, "STN-[AFP]-nnnn");
+  }
+  member(VEHICLE_TYPES, item.vehicle_type, `${path}.vehicle_type`);
+  member(STATION_SOURCE_KINDS, item.source_kind, `${path}.source_kind`);
+  text(item.name, `${path}.name`);
+  position(item.position, `${path}.position`);
+}
+
+function nonNegative(value: unknown, path: string): void {
+  if (finite(value, path) < 0) fail(path, "a non-negative number");
+}
+
+/** `GET /api/v1/stations` body. Throws `TypeError` naming the first offending field. */
+export function validateStations(body: unknown): StationsResponse {
+  const response = record(body, "response");
+  if (response.schema_version !== "1.0") fail("schema_version", '"1.0"');
+  list(response.stations, "stations").forEach((value, index) =>
+    station(value, `stations[${index}]`),
+  );
+  return response as StationsResponse;
+}
+
+/** `GET /api/v1/geocode` body. Throws `TypeError` naming the first offending field. */
+export function validateGeocode(body: unknown): GeocodeResponse {
+  const response = record(body, "response");
+  if (response.schema_version !== "1.0") fail("schema_version", '"1.0"');
+  list(response.results, "results").forEach((value, index) => {
+    const result = record(value, `results[${index}]`);
+    text(result.label, `results[${index}].label`);
+    position(result.position, `results[${index}].position`);
+  });
+  return response as GeocodeResponse;
+}
+
+/** `POST /api/v1/dispatch/rank` body. Throws `TypeError` naming the first offending field. */
+export function validateRank(body: unknown): DispatchRankResponse {
+  const response = record(body, "response");
+  if (response.schema_version !== "1.0") fail("schema_version", '"1.0"');
+  snappedEndpoint(response.incident_snapped, "incident_snapped");
+  const candidates = list(response.candidates, "candidates");
+  if (candidates.length < 1 || candidates.length > 3) fail("candidates", "1 to 3 items");
+  candidates.forEach((value, index) => {
+    const path = `candidates[${index}]`;
+    const candidate = record(value, path);
+    station(candidate.station, `${path}.station`);
+    nonNegative(candidate.greenwave_seconds, `${path}.greenwave_seconds`);
+    nonNegative(candidate.distance_m, `${path}.distance_m`);
+  });
+  if (response.station_at_incident !== null) {
+    station(response.station_at_incident, "station_at_incident");
+  }
+  return response as DispatchRankResponse;
 }

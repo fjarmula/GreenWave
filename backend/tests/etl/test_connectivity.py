@@ -1,7 +1,7 @@
 import networkx as nx
 import pytest
 
-from greenwave.etl.connectivity import analyse_connectivity
+from greenwave.etl.connectivity import analyse_connectivity, main_component_nodes
 from greenwave.etl.graph import build_graph
 from greenwave.etl.profile_osm import DrivableWay, LonLat
 
@@ -58,3 +58,22 @@ def test_one_way_dead_end_is_a_trap_fragment_not_an_island() -> None:
 def test_empty_graph_is_an_error() -> None:
     with pytest.raises(ValueError, match="empty"):
         analyse_connectivity(nx.MultiDiGraph())
+
+
+def test_main_component_is_the_largest_strong_component() -> None:
+    graph = nx.MultiDiGraph()
+    graph.add_edges_from([("a", "b"), ("b", "c"), ("c", "a"), ("a", "tail")])  # tail: one-way out
+    graph.add_edges_from([("x", "y"), ("y", "x")])  # a two-node island
+
+    assert main_component_nodes(graph) == frozenset({"a", "b", "c"})
+
+
+def test_main_component_tie_is_deterministic() -> None:
+    graph = nx.MultiDiGraph()
+    graph.add_edges_from([("q", "r"), ("r", "q"), ("b", "a"), ("a", "b")])
+
+    assert main_component_nodes(graph) == frozenset({"a", "b"})
+
+
+def test_main_component_of_an_empty_graph_is_empty() -> None:
+    assert main_component_nodes(nx.MultiDiGraph()) == frozenset()

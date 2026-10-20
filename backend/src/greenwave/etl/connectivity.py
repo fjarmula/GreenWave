@@ -93,6 +93,21 @@ def _summaries(
     return summaries
 
 
+def main_component_nodes(graph: nx.MultiDiGraph) -> frozenset[str]:
+    """Node keys of the largest strongly connected component: the routable core.
+
+    Every node in it reaches and is reached by every other, so an endpoint snapped into it always
+    has a route both ways; islands (e.g. a pedestrian street segment) never do. A size tie goes to
+    the component with the smallest node key, so the choice is deterministic.
+    """
+    components = [
+        frozenset(str(node) for node in c) for c in nx.strongly_connected_components(graph)
+    ]
+    if not components:
+        return frozenset()
+    return min(components, key=lambda component: (-len(component), min(component)))
+
+
 def analyse_connectivity(graph: nx.MultiDiGraph) -> ConnectivityReport:
     total_road_m = sum(d["length_m"] for _, _, d in graph.edges(data=True) if not d["reverse_twin"])
     weak = sorted(nx.weakly_connected_components(graph), key=len, reverse=True)

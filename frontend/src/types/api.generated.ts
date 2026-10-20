@@ -24,6 +24,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dispatch/rank": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rank
+         * @description Sync on purpose: FastAPI runs it in the thread pool, keeping the CPU work off the loop.
+         */
+        post: operations["rank_api_v1_dispatch_rank_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geocode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Geocode
+         * @description Search the local OSM address index; never calls an external geocoder.
+         */
+        get: operations["geocode_api_v1_geocode_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -92,6 +132,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Stations
+         * @description Every station that snaps to the network, all vehicle types, sorted by ``station_id``.
+         */
+        get: operations["list_stations_api_v1_stations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -136,11 +196,28 @@ export interface components {
             /** Sources */
             sources: components["schemas"]["QualitySource"][];
         };
+        /** DispatchRankRequest */
+        DispatchRankRequest: {
+            incident: components["schemas"]["Position"];
+            vehicle_type: components["schemas"]["VehicleType"];
+        };
+        /** DispatchRankResponse */
+        DispatchRankResponse: {
+            /** Candidates */
+            candidates: components["schemas"]["RankedCandidate"][];
+            incident_snapped: components["schemas"]["SnappedEndpoint"];
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+            station_at_incident: components["schemas"]["Station"] | null;
+        };
         /**
          * ErrorCode
          * @enum {string}
          */
-        ErrorCode: "ORIGIN_OFF_NETWORK" | "DESTINATION_OFF_NETWORK" | "NO_ROUTE" | "SIMULATION_ID_IN_USE" | "SIMULATION_NOT_FOUND";
+        ErrorCode: "ORIGIN_OFF_NETWORK" | "DESTINATION_OFF_NETWORK" | "NO_ROUTE" | "SIMULATION_ID_IN_USE" | "SIMULATION_NOT_FOUND" | "NO_STATION_REACHABLE";
         /** ErrorResponse */
         ErrorResponse: {
             error_code: components["schemas"]["ErrorCode"];
@@ -151,6 +228,22 @@ export interface components {
              * @constant
              */
             schema_version: "1.0";
+        };
+        /** GeocodeResponse */
+        GeocodeResponse: {
+            /** Results */
+            results: components["schemas"]["GeocodeResult"][];
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+        };
+        /** GeocodeResult */
+        GeocodeResult: {
+            /** Label */
+            label: string;
+            position: components["schemas"]["Position"];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -252,11 +345,7 @@ export interface components {
              * @constant
              */
             priority_level: 1;
-            /**
-             * Vehicle Type
-             * @constant
-             */
-            vehicle_type: "AMBULANCE";
+            vehicle_type: components["schemas"]["VehicleType"];
         };
         /** KpiMetrics */
         KpiMetrics: {
@@ -306,6 +395,14 @@ export interface components {
          * @enum {string}
          */
         QualityStatus: "pass" | "info" | "warn";
+        /** RankedCandidate */
+        RankedCandidate: {
+            /** Distance M */
+            distance_m: number;
+            /** Greenwave Seconds */
+            greenwave_seconds: number;
+            station: components["schemas"]["Station"];
+        };
         /** RouteGeometry */
         RouteGeometry: {
             /** Coordinates */
@@ -409,6 +506,8 @@ export interface components {
             simulation_id: string;
             /** Traffic Density Multiplier */
             traffic_density_multiplier: number;
+            /** @default AMBULANCE */
+            vehicle_type: components["schemas"]["VehicleType"];
         };
         /** SimulationStartResponse */
         SimulationStartResponse: {
@@ -488,6 +587,32 @@ export interface components {
             /** Snap Distance M */
             snap_distance_m: number;
         };
+        /** Station */
+        Station: {
+            /** Name */
+            name: string;
+            position: components["schemas"]["Position"];
+            source_kind: components["schemas"]["StationSourceKind"];
+            /** Station Id */
+            station_id: string;
+            vehicle_type: components["schemas"]["VehicleType"];
+        };
+        /**
+         * StationSourceKind
+         * @description Where a station comes from; the UI names it, so hospital EDs are not passed off as bases.
+         * @enum {string}
+         */
+        StationSourceKind: "ambulance_base" | "hospital_ed" | "fire_state" | "fire_volunteer" | "fire_other" | "police";
+        /** StationsResponse */
+        StationsResponse: {
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Stations */
+            stations: components["schemas"]["Station"][];
+        };
         /** StopResponse */
         StopResponse: {
             /**
@@ -521,6 +646,15 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /**
+         * VehicleType
+         * @description Chooses the candidate stations and the map icon, and is reported in the ITS payload.
+         *
+         *     Lives here, not in ``schemas.dispatch``, because the start request and the ITS payload use it
+         *     and ``schemas.dispatch`` imports from this module (ADR 0006).
+         * @enum {string}
+         */
+        VehicleType: "AMBULANCE" | "FIRE_TRUCK" | "POLICE_CAR";
     };
     responses: never;
     parameters: never;
@@ -546,6 +680,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatasetQualityResponse"];
+                };
+            };
+        };
+    };
+    rank_api_v1_dispatch_rank_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DispatchRankRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DispatchRankResponse"];
+                };
+            };
+            /** @description DESTINATION_OFF_NETWORK or NO_STATION_REACHABLE (ErrorResponse); request-schema violations return FastAPI's default validation body. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    geocode_api_v1_geocode_get: {
+        parameters: {
+            query: {
+                q: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeocodeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -688,6 +887,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_stations_api_v1_stations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StationsResponse"];
                 };
             };
         };

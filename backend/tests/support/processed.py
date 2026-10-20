@@ -11,6 +11,7 @@ from greenwave.etl.intersections_pipeline import run_intersections_with_road_att
 from greenwave.etl.io import REPORT_FILENAME, update_report_section
 from greenwave.etl.manifest import MANIFEST_FILENAME
 from greenwave.etl.neighbours_pipeline import run_neighbours
+from greenwave.etl.places_pipeline import run_places
 from greenwave.etl.quality import run_quality
 from tests.support.pipeline_fixtures import make_raw
 
@@ -88,7 +89,7 @@ def write_graph_check_stubs(processed: Path) -> None:
 
 
 def build_layout(root: Path) -> Layout:
-    """Run the intersections, neighbours and quality steps on the tiny raw fixture in ``root``."""
+    """Run intersections, neighbours, places and quality on the tiny raw fixture in ``root``."""
     raw = make_raw(root)
     processed = root / "processed"
     report = processed / REPORT_FILENAME
@@ -98,6 +99,7 @@ def build_layout(root: Path) -> Layout:
     update_report_section(report, "intersections", section)
     update_report_section(report, "road_attributes", road_attributes)
     update_report_section(report, "neighbours", run_neighbours(raw, processed))
+    update_report_section(report, "places", run_places(raw, processed))
     write_graph_check_stubs(processed)
     update_report_section(report, "quality", run_quality(raw, processed))
     return Layout(processed, raw / MANIFEST_FILENAME)

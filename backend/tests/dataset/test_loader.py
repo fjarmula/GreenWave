@@ -29,6 +29,7 @@ from greenwave.etl.intersections_pipeline import (
 from greenwave.etl.io import REPORT_FILENAME
 from greenwave.etl.manifest import load_manifest, sha256_of_file
 from greenwave.etl.neighbours_pipeline import NEIGHBOURS_FILENAME
+from greenwave.etl.places_pipeline import ADDRESSES_FILENAME, STATIONS_FILENAME
 from greenwave.etl.quality import QUALITY_FILENAME
 from tests.support.processed import Layout
 
@@ -44,6 +45,8 @@ def record_hash(path: Path) -> None:
         ("intersections", "artifact_sha256"),
         ("neighbours", "artifact_sha256"),
         ("neighbours", "consumed_sha256"),
+        ("places", "artifact_sha256"),
+        ("places", "consumed_sha256"),
         ("quality", "consumed_sha256"),
         ("quality", "artifact_sha256"),
     ):
@@ -98,6 +101,8 @@ def test_load_logs_counts_and_duration(layout: Layout, caplog: pytest.LogCapture
         INTERSECTIONS_FILENAME,
         APPROACHES_FILENAME,
         NEIGHBOURS_FILENAME,
+        STATIONS_FILENAME,
+        ADDRESSES_FILENAME,
         IDS_FILENAME,
         REPORT_FILENAME,
     ],
@@ -505,3 +510,177 @@ def test_loader_asks_for_the_quality_step_without_its_report_section(layout: Lay
 
     with pytest.raises(MalformedArtifactError, match=r"run_etl\.py quality"):
         load_dataset(layout.processed, layout.manifest)
+
+
+def test_loads_stations_and_addresses(layout: Layout) -> None:
+    dataset = load_dataset(layout.processed, layout.manifest)
+
+    assert dataset.counts.stations == dataset.stations.height > 0
+    assert dataset.counts.addresses == dataset.addresses.height > 0
+    assert dataset.stations["station_id"].str.contains(r"^STN-[AFP]-\d{4}$").all()
+
+
+@pytest.mark.parametrize("filename", [STATIONS_FILENAME, ADDRESSES_FILENAME])
+def test_missing_places_artifact_names_step(layout: Layout, filename: str) -> None:
+    (layout.processed / filename).unlink()
+
+    with pytest.raises(MissingArtifactError, match=filename) as error:
+        load_dataset(layout.processed, layout.manifest)
+    assert "run_etl.py places" in str(error.value)
+
+
+def test_places_hash_mismatch_rejected(layout: Layout) -> None:
+    path = layout.processed / ADDRESSES_FILENAME
+    pl.read_parquet(path).with_columns(pl.col("lat") + 1e-6).write_parquet(path)
+
+    with pytest.raises(ArtifactHashMismatchError, match=ADDRESSES_FILENAME):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_places_built_from_other_network_files_are_detected(layout: Layout) -> None:
+    edit_json(
+        layout.processed / REPORT_FILENAME,
+        lambda d: d["places"]["consumed_sha256"].__setitem__(NETWORK_NODES_FILENAME, "0" * 64),
+    )
+
+    with pytest.raises(ArtifactHashMismatchError, match=NETWORK_NODES_FILENAME) as error:
+        load_dataset(layout.processed, layout.manifest)
+    assert "run_etl.py places" in str(error.value)
+
+
+@pytest.mark.parametrize("filename", [STATIONS_FILENAME, ADDRESSES_FILENAME])
+def test_place_outside_bounds_rejected(layout: Layout, filename: str) -> None:
+    edit_parquet(
+        layout.processed / filename,
+        lambda f: f.with_columns(
+            pl.when(pl.int_range(pl.len()) == 0)
+            .then(pl.col("lat") + 10)
+            .otherwise(pl.col("lat"))
+            .alias("lat")
+        ),
+    )
+
+    with pytest.raises(MalformedArtifactError, match=r"outside"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_unknown_vehicle_type_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / STATIONS_FILENAME,
+        lambda f: f.with_columns(pl.lit("HELICOPTER").alias("vehicle_type")),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="HELICOPTER"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_unknown_source_kind_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / STATIONS_FILENAME,
+        lambda f: f.with_columns(pl.lit("moon_base").alias("source_kind")),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="moon_base"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+@pytest.mark.parametrize("bad", ["STN-X-0001", "STN-A-1", None])
+def test_bad_station_id_rejected(layout: Layout, bad: str | None) -> None:
+    edit_parquet(
+        layout.processed / STATIONS_FILENAME,
+        lambda f: f.with_columns(
+            pl.when(pl.int_range(pl.len()) == 0)
+            .then(pl.lit(bad, dtype=pl.String))
+            .otherwise(pl.col("station_id"))
+            .alias("station_id")
+        ),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="station_id"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_duplicate_station_id_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / STATIONS_FILENAME,
+        lambda f: f.with_columns(pl.lit("STN-A-0001").alias("station_id")),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="station_id"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_duplicate_address_label_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / ADDRESSES_FILENAME,
+        lambda f: pl.concat([f, f]),  # every label now appears twice
+    )
+
+    with pytest.raises(MalformedArtifactError, match="label"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_null_address_label_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / ADDRESSES_FILENAME,
+        lambda f: f.with_columns(pl.lit(None, dtype=pl.String).alias("label")),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="label"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_null_address_key_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / ADDRESSES_FILENAME,
+        lambda f: f.with_columns(pl.lit(None, dtype=pl.String).alias("search_key")),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="search_key"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+@pytest.mark.parametrize(
+    ("section", "path", "artifact"),
+    [
+        ("places", ("addresses", "rows"), ADDRESSES_FILENAME),
+    ],
+)
+def test_places_count_mismatch_against_the_report(
+    layout: Layout, section: str, path: tuple[str, str], artifact: str
+) -> None:
+    edit_json(
+        layout.processed / REPORT_FILENAME,
+        lambda d: d[section][path[0]].__setitem__(path[1], d[section][path[0]][path[1]] + 1),
+    )
+
+    with pytest.raises(CountMismatchError, match=artifact):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_missing_places_section_names_places_step(layout: Layout) -> None:
+    edit_json(layout.processed / REPORT_FILENAME, lambda d: d.pop("places"))
+
+    with pytest.raises(MalformedArtifactError, match="section 'places'") as error:
+        load_dataset(layout.processed, layout.manifest)
+    assert "run_etl.py places" in str(error.value)
+
+
+def test_invalid_places_section_names_places_step(layout: Layout) -> None:
+    edit_json(layout.processed / REPORT_FILENAME, lambda d: d["places"].pop("stations"))
+
+    with pytest.raises(MalformedArtifactError, match="section 'places'") as error:
+        load_dataset(layout.processed, layout.manifest)
+    assert "run_etl.py places" in str(error.value)
+
+
+def test_stations_count_mismatch_names_places_step(layout: Layout) -> None:
+    def bump(document: dict[str, Any]) -> None:
+        by_type = document["places"]["stations"]["by_vehicle_type"]
+        by_type[next(iter(by_type))] += 1
+
+    edit_json(layout.processed / REPORT_FILENAME, bump)
+
+    with pytest.raises(CountMismatchError, match=STATIONS_FILENAME) as error:
+        load_dataset(layout.processed, layout.manifest)
+    assert "run_etl.py places" in str(error.value)

@@ -1,6 +1,7 @@
 "use client";
 
 import { Route } from "lucide-react";
+import type { ComponentProps } from "react";
 
 import type { DashboardMode } from "@/components/dashboard/DashboardHeader";
 import { VehicleTelemetry } from "@/components/dashboard/VehicleTelemetry";
@@ -8,8 +9,8 @@ import { IntersectionList } from "@/components/hud/IntersectionList";
 import { ItsConsole } from "@/components/hud/ItsConsole";
 import { KpiHeader } from "@/components/hud/KpiHeader";
 import { RunSummary } from "@/components/hud/RunSummary";
+import type { MapEndpoint } from "@/components/map/EndpointMarkers";
 import { MapContainer } from "@/components/map/MapContainer";
-import type { DestinationEndpoint, OriginEndpoint } from "@/components/map/dispatch-endpoints";
 
 export function RoutePreview({
   mode,
@@ -17,12 +18,18 @@ export function RoutePreview({
   destination,
   mapFocusRequest,
   onBackToSetup,
+  map: mapProps,
 }: {
   mode: DashboardMode;
-  origin: OriginEndpoint;
-  destination: DestinationEndpoint;
+  origin: MapEndpoint | null;
+  destination: MapEndpoint | null;
   mapFocusRequest: number;
   onBackToSetup?: () => void;
+  /** Station layer and map-click inputs, passed through to the map. */
+  map: Pick<
+    ComponentProps<typeof MapContainer>,
+    "stations" | "selectedVehicleType" | "chosenStationId" | "runnerUpIds" | "onMapClick"
+  >;
 }) {
   const isLive = mode === "live";
 
@@ -45,6 +52,7 @@ export function RoutePreview({
           origin={origin}
           destination={destination}
           focusRequest={mapFocusRequest}
+          {...mapProps}
         />
       </div>
 

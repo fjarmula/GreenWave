@@ -4,14 +4,16 @@ import { useEffect } from "react";
 import * as maplibregl from "maplibre-gl";
 import type { Map } from "maplibre-gl";
 
-import type { DestinationEndpoint, OriginEndpoint } from "@/components/map/dispatch-endpoints";
 import { snapConnectorFeatures, SNAP_CONNECTOR_MIN_METERS } from "@/components/map/snap-connectors";
-import type { SimulationStartRequest, SimulationStartResponse } from "@/types/telemetry";
+import type { Position, SimulationStartRequest, SimulationStartResponse } from "@/types/telemetry";
+
+/** A labelled map point: the dispatching station (origin) or the incident (destination). */
+export type MapEndpoint = { label: string; position: Position };
 
 type EndpointMarkersProps = {
   map: Map | null;
-  origin: OriginEndpoint;
-  destination: DestinationEndpoint;
+  origin: MapEndpoint | null;
+  destination: MapEndpoint | null;
   focusRequest: number;
   live: boolean;
   /** False once a route is shown: the map then fits the route instead of the endpoints. */
@@ -21,6 +23,11 @@ type EndpointMarkersProps = {
   styleRevision: number;
 };
 
+/**
+ * Fits the map to the chosen station and the incident, and draws the dashed snap
+ * connectors once a run starts. The pins themselves are `StationLayer` (station)
+ * and `IncidentMarker` (incident).
+ */
 export function EndpointMarkers({
   map,
   origin,
@@ -32,44 +39,40 @@ export function EndpointMarkers({
   routeData,
   styleRevision,
 }: EndpointMarkersProps) {
+  // Primitive dependencies: the dashboard builds new endpoint objects on every render.
+  const originLng = origin?.position.lng ?? null;
+  const originLat = origin?.position.lat ?? null;
+  const destinationLng = destination?.position.lng ?? null;
+  const destinationLat = destination?.position.lat ?? null;
+
   useEffect(() => {
-    if (!map) return;
-
-    const originMarker = createEndpointMarker("Origin", origin.mapLabel, "cyan");
-    const destinationMarker = createEndpointMarker("Destination", destination.mapLabel, "emerald");
-
-    const originMapMarker = new maplibregl.Marker({ element: originMarker, anchor: "center" })
-      .setLngLat(origin.coordinates)
-      .addTo(map);
-    const destinationMapMarker = new maplibregl.Marker({
-      element: destinationMarker,
-      anchor: "center",
-    })
-      .setLngLat(destination.coordinates)
-      .addTo(map);
-
-    if (!fitToEndpoints) {
-      return () => {
-        originMapMarker.remove();
-        destinationMapMarker.remove();
-      };
+    if (!map || !fitToEndpoints) return;
+    const points: Array<[number, number]> = [];
+    if (originLng !== null && originLat !== null) points.push([originLng, originLat]);
+    if (destinationLng !== null && destinationLat !== null) {
+      points.push([destinationLng, destinationLat]);
     }
-    const bounds = new maplibregl.LngLatBounds(origin.coordinates, origin.coordinates);
-    bounds.extend(destination.coordinates);
+    if (points.length === 0) return;
+    const bounds = new maplibregl.LngLatBounds(points[0], points[0]);
+    points.forEach((point) => bounds.extend(point));
     const mobile = map.getContainer().clientWidth < 640;
     map.fitBounds(bounds, {
       padding: mobile
         ? { top: live ? 180 : 110, right: 100, bottom: 80, left: 40 }
         : { top: 140, right: 160, bottom: 140, left: 160 },
-      maxZoom: 13.2,
+      maxZoom: points.length > 1 ? 13.2 : 14,
       duration: focusRequest ? 600 : 0,
     });
-
-    return () => {
-      originMapMarker.remove();
-      destinationMapMarker.remove();
-    };
-  }, [destination, fitToEndpoints, focusRequest, live, map, origin]);
+  }, [
+    destinationLat,
+    destinationLng,
+    fitToEndpoints,
+    focusRequest,
+    live,
+    map,
+    originLat,
+    originLng,
+  ]);
 
   useEffect(() => {
     if (!map || !startRequest) return;
@@ -97,29 +100,4 @@ export function EndpointMarkers({
   }, [map, routeData, startRequest, styleRevision]);
 
   return null;
-}
-
-function createEndpointMarker(
-  role: "Origin" | "Destination",
-  label: string,
-  color: "cyan" | "emerald",
-) {
-  const element = document.createElement("div");
-  element.className =
-    "relative size-7 font-mono text-[10px] font-bold text-foreground drop-shadow-md";
-  element.setAttribute("aria-label", `${role}: ${label}`);
-
-  const labelElement = document.createElement("span");
-  labelElement.className =
-    "absolute top-1/2 left-full ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-border/80 bg-card/95 px-2 py-1 shadow-lg backdrop-blur";
-  labelElement.textContent = `${role === "Origin" ? "A" : "B"} · ${label}`;
-
-  const pin = document.createElement("span");
-  pin.className = `grid size-7 place-items-center rounded-full border-2 border-background shadow-lg ${
-    color === "cyan" ? "bg-cyan-500" : "bg-emerald-500"
-  }`;
-  pin.innerHTML = `<span class="size-2 rounded-full bg-white"></span>`;
-
-  element.append(pin, labelElement);
-  return element;
 }

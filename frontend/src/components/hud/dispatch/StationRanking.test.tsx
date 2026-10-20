@@ -1,0 +1,96 @@
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
+
+import { StationRanking } from "@/components/hud/dispatch/StationRanking";
+import type { DispatchRankResponse, Station } from "@/types/telemetry";
+
+const station = (id: string, name: string, kind: Station["source_kind"]): Station => ({
+  station_id: id,
+  vehicle_type: "AMBULANCE",
+  source_kind: kind,
+  name,
+  position: { lat: 50.06, lng: 19.94 },
+});
+
+const RANKING: DispatchRankResponse = {
+  schema_version: "1.0",
+  incident_snapped: { position: { lat: 50.0617, lng: 19.9373 }, snap_distance_m: 3 },
+  candidates: [
+    {
+      station: station("STN-A-0006", "SP ZOZ MSW", "hospital_ed"),
+      greenwave_seconds: 248.4,
+      distance_m: 2810,
+    },
+    {
+      station: station("STN-A-0007", "5. Wojskowy", "hospital_ed"),
+      greenwave_seconds: 289,
+      distance_m: 3403,
+    },
+    {
+      station: station("STN-A-0004", "KPR", "ambulance_base"),
+      greenwave_seconds: 349,
+      distance_m: 4592,
+    },
+  ],
+  station_at_incident: null,
+};
+
+const render = (props: Partial<Parameters<typeof StationRanking>[0]> = {}) =>
+  renderToStaticMarkup(
+    <StationRanking
+      ranking={RANKING}
+      rankStatus="ready"
+      rankError={null}
+      roadTimeRanking
+      {...props}
+    />,
+  );
+
+describe("StationRanking", () => {
+  it("shows the winner and two runners-up with their times", () => {
+    const markup = render();
+    expect(markup).toContain("SP ZOZ MSW");
+    expect(markup).toContain("5. Wojskowy");
+    expect(markup).toContain("KPR");
+    expect(markup).toContain("04m 08s");
+    expect(markup).toContain("04m 49s");
+    expect(markup).toContain("05m 49s");
+  });
+
+  it("names hospital emergency departments as such", () => {
+    expect(render()).toContain("Hospital emergency dept.");
+    expect(render()).toContain("Ambulance base");
+  });
+
+  it("explains a station at the incident", () => {
+    const markup = render({
+      ranking: { ...RANKING, station_at_incident: station("STN-A-0001", "Here", "ambulance_base") },
+    });
+    expect(markup).toContain(
+      "A station of this type is at this location; dispatching from the next fastest.",
+    );
+  });
+
+  it("labels the mock choice approximate and shows no times", () => {
+    const markup = render({
+      roadTimeRanking: false,
+      ranking: { ...RANKING, candidates: [{ ...RANKING.candidates[0], greenwave_seconds: 0 }] },
+    });
+    expect(markup).toContain("Approximate (mock)");
+    expect(markup).not.toMatch(/\d\dm \d\ds/);
+  });
+
+  it("shows the error copy", () => {
+    const markup = render({
+      ranking: null,
+      rankStatus: "error",
+      rankError: "Location is off the road network",
+    });
+    expect(markup).toContain("Location is off the road network");
+    expect(markup).toContain('role="alert"');
+  });
+
+  it("shows progress while ranking", () => {
+    expect(render({ ranking: null, rankStatus: "loading" })).toContain("Ranking stations");
+  });
+});

@@ -10,6 +10,16 @@ from greenwave.schemas.dataset_quality import (
     QualitySource,
     QualityStatus,
 )
+from greenwave.schemas.dispatch import (
+    DispatchRankRequest,
+    DispatchRankResponse,
+    GeocodeResponse,
+    GeocodeResult,
+    RankedCandidate,
+    Station,
+    StationSourceKind,
+    StationsResponse,
+)
 from greenwave.schemas.health import HealthResponse
 from greenwave.schemas.simulation import (
     AmbulanceStatus,
@@ -34,6 +44,7 @@ from greenwave.schemas.simulation import (
     SimulationTickEvent,
     SnappedEndpoint,
     StopResponse,
+    VehicleType,
 )
 
 __all__ = [
@@ -41,8 +52,12 @@ __all__ = [
     "AmbulanceTelemetry",
     "CancelReason",
     "DatasetQualityResponse",
+    "DispatchRankRequest",
+    "DispatchRankResponse",
     "ErrorCode",
     "ErrorResponse",
+    "GeocodeResponse",
+    "GeocodeResult",
     "HealthResponse",
     "IntersectionKind",
     "IntersectionState",
@@ -54,6 +69,7 @@ __all__ = [
     "QualityCheck",
     "QualitySource",
     "QualityStatus",
+    "RankedCandidate",
     "RouteGeometry",
     "RouteIntersection",
     "SimulationCancelledEvent",
@@ -63,5 +79,9 @@ __all__ = [
     "SimulationStreamEvent",
     "SimulationTickEvent",
     "SnappedEndpoint",
+    "Station",
+    "StationSourceKind",
+    "StationsResponse",
     "StopResponse",
+    "VehicleType",
 ]

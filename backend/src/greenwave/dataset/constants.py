@@ -4,6 +4,7 @@ the columns the loader requires."""
 import polars as pl
 
 from greenwave.artifacts import (
+    ADDRESSES_FILENAME,
     APPROACHES_FILENAME,
     IDS_FILENAME,
     INTERSECTIONS_FILENAME,
@@ -12,18 +13,27 @@ from greenwave.artifacts import (
     NETWORK_NODES_FILENAME,
     QUALITY_FILENAME,
     REPORT_FILENAME,
+    STATIONS_FILENAME,
 )
 
 COMMAND = "uv run python scripts/run_etl.py {step}"
 STEP_INTERSECTIONS = "intersections"
 STEP_NEIGHBOURS = "neighbours"
+STEP_PLACES = "places"
 STEP_QUALITY = "quality"
 NEIGHBOURS_COMMAND = f"`{COMMAND.format(step=STEP_NEIGHBOURS)}`"
+PLACES_COMMAND = f"`{COMMAND.format(step=STEP_PLACES)}`"
 QUALITY_COMMAND = f"`{COMMAND.format(step=STEP_QUALITY)}`"
 CHAIN = (
     f"`{COMMAND.format(step=STEP_INTERSECTIONS)}` and then `{COMMAND.format(step=STEP_NEIGHBOURS)}`"
 )
 EXAMPLES_IN_MESSAGE = 5
+BOUNDS_PADDING_DEG = 0.01
+VEHICLE_TYPES = frozenset({"AMBULANCE", "FIRE_TRUCK", "POLICE_CAR"})
+SOURCE_KINDS = frozenset(
+    {"ambulance_base", "hospital_ed", "fire_state", "fire_volunteer", "fire_other", "police"}
+)
+STATION_ID_PATTERN = r"^STN-[AFP]-\d{4}$"
 
 # file -> step that writes it
 PRODUCED_BY = {
@@ -33,6 +43,8 @@ PRODUCED_BY = {
     APPROACHES_FILENAME: STEP_INTERSECTIONS,
     IDS_FILENAME: STEP_INTERSECTIONS,
     NEIGHBOURS_FILENAME: STEP_NEIGHBOURS,
+    STATIONS_FILENAME: STEP_PLACES,
+    ADDRESSES_FILENAME: STEP_PLACES,
     REPORT_FILENAME: STEP_INTERSECTIONS,
     QUALITY_FILENAME: STEP_QUALITY,
 }
@@ -75,5 +87,25 @@ REQUIRED_COLUMNS: dict[str, dict[str, pl.DataType | type[pl.DataType] | None]] =
         "to_intersection_id": pl.String,
         "distance_m": pl.Float64,
         "path_edge_ids": pl.List(pl.String),
+    },
+    STATIONS_FILENAME: {
+        "station_id": pl.String,
+        "vehicle_type": pl.String,
+        "source_kind": pl.String,
+        "name": pl.String,
+        "lat": pl.Float64,
+        "lng": pl.Float64,
+        "osm_ref": pl.String,
+        "snap_distance_m": pl.Float64,
+    },
+    ADDRESSES_FILENAME: {
+        "street": pl.String,
+        "housenumber": pl.String,
+        "search_key": pl.String,
+        "locality": pl.String,
+        "outside_krakow": pl.Boolean,
+        "label": pl.String,
+        "lat": pl.Float64,
+        "lng": pl.Float64,
     },
 }

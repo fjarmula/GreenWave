@@ -40,6 +40,9 @@ def make_raw(tmp_path: Path, extra: tuple[str, ...] = ()) -> Path:
         point(*at(1.5, 0), highway="traffic_signals"),
         point(*at(2.5, 0), highway="traffic_signals", **{"traffic_signals:direction": "forward"}),
         point(*at(3.5, 0), highway="crossing", crossing="traffic_signals"),
+        point(*at(1, 0.3), amenity="fire_station", name="PSP Testowa"),
+        point(*at(3, 0.3), emergency="ambulance_station", name="Stacja Testowa"),
+        point(*at(2, 0.4), **{"addr:street": "Poprzeczna", "addr:housenumber": "7"}),
         *extra,
     )
     source.rename(osm_path)

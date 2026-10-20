@@ -219,7 +219,7 @@ export function buildMockDispatch(
     target_system: "STeR_KRAKOW_ITS",
     payload: {
       priority_level: 1,
-      vehicle_type: "AMBULANCE",
+      vehicle_type: request.vehicle_type,
       intersections_group: group.map((index) => route.route_intersections[index].id),
       action: "FORCE_GREEN_PHASE",
       hold_duration_sec: Math.max(

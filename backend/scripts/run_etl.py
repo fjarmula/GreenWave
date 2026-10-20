@@ -10,6 +10,7 @@ Steps, in dependency order (each step re-reads the raw data, except ``neighbours
     override-map     check page for data/overrides/roundabouts.json
     intersections    T4: network_*.parquet, intersections.parquet, signal_approaches.parquet, ids
     neighbours       T5: approach_neighbours.parquet (reads the processed T4 artifacts)
+    places           stations.parquet + addresses.parquet (reads OSM and the processed T4 network)
     quality          data_quality.json: summary of the ETL diagnostics (reads processed outputs)
     roundabouts      roundabout inventory report (analysis only)
     cluster-map      signal-radius decision aid: signal_cluster_map.html
@@ -35,6 +36,7 @@ from greenwave.etl.overrides import (
     load_overrides,
     write_overrides,
 )
+from greenwave.etl.places_pipeline import run_places
 from greenwave.etl.prepare import prepare_scan
 from greenwave.etl.profile import run_profile
 from greenwave.etl.quality import QUALITY_FILENAME, run_quality
@@ -58,6 +60,7 @@ def main() -> int:
             "override-map",
             "intersections",
             "neighbours",
+            "places",
             "quality",
             "roundabouts",
             "cluster-map",
@@ -120,6 +123,13 @@ def main() -> int:
         section = run_neighbours(DATA_DIR / "raw", DATA_DIR / "processed")
         update_report_section(REPORT_PATH, "neighbours", section)
         print(f"wrote approach_neighbours.parquet ({section.report.pairs} pairs)")
+    elif args.step == "places":
+        section = run_places(DATA_DIR / "raw", DATA_DIR / "processed")
+        update_report_section(REPORT_PATH, "places", section)
+        print(
+            f"wrote stations.parquet ({sum(section.stations.by_vehicle_type.values())} stations) "
+            f"and addresses.parquet ({section.addresses.rows} rows)"
+        )
     elif args.step == "quality":
         section = run_quality(DATA_DIR / "raw", DATA_DIR / "processed")
         update_report_section(REPORT_PATH, "quality", section)

@@ -49,7 +49,7 @@ class PlannedRoute:
     stop_lines: tuple[StopLineEvent, ...]
 
 
-def _edge_weight(
+def edge_weight(
     index: RoutingIndex, data: Mapping[object, object], settings: SimulationSettings
 ) -> float:
     """NetworkX MultiDiGraph callback: minimum ambulance time among parallel edges."""
@@ -78,7 +78,7 @@ def _edge_key(index: RoutingIndex, edge_id: str, settings: SimulationSettings) -
     return ambulance_edge_seconds(index.edge(edge_id), settings), edge_id
 
 
-def _snap_endpoint(index: RoutingIndex, position: Position, origin: bool) -> SnappedRouteEndpoint:
+def snap_endpoint(index: RoutingIndex, position: Position, origin: bool) -> SnappedRouteEndpoint:
     xy = project_points(
         np.array([position.lng], dtype=np.float64), np.array([position.lat], dtype=np.float64)
     )[0]
@@ -103,8 +103,8 @@ def plan_route(
     settings: SimulationSettings,
 ) -> PlannedRoute:
     """Plan the fastest ambulance route between snapped positions or raise a domain error."""
-    origin_snap = _snap_endpoint(index, origin, origin=True)
-    destination_snap = _snap_endpoint(index, destination, origin=False)
+    origin_snap = snap_endpoint(index, origin, origin=True)
+    destination_snap = snap_endpoint(index, destination, origin=False)
     if origin_snap.node_key == destination_snap.node_key:
         raise NoRoute("origin and destination snap to the same node; route has no edges")
     try:
@@ -112,7 +112,7 @@ def plan_route(
             index.graph,
             origin_snap.node_key,
             destination_snap.node_key,
-            weight=lambda _source, _target, data: _edge_weight(index, data, settings),
+            weight=lambda _source, _target, data: edge_weight(index, data, settings),
         )
     except nx.NetworkXNoPath as error:
         raise NoRoute("no directed route connects the snapped origin and destination") from error

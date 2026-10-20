@@ -5,6 +5,7 @@ from types import MappingProxyType
 
 import networkx as nx
 import numpy as np
+import polars as pl
 from shapely.geometry import LineString, Point
 from shapely.strtree import STRtree
 
@@ -222,4 +223,35 @@ def _index(
         _approaches=MappingProxyType(approaches),
         _intersections=MappingProxyType(intersections),
         _neighbour_candidates=MappingProxyType(dict(neighbour_candidates or {})),
+    )
+
+
+def stations_frame(*rows: tuple[str, str, float, float]) -> pl.DataFrame:
+    """``stations.parquet``-shaped rows ``(station_id, vehicle_type, x_m, y_m)`` on a fixture."""
+    kinds = {"AMBULANCE": "ambulance_base", "FIRE_TRUCK": "fire_state", "POLICE_CAR": "police"}
+    positions = [position_at(x, y) for _, _, x, y in rows]
+    return pl.DataFrame(
+        {
+            "station_id": [r[0] for r in rows],
+            "vehicle_type": [r[1] for r in rows],
+            "source_kind": [kinds[r[1]] for r in rows],
+            "name": [f"Station {r[0]}" for r in rows],
+            "lat": [p.lat for p in positions],
+            "lng": [p.lng for p in positions],
+            "osm_ref": [f"line:{i}" for i in range(len(rows))],
+            "snap_distance_m": [0.0] * len(rows),
+        }
+    )
+
+
+def corridor_stations() -> pl.DataFrame:
+    """Stations on ``corridor_index``: ambulances along the one-way corridor, one at its end
+    (``corridor-4``), one on the island; a fire station mid-corridor."""
+    return stations_frame(
+        ("STN-A-0001", "AMBULANCE", _X + 1_000, _Y),
+        ("STN-A-0002", "AMBULANCE", _X + 1_100, _Y),
+        ("STN-A-0003", "AMBULANCE", _X + 1_600.01, _Y),
+        ("STN-A-0004", "AMBULANCE", _X + 1_850.02, _Y),
+        ("STN-A-0005", "AMBULANCE", _X + 5_000, _Y),
+        ("STN-F-0001", "FIRE_TRUCK", _X + 1_350, _Y),
     )

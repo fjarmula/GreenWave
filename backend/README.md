@@ -29,8 +29,26 @@ uv run python scripts/run_etl.py graph           # T3: road_nodes/road_edges.par
 uv run python scripts/run_etl.py override-map    # check page for data/overrides/roundabouts.json
 uv run python scripts/run_etl.py intersections   # T4: network_*, intersections, signal_approaches, ids
 uv run python scripts/run_etl.py neighbours      # T5: approach_neighbours.parquet (candidate set only)
+uv run python scripts/run_etl.py places          # stations.parquet + addresses.parquet (run after intersections)
 uv run python scripts/run_etl.py quality         # data_quality.json (run after neighbours)
 ```
+
+`places` reads the OSM extract (one pass) for rescue stations and address points, then keeps only those
+within 150 m of a network node (`PLACES_MAX_SNAP_DISTANCE_M`, equal to the simulation snap limit).
+Beyond the road features used elsewhere it uses: `emergency=ambulance_station`, `amenity=hospital` +
+`emergency=yes`, `amenity=fire_station`, `amenity=police` (points and polygons; stations of one type
+and name within `STATION_DEDUP_RADIUS_M` merge, police of one name merge at any distance, keeping the
+headquarters building; police and hospitals that are not 112 dispatch bases are excluded by
+`POLICE_EXCLUDED_NAME_FRAGMENTS` and `AMBULANCE_EXCLUDED_NAMES`; hospitals missing `emergency=yes`
+are added by exact name with `AMBULANCE_INCLUDED_NAMES`) and any feature with
+`addr:street`/`addr:place` plus `addr:housenumber` (the same street and number merge only within
+`ADDRESS_DEDUP_RADIUS_M`; each address gets a unique `label`, with its locality from
+`addr:suburb`/`addr:quarter`/`addr:place`/`addr:city` when it is outside Kraków or repeated). It
+refuses to run if the network files differ from the `intersections` report section. Places snap only to the
+main strongly connected component of the road graph (as the router does), and a large polygon
+station whose centre is beyond the snap limit moves to its outline point nearest the network
+(`relocated_to_outline`). The `places` report section lists dropped stations, the kept police
+names and the excluded names.
 
 `quality` reads the outputs of `graph`, `intersections` and `neighbours` (near misses, street
 lengths, route checks, signal snapping, signals needing review, the bus-lane cross-check and the

@@ -1,0 +1,405 @@
+{
+  "schema_version": "1.0",
+  "stations": [
+    {
+      "station_id": "STN-A-0001",
+      "vehicle_type": "AMBULANCE",
+      "source_kind": "ambulance_base",
+      "name": "MS Jugowicka",
+      "position": {
+        "lat": 50.007311900000005,
+        "lng": 19.930094935464307
+      }
+    },
+    {
+      "station_id": "STN-A-0002",
+      "vehicle_type": "AMBULANCE",
+      "source_kind": "hospital_ed",
+      "name": "Szpital Uniwersytecki",
+      "position": {
+        "lat": 50.008772099999995,
+        "lng": 20.004044500000006
+      }
+    },
+    {
+      "station_id": "STN-A-0003",
+      "vehicle_type": "AMBULANCE",
+      "source_kind": "hospital_ed",
+      "name": "Uniwersytecki Szpital Dziecięcy",
+      "position": {
+        "lat": 50.00965709500575,
+        "lng": 20.00270152921418
+      }
+    },
+    {
+      "station_id": "STN-A-0004",
+      "vehicle_type": "AMBULANCE",
+      "source_kind": "ambulance_base",
+      "name": "Krakowskie Pogotowie Ratunkowe, Zespoły wyjazdowe Teligi",
+      "position": {
+        "lat": 50.0157709,
+        "lng": 20.0041455
+      }
+    },
+    {
+      "station_id": "STN-A-0005",
+      "vehicle_type": "AMBULANCE",
+      "source_kind": "ambulance_base",
+      "name": "Krakowskie Pogotowie Ratunkowe",
+      "position": {
+        "lat": 50.06034175,
+        "lng": 19.95134540724206
+      }
+    },
+    {
+      "station_id": "STN-A-0006",
+      "vehicle_type": "AMBULANCE",
+      "source_kind": "hospital_ed",
+      "name": "Szpital specjalistyczny imienia Stefana Żeromskiego",
+      "position": {
+        "lat": 50.06515425,
+        "lng": 20.04631435846379
+      }
+    },
+    {
+      "station_id": "STN-A-0007",
+      "vehicle_type": "AMBULANCE",
+      "source_kind": "hospital_ed",
+      "name": "Samodzielny Publiczny Zakład Opieki Zdrowotnej MSW",
+      "position": {
+        "lat": 50.07205895,
+        "lng": 19.912506956410752
+      }
+    },
+    {
+      "station_id": "STN-A-0008",
+      "vehicle_type": "AMBULANCE",
+      "source_kind": "hospital_ed",
+      "name": "5. Wojskowy Szpital Kliniczny z Polikliniką SP ZOZ w Krakowie",
+      "position": {
+        "lat": 50.0773814,
+        "lng": 19.933990032788536
+      }
+    },
+    {
+      "station_id": "STN-A-0009",
+      "vehicle_type": "AMBULANCE",
+      "source_kind": "hospital_ed",
+      "name": "Szpital Miejski Specjalistyczny imienia Gabriela Narutowicza",
+      "position": {
+        "lat": 50.083152150000004,
+        "lng": 19.939291130915112
+      }
+    },
+    {
+      "station_id": "STN-A-0010",
+      "vehicle_type": "AMBULANCE",
+      "source_kind": "hospital_ed",
+      "name": "Szpital Specjalistyczny im. Ludwika Rydygiera w Krakowie",
+      "position": {
+        "lat": 50.0930833,
+        "lng": 20.018478501270657
+      }
+    },
+    {
+      "station_id": "STN-F-0001",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_volunteer",
+      "name": "Ochotnicza Straż Pożarna w Zbydniowicach",
+      "position": {
+        "lat": 49.9735407,
+        "lng": 19.9604409
+      }
+    },
+    {
+      "station_id": "STN-F-0002",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_state",
+      "name": "Jednostka Ratowniczo-Gaśnicza PSP nr 6 w Krakowie",
+      "position": {
+        "lat": 50.015911900000006,
+        "lng": 20.015630631688584
+      }
+    },
+    {
+      "station_id": "STN-F-0003",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_volunteer",
+      "name": "Ochotnicza Straż Pożarna w Bieżanowie",
+      "position": {
+        "lat": 50.01618155,
+        "lng": 20.037383846210943
+      }
+    },
+    {
+      "station_id": "STN-F-0004",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_volunteer",
+      "name": "Ochotnicza Straż Pożarna w Tyńcu",
+      "position": {
+        "lat": 50.018118650000005,
+        "lng": 19.80649775
+      }
+    },
+    {
+      "station_id": "STN-F-0005",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_volunteer",
+      "name": "Ochotnicza Straż Pożarna Kostrze",
+      "position": {
+        "lat": 50.02847815,
+        "lng": 19.85239177690335
+      }
+    },
+    {
+      "station_id": "STN-F-0006",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_state",
+      "name": "Jednostka Ratowniczo-Gaśnicza PSP nr 2 w Krakowie",
+      "position": {
+        "lat": 50.033518900000004,
+        "lng": 19.935836250068604
+      }
+    },
+    {
+      "station_id": "STN-F-0007",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_state",
+      "name": "Jednostka Ratowniczo-Gaśnicza PSP nr 4 w Krakowie",
+      "position": {
+        "lat": 50.037587599999995,
+        "lng": 20.005719047826087
+      }
+    },
+    {
+      "station_id": "STN-F-0008",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_volunteer",
+      "name": "OSP Przewóz",
+      "position": {
+        "lat": 50.0414526,
+        "lng": 20.06192006872038
+      }
+    },
+    {
+      "station_id": "STN-F-0009",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_volunteer",
+      "name": "OSP Wolica",
+      "position": {
+        "lat": 50.0557946,
+        "lng": 20.2002503
+      }
+    },
+    {
+      "station_id": "STN-F-0010",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_volunteer",
+      "name": "Ochotnicza Straż Pożarna w Przylasku Rusieckim",
+      "position": {
+        "lat": 50.058244849999994,
+        "lng": 20.15747731963983
+      }
+    },
+    {
+      "station_id": "STN-F-0011",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_state",
+      "name": "Jednostka Ratowniczo-Gaśnicza PSP nr 1 w Krakowie",
+      "position": {
+        "lat": 50.05994235,
+        "lng": 19.943241179898468
+      }
+    },
+    {
+      "station_id": "STN-F-0012",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_state",
+      "name": "Jednostka Ratowniczo-Gaśnicza PSP nr 3 w Krakowie",
+      "position": {
+        "lat": 50.07562075,
+        "lng": 19.88727862724925
+      }
+    },
+    {
+      "station_id": "STN-F-0013",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_state",
+      "name": "Jednostka Ratowniczo-Gaśnicza Szkoły Aspirantów PSP w Krakowie",
+      "position": {
+        "lat": 50.0773545,
+        "lng": 20.0330222
+      }
+    },
+    {
+      "station_id": "STN-F-0014",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_other",
+      "name": "Zakładowa Straż Pożarna ArcelorMittal Poland S.A.",
+      "position": {
+        "lat": 50.08178535,
+        "lng": 20.068383801679502
+      }
+    },
+    {
+      "station_id": "STN-F-0015",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_volunteer",
+      "name": "OSP Kościelniki",
+      "position": {
+        "lat": 50.08837015,
+        "lng": 20.17266019256182
+      }
+    },
+    {
+      "station_id": "STN-F-0016",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_state",
+      "name": "Jednostka Ratowniczo-Gaśnicza PSP nr 5 w Krakowie",
+      "position": {
+        "lat": 50.0917343,
+        "lng": 19.9200098
+      }
+    },
+    {
+      "station_id": "STN-F-0017",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_state",
+      "name": "Jednostka Ratowniczo-Gaśnicza PSP nr 7 w Krakowie",
+      "position": {
+        "lat": 50.09412045,
+        "lng": 19.977386
+      }
+    },
+    {
+      "station_id": "STN-F-0018",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_volunteer",
+      "name": "Ochotnicza Straż Pożarna we Wróżenicach",
+      "position": {
+        "lat": 50.1135063,
+        "lng": 20.1869156
+      }
+    },
+    {
+      "station_id": "STN-F-0019",
+      "vehicle_type": "FIRE_TRUCK",
+      "source_kind": "fire_volunteer",
+      "name": "Ochotnicza Straż Pożarna w Toniach",
+      "position": {
+        "lat": 50.11390575,
+        "lng": 19.901100604267313
+      }
+    },
+    {
+      "station_id": "STN-P-0001",
+      "vehicle_type": "POLICE_CAR",
+      "source_kind": "police",
+      "name": "Komisariat Policji VI w Krakowie",
+      "position": {
+        "lat": 50.0157941,
+        "lng": 20.01419769946619
+      }
+    },
+    {
+      "station_id": "STN-P-0002",
+      "vehicle_type": "POLICE_CAR",
+      "source_kind": "police",
+      "name": "V Komisariat Policji w Krakowie",
+      "position": {
+        "lat": 50.0178375,
+        "lng": 19.88744467312834
+      }
+    },
+    {
+      "station_id": "STN-P-0003",
+      "vehicle_type": "POLICE_CAR",
+      "source_kind": "police",
+      "name": "Komisariat Policji I w Krakowie",
+      "position": {
+        "lat": 50.0522554,
+        "lng": 19.947820634623437
+      }
+    },
+    {
+      "station_id": "STN-P-0004",
+      "vehicle_type": "POLICE_CAR",
+      "source_kind": "police",
+      "name": "Komisariat Policji II w Krakowie",
+      "position": {
+        "lat": 50.0648832,
+        "lng": 19.9504855
+      }
+    },
+    {
+      "station_id": "STN-P-0005",
+      "vehicle_type": "POLICE_CAR",
+      "source_kind": "police",
+      "name": "Komenda Wojewódzka Policji",
+      "position": {
+        "lat": 50.067106949999996,
+        "lng": 19.979966377057565
+      }
+    },
+    {
+      "station_id": "STN-P-0006",
+      "vehicle_type": "POLICE_CAR",
+      "source_kind": "police",
+      "name": "Komenda Miejska Policji",
+      "position": {
+        "lat": 50.06894175,
+        "lng": 19.928814152302294
+      }
+    },
+    {
+      "station_id": "STN-P-0007",
+      "vehicle_type": "POLICE_CAR",
+      "source_kind": "police",
+      "name": "Komisariat Policji IV w Krakowie",
+      "position": {
+        "lat": 50.0702475,
+        "lng": 19.924065515273178
+      }
+    },
+    {
+      "station_id": "STN-P-0008",
+      "vehicle_type": "POLICE_CAR",
+      "source_kind": "police",
+      "name": "Komisariat Policji VIII w Krakowie",
+      "position": {
+        "lat": 50.0762045,
+        "lng": 20.035983052793586
+      }
+    },
+    {
+      "station_id": "STN-P-0009",
+      "vehicle_type": "POLICE_CAR",
+      "source_kind": "police",
+      "name": "Komisariat Policji VII w Krakowie",
+      "position": {
+        "lat": 50.0911012,
+        "lng": 20.026947
+      }
+    },
+    {
+      "station_id": "STN-P-0010",
+      "vehicle_type": "POLICE_CAR",
+      "source_kind": "police",
+      "name": "Komisariat Policji III w Krakowie",
+      "position": {
+        "lat": 50.094058149999995,
+        "lng": 19.97685280162227
+      }
+    },
+    {
+      "station_id": "STN-P-0011",
+      "vehicle_type": "POLICE_CAR",
+      "source_kind": "police",
+      "name": "Komenda Powiatowa Policji",
+      "position": {
+        "lat": 50.1055733,
+        "lng": 19.9065147
+      }
+    }
+  ]
+}
