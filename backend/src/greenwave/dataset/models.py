@@ -8,6 +8,7 @@ import polars as pl
 from pydantic import BaseModel, ConfigDict
 
 from greenwave.etl.manifest import ManifestEntry
+from greenwave.schemas.dataset_quality import DatasetQualityResponse
 
 
 class IntersectionIdRecord(BaseModel):
@@ -63,6 +64,15 @@ class NeighboursSection(BaseModel):
     report: _NeighboursReport
 
 
+class QualitySection(BaseModel):
+    """``consumed_sha256``: the processed files the quality step read; ``artifact_sha256``: the
+    summary it wrote. Integrity checks against mixed runs, not security."""
+
+    manifest_sha256: str
+    consumed_sha256: dict[str, str]
+    artifact_sha256: dict[str, str]
+
+
 class Provenance(BaseModel):
     """Where the data came from, as recorded in the committed MANIFEST.json (not edited here)."""
 
@@ -99,7 +109,7 @@ class ProcessedDataset:
     intersection pays it once. ``intersections["delay_seconds"]`` is that delay by kind.
     ``signal_approaches["delay_seconds"]`` is a property of the signal node and must not be summed
     along a route. ``approach_neighbours`` is a candidate set only: its distance is not
-    an along-route distance.
+    an along-route distance. ``quality`` is ``data_quality.json`` as the ETL wrote it.
     """
 
     graph: nx.MultiDiGraph
@@ -111,3 +121,4 @@ class ProcessedDataset:
     allow_u_turns: bool
     counts: LoadedCounts
     provenance: Provenance
+    quality: DatasetQualityResponse

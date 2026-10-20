@@ -4,6 +4,12 @@ Frontend types in ``frontend/src/types/`` are generated from these models
 (see ``scripts/export_openapi.py``); never edit the generated file by hand.
 """
 
+from greenwave.schemas.dataset_quality import (
+    DatasetQualityResponse,
+    QualityCheck,
+    QualitySource,
+    QualityStatus,
+)
 from greenwave.schemas.health import HealthResponse
 from greenwave.schemas.simulation import (
     AmbulanceStatus,
@@ -34,6 +40,7 @@ __all__ = [
     "AmbulanceStatus",
     "AmbulanceTelemetry",
     "CancelReason",
+    "DatasetQualityResponse",
     "ErrorCode",
     "ErrorResponse",
     "HealthResponse",
@@ -44,6 +51,9 @@ __all__ = [
     "ItsDispatchPayload",
     "KpiMetrics",
     "Position",
+    "QualityCheck",
+    "QualitySource",
+    "QualityStatus",
     "RouteGeometry",
     "RouteIntersection",
     "SimulationCancelledEvent",
