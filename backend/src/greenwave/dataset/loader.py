@@ -4,13 +4,14 @@ No fallback and no partial load: any missing, stale or inconsistent artifact rai
 ``DatasetError`` that names the file and the ETL command to re-run. Nothing here runs ETL code.
 
 Mixed runs: every artifact is tied to the committed MANIFEST.json and to each other, and each ETL
-step records the sha256 of the files it wrote in ``etl_report.json`` (the neighbours step also
-records the hashes of the files it read). The loader re-hashes the six files and compares them with
-those records. ``data_quality.json`` is checked the same way against the ``quality`` section (the
-summary itself and the processed files the quality step read). This is an integrity check against
-artifacts from different runs (for example the same manifest, a changed ETL config and a partial
-re-run), not a security measure: the records are in ``etl_report.json``, which is itself not
-hashed, and nothing here claims reproducible builds.
+step records the sha256 of the files it wrote in ``etl_report.json`` (the neighbours and places
+steps also record the hashes of the files they read). The loader re-hashes the artifact files and
+compares them with those records. ``data_quality.json`` is checked the same way against the
+``quality`` section (the summary itself and the processed files the quality step read). This is an
+integrity check against artifacts from different runs (for example the same manifest, a changed
+ETL config and a partial re-run), not a security measure: the records are in ``etl_report.json``,
+which is itself not hashed, and nothing here
+claims reproducible builds.
 """
 
 import hashlib
@@ -21,11 +22,13 @@ from pathlib import Path
 import networkx as nx
 
 from greenwave.artifacts import (
+    ADDRESSES_FILENAME,
     APPROACHES_FILENAME,
     IDS_FILENAME,
     INTERSECTIONS_FILENAME,
     NEIGHBOURS_FILENAME,
     REPORT_FILENAME,
+    STATIONS_FILENAME,
 )
 from greenwave.dataset.artifact_io import (
     parse,
@@ -35,18 +38,22 @@ from greenwave.dataset.artifact_io import (
     report_section,
     require_files,
 )
+from greenwave.dataset.constants import PLACES_COMMAND
 from greenwave.dataset.integrity import (
     check_artifact_hashes,
     check_counts,
     check_delays,
     check_ids_file,
     check_manifest_hashes,
+    check_places,
+    check_places_hashes,
     check_references,
 )
 from greenwave.dataset.models import (
     IdsDocument,
     IntersectionsSection,
     NeighboursSection,
+    PlacesSection,
     ProcessedDataset,
     Provenance,
 )
@@ -66,6 +73,7 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
     report = read_json(processed_dir / REPORT_FILENAME)
     intersections_section = report_section(report, "intersections", IntersectionsSection)
     neighbours_section = report_section(report, "neighbours", NeighboursSection)
+    places_section = report_section(report, "places", PlacesSection, PLACES_COMMAND)
     check_manifest_hashes(  # check 2
         manifest_path,
         manifest_sha256,
@@ -73,21 +81,34 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
             f"{IDS_FILENAME} (valid_for)": ids.valid_for.manifest_sha256,
             f"{REPORT_FILENAME} section 'intersections'": intersections_section.manifest_sha256,
             f"{REPORT_FILENAME} section 'neighbours'": neighbours_section.manifest_sha256,
+            f"{REPORT_FILENAME} section 'places'": places_section.manifest_sha256,
         },
     )
 
     check_artifact_hashes(processed_dir, intersections_section, neighbours_section)  # check 2b
+    check_places_hashes(processed_dir, intersections_section, places_section)
 
     graph = read_network(processed_dir)
     intersections = read_parquet(processed_dir, INTERSECTIONS_FILENAME)
     check_delays(processed_dir, intersections)
     approaches = read_parquet(processed_dir, APPROACHES_FILENAME)
     neighbours = read_parquet(processed_dir, NEIGHBOURS_FILENAME)
+    stations = read_parquet(processed_dir, STATIONS_FILENAME)
+    addresses = read_parquet(processed_dir, ADDRESSES_FILENAME)
 
     check_references(graph, intersections, approaches, neighbours)  # check 3
+    check_places(graph, stations, addresses)
     check_ids_file(ids.intersections, intersections)
     counts = check_counts(
-        graph, intersections, approaches, neighbours, intersections_section, neighbours_section
+        graph,
+        intersections,
+        approaches,
+        neighbours,
+        stations,
+        addresses,
+        intersections_section,
+        neighbours_section,
+        places_section,
     )
 
     quality = load_quality(processed_dir, report, manifest_sha256)  # check 4
@@ -98,6 +119,8 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
         intersections=intersections,
         signal_approaches=approaches,
         approach_neighbours=neighbours,
+        stations=stations,
+        addresses=addresses,
         intersection_ids=tuple(ids.intersections),
         cascade_threshold_m=neighbours_section.report.threshold_m,
         allow_u_turns=neighbours_section.report.allow_u_turns,
@@ -107,12 +130,15 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
     )
     logger.info(
         "loaded processed data from %s in %.2f s: %d intersections, %d signal approaches, "
-        "%d approach neighbours, graph with %d nodes and %d edges (manifest %s...)",
+        "%d approach neighbours, %d stations, %d addresses, graph with %d nodes and %d edges "
+        "(manifest %s...)",
         processed_dir,
         time.perf_counter() - started,
         counts.intersections,
         counts.signal_approaches,
         counts.approach_neighbours,
+        counts.stations,
+        counts.addresses,
         counts.graph_nodes,
         counts.graph_edges,
         manifest_sha256[:12],

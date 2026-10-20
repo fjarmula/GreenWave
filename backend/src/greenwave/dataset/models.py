@@ -64,6 +64,25 @@ class NeighboursSection(BaseModel):
     report: _NeighboursReport
 
 
+class _PlacesStations(BaseModel):
+    by_vehicle_type: dict[str, int]
+
+
+class _PlacesAddresses(BaseModel):
+    rows: int
+
+
+class PlacesSection(BaseModel):
+    """``consumed_sha256``: the network files the places step read; ``artifact_sha256``: the two
+    files it wrote. Integrity checks against mixed runs, not security."""
+
+    manifest_sha256: str
+    artifact_sha256: dict[str, str] | None = None
+    consumed_sha256: dict[str, str] | None = None
+    stations: _PlacesStations
+    addresses: _PlacesAddresses
+
+
 class QualitySection(BaseModel):
     """``consumed_sha256``: the processed files the quality step read; ``artifact_sha256``: the
     summary it wrote. Integrity checks against mixed runs, not security."""
@@ -90,6 +109,8 @@ class LoadedCounts(BaseModel):
     intersections: int
     signal_approaches: int
     approach_neighbours: int
+    stations: int
+    addresses: int
     approach_edges: int
     graph_nodes: int
     graph_edges: int
@@ -109,13 +130,16 @@ class ProcessedDataset:
     intersection pays it once. ``intersections["delay_seconds"]`` is that delay by kind.
     ``signal_approaches["delay_seconds"]`` is a property of the signal node and must not be summed
     along a route. ``approach_neighbours`` is a candidate set only: its distance is not
-    an along-route distance. ``quality`` is ``data_quality.json`` as the ETL wrote it.
+    an along-route distance. ``stations`` and ``addresses`` are the snapped places of the
+    ``places`` step (lat/lng in degrees). ``quality`` is ``data_quality.json`` as the ETL wrote it.
     """
 
     graph: nx.MultiDiGraph
     intersections: pl.DataFrame
     signal_approaches: pl.DataFrame
     approach_neighbours: pl.DataFrame
+    stations: pl.DataFrame
+    addresses: pl.DataFrame
     intersection_ids: tuple[IntersectionIdRecord, ...]
     cascade_threshold_m: float
     allow_u_turns: bool

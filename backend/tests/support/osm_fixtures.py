@@ -23,3 +23,12 @@ def write_osm(directory: Path, *features: str) -> Path:
     header = '{"type":"FeatureCollection","features":['
     path.write_text(f"{header}\n" + ",\n".join(features) + "\n]}\n", encoding="utf-8")
     return path
+
+
+def polygon(ring: list[tuple[float, float]], **tags: str) -> str:
+    return _feature({"type": "Polygon", "coordinates": [[list(c) for c in ring]]}, tags)
+
+
+def closed_way(ring: list[tuple[float, float]], **tags: str) -> str:
+    """A closed OSM way as the real extract encodes it: a LineString ending at its first coord."""
+    return line([*ring, ring[0]], **tags)

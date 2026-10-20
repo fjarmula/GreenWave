@@ -17,6 +17,10 @@ NEIGHBOURS_FILENAME = "approach_neighbours.parquet"
 REPORT_FILENAME = "etl_report.json"
 # Analysis only (not loaded by the server): Kraków bus-lane register matched against OSM.
 BUS_LANE_CROSSCHECK_FILENAME = "bus_lane_crosscheck.csv"
+# Step `places`: rescue stations and address points, both snapped to the network.
+STATIONS_FILENAME = "stations.parquet"
+ADDRESSES_FILENAME = "addresses.parquet"
+PLACES_ARTIFACT_FILENAMES = (STATIONS_FILENAME, ADDRESSES_FILENAME)
 # Step `quality`: a summary of the ETL diagnostics, served at /api/v1/dataset/quality.
 QUALITY_FILENAME = "data_quality.json"
 

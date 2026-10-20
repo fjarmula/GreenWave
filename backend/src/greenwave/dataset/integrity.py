@@ -7,22 +7,30 @@ import networkx as nx
 import polars as pl
 
 from greenwave.artifacts import (
+    ADDRESSES_FILENAME,
     APPROACHES_FILENAME,
     IDS_FILENAME,
     INTERSECTIONS_FILENAME,
     NEIGHBOURS_FILENAME,
     NETWORK_EDGES_FILENAME,
     NETWORK_NODES_FILENAME,
+    PLACES_ARTIFACT_FILENAMES,
     REPORT_FILENAME,
+    STATIONS_FILENAME,
     T4_ARTIFACT_FILENAMES,
     artifact_hashes,
 )
 from greenwave.dataset.constants import (
+    BOUNDS_PADDING_DEG,
     CHAIN,
     COMMAND,
     EXAMPLES_IN_MESSAGE,
     NEIGHBOURS_COMMAND,
+    PLACES_COMMAND,
+    SOURCE_KINDS,
+    STATION_ID_PATTERN,
     STEP_INTERSECTIONS,
+    VEHICLE_TYPES,
 )
 from greenwave.dataset.errors import (
     ArtifactHashMismatchError,
@@ -36,6 +44,7 @@ from greenwave.dataset.models import (
     IntersectionsSection,
     LoadedCounts,
     NeighboursSection,
+    PlacesSection,
 )
 from greenwave.etl.neighbours import approach_edges
 
@@ -98,6 +107,44 @@ def check_artifact_hashes(
             f"{NEIGHBOURS_FILENAME} was built from other versions of {', '.join(different)} than "
             f"the ones on disk now (hashes recorded by the neighbours step differ from section "
             f"'intersections' of {REPORT_FILENAME}); re-run {NEIGHBOURS_COMMAND}"
+        )
+
+
+def check_places_hashes(
+    processed_dir: Path, intersections_section: IntersectionsSection, places_section: PlacesSection
+) -> None:
+    """The places files are the ones the step wrote, from the network files on disk now."""
+    recorded = places_section.artifact_sha256
+    consumed = places_section.consumed_sha256
+    if recorded is None or consumed is None:
+        raise MalformedArtifactError(
+            f"{REPORT_FILENAME} section 'places' lacks artifact_sha256 or consumed_sha256: the "
+            f"processed data was written by an older ETL version; re-run {PLACES_COMMAND}"
+        )
+    unrecorded = [name for name in PLACES_ARTIFACT_FILENAMES if name not in recorded]
+    if unrecorded:
+        raise MalformedArtifactError(
+            f"{REPORT_FILENAME} records no hash for {', '.join(unrecorded)}; re-run "
+            f"{PLACES_COMMAND}"
+        )
+    for name, on_disk in artifact_hashes(processed_dir, PLACES_ARTIFACT_FILENAMES).items():
+        if on_disk != recorded[name]:
+            raise ArtifactHashMismatchError(
+                f"{processed_dir / name} has sha256 {on_disk[:12]}..., but {REPORT_FILENAME} "
+                f"recorded {recorded[name][:12]}... when the step wrote it; re-run {PLACES_COMMAND}"
+            )
+    network = intersections_section.artifact_sha256 or {}
+    different = [
+        name
+        for name in (NETWORK_NODES_FILENAME, NETWORK_EDGES_FILENAME)
+        if consumed.get(name) != network.get(name)
+    ]
+    if different:
+        raise ArtifactHashMismatchError(
+            f"{STATIONS_FILENAME} and {ADDRESSES_FILENAME} were built from other versions of "
+            f"{', '.join(different)} than the ones on disk now (hashes recorded by the places "
+            f"step differ from section 'intersections' of {REPORT_FILENAME}); re-run "
+            f"{PLACES_COMMAND}"
         )
 
 
@@ -177,6 +224,63 @@ def check_references(
     )
 
 
+def _malformed(filename: str, problem: str) -> MalformedArtifactError:
+    return MalformedArtifactError(f"{filename} {problem}; re-run {PLACES_COMMAND}")
+
+
+def _check_one_of(filename: str, column: str, values: pl.Series, allowed: frozenset[str]) -> None:
+    if values.null_count():
+        raise _malformed(filename, f"has null values in column '{column}'")
+    unknown = _unknown(values, set(allowed))
+    if unknown:
+        raise _malformed(
+            filename,
+            f"column '{column}' has unknown values {', '.join(unknown[:EXAMPLES_IN_MESSAGE])} "
+            f"(allowed: {', '.join(sorted(allowed))})",
+        )
+
+
+def _check_coordinates(filename: str, frame: pl.DataFrame, graph: nx.MultiDiGraph) -> None:
+    lons = [data["lon"] for _, data in graph.nodes(data=True)]
+    lats = [data["lat"] for _, data in graph.nodes(data=True)]
+    bounds = {
+        "lat": (min(lats) - BOUNDS_PADDING_DEG, max(lats) + BOUNDS_PADDING_DEG),
+        "lng": (min(lons) - BOUNDS_PADDING_DEG, max(lons) + BOUNDS_PADDING_DEG),
+    }
+    for column, (low, high) in bounds.items():
+        values = frame[column]
+        if values.null_count() or not values.is_finite().all():
+            raise _malformed(filename, f"has null or non-finite values in column '{column}'")
+        outside = int(((values < low) | (values > high)).sum())
+        if outside:
+            raise _malformed(
+                filename,
+                f"has {outside} rows with '{column}' outside the network bounds "
+                f"[{low:.4f}, {high:.4f}]",
+            )
+
+
+def check_places(graph: nx.MultiDiGraph, stations: pl.DataFrame, addresses: pl.DataFrame) -> None:
+    """Keys, enumerations and coordinates of stations.parquet and addresses.parquet."""
+    ids = stations["station_id"]
+    if ids.null_count() or ids.n_unique() != len(ids):
+        raise _malformed(STATIONS_FILENAME, "has null or duplicate station_id values")
+    badly_formed = ids.filter(~ids.str.contains(STATION_ID_PATTERN)).to_list()
+    if badly_formed:
+        raise _malformed(
+            STATIONS_FILENAME,
+            f"has station_id values that do not match {STATION_ID_PATTERN}, e.g. "
+            f"{', '.join(badly_formed[:EXAMPLES_IN_MESSAGE])}",
+        )
+    _check_one_of(STATIONS_FILENAME, "vehicle_type", stations["vehicle_type"], VEHICLE_TYPES)
+    _check_one_of(STATIONS_FILENAME, "source_kind", stations["source_kind"], SOURCE_KINDS)
+    _check_coordinates(STATIONS_FILENAME, stations, graph)
+    for column in ("street", "housenumber", "search_key"):
+        if addresses[column].null_count():
+            raise _malformed(ADDRESSES_FILENAME, f"has null values in column '{column}'")
+    _check_coordinates(ADDRESSES_FILENAME, addresses, graph)
+
+
 def check_ids_file(records: list[IntersectionIdRecord], intersections: pl.DataFrame) -> None:
     from_file = {r.id: (r.kind, r.node_key) for r in records}
     from_parquet = {
@@ -201,8 +305,11 @@ def check_counts(
     intersections: pl.DataFrame,
     approaches: pl.DataFrame,
     neighbours: pl.DataFrame,
+    stations: pl.DataFrame,
+    addresses: pl.DataFrame,
     intersections_section: IntersectionsSection,
     neighbours_section: NeighboursSection,
+    places_section: PlacesSection,
 ) -> LoadedCounts:
     snapping = intersections_section.snapping
     neighbour_report = neighbours_section.report
@@ -219,6 +326,8 @@ def check_counts(
             snapping.attached_signals + len(snapping.unsnapped),
         ),
         (NEIGHBOURS_FILENAME, neighbours.height, neighbour_report.pairs),
+        (STATIONS_FILENAME, stations.height, sum(places_section.stations.by_vehicle_type.values())),
+        (ADDRESSES_FILENAME, addresses.height, places_section.addresses.rows),
         (
             f"{APPROACHES_FILENAME} (approach edges)",
             approach_edge_count,
@@ -227,14 +336,17 @@ def check_counts(
     )
     for artifact, actual, recorded in expected:
         if actual != recorded:
+            rerun = PLACES_COMMAND if artifact in PLACES_ARTIFACT_FILENAMES else CHAIN
             raise CountMismatchError(
                 f"{artifact} has {actual} rows, but {REPORT_FILENAME} records {recorded}; "
-                f"re-run {CHAIN}"
+                f"re-run {rerun}"
             )
     return LoadedCounts(
         intersections=intersections.height,
         signal_approaches=approaches.height,
         approach_neighbours=neighbours.height,
+        stations=stations.height,
+        addresses=addresses.height,
         approach_edges=approach_edge_count,
         graph_nodes=graph.number_of_nodes(),
         graph_edges=graph.number_of_edges(),

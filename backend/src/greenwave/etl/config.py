@@ -241,3 +241,15 @@ UNPAVED_SURFACE_VALUES: frozenset[str] = frozenset(
 TRAM_TRACK_MATCH_METERS = 6.0
 # APPROVED 2026-10-19 (human): keeps short crossings and touching ends from counting.
 TRAM_TRACK_MIN_OVERLAP_SHARE = 0.5
+
+# PLACEHOLDER (uncalibrated, human to confirm): a point and a polygon with the same folded name,
+# same vehicle type and closer than this are one station (the point marks the entrance).
+STATION_DEDUP_RADIUS_M = 150.0
+# PLACEHOLDER (empty by default): folded-name matches excluded from police stations. The ETL report
+# lists the police names so the human can decide what belongs here.
+POLICE_EXCLUDED_NAMES: tuple[str, ...] = ()
+
+# PLACEHOLDER (mirrors the SimulationSettings default; human to confirm). Must equal
+# SimulationSettings.max_snap_distance_meters (a test enforces it): stations and addresses farther
+# than this from every network node could never be routed to.
+PLACES_MAX_SNAP_DISTANCE_M = 150.0

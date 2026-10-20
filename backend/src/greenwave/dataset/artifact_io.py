@@ -57,23 +57,25 @@ def read_json(path: Path) -> dict[str, object]:
     return loaded
 
 
-def parse[Model: BaseModel](content: object, model: type[Model], label: str) -> Model:
+def parse[Model: BaseModel](
+    content: object, model: type[Model], label: str, rerun: str = CHAIN
+) -> Model:
     try:
         return model.model_validate(content)
     except ValidationError as error:
         raise MalformedArtifactError(
-            f"{label} is missing a required key or has a wrong type ({error}); re-run {CHAIN}"
+            f"{label} is missing a required key or has a wrong type ({error}); re-run {rerun}"
         ) from error
 
 
 def report_section[Model: BaseModel](
-    report: dict[str, object], section: str, model: type[Model]
+    report: dict[str, object], section: str, model: type[Model], rerun: str = CHAIN
 ) -> Model:
     if section not in report:
         raise MalformedArtifactError(
-            f"{REPORT_FILENAME} has no section '{section}'; re-run {CHAIN}"
+            f"{REPORT_FILENAME} has no section '{section}'; re-run {rerun}"
         )
-    return parse(report[section], model, f"{REPORT_FILENAME} section '{section}'")
+    return parse(report[section], model, f"{REPORT_FILENAME} section '{section}'", rerun)
 
 
 def read_parquet(processed_dir: Path, filename: str) -> pl.DataFrame:
