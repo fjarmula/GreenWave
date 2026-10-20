@@ -8,9 +8,11 @@
 import type {
   AmbulanceStatus,
   CancelReason,
+  DatasetQualityResponse,
   ErrorCode,
   ErrorResponse,
   IntersectionState,
+  QualityStatus,
   RouteIntersection,
   SimulationStartResponse,
   SimulationStreamEvent,
@@ -47,6 +49,8 @@ const STREAM_EVENT_TYPES: Record<SimulationStreamEvent["event_type"], true> = {
   SIMULATION_COMPLETED: true,
   SIMULATION_CANCELLED: true,
 };
+
+const QUALITY_STATUSES: Record<QualityStatus, true> = { pass: true, info: true, warn: true };
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -261,4 +265,34 @@ export function parseErrorResponse(value: unknown): ErrorResponse | null {
     return null;
   }
   return value as ErrorResponse;
+}
+
+/** `GET /api/v1/dataset/quality` body. Throws `TypeError` naming the first offending field. */
+export function validateDatasetQuality(body: unknown): DatasetQualityResponse {
+  const summary = record(body, "response");
+  if (summary.schema_version !== "1.0") fail("schema_version", '"1.0"');
+  if (summary.is_simulated !== true) fail("is_simulated", "true");
+  text(summary.manifest_sha256, "manifest_sha256");
+  nullableText(summary.msip_export_timestamp, "msip_export_timestamp");
+  list(summary.checks, "checks").forEach((value, index) => {
+    const path = `checks[${index}]`;
+    const check = record(value, path);
+    for (const field of ["id", "title", "headline"] as const) {
+      text(check[field], `${path}.${field}`);
+    }
+    member(QUALITY_STATUSES, check.status, `${path}.status`);
+    for (const [name, metric] of Object.entries(record(check.metrics, `${path}.metrics`))) {
+      finite(metric, `${path}.metrics.${name}`);
+    }
+    list(check.samples, `${path}.samples`).forEach((sample, sampleIndex) =>
+      text(sample, `${path}.samples[${sampleIndex}]`),
+    );
+  });
+  list(summary.sources, "sources").forEach((value, index) => {
+    const source = record(value, `sources[${index}]`);
+    for (const field of ["path", "source", "licence", "attribution", "retrieved_on"] as const) {
+      text(source[field], `sources[${index}].${field}`);
+    }
+  });
+  return summary as DatasetQualityResponse;
 }

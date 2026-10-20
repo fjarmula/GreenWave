@@ -10,7 +10,13 @@ import {
   tickEventExample,
 } from "@/lib/transport/__fixtures__/architecture-examples";
 import { createMockSession } from "@/lib/mock-session";
-import { parseErrorResponse, parseStartResponse, parseStreamEvent } from "@/lib/transport/validate";
+import { datasetQualityExample } from "@/lib/transport/__fixtures__/dataset-quality";
+import {
+  parseErrorResponse,
+  parseStartResponse,
+  parseStreamEvent,
+  validateDatasetQuality,
+} from "@/lib/transport/validate";
 
 /** Round-trips through JSON like a real payload, then applies a mutation. */
 function wire<T>(value: T, mutate: (copy: Record<string, unknown>) => void = () => undefined) {
@@ -174,5 +180,39 @@ describe("parseErrorResponse", () => {
       parseErrorResponse(wire(errorResponseExample, (c) => (c.error_code = "TEAPOT"))),
     ).toBeNull();
     expect(parseErrorResponse(undefined)).toBeNull();
+  });
+});
+
+describe("validateDatasetQuality", () => {
+  it("accepts a quality summary", () => {
+    expect(validateDatasetQuality(wire(datasetQualityExample))).toEqual(datasetQualityExample);
+  });
+
+  it("rejects a body with is_simulated false", () => {
+    const body = wire(datasetQualityExample, (copy) => {
+      copy.is_simulated = false;
+    });
+    expect(() => validateDatasetQuality(body)).toThrow(/is_simulated/);
+  });
+
+  it("rejects an unknown check status", () => {
+    const body = wire(datasetQualityExample, (copy) => {
+      (copy.checks as Record<string, unknown>[])[0].status = "fail";
+    });
+    expect(() => validateDatasetQuality(body)).toThrow(/checks\[0\]\.status/);
+  });
+
+  it("rejects a non-numeric metric", () => {
+    const body = wire(datasetQualityExample, (copy) => {
+      (copy.checks as { metrics: Record<string, unknown> }[])[0].metrics.tertiary_plus_cases = "19";
+    });
+    expect(() => validateDatasetQuality(body)).toThrow(/metrics\.tertiary_plus_cases/);
+  });
+
+  it("accepts a null MSIP timestamp", () => {
+    const body = wire(datasetQualityExample, (copy) => {
+      copy.msip_export_timestamp = null;
+    });
+    expect(validateDatasetQuality(body).msip_export_timestamp).toBeNull();
   });
 });

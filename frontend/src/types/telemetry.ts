@@ -28,3 +28,7 @@ export type CancelReason = Schemas["CancelReason"];
 export type ErrorCode = Schemas["ErrorCode"];
 export type ErrorResponse = Schemas["ErrorResponse"];
 export type StopResponse = Schemas["StopResponse"];
+export type DatasetQualityResponse = Schemas["DatasetQualityResponse"];
+export type QualityCheck = Schemas["QualityCheck"];
+export type QualitySource = Schemas["QualitySource"];
+export type QualityStatus = Schemas["QualityStatus"];
