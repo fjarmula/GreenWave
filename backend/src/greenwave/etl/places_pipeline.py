@@ -12,7 +12,7 @@ import shapely
 from pydantic import BaseModel
 
 from greenwave import artifacts
-from greenwave.etl.addresses import dedupe_addresses, extract_addresses
+from greenwave.etl.addresses import assign_labels, dedupe_addresses, extract_addresses
 from greenwave.etl.config import (
     ADDRESS_DEDUP_RADIUS_M,
     PLACES_MAX_SNAP_DISTANCE_M,
@@ -60,7 +60,7 @@ class StationsReport(BaseModel):
     duplicates_merged: int
     dropped: list[DroppedPlace]
     police_names: list[str]
-    police_excluded: list[str]
+    excluded: list[str]  # police and ambulance names left out by the exclusion fragments
     no_usable_point: int
 
 
@@ -134,8 +134,8 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
     logger.info("%d station- or address-tagged features", len(features))
 
     stations_without_point: list[str] = []
-    police_excluded: list[str] = []
-    candidates = extract_station_candidates(features, stations_without_point, police_excluded)
+    excluded: list[str] = []
+    candidates = extract_station_candidates(features, stations_without_point, excluded)
     singles, twins = collapse_encoding_twins(candidates)
     kept, merged = dedupe_stations(singles, radius_m=STATION_DEDUP_RADIUS_M)
     distances = _snap_distances(node_xy, [c.lon for c in kept], [c.lat for c in kept])
@@ -168,6 +168,7 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
         addresses.filter(pl.Series(near, dtype=pl.Boolean)), ADDRESS_DEDUP_RADIUS_M
     )
 
+    addresses_on_network = assign_labels(addresses_on_network)
     stations.write_parquet(processed_dir / STATIONS_FILENAME)
     addresses_on_network.write_parquet(processed_dir / ADDRESSES_FILENAME)
 
@@ -190,7 +191,7 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
             police_names=sorted(
                 stations.filter(pl.col("vehicle_type") == "POLICE_CAR")["name"].to_list()
             ),
-            police_excluded=sorted(set(police_excluded)),
+            excluded=sorted(set(excluded)),
             no_usable_point=len(stations_without_point),
         ),
         addresses=AddressesReport(

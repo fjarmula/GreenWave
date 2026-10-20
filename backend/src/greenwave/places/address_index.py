@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import polars as pl
 
-from greenwave.etl.addresses import address_search_key
+from greenwave.etl.addresses import address_search_key, centre_distance_m
 from greenwave.schemas import GeocodeResult, Position
 
 # Matched on the raw last token: the street normaliser turns "15/2" into "15 2".
@@ -20,11 +20,16 @@ def _natural(housenumber: str) -> tuple[float, str]:
     return (int(match.group(1)), match.group(2)) if match else (math.inf, housenumber)
 
 
+_SortKey = tuple[int, int, bool, str, tuple[float, str], float, float, float]
+
+
 @dataclass(frozen=True)
 class _Address:
     street: str
-    housenumber: str
     folded_number: str
+    label: str  # unique, from the ETL
+    outside_krakow: bool
+    centre_distance_m: float
     lat: float
     lng: float
 
@@ -39,11 +44,19 @@ class AddressIndex:
     @classmethod
     def from_frame(cls, frame: pl.DataFrame) -> "AddressIndex":
         by_key: dict[str, list[_Address]] = {}
-        for street, housenumber, key, lat, lng in frame.select(
-            "street", "housenumber", "search_key", "lat", "lng"
+        for street, housenumber, key, label, outside, lat, lng in frame.select(
+            "street", "housenumber", "search_key", "label", "outside_krakow", "lat", "lng"
         ).iter_rows():
             by_key.setdefault(key, []).append(
-                _Address(street, housenumber, housenumber.lower(), lat, lng)
+                _Address(
+                    street,
+                    housenumber.lower(),
+                    label,
+                    outside,
+                    centre_distance_m(lat, lng),
+                    lat,
+                    lng,
+                )
             )
         return cls(by_key)
 
@@ -51,7 +64,8 @@ class AddressIndex:
         """Street starts with the query (then contains it, if short of ``limit``).
 
         A trailing house-number token keeps exact matches first, then numbers starting with it.
-        Order: (street tier, number tier, street, natural number, lat, lng).
+        Order: (street tier, number tier, outside Kraków, street, natural number, distance to the
+        centre, lat, lng), so Kraków addresses come before bounding-box towns.
         """
         tokens = query.split()
         number: str | None = None
@@ -68,15 +82,13 @@ class AddressIndex:
             ranked += self._matches(contains, 1, number)
         ranked.sort(key=lambda item: item[0])
         return [
-            GeocodeResult(
-                label=f"{a.street} {a.housenumber}", position=Position(lat=a.lat, lng=a.lng)
-            )
+            GeocodeResult(label=a.label, position=Position(lat=a.lat, lng=a.lng))
             for _, a in ranked[:limit]
         ]
 
     def _matches(
         self, keys: list[str], street_tier: int, number: str | None
-    ) -> list[tuple[tuple[int, int, str, tuple[float, str], float, float], _Address]]:
+    ) -> list[tuple[_SortKey, _Address]]:
         found = []
         for key in keys:
             for a in self._by_key[key]:
@@ -89,8 +101,10 @@ class AddressIndex:
                 sort_key = (
                     street_tier,
                     number_tier,
+                    a.outside_krakow,
                     a.street,
                     _natural(a.folded_number),
+                    a.centre_distance_m,
                     a.lat,
                     a.lng,
                 )

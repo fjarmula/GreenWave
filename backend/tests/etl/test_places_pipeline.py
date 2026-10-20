@@ -109,7 +109,7 @@ def test_excluded_police_reported(tmp_path: Path) -> None:
     section = run_places(raw, processed)
 
     assert section.stations.police_names == []
-    assert section.stations.police_excluded == ["Straż Miejska Oddział I"]
+    assert section.stations.excluded == ["Straż Miejska Oddział I"]
 
 
 def test_address_dedup_radius_recorded(tmp_path: Path) -> None:

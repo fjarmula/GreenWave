@@ -18,18 +18,24 @@ _ROWS = [
 ]
 
 
-@pytest.fixture
-def index() -> AddressIndex:
-    frame = pl.DataFrame(
+def _frame(rows: list[tuple[str, str]], outside: list[bool] | None = None) -> pl.DataFrame:
+    return pl.DataFrame(
         {
-            "street": [s for s, _ in _ROWS],
-            "housenumber": [h for _, h in _ROWS],
-            "search_key": [address_search_key(s) for s, _ in _ROWS],
-            "lat": [50.06 + i * 0.001 for i in range(len(_ROWS))],
-            "lng": [19.93 + i * 0.001 for i in range(len(_ROWS))],
+            "street": [s for s, _ in rows],
+            "housenumber": [h for _, h in rows],
+            "search_key": [address_search_key(s) for s, _ in rows],
+            "locality": [""] * len(rows),
+            "outside_krakow": outside or [False] * len(rows),
+            "label": [f"{s} {h}" for s, h in rows],
+            "lat": [50.06 + i * 0.001 for i in range(len(rows))],
+            "lng": [19.93 + i * 0.001 for i in range(len(rows))],
         }
     )
-    return AddressIndex.from_frame(frame)
+
+
+@pytest.fixture
+def index() -> AddressIndex:
+    return AddressIndex.from_frame(_frame(_ROWS))
 
 
 def _labels(index: AddressIndex, query: str, limit: int = 10) -> list[str]:
@@ -88,3 +94,32 @@ def test_positions_are_the_row_coordinates(index: AddressIndex) -> None:
 
 def test_no_match(index: AddressIndex) -> None:
     assert index.search("zzz", 8) == []
+
+
+def test_inside_krakow_ranks_before_outside() -> None:
+    frame = _frame([("Długa", "1"), ("Długa", "3")], outside=[True, False]).with_columns(
+        pl.Series("label", ["Długa 1 (Wieliczka)", "Długa 3"])
+    )
+    assert [r.label for r in AddressIndex.from_frame(frame).search("dluga", 8)] == [
+        "Długa 3",
+        "Długa 1 (Wieliczka)",
+    ]
+
+
+def test_closer_to_centre_breaks_ties() -> None:
+    frame = pl.DataFrame(
+        {
+            "street": ["Polna", "Polna"],
+            "housenumber": ["3", "3"],
+            "search_key": ["polna", "polna"],
+            "locality": ["", ""],
+            "outside_krakow": [False, False],
+            "label": ["Polna 3 (2)", "Polna 3"],
+            "lat": [50.10, 50.07],
+            "lng": [19.9373, 19.9373],
+        }
+    )
+    assert [r.label for r in AddressIndex.from_frame(frame).search("polna 3", 8)] == [
+        "Polna 3",
+        "Polna 3 (2)",
+    ]

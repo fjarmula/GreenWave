@@ -610,6 +610,26 @@ def test_duplicate_station_id_rejected(layout: Layout) -> None:
         load_dataset(layout.processed, layout.manifest)
 
 
+def test_duplicate_address_label_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / ADDRESSES_FILENAME,
+        lambda f: pl.concat([f, f]),  # every label now appears twice
+    )
+
+    with pytest.raises(MalformedArtifactError, match="label"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_null_address_label_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / ADDRESSES_FILENAME,
+        lambda f: f.with_columns(pl.lit(None, dtype=pl.String).alias("label")),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="label"):
+        load_dataset(layout.processed, layout.manifest)
+
+
 def test_null_address_key_rejected(layout: Layout) -> None:
     edit_parquet(
         layout.processed / ADDRESSES_FILENAME,

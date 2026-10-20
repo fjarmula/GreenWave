@@ -10,6 +10,8 @@ import numpy as np
 import polars as pl
 
 from greenwave.etl.config import (
+    AMBULANCE_EXCLUDED_NAMES,
+    AMBULANCE_INCLUDED_NAMES,
     MERGE_SAME_NAME_AT_ANY_DISTANCE,
     POLICE_EXCLUDED_NAME_FRAGMENTS,
     STATION_DEDUP_RADIUS_M,
@@ -42,6 +44,8 @@ class StationCandidate:
     osm_ref: str
     is_point: bool
     properties_key: str = ""
+    # Same-name candidates merge at any distance (police, allow-listed hospitals).
+    merge_any_distance: bool = False
 
 
 def _text(value: object) -> str:
@@ -57,12 +61,19 @@ def _fire_kind(name: str) -> str:
     return "fire_other"
 
 
+def _allow_listed_hospital(properties: Mapping[str, object]) -> bool:
+    folded = normalise_street_name(_text(properties.get("name")))
+    return bool(folded) and folded in {normalise_street_name(n) for n in AMBULANCE_INCLUDED_NAMES}
+
+
 def classify_station(properties: Mapping[str, object]) -> tuple[str, str] | None:
     """Return ``(vehicle_type, source_kind)`` for a station-tagged feature, else None."""
     if properties.get("emergency") == "ambulance_station":
         return "AMBULANCE", "ambulance_base"
     amenity = properties.get("amenity")
-    if amenity == "hospital" and properties.get("emergency") == "yes":
+    if amenity == "hospital" and (
+        properties.get("emergency") == "yes" or _allow_listed_hospital(properties)
+    ):
         return "AMBULANCE", "hospital_ed"
     if amenity == "fire_station":
         return "FIRE_TRUCK", _fire_kind(_text(properties.get("name")))
@@ -80,9 +91,14 @@ def _osm_ref(feature: OsmFeature) -> str:
     return ref
 
 
-def _excluded_police(name: str) -> bool:
+def _excluded(vehicle_type: str, name: str) -> bool:
+    """Folded-name fragment match against the type's exclusion list (police, ambulance)."""
+    fragments = {
+        "POLICE_CAR": POLICE_EXCLUDED_NAME_FRAGMENTS,
+        "AMBULANCE": AMBULANCE_EXCLUDED_NAMES,
+    }.get(vehicle_type, ())
     folded = normalise_street_name(name)
-    return any(normalise_street_name(f) in folded for f in POLICE_EXCLUDED_NAME_FRAGMENTS)
+    return any(normalise_street_name(f) in folded for f in fragments)
 
 
 def extract_station_candidates(
@@ -93,8 +109,9 @@ def extract_station_candidates(
     """Station candidates in input order.
 
     Station features without a usable point are left out; their names are appended to
-    ``no_point`` when given. Police features matching ``POLICE_EXCLUDED_NAME_FRAGMENTS`` are left
-    out; their names are appended to ``excluded`` when given. Both lists feed the ETL report.
+    ``no_point`` when given. Police and ambulance features matching their exclusion fragments
+    (``POLICE_EXCLUDED_NAME_FRAGMENTS``, ``AMBULANCE_EXCLUDED_NAMES``) are left out; their names
+    are appended to ``excluded`` when given. Both lists feed the ETL report.
     """
     candidates: list[StationCandidate] = []
     for feature in features:
@@ -103,7 +120,7 @@ def extract_station_candidates(
             continue
         vehicle_type, source_kind = classified
         name = _text(feature.properties.get("name")) or _text(feature.properties.get("operator"))
-        if vehicle_type == "POLICE_CAR" and name and _excluded_police(name):
+        if name and _excluded(vehicle_type, name):
             if excluded is not None:
                 excluded.append(name)
             continue
@@ -122,6 +139,8 @@ def extract_station_candidates(
                 osm_ref=_osm_ref(feature),
                 is_point=feature.geometry_type == "Point",
                 properties_key=json.dumps(feature.properties, sort_keys=True, default=str),
+                merge_any_distance=vehicle_type in MERGE_SAME_NAME_AT_ANY_DISTANCE
+                or _allow_listed_hospital(feature.properties),
             )
         )
     return candidates
@@ -167,7 +186,9 @@ def dedupe_stations(
 ) -> tuple[list[StationCandidate], int]:
     """Merge same-type, same-folded-name candidates within ``radius_m``; keep points first.
 
-    Types in ``MERGE_SAME_NAME_AT_ANY_DISTANCE`` merge same-name candidates at any distance.
+    Types in ``MERGE_SAME_NAME_AT_ANY_DISTANCE`` and candidates flagged ``merge_any_distance``
+    (allow-listed hospitals) merge same-name candidates at any distance and keep polygons first:
+    the building is the headquarters, points are often satellite offices.
     Unnamed (fallback-labelled) candidates are never merged. Returns ``(kept, merged_count)``.
     """
     unnamed = set(_UNNAMED.values())
@@ -181,8 +202,11 @@ def dedupe_stations(
             groups.setdefault((cand.vehicle_type, folded), []).append(cand)
     merged = 0
     for (vehicle_type, _), group in groups.items():
-        limit = math.inf if vehicle_type in MERGE_SAME_NAME_AT_ANY_DISTANCE else radius_m
-        ordered = sorted(group, key=lambda c: (not c.is_point, c.osm_ref, c.lat, c.lon))
+        any_distance = vehicle_type in MERGE_SAME_NAME_AT_ANY_DISTANCE or any(
+            c.merge_any_distance for c in group
+        )
+        limit = math.inf if any_distance else radius_m
+        ordered = sorted(group, key=lambda c: (c.is_point == any_distance, c.osm_ref, c.lat, c.lon))
         xy = project_points(
             np.array([c.lon for c in ordered], dtype=np.float64),
             np.array([c.lat for c in ordered], dtype=np.float64),

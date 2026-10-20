@@ -33,6 +33,40 @@ def test_classify_tags() -> None:
     assert classify_station({"amenity": "police"}) == ("POLICE_CAR", "police")
 
 
+def test_allow_listed_hospital_without_emergency_tag() -> None:
+    assert classify_station({"amenity": "hospital", "name": "Szpital Uniwersytecki"}) == (
+        "AMBULANCE",
+        "hospital_ed",
+    )
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Szpital Uniwersytecki CM UJ - Klinika Okulistyki",
+        "Uniwersytecki Szpital Dziecięcy",
+        "Przychodnia Specjalistyczna",
+        "",
+    ],
+)
+def test_other_hospitals_need_the_emergency_tag(name: str) -> None:
+    assert classify_station({"amenity": "hospital", "name": name}) is None
+
+
+def test_allow_listed_hospital_buildings_merge_by_name(tmp_path: Path) -> None:
+    ring = [(19.99, 50.01), (19.991, 50.01), (19.991, 50.011), (19.99, 50.011), (19.99, 50.01)]
+    feats = _features(
+        tmp_path,
+        point(20.02, 50.02, amenity="hospital", name="Szpital Uniwersytecki"),  # ~2.5 km away
+        polygon(ring, amenity="hospital", name="Szpital Uniwersytecki"),
+    )
+
+    kept, merged = dedupe_stations(extract_station_candidates(feats), 150.0)
+
+    assert (len(kept), merged) == (1, 1)
+    assert not kept[0].is_point  # the main building, as for police headquarters
+
+
 @pytest.mark.parametrize(
     ("name", "kind"),
     [
@@ -160,12 +194,38 @@ def test_same_name_police_merge_at_any_distance() -> None:
     ]
     kept, merged = dedupe_stations(far, 150.0)
     assert (len(kept), merged) == (1, 1)
-    assert kept[0].osm_ref == "b"
+    # Any-distance merges keep the building (headquarters), not a satellite office point.
+    assert kept[0].osm_ref == "a"
+    assert not kept[0].is_point
     fire = [
         StationCandidate("FIRE_TRUCK", "fire_state", "PSP 1", 19.9, 50.0, "a", True),
         StationCandidate("FIRE_TRUCK", "fire_state", "PSP 1", 19.9, 50.05, "b", True),
     ]
     assert dedupe_stations(fire, 150.0)[1] == 0
+
+
+@pytest.mark.parametrize(
+    "name", ["Krakowski Szpital Reumatologii i Rehabilitacji", "Szpital Rehabilitacji Testowy"]
+)
+def test_non_emergency_hospital_excluded_by_default(tmp_path: Path, name: str) -> None:
+    feats = _features(tmp_path, point(19.9, 50.0, amenity="hospital", emergency="yes", name=name))
+    excluded: list[str] = []
+    assert extract_station_candidates(feats, excluded=excluded) == []
+    assert excluded == [name]
+
+
+def test_emergency_hospital_kept_by_default(tmp_path: Path) -> None:
+    name = "5. Wojskowy Szpital Kliniczny z Polikliniką SP ZOZ w Krakowie"
+    feats = _features(tmp_path, point(19.9, 50.0, amenity="hospital", emergency="yes", name=name))
+    assert [c.name for c in extract_station_candidates(feats)] == [name]
+
+
+def test_ambulance_exclusion_does_not_touch_police(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(stations_module, "AMBULANCE_EXCLUDED_NAMES", ("komisariat",))
+    feats = _features(tmp_path, point(19.9, 50.0, amenity="police", name="Komisariat"))
+    assert [c.name for c in extract_station_candidates(feats)] == ["Komisariat"]
 
 
 def test_ids_stable_and_per_type() -> None:

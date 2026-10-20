@@ -275,9 +275,15 @@ def check_places(graph: nx.MultiDiGraph, stations: pl.DataFrame, addresses: pl.D
     _check_one_of(STATIONS_FILENAME, "vehicle_type", stations["vehicle_type"], VEHICLE_TYPES)
     _check_one_of(STATIONS_FILENAME, "source_kind", stations["source_kind"], SOURCE_KINDS)
     _check_coordinates(STATIONS_FILENAME, stations, graph)
-    for column in ("street", "housenumber", "search_key"):
+    for column in ("street", "housenumber", "search_key", "locality", "outside_krakow", "label"):
         if addresses[column].null_count():
             raise _malformed(ADDRESSES_FILENAME, f"has null values in column '{column}'")
+    if addresses["label"].n_unique() != addresses.height:
+        repeated = addresses.filter(addresses["label"].is_duplicated())["label"].unique().sort()
+        raise _malformed(
+            ADDRESSES_FILENAME,
+            f"has repeated label values, e.g. {', '.join(repeated[:EXAMPLES_IN_MESSAGE])}",
+        )
     _check_coordinates(ADDRESSES_FILENAME, addresses, graph)
 
 

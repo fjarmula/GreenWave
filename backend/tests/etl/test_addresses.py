@@ -1,6 +1,14 @@
 from pathlib import Path
 
-from greenwave.etl.addresses import address_search_key, dedupe_addresses, extract_addresses
+import polars as pl
+
+from greenwave.etl.addresses import (
+    address_search_key,
+    assign_labels,
+    dedupe_addresses,
+    extract_addresses,
+)
+from greenwave.etl.config import ADDRESS_DEDUP_RADIUS_M
 from greenwave.etl.ingest_osm import OsmFeature, iter_osm_records
 from tests.support.osm_fixtures import closed_way, line, point, polygon, write_osm
 
@@ -28,7 +36,15 @@ def test_missing_housenumber_skipped(tmp_path: Path) -> None:
     frame, skipped, _ = extract_addresses(features)
     assert frame.height == 0
     assert skipped == 1
-    assert frame.columns == ["street", "housenumber", "search_key", "lat", "lng"]
+    assert frame.columns == [
+        "street",
+        "housenumber",
+        "search_key",
+        "locality",
+        "outside_krakow",
+        "lat",
+        "lng",
+    ]
 
 
 def test_search_key_folds() -> None:
@@ -83,3 +99,112 @@ def test_no_usable_point_counted_apart_from_missing_tags(tmp_path: Path) -> None
     open_way = line([(19.9, 50.0), (19.901, 50.0)], **tags)
     frame, skipped, no_point = extract_addresses(_features(tmp_path, open_way))
     assert (frame.height, skipped, no_point) == (0, 0, 1)
+
+
+def test_default_merge_radius_is_400_m(tmp_path: Path) -> None:
+    tags = {"addr:street": "Kampus", "addr:housenumber": "1"}
+    a = point(19.9, 50.0, **tags)
+    b = point(19.9, 50.0027, **tags)  # ~300 m: one campus
+    frame, merged = dedupe_addresses(extract_addresses(_features(tmp_path, a, b))[0])
+    assert ADDRESS_DEDUP_RADIUS_M == 400.0
+    assert (frame.height, merged) == (1, 1)
+
+
+def test_locality_fallback_order(tmp_path: Path) -> None:
+    base = {"addr:street": "Długa", "addr:housenumber": "1"}
+    features = _features(
+        tmp_path,
+        point(19.90, 50.0, **base, **{"addr:suburb": "S", "addr:quarter": "Q", "addr:city": "C"}),
+        point(19.91, 50.0, **base, **{"addr:quarter": "Q", "addr:place": "P", "addr:city": "C"}),
+        point(19.92, 50.0, **base, **{"addr:place": "P", "addr:city": "C"}),
+        point(19.93, 50.0, **base, **{"addr:city": "C"}),
+        point(19.94, 50.0, **base),
+    )
+    frame = extract_addresses(features)[0].sort("lng")
+    assert frame["locality"].to_list() == ["S", "Q", "P", "C", ""]
+
+
+def test_krakow_city_is_never_a_locality(tmp_path: Path) -> None:
+    base = {"addr:street": "Długa", "addr:housenumber": "1"}
+    features = _features(
+        tmp_path,
+        point(19.90, 50.0, **base, **{"addr:city": "Kraków"}),
+        point(19.91, 50.0, **base, **{"addr:suburb": "Kleparz", "addr:city": "Kraków"}),
+    )
+    frame = extract_addresses(features)[0].sort("lng")
+    assert frame["locality"].to_list() == ["", "Kleparz"]
+
+
+def test_outside_krakow_flag(tmp_path: Path) -> None:
+    features = _features(
+        tmp_path,
+        point(
+            19.90, 50.0, **{"addr:street": "A", "addr:housenumber": "1", "addr:city": "Wieliczka"}
+        ),
+        point(
+            19.91,
+            50.0,
+            **{
+                "addr:place": "Osiedle Złotej Jesieni",
+                "addr:housenumber": "1",
+                "addr:city": "Kraków",
+            },
+        ),
+        point(19.92, 50.0, **{"addr:place": "Tomaszowice", "addr:housenumber": "2"}),
+        point(19.93, 50.0, **{"addr:street": "B", "addr:housenumber": "3"}),
+    )
+    frame = extract_addresses(features)[0].sort("lng")
+    assert frame["outside_krakow"].to_list() == [True, False, True, False]
+
+
+def _labelled(*rows: tuple[str, str, str, bool, float]) -> list[str]:
+    frame = pl.DataFrame(
+        {
+            "street": [r[0] for r in rows],
+            "housenumber": [r[1] for r in rows],
+            "search_key": [address_search_key(r[0]) for r in rows],
+            "locality": [r[2] for r in rows],
+            "outside_krakow": [r[3] for r in rows],
+            "lat": [r[4] for r in rows],
+            "lng": [19.9373] * len(rows),
+        }
+    )
+    return assign_labels(frame)["label"].to_list()
+
+
+def test_unique_inside_label_is_bare() -> None:
+    assert _labelled(("Floriańska", "1", "Stare Miasto", False, 50.06)) == ["Floriańska 1"]
+
+
+def test_outside_label_names_locality() -> None:
+    assert _labelled(("Polna", "3", "Zielonki", True, 50.1)) == ["Polna 3 (Zielonki)"]
+
+
+def test_village_place_as_street_not_repeated() -> None:
+    assert _labelled(("Tomaszowice", "2", "Tomaszowice", True, 50.1)) == ["Tomaszowice 2"]
+
+
+def test_duplicate_labels_get_locality() -> None:
+    labels = _labelled(
+        ("Długa", "1", "Stare Miasto", False, 50.06),
+        ("Długa", "1", "Wieliczka", True, 49.98),
+    )
+    assert labels == ["Długa 1 (Stare Miasto)", "Długa 1 (Wieliczka)"]
+
+
+def test_inside_krakow_collision_without_locality_is_numbered() -> None:
+    labels = _labelled(
+        ("Długa", "1", "", False, 50.0665),  # closer to the centre
+        ("Długa", "1", "", False, 50.0730),
+    )
+    assert labels == ["Długa 1", "Długa 1 (2)"]
+
+
+def test_duplicates_without_locality_still_unique() -> None:
+    labels = _labelled(
+        ("Polna", "3", "", False, 50.10),  # farther from the centre
+        ("Polna", "3", "", False, 50.07),
+        ("Polna", "3", "Zielonki", False, 50.12),
+    )
+    assert labels == ["Polna 3 (2)", "Polna 3", "Polna 3 (Zielonki)"]
+    assert len(set(labels)) == 3
