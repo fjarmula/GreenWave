@@ -10,13 +10,16 @@ from greenwave.artifacts import (
     NEIGHBOURS_FILENAME,
     NETWORK_EDGES_FILENAME,
     NETWORK_NODES_FILENAME,
+    QUALITY_FILENAME,
     REPORT_FILENAME,
 )
 
 COMMAND = "uv run python scripts/run_etl.py {step}"
 STEP_INTERSECTIONS = "intersections"
 STEP_NEIGHBOURS = "neighbours"
+STEP_QUALITY = "quality"
 NEIGHBOURS_COMMAND = f"`{COMMAND.format(step=STEP_NEIGHBOURS)}`"
+QUALITY_COMMAND = f"`{COMMAND.format(step=STEP_QUALITY)}`"
 CHAIN = (
     f"`{COMMAND.format(step=STEP_INTERSECTIONS)}` and then `{COMMAND.format(step=STEP_NEIGHBOURS)}`"
 )
@@ -31,6 +34,7 @@ PRODUCED_BY = {
     IDS_FILENAME: STEP_INTERSECTIONS,
     NEIGHBOURS_FILENAME: STEP_NEIGHBOURS,
     REPORT_FILENAME: STEP_INTERSECTIONS,
+    QUALITY_FILENAME: STEP_QUALITY,
 }
 
 # Columns the loader reads by name (dtype None: presence only). Other columns are carried through.

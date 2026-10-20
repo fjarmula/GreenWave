@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUpRight, Gauge, Radio, ShieldCheck, Target, TriangleAlert, Zap } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { CascadeToggle } from "@/components/hud/dispatch/CascadeToggle";
 import { NodeSelect } from "@/components/hud/dispatch/NodeSelect";
@@ -30,6 +30,8 @@ type DispatchFormProps = {
   onOriginChange: (originId: OriginEndpointId) => void;
   onDestinationChange: (destinationId: DestinationEndpointId) => void;
   onFocusNodes: () => void;
+  /** Extra HUD panels rendered at the end of the console (e.g. data quality). */
+  children?: ReactNode;
 };
 
 export function DispatchForm({
@@ -41,6 +43,7 @@ export function DispatchForm({
   onOriginChange,
   onDestinationChange,
   onFocusNodes,
+  children,
 }: DispatchFormProps) {
   const [trafficDensity, setTrafficDensity] = useState(DEFAULT_TRAFFIC_DENSITY_MULTIPLIER);
   const [cascadeEnabled, setCascadeEnabled] = useState(true);
@@ -131,6 +134,8 @@ export function DispatchForm({
           ? "Demo uses synthetic route estimates and sample signal telemetry."
           : "Route estimates come from the simulation backend after initialization. All signal states are simulated."}
       </p>
+
+      {children && <div className="mt-6">{children}</div>}
     </aside>
   );
 }

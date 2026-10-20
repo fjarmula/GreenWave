@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/v1/dataset/quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Dataset Quality
+         * @description The ``data_quality.json`` summary loaded at startup, unchanged (no recomputation).
+         */
+        get: operations["get_dataset_quality_api_v1_dataset_quality_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -95,6 +115,27 @@ export interface components {
          * @enum {string}
          */
         CancelReason: "STOPPED" | "SUPERSEDED";
+        /** DatasetQualityResponse */
+        DatasetQualityResponse: {
+            /** Checks */
+            checks: components["schemas"]["QualityCheck"][];
+            /**
+             * Is Simulated
+             * @constant
+             */
+            is_simulated: true;
+            /** Manifest Sha256 */
+            manifest_sha256: string;
+            /** Msip Export Timestamp */
+            msip_export_timestamp: string | null;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Sources */
+            sources: components["schemas"]["QualitySource"][];
+        };
         /**
          * ErrorCode
          * @enum {string}
@@ -231,6 +272,40 @@ export interface components {
             /** Lng */
             lng: number;
         };
+        /** QualityCheck */
+        QualityCheck: {
+            /** Headline */
+            headline: string;
+            /** Id */
+            id: string;
+            /** Metrics */
+            metrics: {
+                [key: string]: number;
+            };
+            /** Samples */
+            samples: string[];
+            status: components["schemas"]["QualityStatus"];
+            /** Title */
+            title: string;
+        };
+        /** QualitySource */
+        QualitySource: {
+            /** Attribution */
+            attribution: string;
+            /** Licence */
+            licence: string;
+            /** Path */
+            path: string;
+            /** Retrieved On */
+            retrieved_on: string;
+            /** Source */
+            source: string;
+        };
+        /**
+         * QualityStatus
+         * @enum {string}
+         */
+        QualityStatus: "pass" | "info" | "warn";
         /** RouteGeometry */
         RouteGeometry: {
             /** Coordinates */
@@ -455,6 +530,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    get_dataset_quality_api_v1_dataset_quality_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetQualityResponse"];
+                };
+            };
+        };
+    };
     health_api_v1_health_get: {
         parameters: {
             query?: never;

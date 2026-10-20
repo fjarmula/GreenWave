@@ -17,6 +17,8 @@ NEIGHBOURS_FILENAME = "approach_neighbours.parquet"
 REPORT_FILENAME = "etl_report.json"
 # Analysis only (not loaded by the server): Kraków bus-lane register matched against OSM.
 BUS_LANE_CROSSCHECK_FILENAME = "bus_lane_crosscheck.csv"
+# Step `quality`: a summary of the ETL diagnostics, served at /api/v1/dataset/quality.
+QUALITY_FILENAME = "data_quality.json"
 
 # The artifacts the server loads from this step. Their hashes are recorded in the report section
 # `intersections` (an integrity check against mixed runs, not a security measure).

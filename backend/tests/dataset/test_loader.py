@@ -22,12 +22,14 @@ from greenwave.etl.intersections_pipeline import (
     APPROACHES_FILENAME,
     IDS_FILENAME,
     INTERSECTIONS_FILENAME,
+    NEAR_MISSES_FILENAME,
     NETWORK_EDGES_FILENAME,
     NETWORK_NODES_FILENAME,
 )
 from greenwave.etl.io import REPORT_FILENAME
 from greenwave.etl.manifest import load_manifest, sha256_of_file
 from greenwave.etl.neighbours_pipeline import NEIGHBOURS_FILENAME
+from greenwave.etl.quality import QUALITY_FILENAME
 from tests.support.processed import Layout
 
 
@@ -42,8 +44,10 @@ def record_hash(path: Path) -> None:
         ("intersections", "artifact_sha256"),
         ("neighbours", "artifact_sha256"),
         ("neighbours", "consumed_sha256"),
+        ("quality", "consumed_sha256"),
+        ("quality", "artifact_sha256"),
     ):
-        if path.name in report[section][field]:
+        if path.name in report.get(section, {}).get(field, {}):
             report[section][field][path.name] = digest
     report_path.write_text(json.dumps(report), encoding="utf-8")
 
@@ -441,4 +445,63 @@ def test_loader_rejects_edges_without_road_attribute_columns(layout: Layout, col
         MalformedArtifactError,
         match=rf"{NETWORK_EDGES_FILENAME} has no column '{column}'.*run_etl\.py intersections",
     ):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_loader_exposes_the_quality_summary_as_written(layout: Layout) -> None:
+    dataset = load_dataset(layout.processed, layout.manifest)
+
+    written = json.loads((layout.processed / QUALITY_FILENAME).read_text(encoding="utf-8"))
+    assert dataset.quality.model_dump(mode="json") == written
+
+
+def test_loader_requires_quality_file(layout: Layout) -> None:
+    (layout.processed / QUALITY_FILENAME).unlink()
+
+    with pytest.raises(MissingArtifactError, match=QUALITY_FILENAME) as error:
+        load_dataset(layout.processed, layout.manifest)
+    assert "run_etl.py quality" in str(error.value)
+
+
+def test_loader_rejects_stale_quality_section(layout: Layout) -> None:
+    """data_quality.json left from an older run: an input it read has changed since."""
+    near_misses = layout.processed / NEAR_MISSES_FILENAME
+    near_misses.write_text(near_misses.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+
+    with pytest.raises(ArtifactHashMismatchError, match=NEAR_MISSES_FILENAME) as error:
+        load_dataset(layout.processed, layout.manifest)
+    assert "run_etl.py quality" in str(error.value)
+
+
+def test_loader_rejects_a_quality_file_edited_after_the_step(layout: Layout) -> None:
+    edit_json(layout.processed / QUALITY_FILENAME, lambda d: d.__setitem__("checks", []))
+    edit_json(  # undo record_hash: the report keeps the hash the step wrote
+        layout.processed / REPORT_FILENAME,
+        lambda d: d["quality"]["artifact_sha256"].__setitem__(QUALITY_FILENAME, "0" * 64),
+    )
+
+    with pytest.raises(ArtifactHashMismatchError, match=r"run_etl\.py quality"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_loader_rejects_a_quality_file_from_another_manifest(layout: Layout) -> None:
+    edit_json(
+        layout.processed / QUALITY_FILENAME, lambda d: d.__setitem__("manifest_sha256", "0" * 64)
+    )
+
+    with pytest.raises(ManifestMismatchError, match=r"run_etl\.py quality"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_loader_rejects_a_malformed_quality_file(layout: Layout) -> None:
+    edit_json(layout.processed / QUALITY_FILENAME, lambda d: d.__setitem__("is_simulated", False))
+
+    with pytest.raises(MalformedArtifactError, match=r"run_etl\.py quality"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_loader_asks_for_the_quality_step_without_its_report_section(layout: Layout) -> None:
+    edit_json(layout.processed / REPORT_FILENAME, lambda d: d.pop("quality"))
+
+    with pytest.raises(MalformedArtifactError, match=r"run_etl\.py quality"):
         load_dataset(layout.processed, layout.manifest)

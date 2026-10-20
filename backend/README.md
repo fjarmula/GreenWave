@@ -29,7 +29,14 @@ uv run python scripts/run_etl.py graph           # T3: road_nodes/road_edges.par
 uv run python scripts/run_etl.py override-map    # check page for data/overrides/roundabouts.json
 uv run python scripts/run_etl.py intersections   # T4: network_*, intersections, signal_approaches, ids
 uv run python scripts/run_etl.py neighbours      # T5: approach_neighbours.parquet (candidate set only)
+uv run python scripts/run_etl.py quality         # data_quality.json (run after neighbours)
 ```
+
+`quality` reads the outputs of `graph`, `intersections` and `neighbours` (near misses, street
+lengths, route checks, signal snapping, signals needing review, the bus-lane cross-check and the
+`road_attributes` section) and writes `data_quality.json`, a small deterministic summary served at
+`GET /api/v1/dataset/quality`. It records the hashes of the files it read in the `quality` report
+section. Re-run it after any of those steps.
 
 `intersections` also derives road attributes per network edge (`bus_lane`, `lanes_per_direction`,
 `surface_class`, `calming_count`, `tram_track` in `network_edges.parquet`), writes the
@@ -82,13 +89,13 @@ outputs go to the scratch `data/processed/`. `compare` exits 1 when any entry no
 ## Running the server needs built data
 
 The server loads and validates `data/processed/` once at startup (`greenwave.dataset`). Build it
-first (`intersections`, then `neighbours`, see above). If a file is missing, stale or inconsistent,
+first (`graph`, `intersections`, `neighbours`, then `quality`, see above). If a file is missing, stale or inconsistent,
 startup fails with an error that names the file and the ETL command to re-run; there is no
 fallback. Paths default to `backend/data/processed` and `backend/data/raw/MANIFEST.json`; override
 them with `GREENWAVE_PROCESSED_DIR` and `GREENWAVE_RAW_MANIFEST_PATH`.
 
 Editing `data/raw/MANIFEST.json`, even metadata only, makes every processed artifact stale: re-run
-`intersections` and then `neighbours`.
+`intersections`, `neighbours` and then `quality`.
 
 ## Simulation configuration
 
@@ -118,7 +125,7 @@ The stream endpoint is `GET /api/v1/simulation/{simulation_id}/stream`. It uses 
 `retry: 2000` control frame followed by framed contract events. Slow clients receive bounded,
 drop-oldest telemetry; terminal events are preserved.
 
-Each ETL step records the sha256 of the files it wrote (and `neighbours` of the files it read) in
+Each ETL step records the sha256 of the files it wrote (and `neighbours` and `quality` of the files they read) in
 `etl_report.json`, and the server re-checks them at startup: this is an integrity check against
 artifacts from different runs, not a security measure and not a reproducible-build claim.
 

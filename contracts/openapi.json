@@ -46,6 +46,59 @@
         "title": "CancelReason",
         "type": "string"
       },
+      "DatasetQualityResponse": {
+        "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/QualityCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "is_simulated": {
+            "const": true,
+            "title": "Is Simulated",
+            "type": "boolean"
+          },
+          "manifest_sha256": {
+            "title": "Manifest Sha256",
+            "type": "string"
+          },
+          "msip_export_timestamp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Msip Export Timestamp"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/QualitySource"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "schema_version",
+          "is_simulated",
+          "manifest_sha256",
+          "msip_export_timestamp",
+          "checks",
+          "sources"
+        ],
+        "title": "DatasetQualityResponse",
+        "type": "object"
+      },
       "ErrorCode": {
         "enum": [
           "ORIGIN_OFF_NETWORK",
@@ -332,6 +385,92 @@
         ],
         "title": "Position",
         "type": "object"
+      },
+      "QualityCheck": {
+        "properties": {
+          "headline": {
+            "title": "Headline",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Metrics",
+            "type": "object"
+          },
+          "samples": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Samples",
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/QualityStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "headline",
+          "metrics",
+          "samples"
+        ],
+        "title": "QualityCheck",
+        "type": "object"
+      },
+      "QualitySource": {
+        "properties": {
+          "attribution": {
+            "title": "Attribution",
+            "type": "string"
+          },
+          "licence": {
+            "title": "Licence",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "retrieved_on": {
+            "title": "Retrieved On",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "source",
+          "licence",
+          "attribution",
+          "retrieved_on"
+        ],
+        "title": "QualitySource",
+        "type": "object"
+      },
+      "QualityStatus": {
+        "enum": [
+          "pass",
+          "info",
+          "warn"
+        ],
+        "title": "QualityStatus",
+        "type": "string"
       },
       "RouteGeometry": {
         "properties": {
@@ -830,6 +969,28 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/dataset/quality": {
+      "get": {
+        "description": "The ``data_quality.json`` summary loaded at startup, unchanged (no recomputation).",
+        "operationId": "get_dataset_quality_api_v1_dataset_quality_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetQualityResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Dataset Quality",
+        "tags": [
+          "dataset"
+        ]
+      }
+    },
     "/api/v1/health": {
       "get": {
         "operationId": "health_api_v1_health_get",

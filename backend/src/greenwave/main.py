@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from greenwave.api.dataset import router as dataset_router
 from greenwave.api.simulation import router as simulation_router
 from greenwave.dataset import DatasetSettings, ProcessedDataset, load_dataset
 from greenwave.its import MockItsGateway
@@ -77,6 +78,7 @@ def create_app(
         return HealthResponse(status="ok")
 
     app.include_router(simulation_router)
+    app.include_router(dataset_router)
 
     def custom_openapi() -> dict[str, object]:
         """Keep the frozen SSE media-type declaration while using StreamingResponse at runtime."""

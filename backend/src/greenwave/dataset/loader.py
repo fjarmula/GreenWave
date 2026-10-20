@@ -6,9 +6,11 @@ No fallback and no partial load: any missing, stale or inconsistent artifact rai
 Mixed runs: every artifact is tied to the committed MANIFEST.json and to each other, and each ETL
 step records the sha256 of the files it wrote in ``etl_report.json`` (the neighbours step also
 records the hashes of the files it read). The loader re-hashes the six files and compares them with
-those records. This is an integrity check against artifacts from different runs (for example the
-same manifest, a changed ETL config and a partial re-run), not a security measure: the records are
-in ``etl_report.json``, which is itself not hashed, and nothing here claims reproducible builds.
+those records. ``data_quality.json`` is checked the same way against the ``quality`` section (the
+summary itself and the processed files the quality step read). This is an integrity check against
+artifacts from different runs (for example the same manifest, a changed ETL config and a partial
+re-run), not a security measure: the records are in ``etl_report.json``, which is itself not
+hashed, and nothing here claims reproducible builds.
 """
 
 import hashlib
@@ -48,6 +50,7 @@ from greenwave.dataset.models import (
     ProcessedDataset,
     Provenance,
 )
+from greenwave.dataset.quality import load_quality
 from greenwave.etl.manifest import load_manifest
 
 logger = logging.getLogger(__name__)
@@ -87,6 +90,8 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
         graph, intersections, approaches, neighbours, intersections_section, neighbours_section
     )
 
+    quality = load_quality(processed_dir, report, manifest_sha256)  # check 4
+
     manifest = load_manifest(manifest_path)
     dataset = ProcessedDataset(
         graph=nx.freeze(graph),
@@ -98,6 +103,7 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
         allow_u_turns=neighbours_section.report.allow_u_turns,
         counts=counts,
         provenance=Provenance(manifest_sha256=manifest_sha256, sources=tuple(manifest.entries)),
+        quality=quality,
     )
     logger.info(
         "loaded processed data from %s in %.2f s: %d intersections, %d signal approaches, "

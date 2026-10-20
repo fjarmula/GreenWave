@@ -9,6 +9,7 @@ import { describeSimulationError } from "@/lib/simulation-copy";
 import { buildStartRequest } from "@/lib/start-request";
 import { DashboardHeader, type DashboardMode } from "@/components/dashboard/DashboardHeader";
 import { RoutePreview } from "@/components/dashboard/RoutePreview";
+import { DataQualityPanel } from "@/components/hud/DataQualityPanel";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import {
   DESTINATION_ENDPOINTS,
@@ -20,10 +21,11 @@ import {
 export function Dashboard() {
   const { startSimulation, stopSimulation } = useSimulationStream();
   const { simulationState, routeData, error } = useSimulationState();
+  const config = getFrontendConfig();
   // A failed start has no route yet; errors after the start are shown in the live view.
   const startErrorMessage =
     simulationState === "ERROR" && !routeData && error
-      ? describeSimulationError(error, getFrontendConfig().apiBaseUrl)
+      ? describeSimulationError(error, config.apiBaseUrl)
       : null;
   const [mode, setMode] = useState<DashboardMode>("setup");
   const [originId, setOriginId] = useState<OriginEndpointId>("hospital");
@@ -71,7 +73,9 @@ export function Dashboard() {
               onOriginChange={setOriginId}
               onDestinationChange={setDestinationId}
               onFocusNodes={() => setMapFocusRequest((request) => request + 1)}
-            />
+            >
+              <DataQualityPanel mode={config.transport} apiBaseUrl={config.apiBaseUrl} />
+            </DispatchForm>
           </div>
           <RoutePreview
             mode="setup"

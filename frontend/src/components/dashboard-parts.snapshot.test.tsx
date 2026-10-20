@@ -30,6 +30,6 @@ describe.each(["mock", "backend"] as const)("Dashboard setup markup (%s transpor
         <Dashboard />
       </SimulationProvider>,
     );
-    await expect(markup).toMatchFileSnapshot(`./__snapshots__/Dashboard.setup.${name}.html`);
+    await expect(`${markup}\n`).toMatchFileSnapshot(`./__snapshots__/Dashboard.setup.${name}.html`);
   });
 });
