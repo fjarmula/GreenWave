@@ -99,13 +99,69 @@
         "title": "DatasetQualityResponse",
         "type": "object"
       },
+      "DispatchRankRequest": {
+        "properties": {
+          "incident": {
+            "$ref": "#/components/schemas/Position"
+          },
+          "vehicle_type": {
+            "$ref": "#/components/schemas/VehicleType"
+          }
+        },
+        "required": [
+          "incident",
+          "vehicle_type"
+        ],
+        "title": "DispatchRankRequest",
+        "type": "object"
+      },
+      "DispatchRankResponse": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/RankedCandidate"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Candidates",
+            "type": "array"
+          },
+          "incident_snapped": {
+            "$ref": "#/components/schemas/SnappedEndpoint"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "station_at_incident": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Station"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "schema_version",
+          "incident_snapped",
+          "candidates",
+          "station_at_incident"
+        ],
+        "title": "DispatchRankResponse",
+        "type": "object"
+      },
       "ErrorCode": {
         "enum": [
           "ORIGIN_OFF_NETWORK",
           "DESTINATION_OFF_NETWORK",
           "NO_ROUTE",
           "SIMULATION_ID_IN_USE",
-          "SIMULATION_NOT_FOUND"
+          "SIMULATION_NOT_FOUND",
+          "NO_STATION_REACHABLE"
         ],
         "title": "ErrorCode",
         "type": "string"
@@ -131,6 +187,45 @@
           "message"
         ],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "GeocodeResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/GeocodeResult"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "results"
+        ],
+        "title": "GeocodeResponse",
+        "type": "object"
+      },
+      "GeocodeResult": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "position": {
+            "$ref": "#/components/schemas/Position"
+          }
+        },
+        "required": [
+          "label",
+          "position"
+        ],
+        "title": "GeocodeResult",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -329,9 +424,7 @@
             "type": "integer"
           },
           "vehicle_type": {
-            "const": "AMBULANCE",
-            "title": "Vehicle Type",
-            "type": "string"
+            "$ref": "#/components/schemas/VehicleType"
           }
         },
         "required": [
@@ -471,6 +564,30 @@
         ],
         "title": "QualityStatus",
         "type": "string"
+      },
+      "RankedCandidate": {
+        "properties": {
+          "distance_m": {
+            "minimum": 0.0,
+            "title": "Distance M",
+            "type": "number"
+          },
+          "greenwave_seconds": {
+            "minimum": 0.0,
+            "title": "Greenwave Seconds",
+            "type": "number"
+          },
+          "station": {
+            "$ref": "#/components/schemas/Station"
+          }
+        },
+        "required": [
+          "station",
+          "greenwave_seconds",
+          "distance_m"
+        ],
+        "title": "RankedCandidate",
+        "type": "object"
       },
       "RouteGeometry": {
         "properties": {
@@ -694,6 +811,10 @@
             "minimum": 1.0,
             "title": "Traffic Density Multiplier",
             "type": "number"
+          },
+          "vehicle_type": {
+            "$ref": "#/components/schemas/VehicleType",
+            "default": "AMBULANCE"
           }
         },
         "required": [
@@ -889,6 +1010,72 @@
         "title": "SnappedEndpoint",
         "type": "object"
       },
+      "Station": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "position": {
+            "$ref": "#/components/schemas/Position"
+          },
+          "source_kind": {
+            "$ref": "#/components/schemas/StationSourceKind"
+          },
+          "station_id": {
+            "pattern": "^STN-[AFP]-\\d{4}$",
+            "title": "Station Id",
+            "type": "string"
+          },
+          "vehicle_type": {
+            "$ref": "#/components/schemas/VehicleType"
+          }
+        },
+        "required": [
+          "station_id",
+          "vehicle_type",
+          "source_kind",
+          "name",
+          "position"
+        ],
+        "title": "Station",
+        "type": "object"
+      },
+      "StationSourceKind": {
+        "description": "Where a station comes from; the UI names it, so hospital EDs are not passed off as bases.",
+        "enum": [
+          "ambulance_base",
+          "hospital_ed",
+          "fire_state",
+          "fire_volunteer",
+          "fire_other",
+          "police"
+        ],
+        "title": "StationSourceKind",
+        "type": "string"
+      },
+      "StationsResponse": {
+        "properties": {
+          "schema_version": {
+            "const": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "stations": {
+            "items": {
+              "$ref": "#/components/schemas/Station"
+            },
+            "title": "Stations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "schema_version",
+          "stations"
+        ],
+        "title": "StationsResponse",
+        "type": "object"
+      },
       "StopResponse": {
         "properties": {
           "is_simulated": {
@@ -960,6 +1147,16 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VehicleType": {
+        "description": "Chooses the candidate stations and the map icon, and is reported in the ITS payload.\n\nLives here, not in ``schemas.dispatch``, because the start request and the ITS payload use it\nand ``schemas.dispatch`` imports from this module (ADR 0006).",
+        "enum": [
+          "AMBULANCE",
+          "FIRE_TRUCK",
+          "POLICE_CAR"
+        ],
+        "title": "VehicleType",
+        "type": "string"
       }
     }
   },
@@ -988,6 +1185,105 @@
         "summary": "Get Dataset Quality",
         "tags": [
           "dataset"
+        ]
+      }
+    },
+    "/api/v1/dispatch/rank": {
+      "post": {
+        "description": "Sync on purpose: FastAPI runs it in the thread pool, keeping the CPU work off the loop.",
+        "operationId": "rank_api_v1_dispatch_rank_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispatchRankRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchRankResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "DESTINATION_OFF_NETWORK or NO_STATION_REACHABLE (ErrorResponse); request-schema violations return FastAPI's default validation body."
+          }
+        },
+        "summary": "Rank",
+        "tags": [
+          "dispatch"
+        ]
+      }
+    },
+    "/api/v1/geocode": {
+      "get": {
+        "description": "Search the local OSM address index; never calls an external geocoder.",
+        "operationId": "geocode_api_v1_geocode_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "maxLength": 100,
+              "minLength": 2,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 8,
+              "maximum": 10,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeocodeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Geocode",
+        "tags": [
+          "dispatch"
         ]
       }
     },
@@ -1191,6 +1487,28 @@
         "summary": "Stream Simulation",
         "tags": [
           "simulation"
+        ]
+      }
+    },
+    "/api/v1/stations": {
+      "get": {
+        "description": "Every station that snaps to the network, all vehicle types, sorted by ``station_id``.",
+        "operationId": "list_stations_api_v1_stations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Stations",
+        "tags": [
+          "dispatch"
         ]
       }
     }

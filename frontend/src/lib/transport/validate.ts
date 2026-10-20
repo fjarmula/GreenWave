@@ -42,6 +42,7 @@ const ERROR_CODES: Record<ErrorCode, true> = {
   NO_ROUTE: true,
   SIMULATION_ID_IN_USE: true,
   SIMULATION_NOT_FOUND: true,
+  NO_STATION_REACHABLE: true,
 };
 const STREAM_EVENT_TYPES: Record<SimulationStreamEvent["event_type"], true> = {
   SIMULATION_TICK: true,

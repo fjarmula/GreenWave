@@ -17,5 +17,6 @@ it("test_build_start_request_uses_lng_lat_of_endpoints", () => {
     traffic_density_multiplier: 2.3,
     enable_cascade_mode: false,
     playback_speed: 5,
+    vehicle_type: "AMBULANCE",
   });
 });

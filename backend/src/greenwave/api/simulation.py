@@ -32,7 +32,7 @@ def _manager(request: Request) -> SessionManager:
     return cast(SessionManager, request.app.state.session_manager)
 
 
-def _error(status_code: int, code: ErrorCode, message: str) -> JSONResponse:
+def error_response(status_code: int, code: ErrorCode, message: str) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
         content=ErrorResponse(schema_version="1.0", error_code=code, message=message).model_dump(
@@ -61,15 +61,21 @@ async def start_simulation(
     try:
         return await _manager(http_request).start(request)
     except SimulationIdInUseError:
-        return _error(409, ErrorCode.SIMULATION_ID_IN_USE, "simulation id is already active")
+        return error_response(
+            409, ErrorCode.SIMULATION_ID_IN_USE, "simulation id is already active"
+        )
     except OriginOffNetwork:
-        return _error(422, ErrorCode.ORIGIN_OFF_NETWORK, "origin is outside the routable network")
+        return error_response(
+            422, ErrorCode.ORIGIN_OFF_NETWORK, "origin is outside the routable network"
+        )
     except DestinationOffNetwork:
-        return _error(
+        return error_response(
             422, ErrorCode.DESTINATION_OFF_NETWORK, "destination is outside the routable network"
         )
     except NoRoute:
-        return _error(422, ErrorCode.NO_ROUTE, "no route exists between the snapped endpoints")
+        return error_response(
+            422, ErrorCode.NO_ROUTE, "no route exists between the snapped endpoints"
+        )
 
 
 @router.get(
@@ -118,7 +124,7 @@ async def stream_simulation(
 ) -> StreamingResponse | JSONResponse:
     manager = _manager(request)
     if not manager.exists(simulation_id):
-        return _error(404, ErrorCode.SIMULATION_NOT_FOUND, "simulation was not found")
+        return error_response(404, ErrorCode.SIMULATION_NOT_FOUND, "simulation was not found")
     stream = manager.subscribe(simulation_id)
 
     async def frames() -> AsyncIterator[str]:
@@ -149,4 +155,4 @@ async def stop_simulation(
     try:
         return await _manager(request).stop(simulation_id)
     except SimulationNotFoundError:
-        return _error(404, ErrorCode.SIMULATION_NOT_FOUND, "simulation was not found")
+        return error_response(404, ErrorCode.SIMULATION_NOT_FOUND, "simulation was not found")

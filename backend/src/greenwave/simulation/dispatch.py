@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 from math import ceil
 
-from greenwave.schemas import ItsDispatchEvent, ItsDispatchPayload
+from greenwave.schemas import ItsDispatchEvent, ItsDispatchPayload, VehicleType
 from greenwave.simulation.corridor import route_runtimes, time_to_intersection
 from greenwave.simulation.route_model import RouteModel
 from greenwave.simulation.state import EngineState
@@ -16,6 +16,7 @@ def build_dispatch_payload(
     intersection_ids: tuple[str, ...],
     now: datetime,
     settings: SimulationSettings,
+    vehicle_type: VehicleType,
 ) -> ItsDispatchPayload:
     """Hold green until the farthest member is reached plus a buffer; arrive at the nearest."""
     tti_by_id = {
@@ -25,7 +26,7 @@ def build_dispatch_payload(
     ttis = [tti_by_id[intersection_id] for intersection_id in intersection_ids]
     return ItsDispatchPayload(
         priority_level=1,
-        vehicle_type="AMBULANCE",
+        vehicle_type=vehicle_type,
         intersections_group=list(intersection_ids),
         action="FORCE_GREEN_PHASE",
         hold_duration_sec=max(

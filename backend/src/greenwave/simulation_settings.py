@@ -25,6 +25,8 @@ class SimulationSettings(BaseSettings):
     tick_interval_seconds: float = Field(default=1, gt=0)
     max_snap_distance_meters: float = Field(default=150, ge=0)
     max_playback_speed: int = Field(default=10, ge=1)
+    # Stations given the full green-wave estimate after the reversed-Dijkstra shortlist.
+    dispatch_shortlist_size: int = Field(default=5, ge=1)
     subscriber_queue_size: int = Field(default=32, ge=1)
     # Road-attribute time factors (routing/edge_times.py; ADR 0005). Neutral is 1.0 / 0.0.
     # APPROVED 2026-10-19 (human): one lane per direction cannot pass stopped/turning vehicles.

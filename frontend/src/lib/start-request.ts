@@ -21,5 +21,6 @@ export function buildStartRequest(
     traffic_density_multiplier: settings.trafficDensity,
     enable_cascade_mode: settings.cascadeEnabled,
     playback_speed: settings.playbackSpeed,
+    vehicle_type: "AMBULANCE",
   };
 }

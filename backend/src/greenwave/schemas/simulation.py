@@ -41,12 +41,25 @@ class IntersectionKind(StrEnum):
     PEDESTRIAN_CROSSING = "pedestrian_crossing"
 
 
+class VehicleType(StrEnum):
+    """Chooses the candidate stations and the map icon, and is reported in the ITS payload.
+
+    Lives here, not in ``schemas.dispatch``, because the start request and the ITS payload use it
+    and ``schemas.dispatch`` imports from this module (ADR 0006).
+    """
+
+    AMBULANCE = "AMBULANCE"
+    FIRE_TRUCK = "FIRE_TRUCK"
+    POLICE_CAR = "POLICE_CAR"
+
+
 class ErrorCode(StrEnum):
     ORIGIN_OFF_NETWORK = "ORIGIN_OFF_NETWORK"
     DESTINATION_OFF_NETWORK = "DESTINATION_OFF_NETWORK"
     NO_ROUTE = "NO_ROUTE"
     SIMULATION_ID_IN_USE = "SIMULATION_ID_IN_USE"
     SIMULATION_NOT_FOUND = "SIMULATION_NOT_FOUND"
+    NO_STATION_REACHABLE = "NO_STATION_REACHABLE"
 
 
 class CancelReason(StrEnum):
@@ -72,6 +85,8 @@ class SimulationStartRequest(BaseModel):
     enable_cascade_mode: bool
     # Wall-clock tick stays 1 Hz; each tick advances this many simulated seconds (1 s sub-steps).
     playback_speed: Annotated[int, Field(ge=1, le=10)] = 1
+    # Optional so clients from before dispatch (ADR 0006) still start ambulance runs.
+    vehicle_type: VehicleType = VehicleType.AMBULANCE
 
 
 class SnappedEndpoint(BaseModel):
@@ -141,7 +156,7 @@ class SimulationTickEvent(BaseModel):
 
 class ItsDispatchPayload(BaseModel):
     priority_level: Literal[1]
-    vehicle_type: Literal["AMBULANCE"]
+    vehicle_type: VehicleType  # the start request's; widened from "AMBULANCE" by ADR 0006
     intersections_group: Annotated[list[str], Field(min_length=1)]
     action: Literal["FORCE_GREEN_PHASE"]
     # max(40, ceil(largest TTI in group at dispatch) + its_hold_buffer_seconds)
@@ -236,4 +251,5 @@ __all__ = [
     "SimulationTickEvent",
     "SnappedEndpoint",
     "StopResponse",
+    "VehicleType",
 ]

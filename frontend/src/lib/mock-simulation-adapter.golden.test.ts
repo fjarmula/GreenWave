@@ -40,6 +40,7 @@ it("mock stream matches the recorded event sequence", async () => {
       traffic_density_multiplier: 1.5,
       enable_cascade_mode: scenario.cascade,
       playback_speed: scenario.playback,
+      vehicle_type: "AMBULANCE",
     };
     let terminal = false;
     const record = (callback: string) => (payload: unknown) => {

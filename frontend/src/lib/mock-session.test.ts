@@ -10,6 +10,7 @@ function requestWithCascade(enableCascadeMode: boolean): SimulationStartRequest 
     traffic_density_multiplier: 1,
     enable_cascade_mode: enableCascadeMode,
     playback_speed: 1,
+    vehicle_type: "AMBULANCE",
   };
 }
 

@@ -15,6 +15,7 @@ const ERROR_MESSAGES: Record<ErrorCode, string> = {
   // Reached only after the automatic retry with a fresh id also collided.
   SIMULATION_ID_IN_USE: "The simulation id was already in use twice; please initialize again",
   SIMULATION_NOT_FOUND: "Simulation no longer exists",
+  NO_STATION_REACHABLE: "No station of this type can reach this location",
 };
 
 export function describeSimulationError(error: SimulationErrorInfo, apiBaseUrl: string): string {

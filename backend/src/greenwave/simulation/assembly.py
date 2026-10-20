@@ -51,7 +51,14 @@ def plan_simulation(
     density = request.traffic_density_multiplier
     estimates = estimate_times(route, route_model, density, settings)
     engine = SimulationEngine(
-        request.simulation_id, route, route_model, estimates, density, settings, gateway
+        request.simulation_id,
+        route,
+        route_model,
+        estimates,
+        density,
+        settings,
+        gateway,
+        request.vehicle_type,
     )
     response = to_start_response(request.simulation_id, route, route_model, estimates, index)
     return PlannedSimulation(engine, response)

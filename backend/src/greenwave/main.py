@@ -8,10 +8,13 @@ from fastapi.openapi.utils import get_openapi
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from greenwave.api.dataset import router as dataset_router
+from greenwave.api.dispatch import router as dispatch_router
 from greenwave.api.simulation import router as simulation_router
 from greenwave.dataset import DatasetSettings, ProcessedDataset, load_dataset
 from greenwave.its import MockItsGateway
+from greenwave.places.address_index import AddressIndex
 from greenwave.routing.network_index import build_routing_index
+from greenwave.routing.station_ranking import build_station_nodes
 from greenwave.schemas import HealthResponse
 from greenwave.simulation.session import SessionManager
 from greenwave.simulation_settings import SimulationSettings
@@ -56,6 +59,11 @@ def create_app(
             )
         simulation_settings = SimulationSettings()
         app.state.routing_index = build_routing_index(app.state.dataset, simulation_settings)
+        app.state.simulation_settings = simulation_settings
+        app.state.address_index = AddressIndex.from_frame(app.state.dataset.addresses)
+        app.state.station_nodes = build_station_nodes(
+            app.state.dataset.stations, app.state.routing_index
+        )
         app.state.session_manager = SessionManager(
             app.state.routing_index, simulation_settings, MockItsGateway()
         )
@@ -79,6 +87,7 @@ def create_app(
 
     app.include_router(simulation_router)
     app.include_router(dataset_router)
+    app.include_router(dispatch_router)
 
     def custom_openapi() -> dict[str, object]:
         """Keep the frozen SSE media-type declaration while using StreamingResponse at runtime."""
