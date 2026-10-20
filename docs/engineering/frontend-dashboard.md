@@ -17,6 +17,7 @@ The delivered dashboard uses the canonical v1 generated contract. Mock transport
 
 - `src/lib/simulation-adapter.ts` isolates mock and backend transport.
 - `MockSimulationAdapter` owns synthetic route, 1 Hz telemetry, ambulance movement, and signal samples.
+- `src/lib/dispatch-adapter.ts` isolates incident dispatch (stations, geocode, rank). The mock has no address search and ranks by straight-line distance from `src/data/stations.snapshot.json` ("Approximate (mock)"); regenerate the snapshot with `backend/scripts/export_station_snapshot.py`.
 - `src/types/telemetry.ts` exposes thin aliases of generated API types; Pydantic schemas and OpenAPI remain canonical.
 - Keep synthetic values visibly simulated. Never send traffic-controller commands.
 

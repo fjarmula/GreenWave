@@ -1,0 +1,208 @@
+import { describe, expect, it, vi } from "vitest";
+
+import type { DispatchAdapter } from "@/lib/dispatch-adapter";
+import { SimulationAdapterError } from "@/lib/transport/errors";
+import { createIncidentDispatch, pinnedIncident, type Incident } from "@/lib/useIncidentDispatch";
+import type { DispatchRankRequest, DispatchRankResponse } from "@/types/telemetry";
+
+type Pending = {
+  request: DispatchRankRequest;
+  signal?: AbortSignal;
+  resolve: (value: DispatchRankResponse) => void;
+  reject: (error: unknown) => void;
+};
+
+/** An adapter whose rank calls stay pending until the test settles them; it ignores aborts. */
+function deferredAdapter() {
+  const calls: Pending[] = [];
+  const adapter: DispatchAdapter = {
+    capabilities: { geocode: true, roadTimeRanking: true },
+    listStations: async () => [],
+    geocode: async () => [],
+    rank: (request, signal) =>
+      new Promise((resolve, reject) => calls.push({ request, signal, resolve, reject })),
+  };
+  return { adapter, calls };
+}
+
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+const incident = (lat: number): Incident => ({
+  position: { lat, lng: 19.94 },
+  label: `Pinned ${lat}`,
+  source: "map",
+});
+
+const ranking = (stationId: string): DispatchRankResponse => ({
+  schema_version: "1.0",
+  incident_snapped: { position: { lat: 50, lng: 19.9 }, snap_distance_m: 1 },
+  candidates: [
+    {
+      station: {
+        station_id: stationId,
+        vehicle_type: "AMBULANCE",
+        source_kind: "ambulance_base",
+        name: stationId,
+        position: { lat: 50, lng: 19.9 },
+      },
+      greenwave_seconds: 120,
+      distance_m: 900,
+    },
+  ],
+  station_at_incident: null,
+});
+
+describe("createIncidentDispatch", () => {
+  it("starts idle with an ambulance and no incident, without ranking", () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    expect(dispatch.getState()).toMatchObject({
+      vehicleType: "AMBULANCE",
+      incident: null,
+      ranking: null,
+      rankStatus: "idle",
+      rankError: null,
+    });
+    expect(calls).toHaveLength(0);
+  });
+
+  it("ranks when an incident is set", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    expect(dispatch.getState().rankStatus).toBe("loading");
+    calls[0].resolve(ranking("STN-A-0001"));
+    await flush();
+
+    expect(calls[0].request).toEqual({
+      incident: { lat: 50.01, lng: 19.94 },
+      vehicle_type: "AMBULANCE",
+    });
+    expect(dispatch.getState().rankStatus).toBe("ready");
+    expect(dispatch.getState().ranking?.candidates[0].station.station_id).toBe("STN-A-0001");
+  });
+
+  it("test_stale_rank_discarded: an older response never overwrites a newer one", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    dispatch.setIncident(incident(50.02));
+    expect(calls[0].signal?.aborted).toBe(true);
+    calls[1].resolve(ranking("STN-A-0002"));
+    await flush();
+    calls[0].resolve(ranking("STN-A-0001"));
+    await flush();
+
+    expect(dispatch.getState().ranking?.candidates[0].station.station_id).toBe("STN-A-0002");
+    expect(dispatch.getState().incident?.position.lat).toBe(50.02);
+    expect(dispatch.getState().rankStatus).toBe("ready");
+  });
+
+  it("ignores the abort rejection of a superseded request", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    dispatch.setVehicleType("FIRE_TRUCK");
+    calls[0].reject(new DOMException("aborted", "AbortError"));
+    await flush();
+
+    expect(dispatch.getState().rankStatus).toBe("loading");
+    expect(dispatch.getState().rankError).toBeNull();
+  });
+
+  it("test_vehicle_type_change_reranks", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(ranking("STN-A-0001"));
+    await flush();
+
+    dispatch.setVehicleType("FIRE_TRUCK");
+
+    expect(calls).toHaveLength(2);
+    expect(calls[1].request.vehicle_type).toBe("FIRE_TRUCK");
+    expect(dispatch.getState()).toMatchObject({
+      vehicleType: "FIRE_TRUCK",
+      rankStatus: "loading",
+      ranking: null,
+    });
+  });
+
+  it("does not rank on a vehicle type change without an incident", () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setVehicleType("POLICE_CAR");
+
+    expect(calls).toHaveLength(0);
+    expect(dispatch.getState()).toMatchObject({ vehicleType: "POLICE_CAR", rankStatus: "idle" });
+  });
+
+  it.each([
+    ["DESTINATION_OFF_NETWORK", "Location is off the road network"],
+    ["NO_STATION_REACHABLE", "No station of this type can reach this location"],
+  ] as const)("test_error_copy: %s", async (code, copy) => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    calls[0].reject(new SimulationAdapterError({ kind: "http", status: 422, code, message: "x" }));
+    await flush();
+
+    expect(dispatch.getState()).toMatchObject({
+      rankStatus: "error",
+      rankError: copy,
+      ranking: null,
+    });
+  });
+
+  it("shows the transport message for other failures", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    calls[0].reject(
+      new SimulationAdapterError({ kind: "network", message: "Backend unreachable" }),
+    );
+    await flush();
+
+    expect(dispatch.getState().rankError).toBe("Backend unreachable");
+  });
+
+  it("notifies subscribers and stops after unsubscribe", () => {
+    const { adapter } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+    const listener = vi.fn();
+    const unsubscribe = dispatch.subscribe(listener);
+
+    dispatch.setVehicleType("FIRE_TRUCK");
+    unsubscribe();
+    dispatch.setVehicleType("POLICE_CAR");
+
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("dispose aborts the request in flight", () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    dispatch.dispose();
+
+    expect(calls[0].signal?.aborted).toBe(true);
+  });
+});
+
+describe("pinnedIncident", () => {
+  it("labels a map click with four decimals", () => {
+    expect(pinnedIncident({ lat: 50.061449, lng: 19.93664 })).toEqual({
+      position: { lat: 50.061449, lng: 19.93664 },
+      label: "Pinned 50.0614, 19.9366",
+      source: "map",
+    });
+  });
+});

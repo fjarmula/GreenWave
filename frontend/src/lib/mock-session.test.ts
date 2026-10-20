@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMockSession, stepMockSignals } from "@/lib/mock-session";
+import { buildMockDispatch, createMockSession, stepMockSignals } from "@/lib/mock-session";
 import type { SimulationStartRequest } from "@/types/telemetry";
 
 function requestWithCascade(enableCascadeMode: boolean): SimulationStartRequest {
@@ -43,5 +43,15 @@ describe("stepMockSignals", () => {
     expect(
       session.route.route_intersections.map(({ cascade_targets: targets }) => targets),
     ).toEqual([[], []]);
+  });
+});
+
+describe("buildMockDispatch", () => {
+  it("reports the request's vehicle type in the ITS payload", () => {
+    const session = createMockSession({ ...requestWithCascade(false), vehicle_type: "FIRE_TRUCK" });
+
+    const event = buildMockDispatch(session, new Set([0]), "2026-10-20T12:00:00Z", 0);
+
+    expect(event?.payload.vehicle_type).toBe("FIRE_TRUCK");
   });
 });

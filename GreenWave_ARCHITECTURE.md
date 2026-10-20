@@ -176,12 +176,48 @@ the transition was triggered early by an upstream intersection within
 `is_active_corridor` is `true` exactly when `state` is `CLEARING` or
 `PRIORITY_GREEN` (computed by the backend).
 
+### Phase 0: Incident Dispatch (Frontend → Backend)
+
+The operator picks a vehicle type (`AMBULANCE | FIRE_TRUCK | POLICE_CAR`) and
+the incident location (local address search or a map click). The backend
+ranks that type's stations and the run then goes from the fastest one to the
+incident (additive to contract v1, `docs/adr/0006-incident-dispatch-contract.md`).
+
+```
+GET  /api/v1/stations                    -> StationsResponse (all types, by station_id)
+GET  /api/v1/geocode?q=<2-100>&limit=<1-10, default 8>
+                                         -> GeocodeResponse ({label, position} results)
+POST /api/v1/dispatch/rank {incident, vehicle_type}
+                                         -> DispatchRankResponse (1-3 candidates, best first,
+                                            incident_snapped, station_at_incident)
+```
+
+- **Data:** the ETL `places` step writes `stations.parquet` (ambulance bases,
+  hospital emergency departments, fire and police stations from OSM, with
+  exclusion and inclusion lists in `etl/config.py`) and `addresses.parquet`
+  (unique labels, locality added outside Kraków or on a repeat).
+- **Ranking:** a reversed Dijkstra from the incident over the routing weight
+  shortlists `dispatch_shortlist_size` (5) stations; each gets the real
+  `plan_route` + route model + `estimate_times`, ranked by
+  `(greenwave_seconds, station_id)`. The displayed time is therefore the
+  `estimated_greenwave_time_sec` the run reports. A station on the incident's
+  own node is returned as `station_at_incident` and skipped. Errors:
+  `DESTINATION_OFF_NETWORK`, `NO_STATION_REACHABLE` (422).
+- **Snapping:** all endpoints (start, incident, stations) snap only to the main
+  strongly connected component of the road graph, so a point next to a road
+  island (e.g. a pedestrian street) still gets a route both ways.
+- **Mock transport:** no address search; straight-line nearest station from
+  the committed `frontend/src/data/stations.snapshot.json`, labelled
+  "Approximate (mock)".
+
 ### Phase 1: Route Initialization (Frontend → Backend)
 
 **Endpoint:** `POST /api/v1/simulation/start`
 
-Called when the user selects the origin and destination.
-`traffic_density_multiplier` must be in `[1.0, 3.0]`.
+Called when the operator starts the run: `origin` is the chosen station and
+`destination` the incident. `traffic_density_multiplier` must be in
+`[1.0, 3.0]`. `vehicle_type` is optional (default `AMBULANCE`) and is reported
+in the ITS payload; it changes nothing else in the engine.
 
 **Request:**
 
@@ -198,7 +234,8 @@ Called when the user selects the origin and destination.
   },
   "traffic_density_multiplier": 1.5,
   "enable_cascade_mode": true,
-  "playback_speed": 1
+  "playback_speed": 1,
+  "vehicle_type": "AMBULANCE"
 }
 ```
 

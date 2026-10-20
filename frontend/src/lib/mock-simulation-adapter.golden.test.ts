@@ -1,5 +1,4 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { DESTINATION_ENDPOINTS, ORIGIN_ENDPOINTS } from "@/components/map/dispatch-endpoints";
 import { createMockSimulationAdapter } from "@/lib/mock-simulation-adapter";
 import { MOCK_STREAM_INTERVAL_MILLISECONDS } from "@/lib/mock-simulation-config";
 import type { SimulationStreamSubscriber } from "@/lib/simulation-adapter";
@@ -27,8 +26,9 @@ afterEach(() => vi.useRealTimers());
 it("mock stream matches the recorded event sequence", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-17T00:00:00Z"));
-  const [originLng, originLat] = ORIGIN_ENDPOINTS[0].coordinates;
-  const [destinationLng, destinationLat] = DESTINATION_ENDPOINTS[0].coordinates;
+  // The former default endpoints (University Hospital → Łazarza), kept so the recording holds.
+  const [originLng, originLat] = [19.955, 50.015];
+  const [destinationLng, destinationLat] = [19.96, 50.063];
   const records: Array<{ scenario: number; callback: string; payload: unknown }> = [];
 
   for (const [index, scenario] of SCENARIOS.entries()) {

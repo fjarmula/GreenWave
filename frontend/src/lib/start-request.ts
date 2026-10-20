@@ -1,6 +1,6 @@
-import type { DestinationEndpoint, OriginEndpoint } from "@/components/map/dispatch-endpoints";
 import type { PlaybackSpeed } from "@/lib/playback-speed";
-import type { SimulationStartRequest } from "@/types/telemetry";
+import type { Incident } from "@/lib/useIncidentDispatch";
+import type { SimulationStartRequest, Station, VehicleType } from "@/types/telemetry";
 
 export type DispatchSettings = {
   trafficDensity: number;
@@ -8,19 +8,21 @@ export type DispatchSettings = {
   playbackSpeed: PlaybackSpeed;
 };
 
+/** The run goes from the chosen station to the incident; the engine itself is unchanged. */
 export function buildStartRequest(
-  origin: OriginEndpoint,
-  destination: DestinationEndpoint,
+  origin: Station,
+  incident: Incident,
+  vehicleType: VehicleType,
   settings: DispatchSettings,
   simulationId: string,
 ): SimulationStartRequest {
   return {
     simulation_id: simulationId,
-    origin: { lng: origin.coordinates[0], lat: origin.coordinates[1] },
-    destination: { lng: destination.coordinates[0], lat: destination.coordinates[1] },
+    origin: { lat: origin.position.lat, lng: origin.position.lng },
+    destination: { lat: incident.position.lat, lng: incident.position.lng },
     traffic_density_multiplier: settings.trafficDensity,
     enable_cascade_mode: settings.cascadeEnabled,
     playback_speed: settings.playbackSpeed,
-    vehicle_type: "AMBULANCE",
+    vehicle_type: vehicleType,
   };
 }
