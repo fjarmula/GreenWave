@@ -75,7 +75,8 @@ assistants.
     safety-critical. Instead, the system acts as an analytical layer
     that sends standardized priority requests to a mocked central ITS.
 2.  **JSON contracts over WebSockets/SSE:** The frontend is passive and
-    stateless. It consumes a data stream at 1 Hz and renders the
+    stateless. It consumes one event per simulated second (1 Hz at
+    normal speed, up to 10 Hz at the fastest playback) and renders the
     interface, keeping UI complexity low.
 3.  **Precomputed graph (ETL):** The pinned BBBike OpenStreetMap
     extract (road network and traffic signals) and the Kraków open-data
@@ -105,7 +106,7 @@ assistants.
 
 ### Time to Intersection (TTI)
 
-TTI is recalculated every second (1 Hz tick) to drive the intersection state machine:
+TTI is recalculated every simulated second (one engine step and one streamed tick) to drive the intersection state machine:
 
 $$\mathrm{TTI}_i = \frac{d_i}{v_{\mathrm{avg}}}$$
 
@@ -133,15 +134,18 @@ Where $V_{\mathrm{ambulance}}(e) = \min(\max(1.3 \cdot V_e \cdot b(e),\; 30\text
 
 One edge-time function (`backend/src/greenwave/routing/edge_times.py`) drives route choice (minimum ambulance edge time), both estimates and simulated motion: on each edge the simulated ambulance moves at the effective speed $L_e / t_a(e)$ with $t_a(e) = L_e / V_{\mathrm{ambulance}}(e) + n_e \cdot s_{\mathrm{ambulance}}$, so calming seconds are spread over the edge and the simulated trip matches $T_{\mathrm{greenwave}}$ (except that a route ending exactly on a stop line arrives before that last $D_{\min}$). All factors are `GREENWAVE_SIM_*` settings; 1.0 / 0 s makes an attribute neutral.
 
+In the simulation the ambulance dwells $D_{\min}$ at each intersection's first controlled stop line and then leaves only once every route vehicle light at that line was last **shown** green (section 4, signal phases). Priority normally turns green long before, so this hold changes nothing; it only matters when priority is requested too late (for example a route that starts just before a junction), where the ambulance waits at the line instead of driving through red.
+
 #### 3. Standard-traffic crossing (ER Green Wave disabled)
 
-With `green_wave_mode: "DISABLED"` the route and the open-road motion are exactly those of model 2; only each unpassed intersection is crossed differently. At its first controlled stop line the vehicle:
+With `green_wave_mode: "DISABLED"` the route and the open-road motion are exactly those of model 2; only signalised stop lines are crossed differently. At **every** controlled stop line of the route (including lines inside a junction), the engine samples the simulated route movement colour (section 4, signal phases) at the exact simulated time the vehicle reaches the line:
 
-1. waits a clearance $C_u = c \cdot D_u \cdot \mu_{\mathrm{traffic}}$ (cautious red-light entry while queued traffic forms a life corridor), with $c$ = `standard_clearance_factor` (default 1.0), instead of $D_{\min}$;
-2. then drives the next $L_c$ = `standard_crossing_distance_m` (default 30 m) at no more than the edge's ordinary limit, $\min(V_{\mathrm{ambulance}}(e), V_e)$, carrying that cap across edge ends;
-3. then immediately resumes $V_{\mathrm{ambulance}}(e)$.
+1. **`GREEN`:** the vehicle drives on at $V_{\mathrm{ambulance}}(e)$; no penalty.
+2. **`RED`, `YELLOW`, or no supported route vehicle signal:** the vehicle rolls one controlled crossing of $L_c$ = `standard_crossing_distance_m` (default 30 m) without stopping. Its extra cautious time $C_u = c \cdot D_u \cdot \mu_{\mathrm{traffic}}$ (cautious red-light entry while traffic forms a life corridor, $c$ = `standard_clearance_factor`, default 1.0) is spread over that distance: a segment of length $d$ on an edge with ordinary limit $v = \min(V_{\mathrm{ambulance}}(e), V_e)$ takes
+   $$\frac{d}{v} + C_{\mathrm{remaining}} \cdot \frac{d}{L_{\mathrm{remaining}}},$$
+   so the speed is positive, never above $v$, and carries across edge ends.
 
-A stop line reached inside a capped stretch starts its own clearance and a fresh $L_c$. The stretch is a modelling boundary (the ETL has no junction exit geometry), and $c$, $L_c$ are PoC assumptions, not measured Kraków values; both are validated finite and non-negative. There is no separate disabled-mode estimate: the run's `total_time_elapsed_sec` is the exact simulated arrival, and `current_time_saved_sec` compares it with $T_{\mathrm{normal}}$ in either mode. Implementation: `backend/src/greenwave/simulation/motion.py`.
+A later stop line replaces an active crossing with its own decision (a fresh crossing if it is not green). Each intersection's route signals share one cycle phase, so the lines of one through movement show the same colour. The crossing is a modelling boundary (the ETL has no junction exit geometry), and $c$, $L_c$ are PoC assumptions, not measured Kraków values; $L_c$ is strictly positive and both are finite. There is no separate disabled-mode estimate: the run's `total_time_elapsed_sec` is the exact simulated arrival, and `current_time_saved_sec` compares it with $T_{\mathrm{normal}}$ in either mode. Implementation: `backend/src/greenwave/simulation/motion.py`.
 
 ---
 
@@ -182,9 +186,15 @@ the transition was triggered early by an upstream intersection within
    `CLEARING_CASCADE` is **not** a state; a cascaded intersection is
    `state: "CLEARING"` with `is_cascade: true`.
 2. **`CLEARING -> PRIORITY_GREEN`:** Triggered when $\mathrm{TTI}_i \le 25\text{ s}$.
-3. **`PRIORITY_GREEN -> RECOVERY`:** Triggered immediately when the
-   ambulance passes the intersection's last controlled approach stop
-   line ($d_i \le 0\text{ m}$).
+3. **`PRIORITY_GREEN -> RECOVERY`:** Triggered when the ambulance has
+   passed the intersection's last controlled approach stop line
+   ($d_i \le 0\text{ m}$), but never while it is still stopped on that
+   line (dwelling $D_{\min}$ or held for green, also for another
+   intersection sharing the line) and never in the tick that carries it
+   across the line: the dashboard animates the vehicle across each tick
+   under that tick's lights, so priority is released on the following
+   tick, once the vehicle is visibly past. A destination exactly on the
+   last stop line is released once the vehicle has stopped there.
 4. **`RECOVERY -> NORMAL`:** Triggered $15\text{ s}$ after entering
    `RECOVERY`.
 
@@ -264,9 +274,12 @@ priority corridor); `DISABLED` selects the standard-traffic crossing (section
 
 `simulation_id` is chosen by the client and must match
 `^[A-Za-z0-9_-]{1,64}$`. `playback_speed` is optional (integer `1..10`,
-default `1`): the wall-clock tick stays at 1 Hz and each tick advances
-`playback_speed` simulated seconds, evaluated as 1 s sub-steps so no
-threshold (40 / 25 / 0 / 15 s) is skipped.
+default `1`): every simulated second is one engine step and one streamed
+`SIMULATION_TICK` at every speed; playback only shortens the wall-clock
+gap between ticks to `1 / playback_speed` s (1 s at 1x, 0.2 s at 5x,
+0.1 s at 10x). Playback is not an engine input, so trajectories, stop-line
+crossings, signal phases, arrival and KPIs are identical at every speed.
+This supersedes the earlier 1 Hz batching (ADR 0003, D9).
 
 **Response:** Returns static graph and route data.
 
@@ -359,14 +372,21 @@ FastAPI's default `422` body is kept for request-schema violations
 
 ### Phase 2: Real-Time Telemetry Stream & Control (Backend ↔ Frontend)
 
-- **Stream Endpoint (SSE, 1 Hz tick):** `GET /api/v1/simulation/{simulation_id}/stream`
+- **Stream Endpoint (SSE, one tick per simulated second):** `GET /api/v1/simulation/{simulation_id}/stream`
 - **Stop Endpoint:** `POST /api/v1/simulation/{simulation_id}/stop`
 
 The frontend consumes the Server-Sent Events (SSE) stream to animate the
-MapLibre vehicle marker and update dashboard KPIs. Ambulance `status` is
-an enum of `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`;
-`CROSSING_INTERSECTION` covers a dwell at a stop line and, in a disabled run,
-the whole clearance wait plus the speed-capped stretch.
+MapLibre vehicle marker and update dashboard KPIs. The marker slides to
+each tick's position over one tick interval (`1000 / playback_speed` ms),
+always starting from the previous tick's position, while the tick's signal
+phases are shown as soon as it arrives; a late or bunched tick therefore
+never leaves the marker behind the lights. The offline mock transport
+follows the same one-tick-per-simulated-second rule and intervals.
+Ambulance `status` is an enum of
+`EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`;
+`CROSSING_INTERSECTION` covers a dwell or hold at a stop line and, in a
+disabled run, the whole controlled crossing. `speed_kmh` is the distance
+actually driven in that simulated second, including the arrival tick.
 
 The stream carries a discriminated union on `event_type`:
 `SIMULATION_TICK`, `ITS_DISPATCH`, `SIMULATION_COMPLETED`,
@@ -455,35 +475,52 @@ readable until superseded. `POST /stop` returns `StopResponse`
 Every tick lists **all** route intersections in route order.
 `tti_seconds` is an integer (rounded) and `null` once the intersection has
 been passed; `name` is nullable. `total_time_elapsed_sec` advances by
-`playback_speed` per tick.
+1 per tick at every playback speed.
 
 `signal_phases` (default `[]`) is a deterministic, **simulated** explanatory
-layer, never a live or measured signal state (`backend/src/greenwave/simulation/phases.py`):
+layer, never a live or measured signal state (`backend/src/greenwave/simulation/phases.py`).
+One pure programme (`phase_decisions` / `route_movement_color_at`) drives
+both disabled-mode motion (sampled at the exact time a stop line is reached)
+and these indicators (sampled at the end of each tick):
 
-- One `VEHICLE` and one `PEDESTRIAN` indicator per signal node of each route
-  intersection, positioned at the node's processed OSM coordinates
-  (`signal_approaches.parquet` `lon`/`lat`, required and range-checked by the
-  loader). An intersection without known signal nodes yields no indicator;
-  no position is ever synthesised. `kind` is `VEHICLE | PEDESTRIAN`, `color`
-  is `RED | YELLOW | GREEN`, `signal_key` is stable within the intersection.
-- Normal programme: the intersection's signals alternate in two movement
-  groups (signal-key order), each green `signal_green_seconds` (30), yellow
-  `signal_yellow_seconds` (3), all-red `signal_all_red_seconds` (2). A
-  pedestrian crossing the arm a signal controls is green only while the
-  other group has green and its own vehicle light shows red.
-- Priority: `CLEARING` sends conflicting vehicles and all pedestrians to red
-  (the route approach keeps its programme colour); `PRIORITY_GREEN` gives the
-  route approach (the signal controlling the route's stop-line edge) green
-  and holds everything else red; `RECOVERY` and `NORMAL` follow the
-  programme. A disabled run therefore only ever shows the normal programme.
+- Indicators per signal node of each route intersection, positioned at the
+  node's processed OSM coordinates (`signal_approaches.parquet` `lon`/`lat`,
+  required and range-checked by the loader). `traffic_signals` nodes show a
+  `VEHICLE` and a `PEDESTRIAN` indicator, `pedestrian_crossing` nodes a
+  `PEDESTRIAN` indicator only, and any other node type or a node controlling
+  no edge shows none. An intersection without known signal nodes yields no
+  indicator; no position is ever synthesised. `kind` is `VEHICLE | PEDESTRIAN`,
+  `color` is `RED | YELLOW | GREEN`, `signal_key` is stable within the
+  intersection, and `(intersection_id, signal_key, kind)` is unique per tick.
+- Normal programme: a signal's movement group is its controlled approach
+  identity (sorted controlled-edge ids), except that the route's vehicle
+  signals of one intersection form a single group (its through movement).
+  The sorted groups take two cycle slots by ordinal modulo two, each green
+  `signal_green_seconds` (30), yellow `signal_yellow_seconds` (3), all-red
+  `signal_all_red_seconds` (2). A pedestrian crossing the arm a node controls
+  is green only while the other slot has green and every vehicle light of
+  its own slot shows red.
+- Priority: only a route **vehicle** signal (a vehicle-capable node
+  controlling the route's stop-line edge) can be made green. `CLEARING`
+  sends conflicting vehicles and all pedestrians to red (the route approach
+  keeps its programme colour); `PRIORITY_GREEN` gives the route approach
+  green and holds everything else red, pedestrians included; `RECOVERY` and
+  `NORMAL` follow the programme. A disabled run therefore only ever shows the
+  normal programme.
 - Shown vehicle lights only change `GREEN -> YELLOW -> RED -> GREEN`: yellow
   lasts `signal_yellow_seconds`, and a light turns green only once every
-  light not also turning green is red. Yellow is always explicit in the
-  payload; the dashboard never infers it.
+  light not also turning green is red. These display constraints never
+  change the programme colour used by motion. Yellow is always explicit in
+  the payload; the dashboard never infers it.
 
 The dashboard draws these indicators only above map zoom 16.5 (beyond the
 route fit), each with its colour and a visible "SIM CAR/PED <colour>" label
-plus `accessible_label`, and keeps the per-intersection state dots below it.
+plus `accessible_label`. Each intersection's indicators are stacked in a
+deterministic column (one label height apart) so nearby signals never
+overlap. Below that zoom it shows the per-intersection state dots; at
+detail zoom an intersection without indicators keeps its dot, labelled
+"SIM PHASES N/A" (and "simulated phase detail unavailable" for assistive
+technology), instead of disappearing.
 
 **`SIMULATION_COMPLETED`** (terminal; final KPIs):
 
@@ -595,7 +632,7 @@ physical traffic signal states.
 
 All previously open questions have been resolved and approved:
 
-1. **State machine:** Intersection `state` is strictly `NORMAL | CLEARING | PRIORITY_GREEN | RECOVERY`, with `is_cascade: bool` as a separate field. Transitions occur at $\mathrm{TTI} \le 40\text{ s}$ (`CLEARING`), $\mathrm{TTI} \le 25\text{ s}$ (`PRIORITY_GREEN`), $d_i \le 0\text{ m}$ (`RECOVERY`), and $+15\text{ s}$ (`NORMAL`). Cascade is one hop only (section 4, rule 1). `CLEARING_CASCADE` is not a state. `hold_duration_sec = max(40, ceil(TTI at dispatch) + its_hold_buffer_seconds)` with `its_hold_buffer_seconds = 5` (section 4, Phase 3).
+1. **State machine:** Intersection `state` is strictly `NORMAL | CLEARING | PRIORITY_GREEN | RECOVERY`, with `is_cascade: bool` as a separate field. Transitions occur at $\mathrm{TTI} \le 40\text{ s}$ (`CLEARING`), $\mathrm{TTI} \le 25\text{ s}$ (`PRIORITY_GREEN`), $d_i \le 0\text{ m}$ once the vehicle has left the last stop line and the tick carrying it across has been shown (`RECOVERY`, section 4, rule 3), and $+15\text{ s}$ (`NORMAL`). Cascade is one hop only (section 4, rule 1). `CLEARING_CASCADE` is not a state. `hold_duration_sec = max(40, ceil(TTI at dispatch) + its_hold_buffer_seconds)` with `its_hold_buffer_seconds = 5` (section 4, Phase 3).
 2. **Identifiers:** All endpoints, telemetry ticks, and mock ITS payloads use the ETL's `INT-0001`..`INT-0534` IDs (`intersection_ids.json`). No `MSIP-SIG-*` IDs are used.
 3. **Contract completeness:** `simulation_id`, `schema_version: "1.0"`, and `is_simulated: true` are included in all responses and ticks; streaming uses SSE (`GET /api/v1/simulation/{simulation_id}/stream`) with a cancel endpoint (`POST /api/v1/simulation/{simulation_id}/stop`); one active simulation is supported at a time; ambulance `status` is `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`; `traffic_density_multiplier` is bounded to `[1.0, 3.0]`.
 4. **ITS dispatch (Phase 3):** Implemented as an internal Python `ItsGateway` interface with a mock implementation (no self-HTTP calls).
@@ -605,5 +642,5 @@ All previously open questions have been resolved and approved:
 8. **Intersection delay:** $D_u$ (35 s per kind via ETL configuration) and $D_{\min}$ (3 s) are applied once per unique `INT-xxxx` whose controlled approach the route passes, never per signal node or per approach. The ETL provides `delay_seconds` per intersection by kind (signalised junction and mid-block signal use the signal delay, a standalone pedestrian crossing the crossing delay).
 9. **Cascade distance:** the threshold is `d <= 250 m` (inclusive) along the active route, measured between stop lines. The ETL's neighbour table uses the same inclusive threshold by shortest drive and is a candidate set only.
 10. **Snapping:** the origin and destination snap to the nearest graph node (EPSG:2178) from which a route exists. A snap distance above **150 m** (engine configuration `max_snap_distance_meters`, not a contract field) is rejected with `ORIGIN_OFF_NETWORK` / `DESTINATION_OFF_NETWORK`.
-11. **Contract v1:** the stream event union, SSE framing, error codes, `playback_speed` and the remaining simulation semantics are recorded in `docs/adr/0003-simulation-contract-v1.md`.
-12. **ER Green Wave mode (additive to contract v1, `schema_version` stays `"1.0"`):** the start request and response carry `green_wave_mode: ENABLED | DISABLED` (closed enum, no boolean form; default `ENABLED`), and ticks carry `signal_phases` (default `[]`). Disabled runs use the standard-traffic crossing (section 3, model 3), stay `NORMAL`, never cascade or dispatch, and keep route choice and open-road motion identical to enabled runs. Signal phases are a simulated explanation drawn only at high zoom (section 4, Phase 2). The dashboard runs one mode at a time; a side-by-side comparison is out of scope, and the completed-run summary leads with the total travel time and names the mode. Design: `docs/superpowers/specs/2026-10-20-er-green-wave-mode-design.md`.
+11. **Contract v1:** the stream event union, SSE framing, error codes, `playback_speed` and the remaining simulation semantics are recorded in `docs/adr/0003-simulation-contract-v1.md`. Its D9 (1 Hz wall-clock tick advancing `playback_speed` seconds) is superseded: every simulated second is streamed as its own tick and playback only shortens the wall-clock interval (section 4, Phase 1). The wire schema is unchanged.
+12. **ER Green Wave mode (additive to contract v1, `schema_version` stays `"1.0"`):** the start request and response carry `green_wave_mode: ENABLED | DISABLED` (closed enum, no boolean form; default `ENABLED`), and ticks carry `signal_phases` (default `[]`). Disabled runs use the standard-traffic crossing (section 3, model 3), stay `NORMAL`, never cascade or dispatch, and keep route choice and open-road motion identical to enabled runs. Signal phases are a simulated explanation drawn only at high zoom (section 4, Phase 2). The dashboard runs one mode at a time; a side-by-side comparison is out of scope, and the completed-run summary leads with the total travel time and names the mode. Design: `docs/superpowers/specs/2026-10-20-er-green-wave-mode-design.md`, amended by `docs/superpowers/specs/2026-10-21-er-green-wave-corrections-design.md` (rolling disabled crossing, supported signal movements, phase-detail fallback).
