@@ -66,7 +66,7 @@ export function Dashboard() {
 
       {mode === "setup" ? (
         <section className="grid min-h-0 flex-1 lg:grid-cols-[370px_minmax(0,1fr)]">
-          <div className="order-2 lg:order-1">
+          <div className="order-2 min-w-0 lg:order-1">
             <DispatchForm
               pending={simulationState === "STARTING"}
               errorMessage={startErrorMessage}

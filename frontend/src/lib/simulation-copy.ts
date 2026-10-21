@@ -1,5 +1,6 @@
 /** User-facing English copy for simulation states and errors. */
 import type { ConnectionStatus } from "@/lib/simulation-adapter";
+import type { SimulationPhase } from "@/lib/simulation-state";
 import type { SimulationErrorInfo } from "@/lib/transport/errors";
 import type {
   CancelReason,
@@ -7,6 +8,7 @@ import type {
   GreenWaveMode,
   KpiMetrics,
   SimulationStartResponse,
+  SimulationTickEvent,
 } from "@/types/telemetry";
 
 const ERROR_MESSAGES: Record<ErrorCode, string> = {
@@ -97,4 +99,24 @@ export function summarizeFinishedRun(
       value: formatDuration(finalKpis.current_time_saved_sec),
     },
   ];
+}
+
+/**
+ * Current vehicle speed for display. A tick's `speed_kmh` is the distance driven during
+ * that simulated second, so the arrival tick can be positive; after the run it is history,
+ * not current state. The retained sample itself is left untouched.
+ */
+export function vehicleSpeedPresentation(
+  phase: SimulationPhase,
+  telemetry: SimulationTickEvent | null,
+): { value: string; label: string } {
+  if (phase === "FINISHED") return { value: "0.0", label: "At destination" };
+  if (phase === "CANCELLED" || phase === "ERROR") return { value: "—", label: "No current speed" };
+  if (phase === "RUNNING" && telemetry) {
+    return {
+      value: telemetry.ambulance.speed_kmh.toFixed(1),
+      label: "Speed during last simulated second",
+    };
+  }
+  return { value: "—", label: "Awaiting telemetry" };
 }
