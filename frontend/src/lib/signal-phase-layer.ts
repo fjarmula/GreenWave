@@ -111,10 +111,11 @@ export function coarseMarkerLabels(
   cascade: boolean,
   detailUnavailable: boolean,
 ): { text: string; ariaLabel: string } {
-  const { id, state } = intersection;
+  const { id, name, state } = intersection;
+  const identity = name ? `${id} · ${name}` : id;
   return {
-    text: `${id} · ${state}${cascade ? " · CASCADE" : ""}${detailUnavailable ? " · SIM PHASES N/A" : ""}`,
-    ariaLabel: `Simulated signal ${id}: ${state}${detailUnavailable ? "; simulated phase detail unavailable" : ""}`,
+    text: `${identity} · ${state}${cascade ? " · CASCADE" : ""}${detailUnavailable ? " · SIM PHASES N/A" : ""}`,
+    ariaLabel: `Simulated signal ${identity}: ${state}${detailUnavailable ? "; simulated phase detail unavailable" : ""}`,
   };
 }
 

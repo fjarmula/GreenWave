@@ -1,13 +1,10 @@
 import {
-  estimateMockNormalTravelTimeSeconds,
   MOCK_CLEARING_TTI_SECONDS,
-  MOCK_GREENWAVE_TRAVEL_TIME_SECONDS,
   MOCK_HOLD_BUFFER_SECONDS,
   MOCK_MIN_HOLD_SECONDS,
   MOCK_PRIORITY_GREEN_TTI_SECONDS,
   MOCK_RECOVERY_SECONDS,
   MOCK_ORDINARY_SPEED_LIMIT_MPS,
-  MOCK_ROUTE_DISTANCE_METERS,
   MOCK_SAMPLE_INTERSECTIONS,
   MOCK_SIGNAL_ALL_RED_SECONDS,
   MOCK_SIGNAL_GREEN_SECONDS,
@@ -15,6 +12,8 @@ import {
   MOCK_STANDARD_CLEARANCE_SECONDS,
   MOCK_STANDARD_CROSSING_DISTANCE_M,
 } from "@/lib/mock-simulation-config";
+import { estimateMockRoute, type MockRouteMetrics } from "@/lib/mock-route-metrics";
+import { SimulationAdapterError } from "@/lib/transport/errors";
 import { positionOnRoute } from "@/lib/route-position";
 import type {
   IntersectionState,
@@ -73,9 +72,21 @@ type MockTimeline = { legs: MockLeg[]; reachSeconds: number[]; tripSeconds: numb
 type MockSignalHead = { color: SignalPhaseColor; sinceSeconds: number };
 
 export function createMockSession(request: SimulationStartRequest): MockSession {
-  const route = createMockRoute(request);
+  const metrics = estimateMockRoute(
+    request.origin,
+    request.destination,
+    request.traffic_density_multiplier,
+  );
+  if (metrics.distanceMeters === 0) {
+    throw new SimulationAdapterError({
+      kind: "http",
+      code: "NO_ROUTE",
+      message: "Mock route requires distinct origin and destination positions",
+    });
+  }
+  const route = createMockRoute(request, metrics);
   return {
-    timeline: mockTimeline(route, request),
+    timeline: mockTimeline(route, request, metrics.greenwaveSeconds),
     intervalStartSeconds: 0,
     request,
     route,
@@ -96,7 +107,16 @@ function toPosition(coordinates: [number, number]): Position {
   return { lat: coordinates[1], lng: coordinates[0] };
 }
 
-function createMockRoute(request: SimulationStartRequest): SimulationStartResponse {
+function createMockRoute(
+  request: SimulationStartRequest,
+  metrics: MockRouteMetrics,
+): SimulationStartResponse {
+  const scaledIntersections = MOCK_SAMPLE_INTERSECTIONS.map(
+    ({ routeFraction, ...intersection }) => ({
+      ...intersection,
+      distance_along_route_m: routeFraction * metrics.distanceMeters,
+    }),
+  );
   const routeGeometry: SimulationStartResponse["route_geometry"] = {
     type: "LineString",
     coordinates: [
@@ -104,17 +124,18 @@ function createMockRoute(request: SimulationStartRequest): SimulationStartRespon
       [request.destination.lng, request.destination.lat],
     ],
   };
-  const routeIntersections = MOCK_SAMPLE_INTERSECTIONS.map((intersection, sourceIndex) => {
+  const routeIntersections = scaledIntersections.map((intersection, sourceIndex) => {
     // Synthetic position: the sample distance projected onto the straight mock line.
     const coordinates = positionOnRoute(
       routeGeometry,
-      intersection.distance_along_route_m / MOCK_ROUTE_DISTANCE_METERS,
+      intersection.distance_along_route_m / metrics.distanceMeters,
     );
     if (!coordinates) throw new Error("Mock route requires two coordinates");
     // Disabled runs never cascade, whatever the legacy cascade toggle says.
     const cascadeTargets =
       request.enable_cascade_mode && request.green_wave_mode !== "DISABLED"
-        ? MOCK_SAMPLE_INTERSECTIONS.slice(sourceIndex + 1)
+        ? scaledIntersections
+            .slice(sourceIndex + 1)
             .filter(
               (target) =>
                 target.distance_along_route_m - intersection.distance_along_route_m <=
@@ -135,11 +156,9 @@ function createMockRoute(request: SimulationStartRequest): SimulationStartRespon
     simulation_id: request.simulation_id,
     status: "INITIALIZED",
     route_geometry: routeGeometry,
-    total_distance_m: MOCK_ROUTE_DISTANCE_METERS,
-    estimated_normal_time_sec: estimateMockNormalTravelTimeSeconds(
-      request.traffic_density_multiplier,
-    ),
-    estimated_greenwave_time_sec: MOCK_GREENWAVE_TRAVEL_TIME_SECONDS,
+    total_distance_m: metrics.distanceMeters,
+    estimated_normal_time_sec: Math.round(metrics.normalSeconds),
+    estimated_greenwave_time_sec: Math.round(metrics.greenwaveSeconds),
     intersections_on_route: routeIntersections.map((intersection) => intersection.id),
     route_intersections: routeIntersections,
     origin_snapped: { position: request.origin, snap_distance_m: 0 },
@@ -161,9 +180,11 @@ function cautiousSpeedMps(limitMps: number, remainingMeters: number, extraSecond
 function mockTimeline(
   route: SimulationStartResponse,
   request: SimulationStartRequest,
+  greenwaveSeconds: number,
 ): MockTimeline {
   const total = route.total_distance_m;
-  const ambulanceMps = total / route.estimated_greenwave_time_sec;
+  // Keep subsecond precision internally; the public estimate contract uses whole seconds.
+  const ambulanceMps = total / greenwaveSeconds;
   const stops = route.route_intersections.map((item) => item.distance_along_route_m);
   const legs: MockLeg[] = [];
   const reachSeconds: number[] = [];
@@ -282,12 +303,10 @@ export function buildMockTick(session: MockSession, timestamp: string): Simulati
     ambulance: {
       id: "AMB-KRA-01",
       position: toPosition(coordinates),
-      speed_kmh: arrived
-        ? 0
-        : crossing
-          ? // The distance actually driven in the last simulated second, as the backend reports.
-            Number(((metersAt(session, elapsed) - metersAt(session, elapsed - 1)) * 3.6).toFixed(1))
-          : Number((62.4 + Math.sin(session.tick / 5) * 3).toFixed(1)),
+      // Distance driven in this simulated second, including a partial arrival interval.
+      speed_kmh: Number(
+        ((metersAt(session, elapsed) - metersAt(session, elapsed - 1)) * 3.6).toFixed(1),
+      ),
       status: arrived
         ? "ARRIVED"
         : crossing
@@ -300,7 +319,8 @@ export function buildMockTick(session: MockSession, timestamp: string): Simulati
       current_time_saved_sec: Math.round(
         Math.max(0, route.estimated_normal_time_sec - session.timeline.tripSeconds) * progress,
       ),
-      total_time_elapsed_sec: elapsed,
+      // Signal recovery keeps ticking after arrival but does not add travel time.
+      total_time_elapsed_sec: Math.round(Math.min(elapsed, session.timeline.tripSeconds)),
     },
     intersections,
     signal_phases: mockSignalPhases(session),

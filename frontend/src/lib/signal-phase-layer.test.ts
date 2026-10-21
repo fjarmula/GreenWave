@@ -278,3 +278,20 @@ describe("coarse intersection fallback", () => {
     expect(coarseMarkerLabels(INTERSECTION, true, false).text).toBe("INT-0366 · NORMAL · CASCADE");
   });
 });
+
+it("shows a supplied mock junction name in the map label and accessible label", () => {
+  const label = coarseMarkerLabels(
+    {
+      id: "INT-9001",
+      name: "Mock junction A",
+      state: "NORMAL",
+      is_cascade: false,
+      tti_seconds: 12,
+      is_active_corridor: false,
+    },
+    false,
+    false,
+  );
+  expect(label.text).toContain("Mock junction A");
+  expect(label.ariaLabel).toContain("Mock junction A");
+});

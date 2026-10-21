@@ -1,3 +1,4 @@
+import { haversineMeters } from "@/lib/mock-route-metrics";
 import { describe, expect, it } from "vitest";
 import {
   advanceMockSession,
@@ -8,9 +9,9 @@ import {
   stepMockSignals,
 } from "@/lib/mock-session";
 import {
-  MOCK_GREENWAVE_TRAVEL_TIME_SECONDS,
+  MOCK_REFERENCE_GREENWAVE_SECONDS,
   MOCK_ORDINARY_SPEED_LIMIT_MPS,
-  MOCK_ROUTE_DISTANCE_METERS,
+  MOCK_REFERENCE_DISTANCE_METERS,
   MOCK_SAMPLE_INTERSECTIONS,
   MOCK_SIGNAL_GREEN_SECONDS,
   MOCK_SIGNAL_YELLOW_SECONDS,
@@ -28,8 +29,8 @@ function requestWithCascade(enableCascadeMode: boolean): SimulationStartRequest 
   return {
     green_wave_mode: "ENABLED",
     simulation_id: "cascade",
-    origin: { lat: 50.06, lng: 19.95 },
-    destination: { lat: 50.07, lng: 19.96 },
+    origin: { lat: 0, lng: 0 },
+    destination: { lat: (5400 / 6_371_000) * (180 / Math.PI), lng: 0 },
     traffic_density_multiplier: 1,
     enable_cascade_mode: enableCascadeMode,
     playback_speed: 1,
@@ -120,14 +121,15 @@ describe("ER Green Wave mode in the mock", () => {
     expect(session.route.route_intersections.map((item) => item.cascade_targets)).toEqual([[], []]);
   });
 
-  // Density 1.5: INT-0360 is reached at ~104.1 s, in the all-red interval of the route group
-  // (RED); after its crossing INT-0366 is reached at ~167.4 s, on green.
-  const AMBULANCE_MPS = MOCK_ROUTE_DISTANCE_METERS / MOCK_GREENWAVE_TRAVEL_TIME_SECONDS;
+  // Density 1.5: INT-9001 is reached at ~104.1 s, in the all-red interval of the route group
+  // (RED); after its crossing INT-9002 is reached at ~167.4 s, on green.
+  const AMBULANCE_MPS = MOCK_REFERENCE_DISTANCE_METERS / MOCK_REFERENCE_GREENWAVE_SECONDS;
   const CAUTIOUS_SECONDS = MOCK_STANDARD_CLEARANCE_SECONDS * 1.5;
   const CROSSING_SECONDS =
     MOCK_STANDARD_CROSSING_DISTANCE_M / MOCK_ORDINARY_SPEED_LIMIT_MPS + CAUTIOUS_SECONDS;
   const DENSITY = { traffic_density_multiplier: 1.5 };
-  const FIRST_REACH_SECONDS = MOCK_SAMPLE_INTERSECTIONS[0].distance_along_route_m / AMBULANCE_MPS;
+  const FIRST_REACH_SECONDS =
+    (MOCK_SAMPLE_INTERSECTIONS[0].routeFraction * MOCK_REFERENCE_DISTANCE_METERS) / AMBULANCE_MPS;
 
   it("keeps the open road identical and adds the cautious time only at a red crossing", () => {
     const enabled = runToCompletion(createMockSession(modeRequest("ENABLED", DENSITY)));
@@ -136,15 +138,15 @@ describe("ER Green Wave mode in the mock", () => {
     // Before the first sample intersection (~104 s) both vehicles are in the same place.
     expect(disabled.ticks[60].ambulance.position).toEqual(enabled.ticks[60].ambulance.position);
     const trip =
-      MOCK_GREENWAVE_TRAVEL_TIME_SECONDS +
+      MOCK_REFERENCE_GREENWAVE_SECONDS +
       CROSSING_SECONDS -
-      MOCK_STANDARD_CROSSING_DISTANCE_M / AMBULANCE_MPS; // INT-0366 is green: no second penalty
+      MOCK_STANDARD_CROSSING_DISTANCE_M / AMBULANCE_MPS; // INT-9002 is green: no second penalty
     const disabledArrival = disabled.ticks.findIndex((tick) => tick.ambulance.status === "ARRIVED");
     expect(disabled.ticks[disabledArrival].kpi_metrics.total_time_elapsed_sec).toBe(
-      Math.ceil(trip),
+      Math.round(trip),
     );
     expect(enabled.ticks.at(-1)?.kpi_metrics.total_time_elapsed_sec).toBe(
-      MOCK_GREENWAVE_TRAVEL_TIME_SECONDS,
+      MOCK_REFERENCE_GREENWAVE_SECONDS,
     );
   });
 
@@ -152,7 +154,7 @@ describe("ER Green Wave mode in the mock", () => {
     const { ticks } = runToCompletion(createMockSession(modeRequest("DISABLED", DENSITY)));
     const crossing = ticks.filter((tick) => tick.ambulance.status === "CROSSING_INTERSECTION");
 
-    // Only INT-0360's crossing: whole ticks between reaching it and leaving it.
+    // Only INT-9001's crossing: whole ticks between reaching it and leaving it.
     expect(crossing.map((tick) => tick.kpi_metrics.total_time_elapsed_sec)).toEqual(
       Array.from(
         {
@@ -190,11 +192,11 @@ describe("mock signal phases", () => {
       expect(phase.accessible_label.toLowerCase()).toContain(phase.color.toLowerCase());
       expect(Number.isFinite(phase.position.lat) && Number.isFinite(phase.position.lng)).toBe(true);
     }
-    expect(colors(tick, "INT-0360")).toEqual({
-      "INT-0360-S1/VEHICLE": "GREEN",
-      "INT-0360-S1/PEDESTRIAN": "RED",
-      "INT-0360-S2/VEHICLE": "RED",
-      "INT-0360-S2/PEDESTRIAN": "GREEN",
+    expect(colors(tick, "INT-9001")).toEqual({
+      "INT-9001-S1/VEHICLE": "GREEN",
+      "INT-9001-S1/PEDESTRIAN": "RED",
+      "INT-9001-S2/VEHICLE": "RED",
+      "INT-9001-S2/PEDESTRIAN": "GREEN",
     });
   });
 
@@ -202,15 +204,15 @@ describe("mock signal phases", () => {
     const session = createMockSession(modeRequest("DISABLED"));
     const at = (seconds: number) => {
       session.elapsedSeconds = seconds;
-      return colors(buildMockTick(session, "2026-10-21T00:00:00Z"), "INT-0366");
+      return colors(buildMockTick(session, "2026-10-21T00:00:00Z"), "INT-9002");
     };
 
-    expect(at(MOCK_SIGNAL_GREEN_SECONDS)["INT-0366-S1/VEHICLE"]).toBe("YELLOW");
+    expect(at(MOCK_SIGNAL_GREEN_SECONDS)["INT-9002-S1/VEHICLE"]).toBe("YELLOW");
     expect(at(MOCK_SIGNAL_GREEN_SECONDS + MOCK_SIGNAL_YELLOW_SECONDS)).toEqual({
-      "INT-0366-S1/VEHICLE": "RED",
-      "INT-0366-S1/PEDESTRIAN": "RED",
-      "INT-0366-S2/VEHICLE": "RED",
-      "INT-0366-S2/PEDESTRIAN": "RED",
+      "INT-9002-S1/VEHICLE": "RED",
+      "INT-9002-S1/PEDESTRIAN": "RED",
+      "INT-9002-S2/VEHICLE": "RED",
+      "INT-9002-S2/PEDESTRIAN": "RED",
     });
   });
 
@@ -220,11 +222,11 @@ describe("mock signal phases", () => {
     stepMockSignals(session, new Set());
     session.signals[0].state = "PRIORITY_GREEN";
 
-    expect(colors(buildMockTick(session, "2026-10-21T00:00:00Z"), "INT-0360")).toEqual({
-      "INT-0360-S1/VEHICLE": "GREEN",
-      "INT-0360-S1/PEDESTRIAN": "RED",
-      "INT-0360-S2/VEHICLE": "RED",
-      "INT-0360-S2/PEDESTRIAN": "RED",
+    expect(colors(buildMockTick(session, "2026-10-21T00:00:00Z"), "INT-9001")).toEqual({
+      "INT-9001-S1/VEHICLE": "GREEN",
+      "INT-9001-S1/PEDESTRIAN": "RED",
+      "INT-9001-S2/VEHICLE": "RED",
+      "INT-9001-S2/PEDESTRIAN": "RED",
     });
   });
 });
@@ -294,10 +296,82 @@ describe("mock playback speed", () => {
       ).ticks.map((tick) => ({ ...tick, timestamp: "" })); // wall-clock time only
     const baseline = run(1);
 
-    expect(baseline.map((tick) => tick.kpi_metrics.total_time_elapsed_sec)).toEqual(
-      baseline.map((_, index) => index + 1),
-    );
+    expect(baseline.map((tick) => tick.tick)).toEqual(baseline.map((_, index) => index + 1));
     expect(run(5)).toEqual(baseline);
     expect(run(10)).toEqual(baseline);
   });
+});
+
+it("rejects a direct zero-distance start with NO_ROUTE", () => {
+  const request = requestWithCascade(true);
+  expect(() => createMockSession({ ...request, destination: request.origin })).toThrow(
+    expect.objectContaining({ code: "NO_ROUTE" }),
+  );
+});
+
+describe("route-specific geometry and motion", () => {
+  it.each([100, 5400, 10000])("uses one coherent synthetic trip for %s m", (distance) => {
+    const request = modeRequest("ENABLED", {
+      destination: { lat: (distance / 6_371_000) * (180 / Math.PI), lng: 0 },
+      traffic_density_multiplier: 1.5,
+    });
+    const session = createMockSession(request);
+    const route = session.route;
+    expect(route.route_geometry.coordinates).toEqual([
+      [request.origin.lng, request.origin.lat],
+      [request.destination.lng, request.destination.lat],
+    ]);
+    expect(route.total_distance_m).toBeCloseTo(distance, 7);
+    expect(route.estimated_normal_time_sec).toBe(Math.round((distance * 780) / 5400));
+    expect(route.estimated_greenwave_time_sec).toBe(Math.round((distance * 380) / 5400));
+    expect(route.intersections_on_route).toEqual(["INT-9001", "INT-9002"]);
+    expect(route.route_intersections.map((item) => item.name)).toEqual([
+      "Mock junction A",
+      "Mock junction B",
+    ]);
+    for (const [index, fraction] of [1480 / 5400, 1632 / 5400].entries()) {
+      const junction = route.route_intersections[index];
+      expect(junction.distance_along_route_m).toBeCloseTo(distance * fraction, 7);
+      expect(junction.position.lat).toBeCloseTo(request.destination.lat * fraction, 10);
+      expect(junction.position.lng).toBe(0);
+    }
+    expect(route.route_intersections.map((item) => item.cascade_targets)).toEqual(
+      distance === 10000 ? [[], []] : [["INT-9002"], []],
+    );
+    const enabled = runToCompletion(session);
+    const disabled = runToCompletion(
+      createMockSession({ ...request, green_wave_mode: "DISABLED" }),
+    );
+    const firstReach = (distance * (1480 / 5400)) / (5400 / 380);
+    for (let index = 0; index + 1 < firstReach; index += 1) {
+      expect(disabled.ticks[index].ambulance).toMatchObject({
+        position: enabled.ticks[index].ambulance.position,
+        speed_kmh: enabled.ticks[index].ambulance.speed_kmh,
+      });
+    }
+    for (const run of [enabled, disabled]) {
+      let previous = request.origin;
+      for (const tick of run.ticks) {
+        const moved = haversineMeters(previous, tick.ambulance.position);
+        expect(Math.abs(tick.ambulance.speed_kmh - moved * 3.6)).toBeLessThanOrEqual(0.051);
+        expect(JSON.stringify(tick)).not.toMatch(/NaN|Infinity/);
+        previous = tick.ambulance.position;
+      }
+      expect(run.ticks.at(-1)?.ambulance.position.lat).toBeCloseTo(request.destination.lat, 10);
+    }
+    expect(disabled.dispatches).toEqual([]);
+  });
+});
+
+it("keeps a short trip's arrival KPI while its signals recover", () => {
+  const session = createMockSession(
+    modeRequest("ENABLED", {
+      destination: { lat: (100 / 6_371_000) * (180 / Math.PI), lng: 0 },
+    }),
+  );
+  const { ticks } = runToCompletion(session);
+  const arrived = ticks.filter((tick) => tick.ambulance.status === "ARRIVED");
+  expect(arrived.length).toBeGreaterThan(1);
+  expect(arrived.every((tick) => tick.kpi_metrics.total_time_elapsed_sec === 7)).toBe(true);
+  expect(ticks.at(-1)?.intersections.every((item) => item.state === "NORMAL")).toBe(true);
 });

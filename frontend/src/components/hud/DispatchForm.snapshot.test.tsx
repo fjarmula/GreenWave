@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+import { PreflightEstimate } from "@/components/hud/dispatch/PreflightEstimate";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import type { SimulationTransport } from "@/lib/config";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
@@ -117,5 +118,106 @@ describe("DispatchForm start button", () => {
     const markup = render(dispatchState());
     for (const label of ["Ambulance", "Fire", "Police"]) expect(markup).toContain(label);
     expect(markup).toMatch(/aria-pressed="true"[^>]*>[^<]*Fire/);
+  });
+});
+
+const preflight = (markup: string) => markup.slice(markup.indexOf("pre-flight estimation"));
+const referenceIncident = { lat: (5400 / 6_371_000) * (180 / Math.PI), lng: 0 };
+const nearIncident = { lat: referenceIncident.lat / 2, lng: 0 };
+const referenceRanking: DispatchRankResponse = {
+  ...RANKING,
+  candidates: [
+    {
+      ...RANKING.candidates[0],
+      station: { ...RANKING.candidates[0].station, position: { lat: 0, lng: 0 } },
+    },
+  ],
+};
+
+describe("mock preflight estimates", () => {
+  it.each([
+    { incident: null, ranking: null, rankStatus: "idle" as const },
+    { ranking: null, rankStatus: "loading" as const },
+    { ranking: RANKING, rankStatus: "loading" as const },
+  ])("withholds times and percentage before both endpoints are ready (%j)", (patch) => {
+    transport.current = "mock";
+    const markup = preflight(render(dispatchState(patch), false));
+    expect(markup).toContain("Select an incident");
+    expect(markup).not.toContain("TIME SAVED");
+    expect(markup).not.toContain("Standard time");
+    expect(markup).not.toContain("13m 00s");
+  });
+
+  it("changes estimates when the incident or selected vehicle station changes", () => {
+    transport.current = "mock";
+    const far = preflight(
+      render(
+        dispatchState({
+          ranking: referenceRanking,
+          incident: { position: referenceIncident, label: "Far", source: "map" },
+        }),
+        false,
+      ),
+    );
+    const near = preflight(
+      render(
+        dispatchState({
+          ranking: referenceRanking,
+          incident: { position: nearIncident, label: "Near", source: "map" },
+        }),
+        false,
+      ),
+    );
+    const otherStation = preflight(
+      render(
+        dispatchState({
+          vehicleType: "AMBULANCE",
+          ranking: {
+            ...referenceRanking,
+            candidates: [
+              {
+                ...referenceRanking.candidates[0],
+                station: {
+                  ...referenceRanking.candidates[0].station,
+                  vehicle_type: "AMBULANCE",
+                  position: nearIncident,
+                },
+              },
+            ],
+          },
+          incident: { position: referenceIncident, label: "Far", source: "map" },
+        }),
+        false,
+      ),
+    );
+    expect(far).toContain("13m 00s");
+    expect(far).toContain("06m 20s");
+    expect(near).toContain("06m 30s");
+    expect(near).toContain("03m 10s");
+    expect(otherStation).toContain("06m 30s");
+    expect(otherStation).toContain("03m 10s");
+    expect(far).toContain("Approximate (mock)");
+    expect(far).toContain("straight line");
+  });
+
+  it("recomputes normal time with density while retaining the GreenWave baseline", () => {
+    const markup = renderToStaticMarkup(
+      <PreflightEstimate
+        isMockTransport
+        trafficDensity={3}
+        origin={{ lat: 0, lng: 0 }}
+        incident={nearIncident}
+      />,
+    );
+    expect(markup).toContain("13m 00s");
+    expect(markup).toContain("03m 10s");
+  });
+
+  it("keeps backend estimates after start without mock claims", () => {
+    transport.current = "backend";
+    const markup = render(dispatchState());
+    expect(markup).toContain("AFTER START");
+    expect(markup).not.toContain("TIME SAVED");
+    expect(markup).not.toContain("Mock pre-flight");
   });
 });
