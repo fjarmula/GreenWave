@@ -451,6 +451,37 @@ def test_route_signals_of_one_intersection_share_a_cycle_slot() -> None:
     assert movement_slots(tuple(reversed(refs)), together=frozenset({"in", "out"})) == slots
 
 
+@pytest.mark.parametrize("duplicate_route_head", [False, True])
+def test_pedestrian_on_a_merged_route_arm_agrees_with_its_vehicle_heads(
+    duplicate_route_head: bool,
+) -> None:
+    entry = SIGNALS["INT-A"][0]
+    exit_head = replace(entry, signal_key="route-exit", controlled_edge_ids=("z-exit",))
+    walk = _pedestrian(replace(entry, signal_key="walk-entry"))
+    refs = (entry, exit_head, walk, SIGNALS["INT-A"][1])
+    if duplicate_route_head:
+        refs += (replace(entry, signal_key="duplicate-entry"),)
+    model = _int_a(refs)
+    route_keys = frozenset(
+        ref.signal_key
+        for ref in refs
+        if ref.node_type == "traffic_signals" and ref.signal_key != "sig-a-cross"
+    )
+    item = replace(model.intersections[0], route_signal_keys=route_keys)
+    model = replace(model, intersections=(item, *model.intersections[1:]))
+    slots = movement_slots(refs, route_keys)
+    assert slots["walk-entry"] == slots[entry.signal_key]
+    state = _state(model, 0, IntersectionState.NORMAL)
+    for now_s in range(100):
+        state = replace(state, simulated_time_s=now_s)
+        heads, phases = advance_signal_phases(model, state, SETTINGS)
+        state = replace(state, signal_heads=heads)
+        colors = {(p.signal_key, p.kind): p.color for p in phases}
+        assert colors[("walk-entry", PEDESTRIAN)] == colors[(entry.signal_key, PEDESTRIAN)]
+        if colors[("walk-entry", PEDESTRIAN)] is GREEN:
+            assert colors[(entry.signal_key, VEHICLE)] is RED
+
+
 def test_a_multi_line_route_movement_shows_one_colour_in_the_normal_cycle() -> None:
     signals = (
         signal_ref("INT-A", "sig-a", _X + 1_095, _Y, "corridor-a"),

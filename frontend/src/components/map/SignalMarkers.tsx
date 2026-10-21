@@ -7,6 +7,8 @@ import {
   coarseMarkerLabels,
   createSignalPhaseLayer,
   phaseMarkerView,
+  PHASE_MARKER_WIDTH_PX,
+  PHASE_MARKER_HEIGHT_PX,
   type PhaseMarkerHandle,
   type PhaseMarkerLayout,
   type SignalPhaseLayer,
@@ -37,7 +39,9 @@ function createPhaseMarker(map: Map, item: PhaseMarkerLayout): PhaseMarkerHandle
   const element = document.createElement("div");
   element.setAttribute("role", "img");
   element.className =
-    "flex items-center gap-1 rounded-md border border-dashed border-border bg-card/95 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-foreground shadow-lg";
+    "box-border flex items-center justify-center gap-1 whitespace-nowrap rounded-md border border-dashed border-border bg-card/95 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-foreground shadow-lg";
+  element.style.width = `${PHASE_MARKER_WIDTH_PX}px`;
+  element.style.height = `${PHASE_MARKER_HEIGHT_PX}px`;
   const light = document.createElement("span");
   light.className = "block size-2.5 shrink-0 rounded-full ring-1 ring-black/30";
   const text = document.createElement("span");

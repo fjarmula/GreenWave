@@ -30,7 +30,7 @@ Missing phase geometry is not fabricated. At detailed zoom the UI retains the in
 
 ### Detailed map layout
 
-The frontend groups phase indicators by intersection and assigns deterministic screen offsets by group/member order. It preserves colour plus concise text and ARIA labels, and never relies on a two-pixel left/right split as collision handling.
+The frontend groups phase indicators by intersection and assigns deterministic screen offsets by group/member order. It checks the final projected screen positions across all intersections and moves overlapping labels to free rows, keeping their received geographic anchors unchanged. Marker boxes are 112 by 20 pixels with a two-pixel collision gutter; placement is recalculated on ticks, map movement completion, zoom completion, and resize. It preserves colour plus concise text and ARIA labels.
 
 ## Constraints
 

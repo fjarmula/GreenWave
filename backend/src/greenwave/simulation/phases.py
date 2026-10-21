@@ -190,12 +190,13 @@ def movement_slots(
     Independent of the order of ``signals``.
     """
 
-    route_group = "|".join(
-        sorted(g for s in signals if s.signal_key in together and (g := s.movement_group))
-    )
+    route_groups = {g for s in signals if s.signal_key in together and (g := s.movement_group)}
+    route_group = "|".join(sorted(route_groups))
 
     def group(signal: SignalApproachRef) -> str | None:
-        if signal.movement_group is not None and signal.signal_key in together:
+        # Pedestrian-only nodes crossing a route arm must share that arm's slot too.
+        # Otherwise merging the vehicle heads can give their walkers a conflicting green.
+        if signal.movement_group in route_groups:
             return route_group
         return signal.movement_group
 

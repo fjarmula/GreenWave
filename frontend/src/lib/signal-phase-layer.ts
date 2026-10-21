@@ -15,8 +15,9 @@ export const SIGNAL_PHASE_DETAIL_ZOOM = 16.5;
 
 export type ZoomSource = {
   getZoom(): number;
-  on(type: "zoomend", listener: () => void): void;
-  off(type: "zoomend", listener: () => void): void;
+  project(coordinates: [number, number]): { x: number; y: number };
+  on(type: "zoomend" | "moveend" | "resize", listener: () => void): void;
+  off(type: "zoomend" | "moveend" | "resize", listener: () => void): void;
 };
 
 /** One phase marker and its screen offset (pixels) from its signal position. */
@@ -36,15 +37,21 @@ function phaseKey(phase: SignalPhaseIndicator): string {
   return `${phase.intersection_id}|${phase.signal_key}|${phase.kind}`;
 }
 
-/** Vertical distance between stacked labels: more than one label height, so rows never overlap. */
-const PHASE_ROW_PIXELS = 18;
+/** Matches the fixed marker box in SignalMarkers, with a two-pixel collision gutter. */
+export const PHASE_MARKER_WIDTH_PX = 112;
+export const PHASE_MARKER_HEIGHT_PX = 20;
+const PHASE_ROW_PIXELS = PHASE_MARKER_HEIGHT_PX + 2;
 
 /**
- * Stable screen offsets: each intersection's markers form one column, ordered by signal key then
- * vehicle before pedestrian, centred on their own signal positions. Nearby or co-located signals
- * of one junction therefore stack instead of overlapping. Independent of input order.
+ * Deterministic screen-space placement, ordered by intersection, signal and kind. Start with
+ * stacked rows, then move a label below any overlapping box (including other intersections).
+ * Geographic anchors stay unchanged; offsets account for the actual projected positions.
+ * Quadratic in the number of phase labels; no GIS processing is done here.
  */
-export function layoutPhaseMarkers(phases: SignalPhaseIndicator[]): Map<string, PhaseMarkerLayout> {
+export function layoutPhaseMarkers(
+  phases: SignalPhaseIndicator[],
+  project: ZoomSource["project"],
+): Map<string, PhaseMarkerLayout> {
   const groups = new Map<string, SignalPhaseIndicator[]>();
   for (const phase of phases) {
     const group = groups.get(phase.intersection_id) ?? [];
@@ -52,6 +59,7 @@ export function layoutPhaseMarkers(phases: SignalPhaseIndicator[]): Map<string, 
     groups.set(phase.intersection_id, group);
   }
   const layout = new Map<string, PhaseMarkerLayout>();
+  const placed: Array<{ x: number; y: number }> = [];
   [...groups.keys()].sort().forEach((intersectionId) => {
     const members = [...(groups.get(intersectionId) ?? [])].sort(
       (a, b) =>
@@ -60,7 +68,20 @@ export function layoutPhaseMarkers(phases: SignalPhaseIndicator[]): Map<string, 
     );
     members.forEach((phase, index) => {
       const row = (index - (members.length - 1) / 2) * PHASE_ROW_PIXELS;
-      layout.set(phaseKey(phase), { phase, offset: [0, row] });
+      const point = project([phase.position.lng, phase.position.lat]);
+      let y = point.y + row;
+      // Sorted tops let each collision move us down once; earlier boxes stay cleared.
+      for (const box of placed) {
+        if (
+          Math.abs(box.x - point.x) < PHASE_MARKER_WIDTH_PX + 2 &&
+          Math.abs(y - box.y) < PHASE_ROW_PIXELS
+        ) {
+          y = box.y + PHASE_ROW_PIXELS;
+        }
+      }
+      const insertion = placed.findIndex((box) => box.y > y);
+      placed.splice(insertion < 0 ? placed.length : insertion, 0, { x: point.x, y });
+      layout.set(phaseKey(phase), { phase, offset: [0, y - point.y] });
     });
   });
   return layout;
@@ -134,7 +155,9 @@ export function createSignalPhaseLayer(
       detailed = nowDetailed;
       onDetailChange?.(nowDetailed);
     }
-    const wanted = nowDetailed ? layoutPhaseMarkers(phases) : new Map<string, PhaseMarkerLayout>();
+    const wanted = nowDetailed
+      ? layoutPhaseMarkers(phases, (point) => map.project(point))
+      : new Map<string, PhaseMarkerLayout>();
     markers.forEach((marker, key) => {
       if (!wanted.has(key)) {
         marker.remove();
@@ -153,6 +176,8 @@ export function createSignalPhaseLayer(
   };
 
   map.on("zoomend", render);
+  map.on("moveend", render);
+  map.on("resize", render);
   render();
   return {
     setPhases(next) {
@@ -161,6 +186,8 @@ export function createSignalPhaseLayer(
     },
     destroy() {
       map.off("zoomend", render);
+      map.off("moveend", render);
+      map.off("resize", render);
       markers.forEach((marker) => marker.remove());
       markers.clear();
     },
