@@ -19,3 +19,5 @@ class EngineState:
     arrived: bool
     completed: bool
     arrived_at_s: float | None = None
+    # Disabled mode: metres of the current controlled crossing still capped at the speed limit.
+    speed_limited_remaining_m: float = 0.0

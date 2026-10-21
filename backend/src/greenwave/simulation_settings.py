@@ -42,6 +42,18 @@ class SimulationSettings(BaseSettings):
     ambulance_bus_lane_factor: float = Field(default=1.05, ge=1.0)
     # APPROVED 2026-10-19 (human): small gain; the match includes reserved track with kerbs/islands.
     ambulance_tram_track_factor: float = Field(default=1.05, ge=1.0)
+    # Simulated signal programme for the map's phase detail (simulation/phases.py). PoC modelling
+    # assumptions, not Kraków signal timings: two movement groups, each green then yellow then
+    # all-red.
+    signal_green_seconds: float = Field(default=30, gt=0)
+    signal_yellow_seconds: float = Field(default=3, ge=0)
+    signal_all_red_seconds: float = Field(default=2, ge=0)
+    # Standard-traffic crossing when ER Green Wave is disabled (simulation/motion.py). PoC
+    # modelling assumptions: at its first stop line the vehicle waits factor x the intersection's
+    # normal delay x traffic density (cautious red-light entry, life-corridor forming), then drives
+    # this far at no more than the road's ordinary speed limit. Not measured Kraków geometry.
+    standard_clearance_factor: float = Field(default=1.0, ge=0, allow_inf_nan=False)
+    standard_crossing_distance_m: float = Field(default=30, ge=0, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def priority_precedes_clearing(self) -> Self:

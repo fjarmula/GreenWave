@@ -439,6 +439,10 @@ def test_output_frames_have_stable_schemas_and_roundtrip(tmp_path) -> None:  # t
     assert rows["OSM-L71"]["intersection_kind"] == "midblock_signal"
     assert rows["OSM-L72"]["intersection_kind"] == "pedestrian_crossing"
     assert rows["OSM-L70"]["controlled_edge_ids"]
+    # The map draws simulated phases at these points; they must be the source signal's WGS84 node.
+    assert ap.schema["lon"] == pl.Float64 and ap.schema["lat"] == pl.Float64
+    assert (rows["OSM-L70"]["lon"], rows["OSM-L70"]["lat"]) == at(1.5, 0)
+    assert (rows["OSM-L72"]["lon"], rows["OSM-L72"]["lat"]) == at(4.2, 0)
 
 
 def test_an_internal_edge_belongs_to_the_intersection_and_its_approaches_join_the_ring() -> None:

@@ -106,3 +106,35 @@ def test_neighbour_candidate_returns_min_distance_or_none(tiny_dataset) -> None:
         row["from_approach_edge_id"], row["to_approach_edge_id"]
     ) == pytest.approx(row["distance_m"] - 1.0)
     assert index.neighbour_candidate("missing-from", "missing-to") is None
+
+
+def test_index_exposes_signal_positions_per_intersection(tiny_dataset) -> None:
+    """Phase markers must sit on real signal nodes, in a stable per-intersection order."""
+    from greenwave.routing.network_index import build_routing_index
+
+    index = build_routing_index(tiny_dataset, SimulationSettings())
+    rows = tiny_dataset.signal_approaches.filter(pl.col("intersection_id").is_not_null())
+    assert rows.height
+
+    for intersection_id in rows["intersection_id"].unique().to_list():
+        expected = rows.filter(pl.col("intersection_id") == intersection_id).sort("signal_key")
+        refs = index.signal_approaches(intersection_id)
+        assert [ref.signal_key for ref in refs] == expected["signal_key"].to_list()
+        assert [(ref.lon, ref.lat) for ref in refs] == list(
+            zip(expected["lon"].to_list(), expected["lat"].to_list(), strict=True)
+        )
+        assert [ref.node_type for ref in refs] == expected["node_type"].to_list()
+        assert [list(ref.controlled_edge_ids) for ref in refs] == expected[
+            "controlled_edge_ids"
+        ].to_list()
+        assert all(ref.intersection_id == intersection_id for ref in refs)
+
+
+def test_index_returns_no_signal_positions_for_an_intersection_without_approaches(
+    tiny_dataset,
+) -> None:
+    from greenwave.routing.network_index import build_routing_index
+
+    index = build_routing_index(tiny_dataset, SimulationSettings())
+
+    assert index.signal_approaches("INT-NO-APPROACHES") == ()

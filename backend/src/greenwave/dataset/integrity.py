@@ -224,8 +224,8 @@ def check_references(
     )
 
 
-def _malformed(filename: str, problem: str) -> MalformedArtifactError:
-    return MalformedArtifactError(f"{filename} {problem}; re-run {PLACES_COMMAND}")
+def _malformed(filename: str, problem: str, rerun: str = PLACES_COMMAND) -> MalformedArtifactError:
+    return MalformedArtifactError(f"{filename} {problem}; re-run {rerun}")
 
 
 def _check_one_of(filename: str, column: str, values: pl.Series, allowed: frozenset[str]) -> None:
@@ -240,24 +240,37 @@ def _check_one_of(filename: str, column: str, values: pl.Series, allowed: frozen
         )
 
 
-def _check_coordinates(filename: str, frame: pl.DataFrame, graph: nx.MultiDiGraph) -> None:
+def _check_coordinates(
+    filename: str,
+    frame: pl.DataFrame,
+    graph: nx.MultiDiGraph,
+    lng_column: str = "lng",
+    rerun: str = PLACES_COMMAND,
+) -> None:
     lons = [data["lon"] for _, data in graph.nodes(data=True)]
     lats = [data["lat"] for _, data in graph.nodes(data=True)]
     bounds = {
         "lat": (min(lats) - BOUNDS_PADDING_DEG, max(lats) + BOUNDS_PADDING_DEG),
-        "lng": (min(lons) - BOUNDS_PADDING_DEG, max(lons) + BOUNDS_PADDING_DEG),
+        lng_column: (min(lons) - BOUNDS_PADDING_DEG, max(lons) + BOUNDS_PADDING_DEG),
     }
     for column, (low, high) in bounds.items():
         values = frame[column]
         if values.null_count() or not values.is_finite().all():
-            raise _malformed(filename, f"has null or non-finite values in column '{column}'")
+            raise _malformed(filename, f"has null or non-finite values in column '{column}'", rerun)
         outside = int(((values < low) | (values > high)).sum())
         if outside:
             raise _malformed(
                 filename,
                 f"has {outside} rows with '{column}' outside the network bounds "
                 f"[{low:.4f}, {high:.4f}]",
+                rerun,
             )
+
+
+def check_signal_positions(graph: nx.MultiDiGraph, approaches: pl.DataFrame) -> None:
+    """Every signal approach has a finite WGS84 position inside the network bounds."""
+    rerun = f"`{COMMAND.format(step=STEP_INTERSECTIONS)}`"
+    _check_coordinates(APPROACHES_FILENAME, approaches, graph, "lon", rerun)
 
 
 def check_places(graph: nx.MultiDiGraph, stations: pl.DataFrame, addresses: pl.DataFrame) -> None:

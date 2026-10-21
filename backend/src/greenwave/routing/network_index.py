@@ -42,6 +42,18 @@ class ApproachRef:
 
 
 @dataclass(frozen=True, slots=True)
+class SignalApproachRef:
+    """One signal node of an intersection, at its processed WGS84 position (never synthesised)."""
+
+    intersection_id: str
+    signal_key: str
+    node_type: str
+    lon: float
+    lat: float
+    controlled_edge_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class IntersectionInfo:
     """Intersection metadata used by the route model and API response."""
 
@@ -70,6 +82,7 @@ class RoutingIndex:
     _approaches: Mapping[str, tuple[ApproachRef, ...]]
     _intersections: Mapping[str, IntersectionInfo]
     _neighbour_candidates: Mapping[tuple[str, str], float]
+    _signal_approaches: Mapping[str, tuple[SignalApproachRef, ...]] = MappingProxyType({})
 
     def snap(self, x_m: float, y_m: float) -> tuple[str, float] | None:
         """Return the nearest routable node within the configured metric distance."""
@@ -91,6 +104,10 @@ class RoutingIndex:
     def intersection(self, intersection_id: str) -> IntersectionInfo:
         """Get canonical metadata for one route intersection."""
         return self._intersections[intersection_id]
+
+    def signal_approaches(self, intersection_id: str) -> tuple[SignalApproachRef, ...]:
+        """The intersection's signal nodes ordered by signal key; empty when it has none."""
+        return self._signal_approaches.get(intersection_id, ())
 
     def neighbour_candidate(self, from_edge_id: str, to_edge_id: str) -> float | None:
         """Return the shortest candidate distance for an approach-edge pair, if present."""
@@ -167,10 +184,21 @@ def build_routing_index(dataset: ProcessedDataset, settings: SimulationSettings)
         for record in dataset.intersection_ids
     }
     approaches: dict[str, list[ApproachRef]] = {}
+    signals: dict[str, list[SignalApproachRef]] = {}
     for row in dataset.signal_approaches.iter_rows(named=True):
         intersection_id = row["intersection_id"]
         if intersection_id is None:
             continue
+        signals.setdefault(str(intersection_id), []).append(
+            SignalApproachRef(
+                intersection_id=str(intersection_id),
+                signal_key=str(row["signal_key"]),
+                node_type=str(row["node_type"]),
+                lon=float(row["lon"]),
+                lat=float(row["lat"]),
+                controlled_edge_ids=tuple(str(edge_id) for edge_id in row["controlled_edge_ids"]),
+            )
+        )
         for edge_id in row["controlled_edge_ids"]:
             ref = ApproachRef(str(intersection_id), str(row["signal_key"]), str(edge_id))
             approaches.setdefault(ref.edge_id, []).append(ref)
@@ -196,4 +224,10 @@ def build_routing_index(dataset: ProcessedDataset, settings: SimulationSettings)
         _approaches=MappingProxyType(sorted_approaches),
         _intersections=MappingProxyType(intersections),
         _neighbour_candidates=MappingProxyType(neighbour_candidates),
+        _signal_approaches=MappingProxyType(
+            {
+                intersection_id: tuple(sorted(refs, key=lambda ref: ref.signal_key))
+                for intersection_id, refs in signals.items()
+            }
+        ),
     )

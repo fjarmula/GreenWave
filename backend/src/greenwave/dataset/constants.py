@@ -77,6 +77,9 @@ REQUIRED_COLUMNS: dict[str, dict[str, pl.DataType | type[pl.DataType] | None]] =
         "intersection_id": pl.String,
         "controlled_edge_ids": pl.List(pl.String),
         "delay_seconds": None,
+        "node_type": pl.String,
+        "lon": pl.Float64,  # WGS84 signal node; simulated phase markers are drawn here
+        "lat": pl.Float64,
     },
     NEIGHBOURS_FILENAME: {
         "from_signal_key": pl.String,

@@ -11,7 +11,13 @@ from shapely.strtree import STRtree
 
 from greenwave.etl.geo import unproject_points
 from greenwave.routing.edge_times import NEUTRAL_ROAD_FACTORS
-from greenwave.routing.network_index import ApproachRef, EdgeView, IntersectionInfo, RoutingIndex
+from greenwave.routing.network_index import (
+    ApproachRef,
+    EdgeView,
+    IntersectionInfo,
+    RoutingIndex,
+    SignalApproachRef,
+)
 from greenwave.schemas.simulation import Position
 from greenwave.simulation_settings import SimulationSettings
 
@@ -106,11 +112,13 @@ def corridor_index(
     approach_count: int = 1,
     needs_review: bool = False,
     neighbour_candidates: Mapping[tuple[str, str], float] | None = None,
+    signal_approaches: Mapping[str, tuple[SignalApproachRef, ...]] | None = None,
 ) -> RoutingIndex:
     """An index with a fast detour, corridor stop lines, a one-way edge, and an island.
 
     ``road_attributes`` overrides the neutral road attributes per edge id, e.g.
-    ``{"corridor-a": {"calming_count": 3}}``.
+    ``{"corridor-a": {"calming_count": 3}}``. Signal positions are absent unless
+    ``signal_approaches`` (intersection id -> refs) is given.
     """
     graph = nx.MultiDiGraph()
     node, edge = _builders(graph, road_attributes or {})
@@ -168,7 +176,16 @@ def corridor_index(
             ("INT-B", _X + 1_850.02, 40),
         )
     }
-    return _index(graph, approaches, intersections, neighbour_candidates)
+    return _index(graph, approaches, intersections, neighbour_candidates, signal_approaches)
+
+
+def signal_ref(
+    intersection_id: str, signal_key: str, x_m: float, y_m: float, *edge_ids: str
+) -> SignalApproachRef:
+    position = position_at(x_m, y_m)
+    return SignalApproachRef(
+        intersection_id, signal_key, "traffic_signals", position.lng, position.lat, edge_ids
+    )
 
 
 def branch_index(road_attributes: RoadAttributes | None = None) -> RoutingIndex:
@@ -191,6 +208,7 @@ def _index(
     approaches: dict[str, tuple[ApproachRef, ...]],
     intersections: dict[str, IntersectionInfo],
     neighbour_candidates: Mapping[tuple[str, str], float] | None,
+    signal_approaches: Mapping[str, tuple[SignalApproachRef, ...]] | None = None,
 ) -> RoutingIndex:
     edges = {
         data["edge_id"]: EdgeView(
@@ -223,6 +241,7 @@ def _index(
         _approaches=MappingProxyType(approaches),
         _intersections=MappingProxyType(intersections),
         _neighbour_candidates=MappingProxyType(dict(neighbour_candidates or {})),
+        _signal_approaches=MappingProxyType(dict(signal_approaches or {})),
     )
 
 

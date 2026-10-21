@@ -1,13 +1,24 @@
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
-from tests.support.route_fixtures import corridor_index, position_at
+from tests.support.route_fixtures import corridor_index, position_at, route_edges
 
 from greenwave.its import MockItsGateway
-from greenwave.schemas import SimulationStartRequest, VehicleType
+from greenwave.routing.estimates import Estimates
+from greenwave.routing.planner import PlannedRoute, SnappedRouteEndpoint
+from greenwave.schemas import (
+    AmbulanceStatus,
+    GreenWaveMode,
+    IntersectionState,
+    Position,
+    SimulationStartRequest,
+    SimulationTickEvent,
+    VehicleType,
+)
 from greenwave.simulation import dispatch
 from greenwave.simulation.assembly import plan_simulation
 from greenwave.simulation.dispatch import build_dispatch_payload, dispatch_event
+from greenwave.simulation.engine import EngineEvent, SimulationEngine
 from greenwave.simulation.route_model import RouteIntersection, RouteModel
 from greenwave.simulation.state import EngineState
 from greenwave.simulation.state_machine import IntersectionRuntime
@@ -94,3 +105,76 @@ def test_its_payload_carries_vehicle_type() -> None:
 
     assert payloads
     assert {p.vehicle_type for p in payloads} == {VehicleType.FIRE_TRUCK}
+
+
+def _run_to_completion(engine: SimulationEngine) -> list[EngineEvent]:
+    state, events = engine.initial_state(), []
+    while not state.completed:
+        state, step_events = engine.step(state, _NOW)
+        events.extend(step_events)
+    return events
+
+
+def test_a_disabled_run_with_cascade_requested_never_dispatches_or_activates() -> None:
+    """Disabled mode is standard traffic: no ITS payload and no corridor, whatever cascade says."""
+    gateway = MockItsGateway()
+    request = SimulationStartRequest.model_validate(
+        {
+            "simulation_id": "SIM-disabled",
+            "origin": position_at(7_422_000).model_dump(),
+            "destination": position_at(7_422_950.02).model_dump(),
+            "traffic_density_multiplier": 2.0,
+            "enable_cascade_mode": True,
+            "green_wave_mode": "DISABLED",
+        }
+    )
+
+    events = _run_to_completion(
+        plan_simulation(corridor_index(), request, SimulationSettings(), gateway).engine
+    )
+
+    assert gateway.records == ()
+    assert not any(event.event_type == "ITS_DISPATCH" for event in events)
+    ticks = [event for event in events if isinstance(event, SimulationTickEvent)]
+    assert ticks[-1].ambulance.status is AmbulanceStatus.ARRIVED
+    for tick in ticks:
+        assert all(item.state is IntersectionState.NORMAL for item in tick.intersections)
+        assert not any(item.is_active_corridor for item in tick.intersections)
+
+
+def test_a_disabled_engine_ignores_cascade_targets_in_its_route_model() -> None:
+    """Defence in depth: even a cascade-bearing model must not pre-clear in disabled mode."""
+    gateway = MockItsGateway()
+    model = RouteModel(
+        intersections=(
+            RouteIntersection("NEAR", 50.0, 50.0, 10.0),
+            RouteIntersection("FAR", 150.0, 150.0, 10.0),
+        ),
+        _cascade_targets={"NEAR": ("FAR",)},
+    )
+    route = PlannedRoute(
+        edge_ids=("first", "second"),
+        edge_lengths_m=(100.0, 100.0),
+        edges=route_edges(("first", "second"), (100.0, 100.0), (36.0, 36.0)),
+        cumulative_m=(0.0, 100.0),
+        total_distance_m=200.0,
+        polyline_wgs84=[(19.0, 50.0), (19.1, 50.0)],
+        origin_snap=SnappedRouteEndpoint("origin", Position(lat=50.0, lng=19.0), 0),
+        destination_snap=SnappedRouteEndpoint("destination", Position(lat=50.0, lng=19.1), 0),
+        stop_lines=(),
+    )
+    engine = SimulationEngine(
+        "SIM-disabled",
+        route,
+        model,
+        Estimates(normal_seconds=60.0, greenwave_seconds=20.0),
+        1.0,
+        SimulationSettings(),
+        gateway,
+        green_wave_mode=GreenWaveMode.DISABLED,
+    )
+
+    events = _run_to_completion(engine)
+
+    assert gateway.records == ()
+    assert not any(event.event_type == "ITS_DISPATCH" for event in events)

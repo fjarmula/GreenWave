@@ -32,6 +32,7 @@ class RouteTrack:
     total_distance_m: float
     _edge_ends_m: tuple[float, ...]
     _speeds_mps: tuple[float, ...]
+    _speed_limits_mps: tuple[float, ...]
     _polyline: tuple[tuple[float, float], ...]
     _polyline_offsets_m: tuple[float, ...]
 
@@ -46,6 +47,7 @@ class RouteTrack:
             _speeds_mps=tuple(
                 ambulance_effective_speed_mps(edge, settings) for edge in route.edges
             ),
+            _speed_limits_mps=tuple(edge.speed_kmh / 3.6 for edge in route.edges),
             _polyline=tuple(route.polyline_wgs84),
             _polyline_offsets_m=_polyline_offsets_m(route.polyline_wgs84),
         )
@@ -59,6 +61,10 @@ class RouteTrack:
 
     def speed_mps(self, index: int) -> float:
         return self._speeds_mps[index]
+
+    def speed_limit_mps(self, index: int) -> float:
+        """The edge's ordinary (unboosted) speed limit."""
+        return self._speed_limits_mps[index]
 
     def position_at(self, distance_m: float) -> Position:
         """The point at the same share of polyline length as ``distance_m`` of route distance.

@@ -5187,6 +5187,7 @@
    ],
    "message_sequence": 3,
    "simulated_time_s": 90,
+   "speed_limited_remaining_m": 0.0,
    "tick": 90,
    "v_avg_meters_per_second": 10.979896244124795
   }
@@ -6347,6 +6348,7 @@
    ],
    "message_sequence": 3,
    "simulated_time_s": 90,
+   "speed_limited_remaining_m": 0.0,
    "tick": 90,
    "v_avg_meters_per_second": 10.979896244124795
   }
@@ -11539,6 +11541,7 @@
    ],
    "message_sequence": 3,
    "simulated_time_s": 90,
+   "speed_limited_remaining_m": 0.0,
    "tick": 90,
    "v_avg_meters_per_second": 10.979896244124795
   }
@@ -16731,6 +16734,7 @@
    ],
    "message_sequence": 3,
    "simulated_time_s": 90,
+   "speed_limited_remaining_m": 0.0,
    "tick": 90,
    "v_avg_meters_per_second": 10.979896244124795
   }
@@ -21952,6 +21956,7 @@
    ],
    "message_sequence": 4,
    "simulated_time_s": 90,
+   "speed_limited_remaining_m": 0.0,
    "tick": 90,
    "v_avg_meters_per_second": 10.979896244124795
   }

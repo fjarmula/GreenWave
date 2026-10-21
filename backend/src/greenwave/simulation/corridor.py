@@ -37,13 +37,28 @@ def time_to_intersection(
 
 
 def advance_corridor(
-    route_model: RouteModel, state: EngineState, settings: SimulationSettings
+    route_model: RouteModel,
+    state: EngineState,
+    settings: SimulationSettings,
+    priority_enabled: bool = True,
 ) -> CorridorAdvance:
     """Own-TTI pass in route order, then one cascade pass over each own entry's targets.
 
     ``entered_clearing`` lists own entries in route order followed by cascade entries in
-    source/target order; that order is the ITS dispatch group order.
+    source/target order; that order is the ITS dispatch group order. Without priority (ER Green
+    Wave disabled) intersections stay ``NORMAL`` and are only marked passed, so nothing clears,
+    cascades or dispatches.
     """
+    if not priority_enabled:
+        return CorridorAdvance(
+            tuple(
+                IntersectionRuntime(passed=True)
+                if not runtime.passed and item.last_stop_line_m <= state.distance_travelled_m
+                else runtime
+                for item, runtime in route_runtimes(route_model, state)
+            ),
+            (),
+        )
     intersections = route_model.intersections
     advanced: list[IntersectionRuntime] = []
     own: list[str] = []
