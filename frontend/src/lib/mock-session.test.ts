@@ -261,3 +261,27 @@ describe("mock signal light sequence", () => {
     },
   );
 });
+
+describe("mock light under the animated vehicle", () => {
+  it.each([1, 5, 10])(
+    "keeps the route light green in the tick the map animates the vehicle across (x%s)",
+    (playback) => {
+      const session = createMockSession(modeRequest("ENABLED", { playback_speed: playback }));
+      const { ticks } = runToCompletion(session);
+      let previous = 0;
+      for (const tick of ticks) {
+        const elapsed = tick.kpi_metrics.total_time_elapsed_sec;
+        session.timeline.reachSeconds.forEach((reach, index) => {
+          if (reach > previous && reach <= elapsed) {
+            const id = session.route.route_intersections[index].id;
+            const light = tick.signal_phases.find(
+              (phase) => phase.signal_key === `${id}-S1` && phase.kind === "VEHICLE",
+            );
+            expect(light?.color, `${id} tick ${tick.tick}`).toBe("GREEN");
+          }
+        });
+        previous = elapsed;
+      }
+    },
+  );
+});

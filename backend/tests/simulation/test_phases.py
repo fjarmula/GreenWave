@@ -436,3 +436,35 @@ def test_decisions_carry_the_signal_position() -> None:
     first = decisions[0]
     assert (first.intersection_id, first.signal_key, first.kind) == ("INT-A", "sig-a", VEHICLE)
     assert (first.position.lng, first.position.lat) == (ref.lon, ref.lat)
+
+
+def test_route_signals_of_one_intersection_share_a_cycle_slot() -> None:
+    """One through movement: every route line of a junction shows the same phase."""
+    refs = (
+        signal_ref("I", "in", _X, _Y, "edge-a"),  # route entry line
+        signal_ref("I", "mid", _X, _Y, "edge-b"),  # cross street, sorts between them
+        signal_ref("I", "out", _X, _Y, "edge-c"),  # route line inside the junction
+    )
+    slots = movement_slots(refs, together=frozenset({"in", "out"}))
+    assert slots["in"] == slots["out"]
+    assert slots["mid"] != slots["in"]
+    assert movement_slots(tuple(reversed(refs)), together=frozenset({"in", "out"})) == slots
+
+
+def test_a_multi_line_route_movement_shows_one_colour_in_the_normal_cycle() -> None:
+    signals = (
+        signal_ref("INT-A", "sig-a", _X + 1_095, _Y, "corridor-a"),
+        signal_ref("INT-A", "sig-a-b", _X + 1_096, _Y, "b-cross"),
+        signal_ref("INT-A", "sig-a-c", _X + 1_097, _Y, "c-cross"),
+    )
+    model = _int_a(signals)
+    item = replace(model.intersections[0], route_signal_keys=frozenset({"sig-a", "sig-a-c"}))
+    model = replace(model, intersections=(item, *model.intersections[1:]))
+    for now_s in range(50):
+        state = _state(model, now_s, IntersectionState.NORMAL)
+        colors = {
+            d.signal_key: d.movement_color
+            for d in phase_decisions(model, state, SETTINGS, float(now_s))
+            if d.kind is VEHICLE
+        }
+        assert colors["sig-a"] == colors["sig-a-c"], now_s

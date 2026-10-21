@@ -29,6 +29,23 @@ def next_stop(
     )
 
 
+def next_stop_line(
+    route_model: RouteModel, state: EngineState, distance_m: float
+) -> tuple[float, list[RouteIntersection]] | None:
+    """The nearest route stop line strictly ahead of any unpassed intersection, and its owners."""
+    lines = [
+        (line_m, item)
+        for item, runtime in route_runtimes(route_model, state)
+        if not runtime.passed
+        for line_m in item.route_stop_lines_m
+        if line_m > distance_m
+    ]
+    if not lines:
+        return None
+    nearest = min(line_m for line_m, _ in lines)
+    return nearest, [item for line_m, item in lines if line_m == nearest]
+
+
 def cautious_speed_mps(
     limit_mps: float, remaining_distance_m: float, remaining_extra_s: float
 ) -> float:
@@ -48,17 +65,22 @@ def move_one_second(
     green_wave_mode: GreenWaveMode,
     traffic_density_multiplier: float,
     route_movement_color_at: Callable[[str, float], SignalPhaseColor | None],
+    may_leave_stop_line: Callable[[float], bool] = lambda _distance_m: True,
 ) -> tuple[EngineState, float]:
     """Spend one simulated second; return the new state and the distance actually driven.
 
     The ambulance drives at the speed of whichever edge it is on, carrying the rest of the
     second across edge ends; a dwell may start and end mid-second. Arrival is recorded to the
     fraction of a second. At each first stop line, ER Green Wave enabled dwells ``D_min`` (so the
-    trip time equals ``T_greenwave``). Disabled asks ``route_movement_color_at`` for the route
-    movement at the exact time it reaches the line: GREEN drives on; RED, YELLOW or an unknown
-    movement (``None``) starts a controlled crossing of ``standard_crossing_distance_m``, rolled at
-    no more than each edge's ordinary limit plus the standard cautious time spread over it, across
-    edge ends. A later stop line replaces it. Open-road motion is the same in both modes.
+    trip time equals ``T_greenwave``) and then stays at the line, ``dwelling_intersection_id``
+    still set, until ``may_leave_stop_line(distance)`` says every light it faces there was shown
+    green; a priority requested too late for its approach therefore holds the ambulance instead
+    of showing it drive through red. Disabled asks ``route_movement_color_at`` for the route
+    movement at the exact time it reaches each route stop line, including lines inside a junction:
+    GREEN drives on; RED, YELLOW or an unknown movement (``None``) starts a controlled crossing of
+    ``standard_crossing_distance_m``, rolled at no more than each edge's ordinary limit plus the
+    standard cautious time spread over it, across edge ends. A later stop line replaces it.
+    Open-road motion is the same in both modes.
     """
     now, tick = state.simulated_time_s + 1, state.tick + 1
     if state.arrived:
@@ -73,18 +95,26 @@ def move_one_second(
             spent = min(dwell, budget)
             dwell, budget = dwell - spent, budget - spent
             if dwell <= _TIME_EPSILON_S:
-                dwell, dwelling = 0.0, None
+                dwell = 0.0
             continue
+        if dwelling is not None:
+            if not may_leave_stop_line(distance):
+                break  # held at the stop line for the rest of this second
+            dwelling = None
         edge = track.edge_at(distance)
         speed = track.speed_mps(edge)
         if crossing > 0:
             limit_mps = min(speed, track.speed_limit_mps(edge))
             speed = cautious_speed_mps(limit_mps, crossing, cautious)
-        stop = next_stop(route_model, state, distance)
+        if green_wave_mode is GreenWaveMode.ENABLED:
+            stop = next_stop(route_model, state, distance)
+            line = None if stop is None else (stop.first_stop_line_m, [stop])
+        else:
+            line = next_stop_line(route_model, state, distance)
         limit = min(
             track.edge_end_m(edge),
             track.total_distance_m,
-            inf if stop is None else stop.first_stop_line_m,
+            inf if line is None else line[0],
             distance + crossing if crossing > 0 else inf,
         )
         step = min(limit - distance, speed * budget)
@@ -100,22 +130,22 @@ def move_one_second(
         if distance >= track.total_distance_m:
             arrived_at = state.simulated_time_s + (1.0 - budget)
             break
-        if stop is not None and distance == stop.first_stop_line_m:
+        if line is not None and distance == line[0]:
             if green_wave_mode is GreenWaveMode.ENABLED:
-                dwell = settings.min_intersection_delay_seconds
-                dwelling = stop.id if dwell > 0 else None
-            elif (
-                route_movement_color_at(stop.id, state.simulated_time_s + (1.0 - budget))
-                is SignalPhaseColor.GREEN
-            ):
-                crossing, cautious = 0.0, 0.0
-            else:
-                crossing = settings.standard_crossing_distance_m
-                cautious = (
-                    settings.standard_clearance_factor
-                    * stop.delay_seconds
-                    * traffic_density_multiplier
-                )
+                dwell, dwelling = settings.min_intersection_delay_seconds, line[1][0].id
+                continue
+            at_s = state.simulated_time_s + (1.0 - budget)
+            facing = [
+                item
+                for item in line[1]
+                if route_movement_color_at(item.id, at_s) is not SignalPhaseColor.GREEN
+            ]
+            crossing = settings.standard_crossing_distance_m if facing else 0.0
+            cautious = (
+                settings.standard_clearance_factor
+                * max((item.delay_seconds for item in facing), default=0.0)
+                * traffic_density_multiplier
+            )
     moved = distance - state.distance_travelled_m
     arrived = arrived_at is not None
     return replace(

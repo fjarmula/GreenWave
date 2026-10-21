@@ -6,6 +6,7 @@ cautious time is 30 s, spread over the 20 m controlled crossing [90, 110] that s
 at 100 m. Disabled red/yellow crossings roll; they never stop at the stop line.
 """
 
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -285,3 +286,34 @@ def test_disabled_mode_is_deterministic() -> None:
 def test_standard_crossing_settings_reject_invalid_values(field: str, value: float) -> None:
     with pytest.raises(ValidationError):
         SimulationSettings(**{field: value})
+
+
+def _two_line_engine(phase: SignalPhaseColor | None) -> SimulationEngine:
+    """INT-1 with route stop lines at 90 m (entry) and 150 m (inside the junction)."""
+    engine = _engine(GreenWaveMode.DISABLED, phase=phase)
+    item = replace(
+        engine.route_model.intersections[0], last_stop_line_m=150.0, stop_lines_m=(90.0, 150.0)
+    )
+    engine.route_model = replace(engine.route_model, intersections=(item,))
+    return engine
+
+
+@pytest.mark.parametrize("phase", [None, RED])
+def test_every_red_route_stop_line_of_a_junction_starts_a_controlled_crossing(
+    phase: SignalPhaseColor | None,
+) -> None:
+    """Driving full speed past a red line inside a junction would show the ambulance running red."""
+    states, _ = _run(_two_line_engine(phase))
+    expected = (
+        _REACH_S
+        + _crossing_s()  # 90 -> 110
+        + 40.0 / _AMBULANCE_MPS  # 110 -> 150 open road
+        + _crossing_s()  # a fresh crossing at the line inside the junction: 150 -> 170
+        + 30.0 / _AMBULANCE_MPS
+    )
+    assert states[-1].arrived_at_s == pytest.approx(expected)
+
+
+def test_a_green_junction_adds_no_penalty_at_any_of_its_lines() -> None:
+    states, _ = _run(_two_line_engine(GREEN))
+    assert states[-1].arrived_at_s == pytest.approx(200 / 13)

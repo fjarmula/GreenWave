@@ -89,6 +89,42 @@ def test_passing_transitions_any_pre_recovery_state_to_recovery(
     assert transition is Transition.RECOVERY
 
 
+@pytest.mark.parametrize("state", [IntersectionState.CLEARING, IntersectionState.PRIORITY_GREEN])
+def test_a_vehicle_waiting_at_the_last_stop_line_has_not_passed(
+    state: IntersectionState, settings: SimulationSettings
+) -> None:
+    """Releasing priority under a waiting ambulance would turn its light red before it goes."""
+    state = IntersectionState.PRIORITY_GREEN
+    runtime, transition = advance_intersection(
+        IntersectionRuntime(state=state),
+        0.0,
+        0.0,
+        7.0,
+        False,
+        settings,
+        priority_held=True,
+    )
+
+    assert runtime.state is state
+    assert runtime.passed is False
+    assert transition is None
+
+
+def test_a_waiting_vehicle_still_gets_priority(settings: SimulationSettings) -> None:
+    runtime, transition = advance_intersection(
+        IntersectionRuntime(state=IntersectionState.CLEARING),
+        0.0,
+        0.0,
+        7.0,
+        False,
+        settings,
+        priority_held=True,
+    )
+
+    assert runtime.state is IntersectionState.PRIORITY_GREEN
+    assert transition is Transition.PRIORITY_GREEN
+
+
 def test_recovery_returns_to_normal_at_exact_hold_boundary(settings: SimulationSettings) -> None:
     recovering = IntersectionRuntime(
         state=IntersectionState.RECOVERY, passed=True, recovery_started_at_s=7.0

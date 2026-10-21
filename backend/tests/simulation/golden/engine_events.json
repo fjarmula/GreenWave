@@ -483,11 +483,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -539,11 +539,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -595,11 +595,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -651,11 +651,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -1326,7 +1326,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -1382,7 +1382,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -1438,7 +1438,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -1494,7 +1494,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -3032,19 +3032,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -3088,19 +3088,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -3144,19 +3144,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -3200,19 +3200,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -3875,7 +3875,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -3883,7 +3883,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -3931,7 +3931,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -3939,7 +3939,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -3987,7 +3987,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -3995,7 +3995,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -4043,7 +4043,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -4051,7 +4051,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -4280,11 +4280,11 @@
      },
      {
       "id": "INT-B",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      }
     ],
     "is_simulated": true,
@@ -5123,7 +5123,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      }
     ],
@@ -5139,6 +5139,62 @@
     "timestamp": "2026-10-17T00:00:00Z"
    },
    {
+    "ambulance": {
+     "id": "SIM-cascade_x1",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 153,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_x1",
+    "tick": 91,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
     "event_type": "SIMULATION_COMPLETED",
     "is_simulated": true,
     "kpi_metrics": {
@@ -5147,7 +5203,7 @@
     },
     "schema_version": "1.0",
     "simulation_id": "SIM-cascade_x1",
-    "tick": 90,
+    "tick": 91,
     "timestamp": "2026-10-17T00:00:00Z"
    }
   ],
@@ -5165,32 +5221,32 @@
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 8.0,
+     "recovery_started_at_s": 12.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 53.0,
+     "recovery_started_at_s": 57.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 53.0,
+     "recovery_started_at_s": 57.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 75.0,
+     "recovery_started_at_s": 76.0,
      "state": "NORMAL"
     }
    ],
    "message_sequence": 3,
    "signal_heads": [],
-   "simulated_time_s": 90,
-   "tick": 90,
+   "simulated_time_s": 91,
+   "tick": 91,
    "v_avg_meters_per_second": 10.979896244124795
   }
  },
@@ -5342,11 +5398,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -5398,11 +5454,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -5513,7 +5569,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -5590,7 +5646,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -5875,19 +5931,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -5931,19 +5987,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -6046,7 +6102,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -6054,7 +6110,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -6102,7 +6158,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -6110,16 +6166,16 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
       "id": "INT-B",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      }
     ],
     "is_simulated": true,
@@ -6286,7 +6342,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      }
     ],
@@ -6302,6 +6358,62 @@
     "timestamp": "2026-10-17T00:00:00Z"
    },
    {
+    "ambulance": {
+     "id": "SIM-cascade_x5",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_x5",
+    "tick": 91,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
     "event_type": "SIMULATION_COMPLETED",
     "is_simulated": true,
     "kpi_metrics": {
@@ -6310,7 +6422,7 @@
     },
     "schema_version": "1.0",
     "simulation_id": "SIM-cascade_x5",
-    "tick": 90,
+    "tick": 91,
     "timestamp": "2026-10-17T00:00:00Z"
    }
   ],
@@ -6328,32 +6440,32 @@
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 8.0,
+     "recovery_started_at_s": 16.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 53.0,
+     "recovery_started_at_s": 61.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 53.0,
+     "recovery_started_at_s": 61.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 75.0,
+     "recovery_started_at_s": 76.0,
      "state": "NORMAL"
     }
    ],
    "message_sequence": 3,
    "signal_heads": [],
-   "simulated_time_s": 90,
-   "tick": 90,
+   "simulated_time_s": 91,
+   "tick": 91,
    "v_avg_meters_per_second": 10.979896244124795
   }
  },
@@ -6841,11 +6953,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -6897,11 +7009,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -6953,11 +7065,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -7009,11 +7121,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -7684,7 +7796,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -7740,7 +7852,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -7796,7 +7908,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -7852,7 +7964,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -9390,19 +9502,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -9446,19 +9558,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -9502,19 +9614,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -9558,19 +9670,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -10233,7 +10345,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -10241,7 +10353,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -10289,7 +10401,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -10297,7 +10409,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -10345,7 +10457,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -10353,7 +10465,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -10401,7 +10513,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -10409,7 +10521,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -10638,11 +10750,11 @@
      },
      {
       "id": "INT-B",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      }
     ],
     "is_simulated": true,
@@ -11481,7 +11593,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      }
     ],
@@ -11497,6 +11609,62 @@
     "timestamp": "2026-10-17T00:00:00Z"
    },
    {
+    "ambulance": {
+     "id": "SIM-no_cascade_x1",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 153,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-no_cascade_x1",
+    "tick": 91,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
     "event_type": "SIMULATION_COMPLETED",
     "is_simulated": true,
     "kpi_metrics": {
@@ -11505,7 +11673,7 @@
     },
     "schema_version": "1.0",
     "simulation_id": "SIM-no_cascade_x1",
-    "tick": 90,
+    "tick": 91,
     "timestamp": "2026-10-17T00:00:00Z"
    }
   ],
@@ -11523,32 +11691,32 @@
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 8.0,
+     "recovery_started_at_s": 12.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 53.0,
+     "recovery_started_at_s": 57.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 53.0,
+     "recovery_started_at_s": 57.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 75.0,
+     "recovery_started_at_s": 76.0,
      "state": "NORMAL"
     }
    ],
    "message_sequence": 3,
    "signal_heads": [],
-   "simulated_time_s": 90,
-   "tick": 90,
+   "simulated_time_s": 91,
+   "tick": 91,
    "v_avg_meters_per_second": 10.979896244124795
   }
  },
@@ -12015,11 +12183,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -12071,11 +12239,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -12127,11 +12295,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -12183,11 +12351,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -12858,7 +13026,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -12914,7 +13082,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -12970,7 +13138,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -13026,7 +13194,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -14564,19 +14732,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": true,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -14620,19 +14788,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": true,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -14676,19 +14844,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": true,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -14718,7 +14886,7 @@
       "lng": 19.92049319798933
      },
      "speed_kmh": 39.564000000000036,
-     "status": "EN_ROUTE"
+     "status": "APPROACHING_INTERSECTION"
     },
     "event_type": "SIMULATION_TICK",
     "intersections": [
@@ -14732,19 +14900,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": true,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -15428,7 +15596,7 @@
       "is_active_corridor": false,
       "is_cascade": true,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -15436,7 +15604,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -15484,7 +15652,7 @@
       "is_active_corridor": false,
       "is_cascade": true,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -15492,7 +15660,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -15540,7 +15708,7 @@
       "is_active_corridor": false,
       "is_cascade": true,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -15548,7 +15716,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -15596,7 +15764,7 @@
       "is_active_corridor": false,
       "is_cascade": true,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -15604,7 +15772,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -15833,11 +16001,11 @@
      },
      {
       "id": "INT-B",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      }
     ],
     "is_simulated": true,
@@ -16676,7 +16844,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      }
     ],
@@ -16692,6 +16860,62 @@
     "timestamp": "2026-10-17T00:00:00Z"
    },
    {
+    "ambulance": {
+     "id": "SIM-short_window_cascade_x1",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": true,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 111,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-short_window_cascade_x1",
+    "tick": 91,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
     "event_type": "SIMULATION_COMPLETED",
     "is_simulated": true,
     "kpi_metrics": {
@@ -16700,7 +16924,7 @@
     },
     "schema_version": "1.0",
     "simulation_id": "SIM-short_window_cascade_x1",
-    "tick": 90,
+    "tick": 91,
     "timestamp": "2026-10-17T00:00:00Z"
    }
   ],
@@ -16718,32 +16942,32 @@
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 8.0,
+     "recovery_started_at_s": 12.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": true,
      "passed": true,
-     "recovery_started_at_s": 53.0,
+     "recovery_started_at_s": 57.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 53.0,
+     "recovery_started_at_s": 57.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 75.0,
+     "recovery_started_at_s": 76.0,
      "state": "NORMAL"
     }
    ],
    "message_sequence": 3,
    "signal_heads": [],
-   "simulated_time_s": 90,
-   "tick": 90,
+   "simulated_time_s": 91,
+   "tick": 91,
    "v_avg_meters_per_second": 10.979896244124795
   }
  },
@@ -17218,11 +17442,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -17274,11 +17498,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -17330,11 +17554,11 @@
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -17380,17 +17604,17 @@
       "lng": 19.91342234461458
      },
      "speed_kmh": 14.4,
-     "status": "EN_ROUTE"
+     "status": "APPROACHING_INTERSECTION"
     },
     "event_type": "SIMULATION_TICK",
     "intersections": [
      {
       "id": "INT-A",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-TWIN",
@@ -18082,7 +18306,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -18138,7 +18362,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -18194,7 +18418,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -18250,7 +18474,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -19788,19 +20012,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -19844,19 +20068,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -19900,19 +20124,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -19942,7 +20166,7 @@
       "lng": 19.92049319798933
      },
      "speed_kmh": 39.564000000000036,
-     "status": "EN_ROUTE"
+     "status": "APPROACHING_INTERSECTION"
     },
     "event_type": "SIMULATION_TICK",
     "intersections": [
@@ -19956,19 +20180,19 @@
      },
      {
       "id": "INT-TWIN",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-C",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      },
      {
       "id": "INT-B",
@@ -20652,7 +20876,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -20660,7 +20884,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -20708,7 +20932,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -20716,7 +20940,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -20764,7 +20988,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -20772,7 +20996,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -20820,7 +21044,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -20828,7 +21052,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      },
      {
@@ -21057,11 +21281,11 @@
      },
      {
       "id": "INT-B",
-      "is_active_corridor": false,
+      "is_active_corridor": true,
       "is_cascade": false,
       "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
      }
     ],
     "is_simulated": true,
@@ -21900,7 +22124,7 @@
       "is_active_corridor": false,
       "is_cascade": false,
       "name": null,
-      "state": "NORMAL",
+      "state": "RECOVERY",
       "tti_seconds": null
      }
     ],
@@ -21916,6 +22140,62 @@
     "timestamp": "2026-10-17T00:00:00Z"
    },
    {
+    "ambulance": {
+     "id": "SIM-short_window_no_cascade_x1",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 111,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-short_window_no_cascade_x1",
+    "tick": 91,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
     "event_type": "SIMULATION_COMPLETED",
     "is_simulated": true,
     "kpi_metrics": {
@@ -21924,7 +22204,7 @@
     },
     "schema_version": "1.0",
     "simulation_id": "SIM-short_window_no_cascade_x1",
-    "tick": 90,
+    "tick": 91,
     "timestamp": "2026-10-17T00:00:00Z"
    }
   ],
@@ -21942,32 +22222,32 @@
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 8.0,
+     "recovery_started_at_s": 12.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 53.0,
+     "recovery_started_at_s": 57.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 53.0,
+     "recovery_started_at_s": 57.0,
      "state": "NORMAL"
     },
     {
      "is_cascade": false,
      "passed": true,
-     "recovery_started_at_s": 75.0,
+     "recovery_started_at_s": 76.0,
      "state": "NORMAL"
     }
    ],
    "message_sequence": 4,
    "signal_heads": [],
-   "simulated_time_s": 90,
-   "tick": 90,
+   "simulated_time_s": 91,
+   "tick": 91,
    "v_avg_meters_per_second": 10.979896244124795
   }
  }

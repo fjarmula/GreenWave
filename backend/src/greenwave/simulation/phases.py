@@ -2,10 +2,12 @@
 
 An explanatory abstraction, not lane-level signalling or real Kraków timings: each intersection's
 signals alternate in two movement groups, each green, then yellow, then all-red. A signal's group
-is its controlled approach identity (sorted controlled-edge ids); the sorted groups take the two
-cycle slots by ordinal modulo two. ``traffic_signals`` nodes show a vehicle and a pedestrian
-indication, ``pedestrian_crossing`` nodes a pedestrian one only; a pedestrian indication is for the
-crossing over the arm its node controls, green only while the other slot has green. Priority
+is its controlled approach identity (sorted controlled-edge ids), except that the route's signals
+form one group (its through movement, so no route line inside a junction shows a different phase);
+the sorted groups take the two cycle slots by ordinal modulo two. ``traffic_signals`` nodes show a
+vehicle and a pedestrian indication, ``pedestrian_crossing`` nodes a pedestrian one only; a
+pedestrian indication is for the crossing over the arm its node controls, green only while the
+other slot has green. Priority
 states override only that pattern, and only for vehicle lights on the route approach.
 
 :func:`phase_decisions` is that programme. Motion samples the route movement from it at the exact
@@ -15,7 +17,7 @@ a light turns green only once every light not also turning green is red. Shown l
 back into the programme.
 """
 
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 
 from greenwave.routing.network_index import SignalApproachRef
@@ -81,6 +83,41 @@ def route_movement_color_at(
     return None
 
 
+def route_lights_shown_green(
+    route_model: RouteModel,
+    state: EngineState,
+    intersection_ids: Collection[str],
+    settings: SimulationSettings,
+) -> bool:
+    """Whether every route vehicle light of these intersections was last shown green.
+
+    Reads ``state.signal_heads`` (the lights the map showed at the end of the last tick); before
+    the first tick, the programme at ``state.simulated_time_s``. An intersection without a route
+    vehicle signal shows nothing to obey.
+    """
+    now = float(state.simulated_time_s)
+    offset = 0
+    for item, runtime in route_runtimes(route_model, state):
+        vehicles = [
+            decision
+            for decision in _intersection_decisions(item, runtime, settings, now)
+            if decision.kind is VEHICLE
+        ]
+        if item.id in intersection_ids:
+            for i, vehicle in enumerate(vehicles):
+                if vehicle.signal_key not in item.route_signal_keys:
+                    continue
+                shown = (
+                    state.signal_heads[offset + i].color
+                    if state.signal_heads
+                    else vehicle.movement_color
+                )
+                if shown is not GREEN:
+                    return False
+        offset += len(vehicles)
+    return True
+
+
 def project_signal_phases(
     route_model: RouteModel, state: EngineState, settings: SimulationSettings
 ) -> list[SignalPhaseIndicator]:
@@ -142,19 +179,29 @@ def advance_signal_phases(
     return tuple(heads), indicators
 
 
-def movement_slots(signals: Sequence[SignalApproachRef]) -> dict[str, int]:
+def movement_slots(
+    signals: Sequence[SignalApproachRef], together: frozenset[str] = frozenset()
+) -> dict[str, int]:
     """Normal-cycle slot of each signal key: its movement group's sorted ordinal modulo two.
 
     Signals controlling the same approach edges share a group, so they always agree; a signal
-    controlling no edge has no group and no slot. Independent of the order of ``signals``.
+    controlling no edge has no group and no slot. ``together`` (the route's signals) form one
+    group, the route's through movement, so every route line of a junction shows one phase.
+    Independent of the order of ``signals``.
     """
-    groups = sorted({group for signal in signals if (group := signal.movement_group)})
-    ordinal = {group: index % _GROUPS for index, group in enumerate(groups)}
-    return {
-        signal.signal_key: ordinal[group]
-        for signal in signals
-        if (group := signal.movement_group) is not None
-    }
+
+    route_group = "|".join(
+        sorted(g for s in signals if s.signal_key in together and (g := s.movement_group))
+    )
+
+    def group(signal: SignalApproachRef) -> str | None:
+        if signal.movement_group is not None and signal.signal_key in together:
+            return route_group
+        return signal.movement_group
+
+    groups = sorted({g for signal in signals if (g := group(signal)) is not None})
+    ordinal = {g: index % _GROUPS for index, g in enumerate(groups)}
+    return {signal.signal_key: ordinal[g] for signal in signals if (g := group(signal)) is not None}
 
 
 def _intersection_decisions(
@@ -163,7 +210,7 @@ def _intersection_decisions(
     settings: SimulationSettings,
     at_s: float,
 ) -> list[PhaseDecision]:
-    slots = movement_slots(item.signals)
+    slots = movement_slots(item.signals, item.route_signal_keys)
     decisions: list[PhaseDecision] = []
     for signal in item.signals:
         slot = slots.get(signal.signal_key)

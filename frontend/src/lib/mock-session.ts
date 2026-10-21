@@ -55,6 +55,8 @@ export type MockSession = {
   /** Shown vehicle light per synthetic signal key, so lights change only legally between ticks. */
   signalHeads: Map<string, MockSignalHead>;
   timeline: MockTimeline;
+  /** Elapsed seconds when the current emitted tick began; the map animates across the rest. */
+  intervalStartSeconds: number;
 };
 
 /** One stretch driven at constant speed; `crossing` marks a disabled controlled crossing. */
@@ -74,6 +76,7 @@ export function createMockSession(request: SimulationStartRequest): MockSession 
   const route = createMockRoute(request);
   return {
     timeline: mockTimeline(route, request),
+    intervalStartSeconds: 0,
     request,
     route,
     tick: 0,
@@ -231,6 +234,7 @@ export function advanceMockSession(session: MockSession): {
 } {
   const enteredClearing = new Set<number>();
   session.tick += 1;
+  session.intervalStartSeconds = session.elapsedSeconds;
   for (let step = 0; step < session.request.playback_speed; step += 1) {
     session.elapsedSeconds += 1;
     stepMockSignals(session, enteredClearing);
@@ -468,7 +472,9 @@ export function stepMockSignals(session: MockSession, enteredClearing: Set<numbe
       return;
     }
     if (signal.passed) return;
-    if (tti <= 0) {
+    // Released only once reached before this emitted tick: the map animates the vehicle across the
+    // tick under its final lights, so priority must not end beneath it (as the backend does).
+    if (tti <= 0 && arrivalSeconds(session, index) <= session.intervalStartSeconds) {
       signal.passed = true;
       signal.state = "RECOVERY";
       signal.recoveryStartedAtSeconds = elapsedSeconds;

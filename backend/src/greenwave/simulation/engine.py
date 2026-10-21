@@ -21,7 +21,11 @@ from greenwave.schemas import (
 from greenwave.simulation.corridor import advance_corridor
 from greenwave.simulation.dispatch import build_dispatch_payload, dispatch_event
 from greenwave.simulation.motion import move_one_second
-from greenwave.simulation.phases import advance_signal_phases, route_movement_color_at
+from greenwave.simulation.phases import (
+    advance_signal_phases,
+    route_lights_shown_green,
+    route_movement_color_at,
+)
 from greenwave.simulation.route_model import RouteModel
 from greenwave.simulation.route_track import RouteTrack
 from greenwave.simulation.state import EngineState
@@ -60,6 +64,12 @@ class SimulationEngine:
         self.traffic_density_multiplier = traffic_density_multiplier
         self.estimates, self.settings, self.gateway = estimates, settings, gateway
         self._track = RouteTrack.from_route(route, settings)
+        # Intersections controlling each stop-line position, for the hold at the line.
+        self._stop_line_ids: dict[float, set[str]] = {}
+        for stop in route.stop_lines:
+            self._stop_line_ids.setdefault(stop.distance_along_route_m, set()).add(
+                stop.intersection_id
+            )
 
     def initial_state(self) -> EngineState:
         return EngineState(
@@ -81,16 +91,26 @@ class SimulationEngine:
         )
 
     def step(
-        self, state: EngineState, wall_clock_utc: datetime
+        self,
+        state: EngineState,
+        wall_clock_utc: datetime,
+        interval_start_m: float | None = None,
     ) -> tuple[EngineState, list[EngineEvent]]:
         """One simulated second: move, advance signals, dispatch, then report.
 
         Motion and the reported phases read the same simulated programme
         (:func:`route_movement_color_at` mid-tick, :func:`advance_signal_phases` at tick end).
+        ``interval_start_m`` is where the ambulance was when the shown interval began (this step's
+        start unless :meth:`run_tick` shows several steps as one): the map animates the marker
+        across that interval under its final lights, so priority is released only for
+        intersections passed before it.
         """
         if state.completed:
             return state, []
         before = state
+        released_before_m = (
+            state.distance_travelled_m if interval_start_m is None else (interval_start_m)
+        )
         state, actual_speed = move_one_second(
             state,
             self._track,
@@ -101,12 +121,19 @@ class SimulationEngine:
             lambda intersection_id, at_s: route_movement_color_at(
                 self.route_model, before, intersection_id, at_s, self.settings
             ),
+            lambda distance_m: route_lights_shown_green(
+                self.route_model,
+                before,
+                self._stop_line_ids.get(distance_m, set()),
+                self.settings,
+            ),
         )
         corridor = advance_corridor(
             self.route_model,
             state,
             self.settings,
             priority_enabled=self.green_wave_mode is GreenWaveMode.ENABLED,
+            released_before_m=released_before_m,
         )
         state = replace(state, intersection_runtimes=corridor.runtimes)
         events: list[EngineEvent] = []
@@ -138,8 +165,9 @@ class SimulationEngine:
         """``playback_speed`` steps; keep every dispatch, only the last tick, completion last."""
         retained: list[EngineEvent] = []
         final_tick: SimulationTickEvent | None = None
+        interval_start_m = state.distance_travelled_m
         for _ in range(playback_speed):
-            state, events = self.step(state, wall_clock_utc)
+            state, events = self.step(state, wall_clock_utc, interval_start_m)
             for event in events:
                 if event.event_type == "SIMULATION_TICK":
                     final_tick = event
