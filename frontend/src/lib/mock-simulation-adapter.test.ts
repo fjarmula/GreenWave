@@ -69,19 +69,17 @@ describe("mock simulation start", () => {
 });
 
 describe("mock simulation stream", () => {
-  it("emits one v1 tick per second advancing playback_speed simulated seconds", async () => {
+  it("emits one v1 tick per simulated second, every 1000 / playback_speed ms", async () => {
     vi.useFakeTimers();
     const adapter = createMockSimulationAdapter();
-    await adapter.start(request);
+    await adapter.start(request); // playback_speed 10: a tick every 100 ms
     const events = collect();
     adapter.subscribe("test", events.subscriber);
-    vi.advanceTimersByTime(999);
+    vi.advanceTimersByTime(99);
     expect(events.ticks).toHaveLength(0);
-    vi.advanceTimersByTime(2001);
+    vi.advanceTimersByTime(201);
     expect(events.ticks.map((tick) => tick.tick)).toEqual([1, 2, 3]);
-    expect(events.ticks.map((tick) => tick.kpi_metrics.total_time_elapsed_sec)).toEqual([
-      10, 20, 30,
-    ]);
+    expect(events.ticks.map((tick) => tick.kpi_metrics.total_time_elapsed_sec)).toEqual([1, 2, 3]);
     expect(events.ticks[0]).toMatchObject({
       schema_version: "1.0",
       is_simulated: true,
@@ -174,7 +172,7 @@ describe("mock simulation stream", () => {
     await adapter.start(request);
     const events = collect();
     adapter.subscribe("test", events.subscriber);
-    vi.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(100); // one tick at 10x
     await adapter.stop("test");
     vi.advanceTimersByTime(10000);
     expect(events.ticks).toHaveLength(1);
@@ -205,7 +203,7 @@ describe("mock simulation stream", () => {
     await adapter.start(request);
     const events = collect();
     adapter.subscribe("test", events.subscriber);
-    vi.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(200); // two ticks at 10x
     await adapter.start({ ...request, simulation_id: "next" });
     expect(events.cancellations).toEqual([
       expect.objectContaining({ simulation_id: "test", reason: "SUPERSEDED", tick: 2 }),

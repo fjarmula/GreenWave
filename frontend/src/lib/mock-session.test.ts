@@ -9,10 +9,13 @@ import {
 } from "@/lib/mock-session";
 import {
   MOCK_GREENWAVE_TRAVEL_TIME_SECONDS,
+  MOCK_ORDINARY_SPEED_LIMIT_MPS,
+  MOCK_ROUTE_DISTANCE_METERS,
   MOCK_SAMPLE_INTERSECTIONS,
   MOCK_SIGNAL_GREEN_SECONDS,
   MOCK_SIGNAL_YELLOW_SECONDS,
   MOCK_STANDARD_CLEARANCE_SECONDS,
+  MOCK_STANDARD_CROSSING_DISTANCE_M,
 } from "@/lib/mock-simulation-config";
 import type {
   GreenWaveMode,
@@ -110,32 +113,62 @@ describe("ER Green Wave mode in the mock", () => {
     }
   });
 
-  it("keeps the open road identical and adds a density-scaled clearance per intersection", () => {
-    const density = 2;
-    const enabled = runToCompletion(
-      createMockSession(modeRequest("ENABLED", { traffic_density_multiplier: density })),
-    );
-    const disabled = runToCompletion(
-      createMockSession(modeRequest("DISABLED", { traffic_density_multiplier: density })),
-    );
+  it("leaves every cascade target empty when disabled, even with cascade requested", () => {
+    const session = createMockSession(modeRequest("DISABLED"));
+
+    expect(session.request.enable_cascade_mode).toBe(true);
+    expect(session.route.route_intersections.map((item) => item.cascade_targets)).toEqual([[], []]);
+  });
+
+  // Density 1.5: INT-0360 is reached at ~104.1 s, in the all-red interval of the route group
+  // (RED); after its crossing INT-0366 is reached at ~167.4 s, on green.
+  const AMBULANCE_MPS = MOCK_ROUTE_DISTANCE_METERS / MOCK_GREENWAVE_TRAVEL_TIME_SECONDS;
+  const CAUTIOUS_SECONDS = MOCK_STANDARD_CLEARANCE_SECONDS * 1.5;
+  const CROSSING_SECONDS =
+    MOCK_STANDARD_CROSSING_DISTANCE_M / MOCK_ORDINARY_SPEED_LIMIT_MPS + CAUTIOUS_SECONDS;
+  const DENSITY = { traffic_density_multiplier: 1.5 };
+  const FIRST_REACH_SECONDS = MOCK_SAMPLE_INTERSECTIONS[0].distance_along_route_m / AMBULANCE_MPS;
+
+  it("keeps the open road identical and adds the cautious time only at a red crossing", () => {
+    const enabled = runToCompletion(createMockSession(modeRequest("ENABLED", DENSITY)));
+    const disabled = runToCompletion(createMockSession(modeRequest("DISABLED", DENSITY)));
 
     // Before the first sample intersection (~104 s) both vehicles are in the same place.
     expect(disabled.ticks[60].ambulance.position).toEqual(enabled.ticks[60].ambulance.position);
-    const clearance = MOCK_STANDARD_CLEARANCE_SECONDS * density;
-    expect(disabled.ticks.at(-1)?.kpi_metrics.total_time_elapsed_sec).toBe(
-      MOCK_GREENWAVE_TRAVEL_TIME_SECONDS + MOCK_SAMPLE_INTERSECTIONS.length * clearance,
+    const trip =
+      MOCK_GREENWAVE_TRAVEL_TIME_SECONDS +
+      CROSSING_SECONDS -
+      MOCK_STANDARD_CROSSING_DISTANCE_M / AMBULANCE_MPS; // INT-0366 is green: no second penalty
+    const disabledArrival = disabled.ticks.findIndex((tick) => tick.ambulance.status === "ARRIVED");
+    expect(disabled.ticks[disabledArrival].kpi_metrics.total_time_elapsed_sec).toBe(
+      Math.ceil(trip),
     );
     expect(enabled.ticks.at(-1)?.kpi_metrics.total_time_elapsed_sec).toBe(
       MOCK_GREENWAVE_TRAVEL_TIME_SECONDS,
     );
   });
 
-  it("reports a stopped vehicle crossing the intersection while it waits", () => {
-    const { ticks } = runToCompletion(createMockSession(modeRequest("DISABLED")));
-    const waiting = ticks[110]; // first intersection reached at ~104 s, clearance 35 s
+  it("rolls through a red crossing at a positive speed no faster than the ordinary limit", () => {
+    const { ticks } = runToCompletion(createMockSession(modeRequest("DISABLED", DENSITY)));
+    const crossing = ticks.filter((tick) => tick.ambulance.status === "CROSSING_INTERSECTION");
 
-    expect(waiting.ambulance).toMatchObject({ status: "CROSSING_INTERSECTION", speed_kmh: 0 });
-    expect(waiting.intersections[0].tti_seconds).toBe(0);
+    // Only INT-0360's crossing: whole ticks between reaching it and leaving it.
+    expect(crossing.map((tick) => tick.kpi_metrics.total_time_elapsed_sec)).toEqual(
+      Array.from(
+        {
+          length:
+            Math.ceil(FIRST_REACH_SECONDS + CROSSING_SECONDS) - Math.ceil(FIRST_REACH_SECONDS),
+        },
+        (_, index) => Math.ceil(FIRST_REACH_SECONDS) + index,
+      ),
+    );
+    for (const [index, tick] of crossing.entries()) {
+      expect(tick.ambulance.speed_kmh).toBeGreaterThan(0);
+      expect(tick.ambulance.speed_kmh).toBeLessThanOrEqual(MOCK_ORDINARY_SPEED_LIMIT_MPS * 3.6);
+      if (index > 0) {
+        expect(tick.ambulance.position).not.toEqual(crossing[index - 1].ambulance.position);
+      }
+    }
   });
 });
 
@@ -227,4 +260,44 @@ describe("mock signal light sequence", () => {
       expect(changes).toBeGreaterThan(0);
     },
   );
+});
+
+describe("mock light under the animated vehicle", () => {
+  it.each([1, 5, 10])(
+    "keeps the route light green in the tick the map animates the vehicle across (x%s)",
+    (playback) => {
+      const session = createMockSession(modeRequest("ENABLED", { playback_speed: playback }));
+      const { ticks } = runToCompletion(session);
+      let previous = 0;
+      for (const tick of ticks) {
+        const elapsed = tick.kpi_metrics.total_time_elapsed_sec;
+        session.timeline.reachSeconds.forEach((reach, index) => {
+          if (reach > previous && reach <= elapsed) {
+            const id = session.route.route_intersections[index].id;
+            const light = tick.signal_phases.find(
+              (phase) => phase.signal_key === `${id}-S1` && phase.kind === "VEHICLE",
+            );
+            expect(light?.color, `${id} tick ${tick.tick}`).toBe("GREEN");
+          }
+        });
+        previous = elapsed;
+      }
+    },
+  );
+});
+
+describe("mock playback speed", () => {
+  it("streams the same tick for every simulated second at every playback speed", () => {
+    const run = (playback: 1 | 5 | 10) =>
+      runToCompletion(
+        createMockSession(modeRequest("DISABLED", { playback_speed: playback })),
+      ).ticks.map((tick) => ({ ...tick, timestamp: "" })); // wall-clock time only
+    const baseline = run(1);
+
+    expect(baseline.map((tick) => tick.kpi_metrics.total_time_elapsed_sec)).toEqual(
+      baseline.map((_, index) => index + 1),
+    );
+    expect(run(5)).toEqual(baseline);
+    expect(run(10)).toEqual(baseline);
+  });
 });

@@ -24,15 +24,16 @@ _X = 7_421_000.0
 _NOW = datetime(2026, 10, 17, tzinfo=UTC)
 _MAX_TICKS = 10_000
 
-# name -> (cascade enabled, traffic density multiplier, playback speed, clearing TTI seconds)
+# name -> (cascade enabled, traffic density multiplier, clearing TTI seconds). Playback speed is not
+# an engine input: every simulated second is one step and one streamed tick at any speed.
 # A 10 s clearing window makes targets 250 m ahead enter CLEARING by cascade; at the 40 s
 # default every intersection on this corridor clears by its own TTI first.
-SCENARIOS: dict[str, tuple[bool, float, int, float]] = {
-    "no_cascade_x1": (False, 1.5, 1, 40.0),
-    "cascade_x1": (True, 1.5, 1, 40.0),
-    "cascade_x5": (True, 2.0, 5, 40.0),
-    "short_window_cascade_x1": (True, 1.0, 1, 10.0),
-    "short_window_no_cascade_x1": (False, 1.0, 1, 10.0),
+SCENARIOS: dict[str, tuple[bool, float, float]] = {
+    "no_cascade_x1": (False, 1.5, 40.0),
+    "cascade_x1": (True, 1.5, 40.0),
+    "cascade_dense": (True, 2.0, 40.0),
+    "short_window_cascade_x1": (True, 1.0, 10.0),
+    "short_window_no_cascade_x1": (False, 1.0, 10.0),
 }
 
 
@@ -45,7 +46,7 @@ class _RecordingGateway:
 
 
 def run_scenario(
-    cascade: bool, density: float, playback: int, clearing_tti_s: float, simulation_id: str
+    cascade: bool, density: float, clearing_tti_s: float, simulation_id: str
 ) -> object:
     settings = SimulationSettings(
         clearing_tti_seconds=clearing_tti_s,
@@ -62,7 +63,7 @@ def run_scenario(
     state = engine.initial_state()
     events: list[object] = []
     for _ in range(_MAX_TICKS):
-        state, emitted = engine.run_tick(state, _NOW, playback)
+        state, emitted = engine.step(state, _NOW)
         events.extend(event.model_dump(mode="json") for event in emitted)
         if state.completed:
             break

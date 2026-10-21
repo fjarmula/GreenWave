@@ -12,9 +12,7 @@ export function PlaybackSpeedSelector({ value, onChange }: PlaybackSpeedSelector
         <span id="playback-speed-label" className="dashboard-label">
           Playback speed
         </span>
-        <span className="font-mono text-[10px] text-muted-foreground">
-          simulated s per 1 s tick
-        </span>
+        <span className="font-mono text-[10px] text-muted-foreground">simulated s per real s</span>
       </div>
       <div
         role="radiogroup"

@@ -216,16 +216,6 @@ def test_own_clear_cascades_once_and_batches_its_dispatch() -> None:
     assert events[0].payload.hold_duration_sec == 40
 
 
-def test_playback_returns_only_last_tick_and_keeps_terminal_events() -> None:
-    engine = engine_for_single_stop()
-    state, events = engine.run_tick(
-        engine.initial_state(), datetime(2026, 10, 16, tzinfo=UTC), playback_speed=10
-    )
-
-    assert state.tick == 10
-    assert sum(event.event_type == "SIMULATION_TICK" for event in events) == 1
-
-
 def test_simulated_elapsed_matches_greenwave_estimate_with_calming() -> None:
     """Calming seconds reach the estimate and the simulated motion alike (one edge-time model)."""
     settings = neutral_settings(ambulance_calming_seconds=2.0)

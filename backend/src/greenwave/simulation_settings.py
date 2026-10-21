@@ -49,11 +49,12 @@ class SimulationSettings(BaseSettings):
     signal_yellow_seconds: float = Field(default=3, ge=0)
     signal_all_red_seconds: float = Field(default=2, ge=0)
     # Standard-traffic crossing when ER Green Wave is disabled (simulation/motion.py). PoC
-    # modelling assumptions: at its first stop line the vehicle waits factor x the intersection's
-    # normal delay x traffic density (cautious red-light entry, life-corridor forming), then drives
-    # this far at no more than the road's ordinary speed limit. Not measured Kraków geometry.
+    # modelling assumptions: facing a simulated red or yellow route movement at its first stop
+    # line, the vehicle rolls this far at no more than the road's ordinary speed limit, spreading
+    # an extra factor x the intersection's normal delay x traffic density over it (cautious
+    # red-light entry, life-corridor forming). Not measured Kraków geometry.
     standard_clearance_factor: float = Field(default=1.0, ge=0, allow_inf_nan=False)
-    standard_crossing_distance_m: float = Field(default=30, ge=0, allow_inf_nan=False)
+    standard_crossing_distance_m: float = Field(default=30, gt=0, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def priority_precedes_clearing(self) -> Self:

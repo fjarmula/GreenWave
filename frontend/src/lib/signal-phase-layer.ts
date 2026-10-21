@@ -2,8 +2,13 @@
  * Lifecycle of the high-zoom simulated signal-phase markers, kept free of MapLibre and the DOM so
  * it is testable: the map supplies its zoom, the caller supplies how a marker is drawn. Phases and
  * positions come only from the tick contract; nothing is drawn for a phase that was not received.
+ * An intersection without phases keeps its labelled state marker instead (`coarseMarkerIds`).
  */
-import type { SignalPhaseIndicator } from "@/types/telemetry";
+import type {
+  IntersectionTelemetry,
+  SignalPhaseColor,
+  SignalPhaseIndicator,
+} from "@/types/telemetry";
 
 /** Above the route fit (max zoom 16): phase detail appears only when the user zooms in further. */
 export const SIGNAL_PHASE_DETAIL_ZOOM = 16.5;
@@ -14,8 +19,11 @@ export type ZoomSource = {
   off(type: "zoomend", listener: () => void): void;
 };
 
+/** One phase marker and its screen offset (pixels) from its signal position. */
+export type PhaseMarkerLayout = { phase: SignalPhaseIndicator; offset: [number, number] };
+
 export type PhaseMarkerHandle = {
-  update(phase: SignalPhaseIndicator): void;
+  update(item: PhaseMarkerLayout): void;
   remove(): void;
 };
 
@@ -28,14 +36,91 @@ function phaseKey(phase: SignalPhaseIndicator): string {
   return `${phase.intersection_id}|${phase.signal_key}|${phase.kind}`;
 }
 
+/** Vertical distance between stacked labels: more than one label height, so rows never overlap. */
+const PHASE_ROW_PIXELS = 18;
+
+/**
+ * Stable screen offsets: each intersection's markers form one column, ordered by signal key then
+ * vehicle before pedestrian, centred on their own signal positions. Nearby or co-located signals
+ * of one junction therefore stack instead of overlapping. Independent of input order.
+ */
+export function layoutPhaseMarkers(phases: SignalPhaseIndicator[]): Map<string, PhaseMarkerLayout> {
+  const groups = new Map<string, SignalPhaseIndicator[]>();
+  for (const phase of phases) {
+    const group = groups.get(phase.intersection_id) ?? [];
+    group.push(phase);
+    groups.set(phase.intersection_id, group);
+  }
+  const layout = new Map<string, PhaseMarkerLayout>();
+  [...groups.keys()].sort().forEach((intersectionId) => {
+    const members = [...(groups.get(intersectionId) ?? [])].sort(
+      (a, b) =>
+        a.signal_key.localeCompare(b.signal_key) ||
+        Number(a.kind === "PEDESTRIAN") - Number(b.kind === "PEDESTRIAN"),
+    );
+    members.forEach((phase, index) => {
+      const row = (index - (members.length - 1) / 2) * PHASE_ROW_PIXELS;
+      layout.set(phaseKey(phase), { phase, offset: [0, row] });
+    });
+  });
+  return layout;
+}
+
 /** Short visible text; colour alone never carries the state. */
 export function phaseMarkerText(phase: SignalPhaseIndicator): string {
   return `SIM ${phase.kind === "VEHICLE" ? "CAR" : "PED"} ${phase.color}`;
 }
 
+const PHASE_SWATCHES: Record<SignalPhaseColor, string> = {
+  RED: "#ef4444",
+  YELLOW: "#facc15",
+  GREEN: "#22c55e",
+};
+
+/** Everything a phase marker shows: swatch colour plus text, title and ARIA label. */
+export function phaseMarkerView(phase: SignalPhaseIndicator): {
+  text: string;
+  title: string;
+  ariaLabel: string;
+  swatch: string;
+} {
+  return {
+    text: phaseMarkerText(phase),
+    title: phase.accessible_label,
+    ariaLabel: phase.accessible_label,
+    swatch: PHASE_SWATCHES[phase.color],
+  };
+}
+
+/**
+ * Intersections that keep their coarse state marker: all of them below the detail zoom; at detail
+ * zoom only those without a received phase, so none disappears for lack of phase geometry.
+ */
+export function coarseMarkerIds(
+  intersectionIds: string[],
+  phases: SignalPhaseIndicator[],
+  detailed: boolean,
+): Set<string> {
+  const phased = new Set(detailed ? phases.map((phase) => phase.intersection_id) : []);
+  return new Set(intersectionIds.filter((id) => !phased.has(id)));
+}
+
+/** Coarse marker text and ARIA label; `detailUnavailable` says so instead of inventing phases. */
+export function coarseMarkerLabels(
+  intersection: IntersectionTelemetry,
+  cascade: boolean,
+  detailUnavailable: boolean,
+): { text: string; ariaLabel: string } {
+  const { id, state } = intersection;
+  return {
+    text: `${id} · ${state}${cascade ? " · CASCADE" : ""}${detailUnavailable ? " · SIM PHASES N/A" : ""}`,
+    ariaLabel: `Simulated signal ${id}: ${state}${detailUnavailable ? "; simulated phase detail unavailable" : ""}`,
+  };
+}
+
 export function createSignalPhaseLayer(
   map: ZoomSource,
-  createMarker: (phase: SignalPhaseIndicator) => PhaseMarkerHandle,
+  createMarker: (item: PhaseMarkerLayout) => PhaseMarkerHandle,
   onDetailChange?: (detailed: boolean) => void,
 ): SignalPhaseLayer {
   let phases: SignalPhaseIndicator[] = [];
@@ -48,20 +133,21 @@ export function createSignalPhaseLayer(
       detailed = nowDetailed;
       onDetailChange?.(nowDetailed);
     }
-    const wanted = new Map(nowDetailed ? phases.map((phase) => [phaseKey(phase), phase]) : []);
+    const wanted = nowDetailed ? layoutPhaseMarkers(phases) : new Map<string, PhaseMarkerLayout>();
     markers.forEach((marker, key) => {
       if (!wanted.has(key)) {
         marker.remove();
         markers.delete(key);
       }
     });
-    wanted.forEach((phase, key) => {
+    wanted.forEach((item, key) => {
       let marker = markers.get(key);
       if (!marker) {
-        marker = createMarker(phase);
+        marker = createMarker(item);
         markers.set(key, marker);
       }
-      marker.update(phase);
+      // Every item, every render: a group change moves its other members too.
+      marker.update(item);
     });
   };
 

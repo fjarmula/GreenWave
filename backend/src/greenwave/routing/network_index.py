@@ -12,7 +12,16 @@ from shapely.strtree import STRtree
 
 from greenwave.dataset import ProcessedDataset
 from greenwave.etl.connectivity import main_component_nodes
+from greenwave.schemas import SignalMovementKind
 from greenwave.simulation_settings import SimulationSettings
+
+# Simulated movements each persisted signal node type may show; other node types show none.
+SIGNAL_MOVEMENT_KINDS: Mapping[str, tuple[SignalMovementKind, ...]] = MappingProxyType(
+    {
+        "traffic_signals": (SignalMovementKind.VEHICLE, SignalMovementKind.PEDESTRIAN),
+        "pedestrian_crossing": (SignalMovementKind.PEDESTRIAN,),
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +60,16 @@ class SignalApproachRef:
     lon: float
     lat: float
     controlled_edge_ids: tuple[str, ...]
+
+    @property
+    def movement_kinds(self) -> tuple[SignalMovementKind, ...]:
+        """Simulated movements this node may show, from its source node type."""
+        return SIGNAL_MOVEMENT_KINDS.get(self.node_type, ())
+
+    @property
+    def movement_group(self) -> str | None:
+        """The controlled approach identity (sorted edge ids); ``None`` when it controls none."""
+        return "|".join(sorted(self.controlled_edge_ids)) or None
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,7 +125,7 @@ class RoutingIndex:
         return self._intersections[intersection_id]
 
     def signal_approaches(self, intersection_id: str) -> tuple[SignalApproachRef, ...]:
-        """The intersection's signal nodes ordered by signal key; empty when it has none."""
+        """The intersection's supported signal nodes ordered by signal key; empty when none."""
         return self._signal_approaches.get(intersection_id, ())
 
     def neighbour_candidate(self, from_edge_id: str, to_edge_id: str) -> float | None:
@@ -189,16 +208,19 @@ def build_routing_index(dataset: ProcessedDataset, settings: SimulationSettings)
         intersection_id = row["intersection_id"]
         if intersection_id is None:
             continue
-        signals.setdefault(str(intersection_id), []).append(
-            SignalApproachRef(
-                intersection_id=str(intersection_id),
-                signal_key=str(row["signal_key"]),
-                node_type=str(row["node_type"]),
-                lon=float(row["lon"]),
-                lat=float(row["lat"]),
-                controlled_edge_ids=tuple(str(edge_id) for edge_id in row["controlled_edge_ids"]),
+        if row["node_type"] in SIGNAL_MOVEMENT_KINDS:
+            signals.setdefault(str(intersection_id), []).append(
+                SignalApproachRef(
+                    intersection_id=str(intersection_id),
+                    signal_key=str(row["signal_key"]),
+                    node_type=str(row["node_type"]),
+                    lon=float(row["lon"]),
+                    lat=float(row["lat"]),
+                    controlled_edge_ids=tuple(
+                        str(edge_id) for edge_id in row["controlled_edge_ids"]
+                    ),
+                )
             )
-        )
         for edge_id in row["controlled_edge_ids"]:
             ref = ApproachRef(str(intersection_id), str(row["signal_key"]), str(edge_id))
             approaches.setdefault(ref.edge_id, []).append(ref)

@@ -1,7 +1,9 @@
 """Async lifecycle manager for the one active simulated emergency run.
 
-The loop publishes independently of clients.  Missed wall-clock deadlines are logged and the
-next iteration starts normally; it never emits a burst of catch-up ticks.  Subscriber queues are
+The loop publishes independently of clients, one tick per simulated second at every playback
+speed: playback only shortens the wall-clock gap between ticks (1 s at 1x, 0.1 s at 10x), so the
+streamed run is identical at every speed.  Missed wall-clock deadlines are logged and the next
+iteration starts normally; it never emits a burst of catch-up ticks.  Subscriber queues are
 bounded and use drop-oldest for ordinary telemetry, while terminal events always displace a tick.
 """
 
@@ -156,15 +158,13 @@ class SessionManager:
         try:
             while not session.state.completed:
                 started = asyncio.get_running_loop().time()
-                state, events = session.engine.run_tick(
-                    session.state, self._clock(), session.playback_speed
-                )
+                state, events = session.engine.step(session.state, self._clock())
                 session.state = state
                 for event in events:
                     self._publish(session, event)
                 if session.state.completed:
                     break
-                remaining = self._settings.tick_interval_seconds - (
+                remaining = self._settings.tick_interval_seconds / session.playback_speed - (
                     asyncio.get_running_loop().time() - started
                 )
                 if remaining > 0:

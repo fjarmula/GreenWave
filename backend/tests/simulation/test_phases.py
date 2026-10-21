@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 from tests.support.route_fixtures import corridor_index, position_at, signal_ref
 
-from greenwave.routing.network_index import RoutingIndex
+from greenwave.routing.network_index import RoutingIndex, SignalApproachRef
 from greenwave.routing.planner import plan_route
 from greenwave.schemas import (
     IntersectionState,
@@ -12,9 +12,15 @@ from greenwave.schemas import (
     SignalPhaseColor,
     SignalPhaseIndicator,
 )
-from greenwave.simulation.phases import advance_signal_phases, project_signal_phases
+from greenwave.simulation.phases import (
+    advance_signal_phases,
+    movement_slots,
+    phase_decisions,
+    project_signal_phases,
+    route_movement_color_at,
+)
 from greenwave.simulation.route_model import RouteModel, build_route_model
-from greenwave.simulation.state import EngineState
+from greenwave.simulation.state import EngineState, SignalHead
 from greenwave.simulation.state_machine import IntersectionRuntime
 from greenwave.simulation_settings import SimulationSettings
 
@@ -32,6 +38,10 @@ SIGNALS = {
         signal_ref("INT-A", "sig-a-cross", _X + 1_105, _Y - 5, "cross-street"),
     )
 }
+
+
+def _pedestrian(ref: SignalApproachRef) -> SignalApproachRef:
+    return replace(ref, node_type="pedestrian_crossing")
 
 
 def _model(index: RoutingIndex) -> RouteModel:
@@ -300,3 +310,161 @@ def test_consecutive_ticks_only_change_vehicle_lights_legally(
             assert colors["sig-a-cross"] is RED  # never green beside a still-moving conflict
         previous = colors
     assert seen_priority
+
+
+def test_route_signal_keys_are_vehicle_signals_on_the_route_approach() -> None:
+    """Only a vehicle-capable node on the route approach can take priority green."""
+    walk = _pedestrian(signal_ref("INT-A", "sig-a-walk", _X + 1_090, _Y, "corridor-a"))
+    model = _model(corridor_index(signal_approaches={"INT-A": (*SIGNALS["INT-A"], walk)}))
+    assert model.intersections[0].route_signal_keys == frozenset({"sig-a"})
+    assert model.intersections[1].route_signal_keys == frozenset()
+
+
+def test_movement_slots_alternate_sorted_controlled_edge_groups() -> None:
+    refs = (
+        signal_ref("I", "s1", _X, _Y, "edge-c"),
+        signal_ref("I", "s2", _X, _Y, "edge-a"),
+        signal_ref("I", "s3", _X, _Y, "edge-b", "edge-a"),  # group "edge-a|edge-b"
+        signal_ref("I", "s4", _X, _Y, "edge-a"),  # same group as s2
+        signal_ref("I", "s5", _X, _Y),  # no controlled edge: no phase
+    )
+    slots = movement_slots(refs)
+    assert slots == {"s2": 0, "s4": 0, "s3": 1, "s1": 0}
+    assert movement_slots(tuple(reversed(refs))) == slots
+
+
+def _int_a(signals: tuple[SignalApproachRef, ...] = SIGNALS["INT-A"]) -> RouteModel:
+    return _model(corridor_index(signal_approaches={"INT-A": signals}))
+
+
+@pytest.mark.parametrize(
+    ("at_s", "state", "color"),
+    [
+        (0.0, IntersectionState.NORMAL, GREEN),
+        (19.5, IntersectionState.NORMAL, GREEN),  # sampled mid-tick by motion
+        (20.5, IntersectionState.NORMAL, YELLOW),
+        (23.0, IntersectionState.NORMAL, RED),
+        (30.0, IntersectionState.NORMAL, RED),
+        (30.0, IntersectionState.RECOVERY, RED),
+        (30.0, IntersectionState.CLEARING, RED),  # keeps its cycle colour
+        (0.0, IntersectionState.CLEARING, GREEN),
+        (30.0, IntersectionState.PRIORITY_GREEN, GREEN),
+    ],
+)
+def test_route_movement_color_follows_the_programme_and_priority(
+    at_s: float, state: IntersectionState, color: SignalPhaseColor
+) -> None:
+    model = _int_a()
+    assert route_movement_color_at(model, _state(model, 0, state), "INT-A", at_s, SETTINGS) is color
+
+
+def test_route_movement_color_is_none_without_a_route_vehicle_signal() -> None:
+    """No invented phase: motion treats this conservatively, the map shows no marker."""
+    walk_only = (_pedestrian(SIGNALS["INT-A"][0]), SIGNALS["INT-A"][1])
+    for model in (_int_a(walk_only), _model(corridor_index())):
+        state = _state(model, 0, IntersectionState.NORMAL)
+        assert route_movement_color_at(model, state, "INT-A", 0.0, SETTINGS) is None
+    model = _int_a()
+    state = _state(model, 0, IntersectionState.NORMAL)
+    assert route_movement_color_at(model, state, model.intersections[1].id, 0.0, SETTINGS) is None
+
+
+def test_display_head_history_never_changes_the_route_movement_color() -> None:
+    model = _int_a()
+    state = _state(model, 30, IntersectionState.PRIORITY_GREEN)
+    held = replace(state, signal_heads=(SignalHead(RED, 30.0), SignalHead(YELLOW, 29.0)))
+    assert route_movement_color_at(model, held, "INT-A", 30.0, SETTINGS) is GREEN
+    assert advance_signal_phases(model, held, SETTINGS)[1][0].color is RED  # display still lags
+
+
+def test_a_pedestrian_crossing_node_only_has_a_pedestrian_decision() -> None:
+    walk = _pedestrian(signal_ref("INT-A", "sig-a-walk", _X + 1_090, _Y, "corridor-a"))
+    model = _int_a((*SIGNALS["INT-A"], walk))
+    state = _state(model, 0, IntersectionState.NORMAL)
+    kinds = [item.kind for item in phase_decisions(model, state, SETTINGS, 0.0)]
+    assert kinds.count(VEHICLE) == 2
+    assert [
+        item.kind
+        for item in phase_decisions(model, state, SETTINGS, 0.0)
+        if item.signal_key == "sig-a-walk"
+    ] == [PEDESTRIAN]
+    assert {
+        (item.signal_key, item.kind) for item in project_signal_phases(model, state, SETTINGS)
+    } == {
+        ("sig-a", VEHICLE),
+        ("sig-a", PEDESTRIAN),
+        ("sig-a-cross", VEHICLE),
+        ("sig-a-cross", PEDESTRIAN),
+        ("sig-a-walk", PEDESTRIAN),
+    }
+
+
+def test_a_signal_without_controlled_edges_has_no_decision() -> None:
+    model = _int_a((*SIGNALS["INT-A"], signal_ref("INT-A", "sig-a-loose", _X + 1_100, _Y)))
+    state = _state(model, 0, IntersectionState.NORMAL)
+    assert "sig-a-loose" not in {
+        item.signal_key for item in phase_decisions(model, state, SETTINGS, 0.0)
+    }
+
+
+@pytest.mark.parametrize("now_s", range(0, 50, 3))
+def test_decisions_do_not_depend_on_signal_reference_order(now_s: int) -> None:
+    def decided(signals: tuple[SignalApproachRef, ...]) -> dict[object, SignalPhaseColor]:
+        model = _int_a(signals)
+        state = _state(model, now_s, IntersectionState.NORMAL)
+        return {
+            (item.signal_key, item.kind): item.movement_color
+            for item in phase_decisions(model, state, SETTINGS, float(now_s))
+        }
+
+    assert decided(SIGNALS["INT-A"]) == decided(tuple(reversed(SIGNALS["INT-A"])))
+
+
+@pytest.mark.parametrize("state", [IntersectionState.CLEARING, IntersectionState.PRIORITY_GREEN])
+def test_pedestrians_stay_red_while_the_corridor_is_active(state: IntersectionState) -> None:
+    walk = _pedestrian(signal_ref("INT-A", "sig-a-walk", _X + 1_090, _Y, "cross-street"))
+    model = _int_a((*SIGNALS["INT-A"], walk))
+    for now_s in range(50):
+        decisions = phase_decisions(model, _state(model, now_s, state), SETTINGS, float(now_s))
+        assert {item.movement_color for item in decisions if item.kind is PEDESTRIAN} == {RED}
+
+
+def test_decisions_carry_the_signal_position() -> None:
+    model = _int_a()
+    decisions = phase_decisions(model, _state(model, 0, IntersectionState.NORMAL), SETTINGS, 0.0)
+    ref = SIGNALS["INT-A"][0]
+    first = decisions[0]
+    assert (first.intersection_id, first.signal_key, first.kind) == ("INT-A", "sig-a", VEHICLE)
+    assert (first.position.lng, first.position.lat) == (ref.lon, ref.lat)
+
+
+def test_route_signals_of_one_intersection_share_a_cycle_slot() -> None:
+    """One through movement: every route line of a junction shows the same phase."""
+    refs = (
+        signal_ref("I", "in", _X, _Y, "edge-a"),  # route entry line
+        signal_ref("I", "mid", _X, _Y, "edge-b"),  # cross street, sorts between them
+        signal_ref("I", "out", _X, _Y, "edge-c"),  # route line inside the junction
+    )
+    slots = movement_slots(refs, together=frozenset({"in", "out"}))
+    assert slots["in"] == slots["out"]
+    assert slots["mid"] != slots["in"]
+    assert movement_slots(tuple(reversed(refs)), together=frozenset({"in", "out"})) == slots
+
+
+def test_a_multi_line_route_movement_shows_one_colour_in_the_normal_cycle() -> None:
+    signals = (
+        signal_ref("INT-A", "sig-a", _X + 1_095, _Y, "corridor-a"),
+        signal_ref("INT-A", "sig-a-b", _X + 1_096, _Y, "b-cross"),
+        signal_ref("INT-A", "sig-a-c", _X + 1_097, _Y, "c-cross"),
+    )
+    model = _int_a(signals)
+    item = replace(model.intersections[0], route_signal_keys=frozenset({"sig-a", "sig-a-c"}))
+    model = replace(model, intersections=(item, *model.intersections[1:]))
+    for now_s in range(50):
+        state = _state(model, now_s, IntersectionState.NORMAL)
+        colors = {
+            d.signal_key: d.movement_color
+            for d in phase_decisions(model, state, SETTINGS, float(now_s))
+            if d.kind is VEHICLE
+        }
+        assert colors["sig-a"] == colors["sig-a-c"], now_s

@@ -21,7 +21,11 @@ from greenwave.schemas import (
 from greenwave.simulation.corridor import advance_corridor
 from greenwave.simulation.dispatch import build_dispatch_payload, dispatch_event
 from greenwave.simulation.motion import move_one_second
-from greenwave.simulation.phases import advance_signal_phases
+from greenwave.simulation.phases import (
+    advance_signal_phases,
+    route_lights_shown_green,
+    route_movement_color_at,
+)
 from greenwave.simulation.route_model import RouteModel
 from greenwave.simulation.route_track import RouteTrack
 from greenwave.simulation.state import EngineState
@@ -60,6 +64,12 @@ class SimulationEngine:
         self.traffic_density_multiplier = traffic_density_multiplier
         self.estimates, self.settings, self.gateway = estimates, settings, gateway
         self._track = RouteTrack.from_route(route, settings)
+        # Intersections controlling each stop-line position, for the hold at the line.
+        self._stop_line_ids: dict[float, set[str]] = {}
+        for stop in route.stop_lines:
+            self._stop_line_ids.setdefault(stop.distance_along_route_m, set()).add(
+                stop.intersection_id
+            )
 
     def initial_state(self) -> EngineState:
         return EngineState(
@@ -83,9 +93,17 @@ class SimulationEngine:
     def step(
         self, state: EngineState, wall_clock_utc: datetime
     ) -> tuple[EngineState, list[EngineEvent]]:
-        """One simulated second: move, advance signals, dispatch, then report."""
+        """One simulated second: move, advance signals, dispatch, then report.
+
+        Motion and the reported phases read the same simulated programme
+        (:func:`route_movement_color_at` mid-tick, :func:`advance_signal_phases` at tick end).
+        Every step is streamed as its own tick, and the map animates the marker across it under
+        that tick's lights, so priority is released only for intersections passed before it.
+        """
         if state.completed:
             return state, []
+        before = state
+        released_before_m = state.distance_travelled_m
         state, actual_speed = move_one_second(
             state,
             self._track,
@@ -93,12 +111,22 @@ class SimulationEngine:
             self.settings,
             self.green_wave_mode,
             self.traffic_density_multiplier,
+            lambda intersection_id, at_s: route_movement_color_at(
+                self.route_model, before, intersection_id, at_s, self.settings
+            ),
+            lambda distance_m: route_lights_shown_green(
+                self.route_model,
+                before,
+                self._stop_line_ids.get(distance_m, set()),
+                self.settings,
+            ),
         )
         corridor = advance_corridor(
             self.route_model,
             state,
             self.settings,
             priority_enabled=self.green_wave_mode is GreenWaveMode.ENABLED,
+            released_before_m=released_before_m,
         )
         state = replace(state, intersection_runtimes=corridor.runtimes)
         events: list[EngineEvent] = []
@@ -123,28 +151,6 @@ class SimulationEngine:
             state = replace(state, completed=True)
             events.append(completed_event(self.simulation_id, state, wall_clock_utc, kpi))
         return state, events
-
-    def run_tick(
-        self, state: EngineState, wall_clock_utc: datetime, playback_speed: int
-    ) -> tuple[EngineState, list[EngineEvent]]:
-        """``playback_speed`` steps; keep every dispatch, only the last tick, completion last."""
-        retained: list[EngineEvent] = []
-        final_tick: SimulationTickEvent | None = None
-        for _ in range(playback_speed):
-            state, events = self.step(state, wall_clock_utc)
-            for event in events:
-                if event.event_type == "SIMULATION_TICK":
-                    final_tick = event
-                else:
-                    retained.append(event)
-            if state.completed:
-                break
-        terminal = [event for event in retained if event.event_type == "SIMULATION_COMPLETED"]
-        retained = [event for event in retained if event.event_type != "SIMULATION_COMPLETED"]
-        if final_tick is not None:
-            retained.append(final_tick)
-        retained.extend(terminal)
-        return state, retained
 
     def _dispatch(
         self, state: EngineState, ids: tuple[str, ...], now: datetime

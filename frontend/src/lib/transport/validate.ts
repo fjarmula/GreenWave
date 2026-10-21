@@ -235,6 +235,8 @@ function checkStreamEvent(
           finite(intersection.tti_seconds, `${path}.tti_seconds`);
         }
       });
+      // The map keys each marker by (intersection, signal, kind); a duplicate would be ambiguous.
+      const identities = new Set<string>();
       list(event.signal_phases, "signal_phases").forEach((item, index) => {
         const path = `signal_phases[${index}]`;
         const phase = record(item, path);
@@ -244,6 +246,9 @@ function checkStreamEvent(
         member(SIGNAL_PHASE_COLORS, phase.color, `${path}.color`);
         position(phase.position, `${path}.position`);
         text(phase.accessible_label, `${path}.accessible_label`);
+        const identity = JSON.stringify([phase.intersection_id, phase.signal_key, phase.kind]);
+        if (identities.has(identity)) fail(path, "a unique intersection, signal and kind");
+        identities.add(identity);
       });
       return;
     }

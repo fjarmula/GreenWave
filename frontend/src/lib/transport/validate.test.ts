@@ -251,6 +251,20 @@ describe("ER Green Wave mode and signal phases", () => {
     expect(parseStreamEvent(withPhase(), SIMULATION_ID)).not.toBeNull();
   });
 
+  it("rejects two phase indicators with the same intersection, signal and kind", () => {
+    const event = wire(tickEventExample, (c) => {
+      c.signal_phases = [PHASE, { ...PHASE, color: "RED" }];
+    });
+    expect(parseStreamEvent(event, SIMULATION_ID)).toBeNull();
+  });
+
+  it("accepts the vehicle and pedestrian indicators of one signal", () => {
+    const event = wire(tickEventExample, (c) => {
+      c.signal_phases = [PHASE, { ...PHASE, kind: "PEDESTRIAN" }];
+    });
+    expect(parseStreamEvent(event, SIMULATION_ID)).not.toBeNull();
+  });
+
   it("rejects a tick without signal_phases", () => {
     const event = wire(tickEventExample, (c) => delete c.signal_phases);
     expect(parseStreamEvent(event, SIMULATION_ID)).toBeNull();

@@ -6,12 +6,14 @@ import {
   MOCK_MIN_HOLD_SECONDS,
   MOCK_PRIORITY_GREEN_TTI_SECONDS,
   MOCK_RECOVERY_SECONDS,
+  MOCK_ORDINARY_SPEED_LIMIT_MPS,
   MOCK_ROUTE_DISTANCE_METERS,
   MOCK_SAMPLE_INTERSECTIONS,
   MOCK_SIGNAL_ALL_RED_SECONDS,
   MOCK_SIGNAL_GREEN_SECONDS,
   MOCK_SIGNAL_YELLOW_SECONDS,
   MOCK_STANDARD_CLEARANCE_SECONDS,
+  MOCK_STANDARD_CROSSING_DISTANCE_M,
 } from "@/lib/mock-simulation-config";
 import { positionOnRoute } from "@/lib/route-position";
 import type {
@@ -52,13 +54,29 @@ export type MockSession = {
   dispatchCount: number;
   /** Shown vehicle light per synthetic signal key, so lights change only legally between ticks. */
   signalHeads: Map<string, MockSignalHead>;
+  timeline: MockTimeline;
+  /** Elapsed seconds when the current tick began; the map animates the vehicle across the tick. */
+  intervalStartSeconds: number;
 };
+
+/** One stretch driven at constant speed; `crossing` marks a disabled controlled crossing. */
+type MockLeg = {
+  startSeconds: number;
+  startMeters: number;
+  endSeconds: number;
+  speedMps: number;
+  crossing: boolean;
+};
+
+type MockTimeline = { legs: MockLeg[]; reachSeconds: number[]; tripSeconds: number };
 
 type MockSignalHead = { color: SignalPhaseColor; sinceSeconds: number };
 
 export function createMockSession(request: SimulationStartRequest): MockSession {
   const route = createMockRoute(request);
   return {
+    timeline: mockTimeline(route, request),
+    intervalStartSeconds: 0,
     request,
     route,
     tick: 0,
@@ -93,15 +111,17 @@ function createMockRoute(request: SimulationStartRequest): SimulationStartRespon
       intersection.distance_along_route_m / MOCK_ROUTE_DISTANCE_METERS,
     );
     if (!coordinates) throw new Error("Mock route requires two coordinates");
-    const cascadeTargets = request.enable_cascade_mode
-      ? MOCK_SAMPLE_INTERSECTIONS.slice(sourceIndex + 1)
-          .filter(
-            (target) =>
-              target.distance_along_route_m - intersection.distance_along_route_m <=
-              MOCK_CASCADE_DISTANCE_METERS,
-          )
-          .map((target) => target.id)
-      : [];
+    // Disabled runs never cascade, whatever the legacy cascade toggle says.
+    const cascadeTargets =
+      request.enable_cascade_mode && request.green_wave_mode !== "DISABLED"
+        ? MOCK_SAMPLE_INTERSECTIONS.slice(sourceIndex + 1)
+            .filter(
+              (target) =>
+                target.distance_along_route_m - intersection.distance_along_route_m <=
+                MOCK_CASCADE_DISTANCE_METERS,
+            )
+            .map((target) => target.id)
+        : [];
     return {
       ...intersection,
       position: toPosition(coordinates),
@@ -128,56 +148,85 @@ function createMockRoute(request: SimulationStartRequest): SimulationStartRespon
   };
 }
 
-/** Wait at each intersection: none with ER Green Wave, a standard-traffic clearance without. */
-function clearanceSeconds(request: SimulationStartRequest): number {
-  return request.green_wave_mode === "DISABLED"
-    ? MOCK_STANDARD_CLEARANCE_SECONDS * request.traffic_density_multiplier
-    : 0;
+/** Rolling cautious speed: the ordinary limit plus the remaining extra time per metre. */
+function cautiousSpeedMps(limitMps: number, remainingMeters: number, extraSeconds: number): number {
+  return 1 / (1 / limitMps + extraSeconds / remainingMeters);
 }
 
-/** When the vehicle reaches intersection `index`: open-road time plus earlier clearances. */
-function arrivalSeconds(session: MockSession, index: number): number {
-  const { route } = session;
-  return (
-    (route.route_intersections[index].distance_along_route_m / route.total_distance_m) *
-      route.estimated_greenwave_time_sec +
-    index * clearanceSeconds(session.request)
-  );
-}
-
-/** Index of the intersection the vehicle is waiting at, or -1 while it moves. */
-function waitingIndex(session: MockSession): number {
-  const clearance = clearanceSeconds(session.request);
-  return session.signals.findIndex((_, index) => {
-    const reached = arrivalSeconds(session, index);
-    return session.elapsedSeconds >= reached && session.elapsedSeconds < reached + clearance;
-  });
-}
-
-/** Open-road share of the route driven so far; the same timeline in both modes between waits. */
-function routeProgress(session: MockSession): number {
-  const clearance = clearanceSeconds(session.request);
-  let waited = 0;
-  session.signals.forEach((_, index) => {
-    const reached = arrivalSeconds(session, index);
-    if (session.elapsedSeconds > reached) {
-      waited += Math.min(clearance, session.elapsedSeconds - reached);
+/**
+ * The whole drive, precomputed: open road at the ambulance speed and, with ER Green Wave disabled,
+ * a controlled crossing wherever the route movement is red or yellow on reaching a stop line. The
+ * backend's rolling formula at contract level; a later stop line replaces an active crossing.
+ */
+function mockTimeline(
+  route: SimulationStartResponse,
+  request: SimulationStartRequest,
+): MockTimeline {
+  const total = route.total_distance_m;
+  const ambulanceMps = total / route.estimated_greenwave_time_sec;
+  const stops = route.route_intersections.map((item) => item.distance_along_route_m);
+  const legs: MockLeg[] = [];
+  const reachSeconds: number[] = [];
+  let [seconds, meters, crossing, cautious] = [0, 0, 0, 0];
+  while (meters < total) {
+    const next = stops[reachSeconds.length];
+    const speedMps =
+      crossing > 0
+        ? cautiousSpeedMps(
+            Math.min(ambulanceMps, MOCK_ORDINARY_SPEED_LIMIT_MPS),
+            crossing,
+            cautious,
+          )
+        : ambulanceMps;
+    const end = Math.min(total, next ?? Infinity, crossing > 0 ? meters + crossing : Infinity);
+    const endSeconds = seconds + (end - meters) / speedMps;
+    legs.push({
+      startSeconds: seconds,
+      startMeters: meters,
+      endSeconds,
+      speedMps,
+      crossing: crossing > 0,
+    });
+    if (crossing > 0) {
+      cautious -= (cautious * (end - meters)) / crossing;
+      crossing -= end - meters;
+      if (crossing <= 1e-9) [crossing, cautious] = [0, 0];
     }
-  });
-  return Math.min(
-    1,
-    (session.elapsedSeconds - waited) / session.route.estimated_greenwave_time_sec,
+    [seconds, meters] = [endSeconds, end];
+    if (meters === next) {
+      reachSeconds.push(seconds);
+      const red = request.green_wave_mode === "DISABLED" && routeMovementColor(seconds) !== "GREEN";
+      crossing = red ? MOCK_STANDARD_CROSSING_DISTANCE_M : 0;
+      cautious = red ? MOCK_STANDARD_CLEARANCE_SECONDS * request.traffic_density_multiplier : 0;
+    }
+  }
+  return { legs, reachSeconds, tripSeconds: seconds };
+}
+
+/** When the vehicle reaches intersection `index`. */
+function arrivalSeconds(session: MockSession, index: number): number {
+  return session.timeline.reachSeconds[index];
+}
+
+/** The leg being driven at `seconds`, or undefined once arrived. */
+function legAt(session: MockSession, seconds: number): MockLeg | undefined {
+  return session.timeline.legs.find(
+    (leg) => seconds >= leg.startSeconds && seconds < leg.endSeconds,
   );
 }
 
-function tripSeconds(session: MockSession): number {
-  return (
-    session.route.estimated_greenwave_time_sec +
-    session.signals.length * clearanceSeconds(session.request)
-  );
+function metersAt(session: MockSession, seconds: number): number {
+  const leg = legAt(session, Math.max(0, seconds));
+  if (!leg) return session.route.total_distance_m;
+  return leg.startMeters + (Math.max(0, seconds) - leg.startSeconds) * leg.speedMps;
 }
 
-/** Advances one wall-clock tick as `playback_speed` one-second sub-steps. */
+/** Share of the route driven so far. */
+function routeProgress(session: MockSession): number {
+  return Math.min(1, metersAt(session, session.elapsedSeconds) / session.route.total_distance_m);
+}
+
+/** Advances one tick: exactly one simulated second, whatever the playback speed. */
 export function advanceMockSession(session: MockSession): {
   tick: SimulationTickEvent;
   dispatch: ItsDispatchEvent | null;
@@ -185,10 +234,9 @@ export function advanceMockSession(session: MockSession): {
 } {
   const enteredClearing = new Set<number>();
   session.tick += 1;
-  for (let step = 0; step < session.request.playback_speed; step += 1) {
-    session.elapsedSeconds += 1;
-    stepMockSignals(session, enteredClearing);
-  }
+  session.intervalStartSeconds = session.elapsedSeconds;
+  session.elapsedSeconds += 1;
+  stepMockSignals(session, enteredClearing);
 
   const timestamp = new Date().toISOString();
   const tick = buildMockTick(session, timestamp);
@@ -222,7 +270,7 @@ export function buildMockTick(session: MockSession, timestamp: string): Simulati
   );
   const nextSignal = intersections.find((intersection) => intersection.tti_seconds !== null);
   const arrived = progress === 1;
-  const waiting = !arrived && waitingIndex(session) !== -1;
+  const crossing = !arrived && legAt(session, elapsed)?.crossing === true;
 
   return {
     schema_version: "1.0",
@@ -234,11 +282,15 @@ export function buildMockTick(session: MockSession, timestamp: string): Simulati
     ambulance: {
       id: "AMB-KRA-01",
       position: toPosition(coordinates),
-      speed_kmh:
-        arrived || waiting ? 0 : Number((62.4 + Math.sin(session.tick / 5) * 3).toFixed(1)),
+      speed_kmh: arrived
+        ? 0
+        : crossing
+          ? // The distance actually driven in the last simulated second, as the backend reports.
+            Number(((metersAt(session, elapsed) - metersAt(session, elapsed - 1)) * 3.6).toFixed(1))
+          : Number((62.4 + Math.sin(session.tick / 5) * 3).toFixed(1)),
       status: arrived
         ? "ARRIVED"
-        : waiting
+        : crossing
           ? "CROSSING_INTERSECTION"
           : nextSignal?.is_active_corridor
             ? "APPROACHING_INTERSECTION"
@@ -246,7 +298,7 @@ export function buildMockTick(session: MockSession, timestamp: string): Simulati
     },
     kpi_metrics: {
       current_time_saved_sec: Math.round(
-        Math.max(0, route.estimated_normal_time_sec - tripSeconds(session)) * progress,
+        Math.max(0, route.estimated_normal_time_sec - session.timeline.tripSeconds) * progress,
       ),
       total_time_elapsed_sec: elapsed,
     },
@@ -255,7 +307,11 @@ export function buildMockTick(session: MockSession, timestamp: string): Simulati
   };
 }
 
-/** (vehicle, pedestrian) colours of `group` in the two-group cycle, as the backend projects them. */
+/**
+ * (vehicle, pedestrian) colours of `group` in the two-group cycle: a documented duplicate of the
+ * backend programme (the frontend cannot import it). Synthetic S1 (the route approach) is group 0,
+ * S2 (the crossing street) group 1.
+ */
 function cycleColors(group: number, nowSeconds: number): [SignalPhaseColor, SignalPhaseColor] {
   const slot = MOCK_SIGNAL_GREEN_SECONDS + MOCK_SIGNAL_YELLOW_SECONDS + MOCK_SIGNAL_ALL_RED_SECONDS;
   const phase = nowSeconds % (slot * MOCK_SIGNALS.length);
@@ -269,6 +325,11 @@ function cycleColors(group: number, nowSeconds: number): [SignalPhaseColor, Sign
         ? "YELLOW"
         : "RED";
   return [vehicle, "RED"];
+}
+
+/** The programme colour of the route vehicle movement (S1) at `seconds`, used by motion. */
+function routeMovementColor(seconds: number): SignalPhaseColor {
+  return cycleColors(0, seconds)[0];
 }
 
 /** The next shown vehicle light, as the backend limits it: GREEN → YELLOW → RED → GREEN only. */
@@ -392,10 +453,9 @@ export function stepMockSignals(session: MockSession, enteredClearing: Set<numbe
   const ownEntries: number[] = [];
 
   if (request.green_wave_mode === "DISABLED") {
-    // Standard traffic: no corridor states and no dispatch; an intersection is passed after its wait.
-    const clearance = clearanceSeconds(request);
+    // Standard traffic: no corridor states and no dispatch; an intersection is passed once reached.
     signals.forEach((signal, index) => {
-      if (elapsedSeconds >= arrivalSeconds(session, index) + clearance) signal.passed = true;
+      if (elapsedSeconds >= arrivalSeconds(session, index)) signal.passed = true;
     });
     return;
   }
@@ -410,7 +470,9 @@ export function stepMockSignals(session: MockSession, enteredClearing: Set<numbe
       return;
     }
     if (signal.passed) return;
-    if (tti <= 0) {
+    // Released only once reached before this tick: the map animates the vehicle across the tick
+    // under its final lights, so priority must not end beneath it (as the backend does).
+    if (tti <= 0 && arrivalSeconds(session, index) <= session.intervalStartSeconds) {
       signal.passed = true;
       signal.state = "RECOVERY";
       signal.recoveryStartedAtSeconds = elapsedSeconds;

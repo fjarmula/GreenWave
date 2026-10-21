@@ -116,6 +116,7 @@ def test_index_exposes_signal_positions_per_intersection(tiny_dataset) -> None:
     rows = tiny_dataset.signal_approaches.filter(pl.col("intersection_id").is_not_null())
     assert rows.height
 
+    rows = rows.filter(pl.col("node_type").is_in(["traffic_signals", "pedestrian_crossing"]))
     for intersection_id in rows["intersection_id"].unique().to_list():
         expected = rows.filter(pl.col("intersection_id") == intersection_id).sort("signal_key")
         refs = index.signal_approaches(intersection_id)
@@ -138,3 +139,71 @@ def test_index_returns_no_signal_positions_for_an_intersection_without_approache
     index = build_routing_index(tiny_dataset, SimulationSettings())
 
     assert index.signal_approaches("INT-NO-APPROACHES") == ()
+
+
+@pytest.mark.parametrize(
+    ("node_type", "kinds"),
+    [
+        ("traffic_signals", ("VEHICLE", "PEDESTRIAN")),
+        ("pedestrian_crossing", ("PEDESTRIAN",)),
+        ("other_crossing", ()),
+    ],
+)
+def test_signal_movement_kinds_follow_the_source_node_type(
+    node_type: str, kinds: tuple[str, ...]
+) -> None:
+    """A pedestrian-only crossing must never be drawn as a vehicle light."""
+    from greenwave.routing.network_index import SignalApproachRef
+
+    ref = SignalApproachRef("INT", "sig", node_type, 19.9, 50.0, ("e1",))
+    assert ref.movement_kinds == kinds
+
+
+@pytest.mark.parametrize(
+    ("edge_ids", "group"),
+    [(("b", "a"), "a|b"), (("a",), "a"), ((), None)],
+)
+def test_signal_movement_group_is_the_sorted_controlled_edge_identity(
+    edge_ids: tuple[str, ...], group: str | None
+) -> None:
+    from greenwave.routing.network_index import SignalApproachRef
+
+    ref = SignalApproachRef("INT", "sig", "traffic_signals", 19.9, 50.0, edge_ids)
+    assert ref.movement_group == group
+
+
+def test_index_omits_signal_nodes_of_unknown_type_but_keeps_their_approaches(
+    tiny_dataset,
+) -> None:
+    from greenwave.routing.network_index import build_routing_index
+
+    rows = tiny_dataset.signal_approaches.filter(pl.col("intersection_id").is_not_null())
+    target = rows.row(0, named=True)
+    dataset = replace(
+        tiny_dataset,
+        signal_approaches=tiny_dataset.signal_approaches.with_columns(
+            node_type=pl.when(pl.col("signal_key") == target["signal_key"])
+            .then(pl.lit("mystery_node"))
+            .otherwise(pl.col("node_type"))
+        ),
+    )
+
+    index = build_routing_index(dataset, SimulationSettings())
+
+    keys = [ref.signal_key for ref in index.signal_approaches(target["intersection_id"])]
+    assert target["signal_key"] not in keys
+    for edge_id in target["controlled_edge_ids"]:
+        assert index.approaches_on_edge(edge_id)
+
+
+def test_index_signal_order_is_independent_of_source_row_order(tiny_dataset) -> None:
+    from greenwave.routing.network_index import build_routing_index
+
+    reversed_rows = replace(
+        tiny_dataset, signal_approaches=tiny_dataset.signal_approaches.reverse()
+    )
+    first = build_routing_index(tiny_dataset, SimulationSettings())
+    second = build_routing_index(reversed_rows, SimulationSettings())
+
+    for intersection_id in tiny_dataset.signal_approaches["intersection_id"].drop_nulls().unique():
+        assert first.signal_approaches(intersection_id) == second.signal_approaches(intersection_id)

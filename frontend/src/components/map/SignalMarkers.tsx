@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Marker, type Map } from "maplibre-gl";
 import {
+  coarseMarkerIds,
+  coarseMarkerLabels,
   createSignalPhaseLayer,
-  phaseMarkerText,
+  phaseMarkerView,
   type PhaseMarkerHandle,
+  type PhaseMarkerLayout,
   type SignalPhaseLayer,
 } from "@/lib/signal-phase-layer";
 import { isCascadeClearing } from "@/lib/signal-visuals";
@@ -13,7 +16,6 @@ import type {
   IntersectionState,
   IntersectionTelemetry,
   RouteIntersection,
-  SignalPhaseColor,
   SignalPhaseIndicator,
 } from "@/types/telemetry";
 
@@ -30,14 +32,8 @@ function signalColor(intersection: IntersectionTelemetry): string {
   return isCascadeClearing(intersection) ? CASCADE_COLOR : SIGNAL_COLORS[intersection.state];
 }
 
-const PHASE_COLORS: Record<SignalPhaseColor, string> = {
-  RED: "#ef4444",
-  YELLOW: "#facc15",
-  GREEN: "#22c55e",
-};
-
-/** A DOM marker for one simulated phase; vehicle and pedestrian sit side by side on its signal. */
-function createPhaseMarker(map: Map, phase: SignalPhaseIndicator): PhaseMarkerHandle {
+/** A DOM marker for one simulated phase, offset by the grouped layout so neighbours never overlap. */
+function createPhaseMarker(map: Map, item: PhaseMarkerLayout): PhaseMarkerHandle {
   const element = document.createElement("div");
   element.setAttribute("role", "img");
   element.className =
@@ -46,25 +42,23 @@ function createPhaseMarker(map: Map, phase: SignalPhaseIndicator): PhaseMarkerHa
   light.className = "block size-2.5 shrink-0 rounded-full ring-1 ring-black/30";
   const text = document.createElement("span");
   element.append(light, text);
-  // Vehicle label to the left of the signal point, pedestrian to the right: never overlapping.
-  const marker = new Marker({
-    element,
-    anchor: phase.kind === "VEHICLE" ? "right" : "left",
-    offset: phase.kind === "VEHICLE" ? [-2, 0] : [2, 0],
-  })
-    .setLngLat([phase.position.lng, phase.position.lat])
+  const marker = new Marker({ element, anchor: "center", offset: item.offset })
+    .setLngLat([item.phase.position.lng, item.phase.position.lat])
     .addTo(map);
   return {
-    update(next) {
-      marker.setLngLat([next.position.lng, next.position.lat]);
-      element.setAttribute("aria-label", next.accessible_label);
-      element.title = next.accessible_label;
-      light.style.backgroundColor = PHASE_COLORS[next.color];
-      text.textContent = phaseMarkerText(next);
+    update({ phase, offset }) {
+      const view = phaseMarkerView(phase);
+      marker.setLngLat([phase.position.lng, phase.position.lat]).setOffset(offset);
+      element.setAttribute("aria-label", view.ariaLabel);
+      element.title = view.title;
+      light.style.backgroundColor = view.swatch;
+      text.textContent = view.text;
     },
     remove: () => marker.remove(),
   };
 }
+
+const NO_PHASES: SignalPhaseIndicator[] = [];
 
 type SignalMarkersProps = {
   map: Map | null;
@@ -72,7 +66,10 @@ type SignalMarkersProps = {
   /** Positions from the start response, joined to tick intersections by id. */
   routeIntersections: RouteIntersection[];
   intersections: IntersectionTelemetry[];
-  /** Simulated phase lights from the tick, drawn only at high zoom where they replace the dots. */
+  /**
+   * Simulated phase lights from the tick, drawn only at high zoom where they replace the dots of
+   * their intersections; an intersection without phases keeps its dot, labelled detail unavailable.
+   */
   phases: SignalPhaseIndicator[];
 };
 
@@ -86,15 +83,20 @@ export function SignalMarkers({
   const markers = useRef(new globalThis.Map<string, Marker>());
   const phaseLayer = useRef<SignalPhaseLayer | null>(null);
   const [detailed, setDetailed] = useState(false);
-  const showDots = visible && !detailed;
+  const shownPhases = visible ? phases : NO_PHASES;
+  const dotIds = useMemo(
+    () =>
+      coarseMarkerIds(
+        intersections.map((intersection) => intersection.id),
+        shownPhases,
+        detailed,
+      ),
+    [intersections, shownPhases, detailed],
+  );
 
   useEffect(() => {
     if (!map) return;
-    const layer = createSignalPhaseLayer(
-      map,
-      (phase) => createPhaseMarker(map, phase),
-      setDetailed,
-    );
+    const layer = createSignalPhaseLayer(map, (item) => createPhaseMarker(map, item), setDetailed);
     phaseLayer.current = layer;
     return () => {
       layer.destroy();
@@ -103,8 +105,8 @@ export function SignalMarkers({
   }, [map]);
 
   useEffect(() => {
-    phaseLayer.current?.setPhases(visible ? phases : []);
-  }, [map, visible, phases]);
+    phaseLayer.current?.setPhases(shownPhases);
+  }, [map, shownPhases]);
 
   useEffect(() => {
     const currentMarkers = markers.current;
@@ -119,15 +121,15 @@ export function SignalMarkers({
     const positions = new globalThis.Map(
       routeIntersections.map(({ id, position }) => [id, position] as const),
     );
-    const ids = new Set(intersections.map((intersection) => intersection.id));
     currentMarkers.forEach((marker, id) => {
-      if (!showDots || !ids.has(id) || !positions.has(id)) {
+      if (!visible || !dotIds.has(id) || !positions.has(id)) {
         marker.remove();
         currentMarkers.delete(id);
       }
     });
-    if (!map || !showDots) return;
+    if (!map || !visible) return;
     intersections.forEach((intersection) => {
+      if (!dotIds.has(intersection.id)) return;
       // No position is invented: an intersection missing from the start response is not drawn.
       const position = positions.get(intersection.id);
       if (!position) return;
@@ -146,18 +148,16 @@ export function SignalMarkers({
         currentMarkers.set(intersection.id, marker);
       }
       marker.setLngLat(coordinates);
+      const labels = coarseMarkerLabels(intersection, isCascadeClearing(intersection), detailed);
       const element = marker.getElement();
-      element.setAttribute(
-        "aria-label",
-        `Simulated signal ${intersection.id}: ${intersection.state}`,
-      );
+      element.setAttribute("aria-label", labels.ariaLabel);
       const dot = element.firstElementChild as HTMLElement;
       dot.style.backgroundColor = signalColor(intersection);
       dot.classList.toggle("dashboard-signal-pulse", intersection.is_active_corridor);
       const label = element.lastElementChild as HTMLElement;
-      label.textContent = `${intersection.id} · ${intersection.state}${isCascadeClearing(intersection) ? " · CASCADE" : ""}`;
+      label.textContent = labels.text;
     });
-  }, [map, showDots, routeIntersections, intersections]);
+  }, [map, visible, dotIds, detailed, routeIntersections, intersections]);
 
   return null;
 }

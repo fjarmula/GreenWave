@@ -33,12 +33,15 @@ def advance_intersection(
     now_s: float,
     cascade_trigger: bool,
     settings: SimulationSettings,
+    priority_held: bool = False,
 ) -> tuple[IntersectionRuntime, Transition | None]:
     """Advance one intersection without reading a clock or performing I/O.
 
     Passing from ``NORMAL`` or ``CLEARING`` is deliberately permitted.  A one-second
     vehicle step can cross a closely-spaced stop line before its clearing threshold is
     observed; recovering directly prevents such an intersection getting stuck active.
+    ``priority_held`` (the vehicle is stopped at the last stop line, or the map is still animating
+    it across) means it has not passed yet: the intersection keeps, and may still gain, priority.
     """
     if runtime.state is IntersectionState.RECOVERY:
         recovery_started = runtime.recovery_started_at_s
@@ -60,7 +63,7 @@ def advance_intersection(
     if runtime.passed:
         return runtime, None
 
-    if remaining_to_last_m <= 0.0:
+    if remaining_to_last_m <= 0.0 and not priority_held:
         return (
             IntersectionRuntime(
                 state=IntersectionState.RECOVERY,

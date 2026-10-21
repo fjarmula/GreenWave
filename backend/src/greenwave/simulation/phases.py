@@ -1,14 +1,24 @@
-"""Deterministic simulated signal phases for the map's high-zoom detail.
+"""Deterministic simulated signal phases: one programme for motion and the map's high-zoom detail.
 
 An explanatory abstraction, not lane-level signalling or real Kraków timings: each intersection's
-signals alternate in two movement groups (by signal-key order), each green, then yellow, then
-all-red. Every signal also gets a pedestrian indication for the crossing over the arm it controls,
-green only while the other group has green. Priority states override only that pattern.
+signals alternate in two movement groups, each green, then yellow, then all-red. A signal's group
+is its controlled approach identity (sorted controlled-edge ids), except that the route's signals
+form one group (its through movement, so no route line inside a junction shows a different phase);
+the sorted groups take the two cycle slots by ordinal modulo two. ``traffic_signals`` nodes show a
+vehicle and a pedestrian indication, ``pedestrian_crossing`` nodes a pedestrian one only; a
+pedestrian indication is for the crossing over the arm its node controls, green only while the
+other slot has green. Priority
+states override only that pattern, and only for vehicle lights on the route approach.
 
-Each vehicle light then changes only GREEN -> YELLOW -> RED -> GREEN: yellow lasts the configured
-interval, and a light turns green only once every light not also turning green is red. So a
-priority override never shows an impossible jump.
+:func:`phase_decisions` is that programme. Motion samples the route movement from it at the exact
+time it reaches a stop line; telemetry projects it at the completed tick. Only the shown vehicle
+lights are then held to GREEN -> YELLOW -> RED -> GREEN: yellow lasts the configured interval, and
+a light turns green only once every light not also turning green is red. Shown lights never feed
+back into the programme.
 """
+
+from collections.abc import Collection, Sequence
+from dataclasses import dataclass
 
 from greenwave.routing.network_index import SignalApproachRef
 from greenwave.schemas import (
@@ -21,10 +31,91 @@ from greenwave.schemas import (
 from greenwave.simulation.corridor import route_runtimes
 from greenwave.simulation.route_model import RouteIntersection, RouteModel
 from greenwave.simulation.state import EngineState, SignalHead
+from greenwave.simulation.state_machine import IntersectionRuntime
 from greenwave.simulation_settings import SimulationSettings
 
 _GROUPS = 2
 GREEN, YELLOW, RED = SignalPhaseColor.GREEN, SignalPhaseColor.YELLOW, SignalPhaseColor.RED
+VEHICLE, PEDESTRIAN = SignalMovementKind.VEHICLE, SignalMovementKind.PEDESTRIAN
+# Most restrictive first: several route lights on one approach permit only what all permit.
+_RESTRICTIVENESS = {RED: 0, YELLOW: 1, GREEN: 2}
+
+
+@dataclass(frozen=True, slots=True)
+class PhaseDecision:
+    """The programme's colour for one supported simulated movement of one signal node."""
+
+    intersection_id: str
+    signal_key: str
+    kind: SignalMovementKind
+    movement_color: SignalPhaseColor
+    position: Position
+    slot: int
+
+
+def phase_decisions(
+    route_model: RouteModel, state: EngineState, settings: SimulationSettings, at_s: float
+) -> tuple[PhaseDecision, ...]:
+    """Every supported movement of every route intersection at ``at_s``, in projection order."""
+    return tuple(
+        decision
+        for item, runtime in route_runtimes(route_model, state)
+        for decision in _intersection_decisions(item, runtime, settings, at_s)
+    )
+
+
+def route_movement_color_at(
+    route_model: RouteModel,
+    state: EngineState,
+    intersection_id: str,
+    at_s: float,
+    settings: SimulationSettings,
+) -> SignalPhaseColor | None:
+    """The route vehicle movement's programme colour; ``None`` without a supported route signal."""
+    for item, runtime in route_runtimes(route_model, state):
+        if item.id == intersection_id:
+            colors = [
+                decision.movement_color
+                for decision in _intersection_decisions(item, runtime, settings, at_s)
+                if decision.kind is VEHICLE and decision.signal_key in item.route_signal_keys
+            ]
+            return min(colors, key=_RESTRICTIVENESS.__getitem__) if colors else None
+    return None
+
+
+def route_lights_shown_green(
+    route_model: RouteModel,
+    state: EngineState,
+    intersection_ids: Collection[str],
+    settings: SimulationSettings,
+) -> bool:
+    """Whether every route vehicle light of these intersections was last shown green.
+
+    Reads ``state.signal_heads`` (the lights the map showed at the end of the last tick); before
+    the first tick, the programme at ``state.simulated_time_s``. An intersection without a route
+    vehicle signal shows nothing to obey.
+    """
+    now = float(state.simulated_time_s)
+    offset = 0
+    for item, runtime in route_runtimes(route_model, state):
+        vehicles = [
+            decision
+            for decision in _intersection_decisions(item, runtime, settings, now)
+            if decision.kind is VEHICLE
+        ]
+        if item.id in intersection_ids:
+            for i, vehicle in enumerate(vehicles):
+                if vehicle.signal_key not in item.route_signal_keys:
+                    continue
+                shown = (
+                    state.signal_heads[offset + i].color
+                    if state.signal_heads
+                    else vehicle.movement_color
+                )
+                if shown is not GREEN:
+                    return False
+        offset += len(vehicles)
+    return True
 
 
 def project_signal_phases(
@@ -39,48 +130,111 @@ def advance_signal_phases(
 ) -> tuple[tuple[SignalHead, ...], list[SignalPhaseIndicator]]:
     """Shown vehicle lights and the indications of every route intersection with known signals.
 
-    Targets: ``CLEARING`` sends conflicting vehicles and all pedestrians to red; the route approach
-    keeps its cycle colour. ``PRIORITY_GREEN`` targets the route approach green and everything else
-    red. ``NORMAL`` and ``RECOVERY`` follow the cycle. ``state.signal_heads`` (what was shown last)
-    then limits each vehicle light to legal changes; without it the targets are shown directly.
+    Targets come from :func:`phase_decisions` at ``state.simulated_time_s``: ``CLEARING`` sends
+    conflicting vehicles and all pedestrians to red while the route approach keeps its cycle
+    colour; ``PRIORITY_GREEN`` targets the route approach green and everything else red.
+    ``state.signal_heads`` (vehicle lights shown last) then limits each vehicle light to legal
+    changes; without it the targets are shown directly.
     """
     now = float(state.simulated_time_s)
     previous = state.signal_heads
     heads: list[SignalHead] = []
     indicators: list[SignalPhaseIndicator] = []
     for item, runtime in route_runtimes(route_model, state):
-        targets: list[tuple[SignalPhaseColor, SignalPhaseColor]] = []
-        for position, signal in enumerate(item.signals):
-            vehicle, pedestrian = _cycle_colors(position % _GROUPS, now, settings)
-            on_route = not set(signal.controlled_edge_ids).isdisjoint(item.approach_edge_ids)
-            if runtime.state is IntersectionState.PRIORITY_GREEN:
-                vehicle, pedestrian = (GREEN if on_route else RED), RED
-            elif runtime.state is IntersectionState.CLEARING:
-                vehicle, pedestrian = (vehicle if on_route else RED), RED
-            targets.append((vehicle, pedestrian))
-        prior = previous[len(heads) : len(heads) + len(item.signals)] if previous else ()
+        decisions = _intersection_decisions(item, runtime, settings, now)
+        vehicles = [decision for decision in decisions if decision.kind is VEHICLE]
+        prior = previous[len(heads) : len(heads) + len(vehicles)] if previous else ()
         shown = [
             _shown(
                 prior[i] if prior else None,
-                vehicle,
+                vehicle.movement_color,
                 now,
                 settings,
                 # Green only once every light not also turning green has stopped.
                 may_turn_green=all(
                     other.color is RED
                     for j, other in enumerate(prior)
-                    if j != i and targets[j][0] is not GREEN
+                    if j != i and vehicles[j].movement_color is not GREEN
                 ),
             )
-            for i, (vehicle, _) in enumerate(targets)
+            for i, vehicle in enumerate(vehicles)
         ]
         heads.extend(shown)
-        for signal, head, (_, pedestrian) in zip(item.signals, shown, targets, strict=True):
-            # Walkers never get green beside a vehicle light that is still showing go or clear.
-            walk = pedestrian if head.color is RED else RED
-            indicators.append(_indicator(item, signal, SignalMovementKind.VEHICLE, head.color))
-            indicators.append(_indicator(item, signal, SignalMovementKind.PEDESTRIAN, walk))
+        shown_by_key = {
+            vehicle.signal_key: head.color for vehicle, head in zip(vehicles, shown, strict=True)
+        }
+        for decision in decisions:
+            if decision.kind is VEHICLE:
+                color = shown_by_key[decision.signal_key]
+            else:
+                # Walkers never get green beside a vehicle light of their arm that still shows
+                # go or clear.
+                clear = all(
+                    shown_by_key[vehicle.signal_key] is RED
+                    for vehicle in vehicles
+                    if vehicle.slot == decision.slot
+                )
+                color = decision.movement_color if clear else RED
+            indicators.append(_indicator(item, decision, color))
     return tuple(heads), indicators
+
+
+def movement_slots(
+    signals: Sequence[SignalApproachRef], together: frozenset[str] = frozenset()
+) -> dict[str, int]:
+    """Normal-cycle slot of each signal key: its movement group's sorted ordinal modulo two.
+
+    Signals controlling the same approach edges share a group, so they always agree; a signal
+    controlling no edge has no group and no slot. ``together`` (the route's signals) form one
+    group, the route's through movement, so every route line of a junction shows one phase.
+    Independent of the order of ``signals``.
+    """
+
+    route_group = "|".join(
+        sorted(g for s in signals if s.signal_key in together and (g := s.movement_group))
+    )
+
+    def group(signal: SignalApproachRef) -> str | None:
+        if signal.movement_group is not None and signal.signal_key in together:
+            return route_group
+        return signal.movement_group
+
+    groups = sorted({g for signal in signals if (g := group(signal)) is not None})
+    ordinal = {g: index % _GROUPS for index, g in enumerate(groups)}
+    return {signal.signal_key: ordinal[g] for signal in signals if (g := group(signal)) is not None}
+
+
+def _intersection_decisions(
+    item: RouteIntersection,
+    runtime: IntersectionRuntime,
+    settings: SimulationSettings,
+    at_s: float,
+) -> list[PhaseDecision]:
+    slots = movement_slots(item.signals, item.route_signal_keys)
+    decisions: list[PhaseDecision] = []
+    for signal in item.signals:
+        slot = slots.get(signal.signal_key)
+        if slot is None:
+            continue
+        vehicle, pedestrian = _cycle_colors(slot, at_s, settings)
+        on_route = signal.signal_key in item.route_signal_keys
+        if runtime.state is IntersectionState.PRIORITY_GREEN:
+            vehicle, pedestrian = (GREEN if on_route else RED), RED
+        elif runtime.state is IntersectionState.CLEARING:
+            vehicle, pedestrian = (vehicle if on_route else RED), RED
+        colors = {VEHICLE: vehicle, PEDESTRIAN: pedestrian}
+        decisions.extend(
+            PhaseDecision(
+                intersection_id=item.id,
+                signal_key=signal.signal_key,
+                kind=kind,
+                movement_color=colors[kind],
+                position=Position(lat=signal.lat, lng=signal.lon),
+                slot=slot,
+            )
+            for kind in signal.movement_kinds
+        )
+    return decisions
 
 
 def _shown(
@@ -117,18 +271,16 @@ def _cycle_colors(
 
 
 def _indicator(
-    item: RouteIntersection,
-    signal: SignalApproachRef,
-    kind: SignalMovementKind,
-    color: SignalPhaseColor,
+    item: RouteIntersection, decision: PhaseDecision, color: SignalPhaseColor
 ) -> SignalPhaseIndicator:
     return SignalPhaseIndicator(
         intersection_id=item.id,
-        signal_key=signal.signal_key,
-        kind=kind,
+        signal_key=decision.signal_key,
+        kind=decision.kind,
         color=color,
-        position=Position(lat=signal.lat, lng=signal.lon),
+        position=decision.position,
         accessible_label=(
-            f"Simulated {kind.lower()} signal {signal.signal_key} at {item.id}: {color.lower()}"
+            f"Simulated {decision.kind.lower()} signal {decision.signal_key} at {item.id}: "
+            f"{color.lower()}"
         ),
     )

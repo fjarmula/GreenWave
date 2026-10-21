@@ -34,7 +34,11 @@ def ambulance_telemetry(
 def _ambulance_status(state: EngineState) -> AmbulanceStatus:
     if state.arrived:
         return AmbulanceStatus.ARRIVED
-    if state.dwell_remaining_s or state.speed_limited_remaining_m:
+    if (
+        state.dwell_remaining_s
+        or state.dwelling_intersection_id
+        or state.cautious_crossing_remaining_m
+    ):
         return AmbulanceStatus.CROSSING_INTERSECTION
     if any(
         not runtime.passed and runtime.state in ACTIVE_STATES
@@ -76,8 +80,11 @@ def kpi_metrics(
         / edge.length_m
         for edge, start in zip(route.edges, route.cumulative_m, strict=True)
     )
+    # Credited once the vehicle reaches the last stop line, whenever its priority is released.
     normal += sum(
-        item.delay_seconds for item, runtime in route_runtimes(route_model, state) if runtime.passed
+        item.delay_seconds
+        for item in route_model.intersections
+        if item.last_stop_line_m <= state.distance_travelled_m
     )
     # Saved time compares with this simulated normal-traffic baseline in either mode.
     # The trip ends on arrival (D15); post-arrival recovery ticks (D19) do not add trip time.

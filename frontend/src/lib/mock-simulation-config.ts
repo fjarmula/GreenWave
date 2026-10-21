@@ -8,7 +8,6 @@ export const DEFAULT_TRAFFIC_DENSITY_MULTIPLIER = 1.5;
 export const MOCK_NORMAL_TRAVEL_TIME_SECONDS = 780;
 export const MOCK_GREENWAVE_TRAVEL_TIME_SECONDS = 380;
 export const MOCK_ROUTE_DISTANCE_METERS = 5400;
-export const MOCK_STREAM_INTERVAL_MILLISECONDS = 1000;
 
 // Mirrors of the architecture thresholds, used only by the mock's scripted timeline.
 export const MOCK_CLEARING_TTI_SECONDS = 40;
@@ -18,12 +17,16 @@ export const MOCK_MIN_HOLD_SECONDS = 40;
 export const MOCK_HOLD_BUFFER_SECONDS = 5;
 
 // Mirrors of the backend's PoC signal programme and ER Green Wave disabled crossing, used only by
-// the mock: two movement groups (green, yellow, all-red), and a clearance wait of the default
-// signalised-junction delay x traffic density at each intersection (no priority, no dispatch).
+// the mock: two movement groups (green, yellow, all-red). Facing a red or yellow route movement,
+// a disabled vehicle rolls MOCK_STANDARD_CROSSING_DISTANCE_M at no more than the synthetic
+// ordinary limit, spreading the default signalised-junction delay x traffic density over it; on
+// green it drives on (no priority, no dispatch). Synthetic values, not route data.
 export const MOCK_SIGNAL_GREEN_SECONDS = 30;
 export const MOCK_SIGNAL_YELLOW_SECONDS = 3;
 export const MOCK_SIGNAL_ALL_RED_SECONDS = 2;
 export const MOCK_STANDARD_CLEARANCE_SECONDS = 35;
+export const MOCK_STANDARD_CROSSING_DISTANCE_M = 30;
+export const MOCK_ORDINARY_SPEED_LIMIT_MPS = 50 / 3.6;
 
 /**
  * Real ids and names from the architecture example (Aleja 29 Listopada, about
