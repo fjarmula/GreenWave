@@ -92,7 +92,10 @@ function CandidateRow({
   return (
     <div className="mt-1 flex items-baseline justify-between gap-3">
       <div className="min-w-0">
-        <p className={`truncate ${emphasis ? "text-sm font-semibold" : "text-xs"}`}>
+        <p
+          className={`truncate ${emphasis ? "text-sm font-semibold" : "text-xs"}`}
+          title={station.name}
+        >
           {station.name}
         </p>
         <p className="text-[10px] text-muted-foreground">

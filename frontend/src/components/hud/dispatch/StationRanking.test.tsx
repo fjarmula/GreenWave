@@ -57,6 +57,13 @@ describe("StationRanking", () => {
     expect(markup).toContain("05m 49s");
   });
 
+  it("keeps each truncated station name readable in full on hover", () => {
+    const markup = render();
+    for (const name of ["SP ZOZ MSW", "5. Wojskowy", "KPR"]) {
+      expect(markup).toMatch(new RegExp(`<p class="truncate[^"]*" title="${name}">`));
+    }
+  });
+
   it("names hospital emergency departments as such", () => {
     expect(render()).toContain("Hospital emergency dept.");
     expect(render()).toContain("Ambulance base");
