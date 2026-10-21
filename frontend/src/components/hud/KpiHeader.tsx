@@ -3,7 +3,7 @@
 import { Ambulance, TriangleAlert } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
 import type { ConnectionStatus } from "@/lib/simulation-adapter";
-import { connectionLabel, formatSignedSeconds } from "@/lib/simulation-copy";
+import { connectionLabel, formatSignedSeconds, greenWaveModeLabel } from "@/lib/simulation-copy";
 import type { SimulationPhase } from "@/lib/simulation-state";
 
 const PHASE_BADGES: Partial<Record<SimulationPhase, string>> = {
@@ -20,7 +20,7 @@ const CONNECTION_STYLES: Record<ConnectionStatus, string> = {
 };
 
 export function KpiHeader() {
-  const { liveTelemetry, simulationState, connection } = useSimulationState();
+  const { liveTelemetry, simulationState, connection, routeData } = useSimulationState();
   const elapsed = liveTelemetry?.kpi_metrics.total_time_elapsed_sec ?? 0;
   const elapsedLabel = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
   return (
@@ -68,6 +68,11 @@ export function KpiHeader() {
       <div className="col-start-2 row-start-2 text-right sm:col-start-3 sm:row-start-1">
         <span className="dashboard-eyebrow block">Elapsed</span>
         <strong className="font-mono text-lg">{elapsedLabel}</strong>
+        {routeData && (
+          <span className="block text-[9px] font-semibold text-muted-foreground">
+            {greenWaveModeLabel(routeData.green_wave_mode)}
+          </span>
+        )}
       </div>
     </section>
   );

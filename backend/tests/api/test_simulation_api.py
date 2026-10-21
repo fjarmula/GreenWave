@@ -26,6 +26,7 @@ def test_start_returns_frozen_response_shape_and_stop_returns_terminal(layout: L
         assert body["status"] == "INITIALIZED"
         assert body["simulation_id"] == "SIM-api"
         assert body["route_geometry"]["type"] == "LineString"
+        assert body["green_wave_mode"] == "ENABLED"  # legacy request without a mode
 
         stop = client.post("/api/v1/simulation/SIM-api/stop")
         assert stop.status_code == 200

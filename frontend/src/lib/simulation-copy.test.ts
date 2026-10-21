@@ -6,6 +6,7 @@ import {
   describeSimulationError,
   formatDuration,
   formatSignedSeconds,
+  greenWaveModeLabel,
   summarizeFinishedRun,
 } from "@/lib/simulation-copy";
 
@@ -74,18 +75,49 @@ describe("signed durations", () => {
   });
 });
 
+describe("greenWaveModeLabel", () => {
+  it("names both modes", () => {
+    expect(greenWaveModeLabel("ENABLED")).toBe("ER Green Wave enabled");
+    expect(greenWaveModeLabel("DISABLED")).toBe("ER Green Wave disabled");
+  });
+});
+
 describe("summarizeFinishedRun", () => {
-  it("compares the estimates with the simulated elapsed time and final saving", () => {
+  it("leads with total travel time and names the enabled mode", () => {
     expect(
       summarizeFinishedRun(
-        { estimated_normal_time_sec: 780, estimated_greenwave_time_sec: 380 },
+        {
+          estimated_normal_time_sec: 780,
+          estimated_greenwave_time_sec: 380,
+          green_wave_mode: "ENABLED",
+        },
         { current_time_saved_sec: 396, total_time_elapsed_sec: 383 },
       ),
     ).toEqual([
-      { label: "Estimated normal", value: "13m 00s" },
-      { label: "Estimated GreenWave", value: "06m 20s" },
-      { label: "Simulated elapsed", value: "06m 23s" },
-      { label: "Final time saved", value: "06m 36s" },
+      { label: "Total travel time", value: "06m 23s" },
+      { label: "ER Green Wave", value: "Enabled" },
+      { label: "Normal-traffic estimate", value: "13m 00s" },
+      { label: "GreenWave estimate", value: "06m 20s" },
+      { label: "Saved vs normal-traffic estimate", value: "06m 36s" },
     ]);
+  });
+
+  it("does not present a GreenWave estimate for a disabled run", () => {
+    const summary = summarizeFinishedRun(
+      {
+        estimated_normal_time_sec: 780,
+        estimated_greenwave_time_sec: 380,
+        green_wave_mode: "DISABLED",
+      },
+      { current_time_saved_sec: 260, total_time_elapsed_sec: 520 },
+    );
+
+    expect(summary).toEqual([
+      { label: "Total travel time", value: "08m 40s" },
+      { label: "ER Green Wave", value: "Disabled" },
+      { label: "Normal-traffic estimate", value: "13m 00s" },
+      { label: "Saved vs normal-traffic estimate", value: "04m 20s" },
+    ]);
+    expect(summary.some(({ label }) => /greenwave/i.test(label))).toBe(false);
   });
 });

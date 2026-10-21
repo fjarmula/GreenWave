@@ -13,9 +13,12 @@ import type {
   ErrorCode,
   ErrorResponse,
   GeocodeResponse,
+  GreenWaveMode,
   IntersectionState,
   QualityStatus,
   RouteIntersection,
+  SignalMovementKind,
+  SignalPhaseColor,
   SimulationStartResponse,
   SimulationStreamEvent,
   StationSourceKind,
@@ -39,6 +42,16 @@ const AMBULANCE_STATUSES: Record<AmbulanceStatus, true> = {
   APPROACHING_INTERSECTION: true,
   CROSSING_INTERSECTION: true,
   ARRIVED: true,
+};
+const GREEN_WAVE_MODES: Record<GreenWaveMode, true> = { ENABLED: true, DISABLED: true };
+const SIGNAL_PHASE_COLORS: Record<SignalPhaseColor, true> = {
+  RED: true,
+  YELLOW: true,
+  GREEN: true,
+};
+const SIGNAL_MOVEMENT_KINDS: Record<SignalMovementKind, true> = {
+  VEHICLE: true,
+  PEDESTRIAN: true,
 };
 const CANCEL_REASONS: Record<CancelReason, true> = { STOPPED: true, SUPERSEDED: true };
 const ERROR_CODES: Record<ErrorCode, true> = {
@@ -194,6 +207,7 @@ export function parseStartResponse(value: unknown): SimulationStartResponse {
   });
   snappedEndpoint(body.origin_snapped, "origin_snapped");
   snappedEndpoint(body.destination_snapped, "destination_snapped");
+  member(GREEN_WAVE_MODES, body.green_wave_mode, "green_wave_mode");
   return body as SimulationStartResponse;
 }
 
@@ -220,6 +234,16 @@ function checkStreamEvent(
         if (intersection.tti_seconds !== null) {
           finite(intersection.tti_seconds, `${path}.tti_seconds`);
         }
+      });
+      list(event.signal_phases, "signal_phases").forEach((item, index) => {
+        const path = `signal_phases[${index}]`;
+        const phase = record(item, path);
+        text(phase.intersection_id, `${path}.intersection_id`);
+        text(phase.signal_key, `${path}.signal_key`);
+        member(SIGNAL_MOVEMENT_KINDS, phase.kind, `${path}.kind`);
+        member(SIGNAL_PHASE_COLORS, phase.color, `${path}.color`);
+        position(phase.position, `${path}.position`);
+        text(phase.accessible_label, `${path}.accessible_label`);
       });
       return;
     }

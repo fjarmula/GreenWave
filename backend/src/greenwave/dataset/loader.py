@@ -48,6 +48,7 @@ from greenwave.dataset.integrity import (
     check_places,
     check_places_hashes,
     check_references,
+    check_signal_positions,
 )
 from greenwave.dataset.models import (
     IdsDocument,
@@ -97,6 +98,7 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
     addresses = read_parquet(processed_dir, ADDRESSES_FILENAME)
 
     check_references(graph, intersections, approaches, neighbours)  # check 3
+    check_signal_positions(graph, approaches)
     check_places(graph, stations, addresses)
     check_ids_file(ids.intersections, intersections)
     counts = check_counts(

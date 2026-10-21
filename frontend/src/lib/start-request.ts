@@ -1,11 +1,17 @@
 import type { PlaybackSpeed } from "@/lib/playback-speed";
 import type { Incident } from "@/lib/useIncidentDispatch";
-import type { SimulationStartRequest, Station, VehicleType } from "@/types/telemetry";
+import type {
+  GreenWaveMode,
+  SimulationStartRequest,
+  Station,
+  VehicleType,
+} from "@/types/telemetry";
 
 export type DispatchSettings = {
   trafficDensity: number;
   cascadeEnabled: boolean;
   playbackSpeed: PlaybackSpeed;
+  greenWaveMode: GreenWaveMode;
 };
 
 /** The run goes from the chosen station to the incident; the engine itself is unchanged. */
@@ -24,5 +30,6 @@ export function buildStartRequest(
     enable_cascade_mode: settings.cascadeEnabled,
     playback_speed: settings.playbackSpeed,
     vehicle_type: vehicleType,
+    green_wave_mode: settings.greenWaveMode,
   };
 }

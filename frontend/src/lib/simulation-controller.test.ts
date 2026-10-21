@@ -24,6 +24,7 @@ const LOST_AFTER_MILLISECONDS = 15_000;
 
 function request(simulationId: string): SimulationStartRequest {
   return {
+    green_wave_mode: "ENABLED",
     simulation_id: simulationId,
     origin: { lat: 50.06, lng: 19.95 },
     destination: { lat: 50.07, lng: 19.96 },
@@ -36,6 +37,7 @@ function request(simulationId: string): SimulationStartRequest {
 
 function response(simulationId: string): SimulationStartResponse {
   return {
+    green_wave_mode: "ENABLED",
     schema_version: "1.0",
     is_simulated: true,
     simulation_id: simulationId,
@@ -59,6 +61,7 @@ function response(simulationId: string): SimulationStartResponse {
 
 function tick(simulationId: string, n: number): SimulationTickEvent {
   return {
+    signal_phases: [],
     schema_version: "1.0",
     is_simulated: true,
     event_type: "SIMULATION_TICK",

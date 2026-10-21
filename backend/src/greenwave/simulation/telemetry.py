@@ -9,6 +9,7 @@ from greenwave.schemas import (
     AmbulanceTelemetry,
     IntersectionTelemetry,
     KpiMetrics,
+    SignalPhaseIndicator,
     SimulationCompletedEvent,
     SimulationTickEvent,
 )
@@ -33,7 +34,7 @@ def ambulance_telemetry(
 def _ambulance_status(state: EngineState) -> AmbulanceStatus:
     if state.arrived:
         return AmbulanceStatus.ARRIVED
-    if state.dwell_remaining_s:
+    if state.dwell_remaining_s or state.speed_limited_remaining_m:
         return AmbulanceStatus.CROSSING_INTERSECTION
     if any(
         not runtime.passed and runtime.state in ACTIVE_STATES
@@ -78,6 +79,7 @@ def kpi_metrics(
     normal += sum(
         item.delay_seconds for item, runtime in route_runtimes(route_model, state) if runtime.passed
     )
+    # Saved time compares with this simulated normal-traffic baseline in either mode.
     # The trip ends on arrival (D15); post-arrival recovery ticks (D19) do not add trip time.
     elapsed = state.arrived_at_s if state.arrived_at_s is not None else state.simulated_time_s
     return KpiMetrics(
@@ -93,6 +95,7 @@ def tick_event(
     ambulance: AmbulanceTelemetry,
     kpi: KpiMetrics,
     intersections: list[IntersectionTelemetry],
+    signal_phases: list[SignalPhaseIndicator],
 ) -> SimulationTickEvent:
     return SimulationTickEvent(
         schema_version="1.0",
@@ -104,6 +107,7 @@ def tick_event(
         ambulance=ambulance,
         kpi_metrics=kpi,
         intersections=intersections,
+        signal_phases=signal_phases,
     )
 
 

@@ -17,6 +17,14 @@ export const MOCK_RECOVERY_SECONDS = 15;
 export const MOCK_MIN_HOLD_SECONDS = 40;
 export const MOCK_HOLD_BUFFER_SECONDS = 5;
 
+// Mirrors of the backend's PoC signal programme and ER Green Wave disabled crossing, used only by
+// the mock: two movement groups (green, yellow, all-red), and a clearance wait of the default
+// signalised-junction delay x traffic density at each intersection (no priority, no dispatch).
+export const MOCK_SIGNAL_GREEN_SECONDS = 30;
+export const MOCK_SIGNAL_YELLOW_SECONDS = 3;
+export const MOCK_SIGNAL_ALL_RED_SECONDS = 2;
+export const MOCK_STANDARD_CLEARANCE_SECONDS = 35;
+
 /**
  * Real ids and names from the architecture example (Aleja 29 Listopada, about
  * 152 m apart). Positions are synthetic: the mock places them on its straight

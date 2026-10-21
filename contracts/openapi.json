@@ -228,6 +228,15 @@
         "title": "GeocodeResult",
         "type": "object"
       },
+      "GreenWaveMode": {
+        "description": "Whether the run pre-empts signals (``ENABLED``) or crosses them in standard traffic.",
+        "enum": [
+          "ENABLED",
+          "DISABLED"
+        ],
+        "title": "GreenWaveMode",
+        "type": "string"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -686,6 +695,61 @@
         "title": "RouteIntersection",
         "type": "object"
       },
+      "SignalMovementKind": {
+        "enum": [
+          "VEHICLE",
+          "PEDESTRIAN"
+        ],
+        "title": "SignalMovementKind",
+        "type": "string"
+      },
+      "SignalPhaseColor": {
+        "enum": [
+          "RED",
+          "YELLOW",
+          "GREEN"
+        ],
+        "title": "SignalPhaseColor",
+        "type": "string"
+      },
+      "SignalPhaseIndicator": {
+        "description": "One simulated signal indication at a known signal position; never a live signal state.",
+        "properties": {
+          "accessible_label": {
+            "minLength": 1,
+            "title": "Accessible Label",
+            "type": "string"
+          },
+          "color": {
+            "$ref": "#/components/schemas/SignalPhaseColor"
+          },
+          "intersection_id": {
+            "title": "Intersection Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SignalMovementKind"
+          },
+          "position": {
+            "$ref": "#/components/schemas/Position"
+          },
+          "signal_key": {
+            "minLength": 1,
+            "title": "Signal Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "intersection_id",
+          "signal_key",
+          "kind",
+          "color",
+          "position",
+          "accessible_label"
+        ],
+        "title": "SignalPhaseIndicator",
+        "type": "object"
+      },
       "SimulationCancelledEvent": {
         "properties": {
           "event_type": {
@@ -791,6 +855,10 @@
             "title": "Enable Cascade Mode",
             "type": "boolean"
           },
+          "green_wave_mode": {
+            "$ref": "#/components/schemas/GreenWaveMode",
+            "default": "ENABLED"
+          },
           "origin": {
             "$ref": "#/components/schemas/Position"
           },
@@ -841,6 +909,10 @@
             "minimum": 0.0,
             "title": "Estimated Normal Time Sec",
             "type": "integer"
+          },
+          "green_wave_mode": {
+            "$ref": "#/components/schemas/GreenWaveMode",
+            "default": "ENABLED"
           },
           "intersections_on_route": {
             "items": {
@@ -961,6 +1033,14 @@
             "const": "1.0",
             "title": "Schema Version",
             "type": "string"
+          },
+          "signal_phases": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SignalPhaseIndicator"
+            },
+            "title": "Signal Phases",
+            "type": "array"
           },
           "simulation_id": {
             "pattern": "^[A-Za-z0-9_-]{1,64}$",

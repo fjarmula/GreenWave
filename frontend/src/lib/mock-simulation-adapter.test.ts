@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMockSimulationAdapter } from "@/lib/mock-simulation-adapter";
 import type { ConnectionStatus, SimulationStreamSubscriber } from "@/lib/simulation-adapter";
 import type { SimulationErrorInfo } from "@/lib/transport/errors";
+import { parseStartResponse, parseStreamEvent } from "@/lib/transport/validate";
 import type {
   ItsDispatchEvent,
   SimulationCancelledEvent,
@@ -11,6 +12,7 @@ import type {
 } from "@/types/telemetry";
 
 const request: SimulationStartRequest = {
+  green_wave_mode: "ENABLED",
   simulation_id: "test",
   origin: { lat: 50.06, lng: 19.95 },
   destination: { lat: 50.07, lng: 19.96 },
@@ -224,4 +226,29 @@ describe("mock simulation stream", () => {
       expect.objectContaining({ reason: "STOPPED", simulation_id: "test" }),
     ]);
   });
+});
+
+describe("mock transport parity with the backend contract", () => {
+  it.each(["ENABLED", "DISABLED"] as const)(
+    "a %s run passes the backend transport validator end to end",
+    async (mode) => {
+      vi.useFakeTimers();
+      const adapter = createMockSimulationAdapter();
+      const modeRequest = { ...request, green_wave_mode: mode };
+      const route = await adapter.start(modeRequest);
+      const events = collect();
+      adapter.subscribe("test", events.subscriber);
+      vi.advanceTimersByTime(120_000);
+
+      const wire = (value: unknown) => JSON.parse(JSON.stringify(value)) as unknown;
+      expect(parseStartResponse(wire(route)).green_wave_mode).toBe(mode);
+      expect(events.completions).toHaveLength(1);
+      for (const event of [...events.ticks, ...events.dispatches, ...events.completions]) {
+        expect(parseStreamEvent(wire(event), "test")).not.toBeNull();
+      }
+      expect(events.ticks.every((tick) => tick.signal_phases.length > 0)).toBe(true);
+      if (mode === "DISABLED") expect(events.dispatches).toEqual([]);
+      else expect(events.dispatches.length).toBeGreaterThan(0);
+    },
+  );
 });

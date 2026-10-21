@@ -17,6 +17,7 @@ import type {
 const SIMULATION_ID = "test-simulation";
 
 const request: SimulationStartRequest = {
+  green_wave_mode: "ENABLED",
   simulation_id: SIMULATION_ID,
   origin: { lat: 50.0612, lng: 19.9571 },
   destination: { lat: 50.0134, lng: 19.9982 },
@@ -27,6 +28,7 @@ const request: SimulationStartRequest = {
 };
 
 const route: SimulationStartResponse = {
+  green_wave_mode: "ENABLED",
   schema_version: "1.0",
   is_simulated: true,
   simulation_id: SIMULATION_ID,
@@ -61,6 +63,7 @@ const route: SimulationStartResponse = {
 
 function tick(n: number, simulationId = SIMULATION_ID): SimulationTickEvent {
   return {
+    signal_phases: [],
     schema_version: "1.0",
     is_simulated: true,
     simulation_id: simulationId,

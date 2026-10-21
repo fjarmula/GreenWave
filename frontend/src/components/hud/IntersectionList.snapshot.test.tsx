@@ -16,6 +16,7 @@ describe("IntersectionList", () => {
       simulationState: "RUNNING",
       startRequest: null,
       routeData: {
+        green_wave_mode: "ENABLED",
         schema_version: "1.0",
         is_simulated: true,
         simulation_id: "detail",
@@ -48,6 +49,7 @@ describe("IntersectionList", () => {
         destination_snapped: { position: { lat: 50.1, lng: 20.0 }, snap_distance_m: 0 },
       },
       liveTelemetry: {
+        signal_phases: [],
         schema_version: "1.0",
         is_simulated: true,
         event_type: "SIMULATION_TICK",

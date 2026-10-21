@@ -8,7 +8,7 @@ from greenwave.its import ItsGateway
 from greenwave.routing.estimates import estimate_times
 from greenwave.routing.network_index import RoutingIndex
 from greenwave.routing.planner import plan_route
-from greenwave.schemas import SimulationStartRequest, SimulationStartResponse
+from greenwave.schemas import GreenWaveMode, SimulationStartRequest, SimulationStartResponse
 from greenwave.simulation.cascade_check import find_cascade_mismatches
 from greenwave.simulation.engine import SimulationEngine
 from greenwave.simulation.route_model import build_route_model, to_start_response
@@ -36,7 +36,10 @@ def plan_simulation(
 ) -> PlannedSimulation:
     """Route, model, estimate and configure; raises the routing errors of :func:`plan_route`."""
     route = plan_route(index, request.origin, request.destination, settings)
-    route_model = build_route_model(route, index, settings, request.enable_cascade_mode)
+    mode = request.green_wave_mode
+    # Cascade is a Green Wave implementation detail: a disabled run never pre-clears anything.
+    cascade_enabled = mode is GreenWaveMode.ENABLED and request.enable_cascade_mode
+    route_model = build_route_model(route, index, settings, cascade_enabled)
     for mismatch in find_cascade_mismatches(route, route_model, index):
         logger.warning(
             "cascade candidate mismatch source_id=%s target_id=%s source_edge_id=%s "
@@ -59,6 +62,9 @@ def plan_simulation(
         settings,
         gateway,
         request.vehicle_type,
+        mode,
     )
-    response = to_start_response(request.simulation_id, route, route_model, estimates, index)
+    response = to_start_response(
+        request.simulation_id, route, route_model, estimates, index, green_wave_mode=mode
+    )
     return PlannedSimulation(engine, response)

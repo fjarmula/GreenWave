@@ -5,9 +5,10 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 
-from greenwave.routing.network_index import RoutingIndex
+from greenwave.routing.network_index import RoutingIndex, SignalApproachRef
 from greenwave.routing.planner import PlannedRoute
 from greenwave.schemas.simulation import (
+    GreenWaveMode,
     Position,
     RouteGeometry,
     SimulationStartResponse,
@@ -30,6 +31,8 @@ class RouteIntersection:
     first_stop_line_m: float
     last_stop_line_m: float
     delay_seconds: float
+    approach_edge_ids: tuple[str, ...] = ()  # route edges ending at one of its stop lines
+    signals: tuple[SignalApproachRef, ...] = ()  # known signal positions; empty without geometry
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,18 +61,24 @@ def build_route_model(
     """Group stop lines by id, preserving first/last route positions and canonical delays."""
     del settings  # settings is part of the stable engine-facing builder interface.
     positions: dict[str, list[float]] = {}
+    edge_ids: dict[str, list[str]] = {}
     ordered_ids: list[str] = []
     for stop_line in route.stop_lines:
         if stop_line.intersection_id not in positions:
             positions[stop_line.intersection_id] = []
+            edge_ids[stop_line.intersection_id] = []
             ordered_ids.append(stop_line.intersection_id)
         positions[stop_line.intersection_id].append(stop_line.distance_along_route_m)
+        if stop_line.edge_id not in edge_ids[stop_line.intersection_id]:
+            edge_ids[stop_line.intersection_id].append(stop_line.edge_id)
     intersections = tuple(
         RouteIntersection(
             id=intersection_id,
             first_stop_line_m=min(positions[intersection_id]),
             last_stop_line_m=max(positions[intersection_id]),
             delay_seconds=index.intersection(intersection_id).delay_seconds,
+            approach_edge_ids=tuple(edge_ids[intersection_id]),
+            signals=index.signal_approaches(intersection_id),
         )
         for intersection_id in ordered_ids
     )
@@ -90,6 +99,7 @@ def to_start_response(
     route_model: RouteModel,
     estimates: "Estimates",
     index: RoutingIndex,
+    green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED,
 ) -> SimulationStartResponse:
     """Map route domain data to the frozen start-response contract at the API boundary."""
     route_intersections = [
@@ -124,4 +134,5 @@ def to_start_response(
             position=route.destination_snap.position,
             snap_distance_m=route.destination_snap.snap_distance_m,
         ),
+        green_wave_mode=green_wave_mode,
     )

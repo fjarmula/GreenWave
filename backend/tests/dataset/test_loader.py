@@ -684,3 +684,39 @@ def test_stations_count_mismatch_names_places_step(layout: Layout) -> None:
     with pytest.raises(CountMismatchError, match=STATIONS_FILENAME) as error:
         load_dataset(layout.processed, layout.manifest)
     assert "run_etl.py places" in str(error.value)
+
+
+@pytest.mark.parametrize("column", ["lon", "lat"])
+def test_loader_rejects_approaches_without_signal_positions(layout: Layout, column: str) -> None:
+    """Without signal positions the map would need invented phase-marker geometry."""
+    edit_parquet(layout.processed / APPROACHES_FILENAME, lambda frame: frame.drop(column))
+
+    with pytest.raises(
+        MalformedArtifactError,
+        match=rf"{APPROACHES_FILENAME} has no column '{column}'.*run_etl\.py intersections",
+    ):
+        load_dataset(layout.processed, layout.manifest)
+
+
+@pytest.mark.parametrize(
+    ("column", "bad"),
+    [("lat", None), ("lon", float("nan")), ("lat", float("inf")), ("lat", 10.0), ("lon", 120.0)],
+)
+def test_loader_rejects_invalid_signal_positions(
+    layout: Layout, column: str, bad: float | None
+) -> None:
+    edit_parquet(
+        layout.processed / APPROACHES_FILENAME,
+        lambda f: f.with_columns(
+            pl.when(pl.int_range(pl.len()) == 0)
+            .then(pl.lit(bad, dtype=pl.Float64))
+            .otherwise(pl.col(column))
+            .alias(column)
+        ),
+    )
+
+    with pytest.raises(
+        MalformedArtifactError, match=rf"{APPROACHES_FILENAME}.*'{column}'"
+    ) as error:
+        load_dataset(layout.processed, layout.manifest)
+    assert "run_etl.py intersections" in str(error.value)

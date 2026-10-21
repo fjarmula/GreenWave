@@ -18,6 +18,7 @@ import type {
   IntersectionTelemetry,
   Position,
   RouteIntersection,
+  SignalPhaseIndicator,
   Station,
   VehicleType,
 } from "@/types/telemetry";
@@ -25,6 +26,7 @@ import type {
 // Stable empty lists so marker effects do not re-run on every render without a route.
 const NO_ROUTE_INTERSECTIONS: RouteIntersection[] = [];
 const NO_INTERSECTIONS: IntersectionTelemetry[] = [];
+const NO_SIGNAL_PHASES: SignalPhaseIndicator[] = [];
 
 type MapContainerProps = {
   live: boolean;
@@ -125,6 +127,7 @@ export function MapContainer({
         visible={live}
         routeIntersections={routeData?.route_intersections ?? NO_ROUTE_INTERSECTIONS}
         intersections={liveTelemetry?.intersections ?? NO_INTERSECTIONS}
+        phases={liveTelemetry?.signal_phases ?? NO_SIGNAL_PHASES}
       />
     </div>
   );

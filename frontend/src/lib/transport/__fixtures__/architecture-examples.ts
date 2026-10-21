@@ -56,6 +56,7 @@ export const startResponseExample: SimulationStartResponse = {
   ],
   origin_snapped: { position: { lat: 50.0611, lng: 19.9568 }, snap_distance_m: 12.4 },
   destination_snapped: { position: { lat: 50.0136, lng: 19.9979 }, snap_distance_m: 31.7 },
+  green_wave_mode: "ENABLED",
 };
 
 export const tickEventExample: SimulationTickEvent = {
@@ -88,6 +89,24 @@ export const tickEventExample: SimulationTickEvent = {
       is_cascade: true,
       tti_seconds: 38,
       is_active_corridor: true,
+    },
+  ],
+  signal_phases: [
+    {
+      intersection_id: "INT-0360",
+      signal_key: "OSM-L1214",
+      kind: "VEHICLE",
+      color: "YELLOW",
+      position: { lat: 50.0663, lng: 19.9218 },
+      accessible_label: "Simulated vehicle signal OSM-L1214 at INT-0360: yellow",
+    },
+    {
+      intersection_id: "INT-0360",
+      signal_key: "OSM-L1214",
+      kind: "PEDESTRIAN",
+      color: "RED",
+      position: { lat: 50.0663, lng: 19.9218 },
+      accessible_label: "Simulated pedestrian signal OSM-L1214 at INT-0360: red",
     },
   ],
 };
