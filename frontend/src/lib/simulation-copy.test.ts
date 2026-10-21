@@ -8,7 +8,10 @@ import {
   formatSignedSeconds,
   greenWaveModeLabel,
   summarizeFinishedRun,
+  vehicleSpeedPresentation,
 } from "@/lib/simulation-copy";
+import type { SimulationPhase } from "@/lib/simulation-state";
+import type { AmbulanceStatus, SimulationTickEvent } from "@/types/telemetry";
 
 const API = "http://127.0.0.1:8000";
 
@@ -119,5 +122,73 @@ describe("summarizeFinishedRun", () => {
       { label: "Saved vs normal-traffic estimate", value: "04m 20s" },
     ]);
     expect(summary.some(({ label }) => /greenwave/i.test(label))).toBe(false);
+  });
+});
+
+function sample(speedKmh: number, status: AmbulanceStatus): SimulationTickEvent {
+  return {
+    schema_version: "1.0",
+    is_simulated: true,
+    simulation_id: "test-simulation",
+    event_type: "SIMULATION_TICK",
+    tick: 42,
+    timestamp: "2026-10-21T12:00:00Z",
+    ambulance: {
+      id: "AMB-KRA-01",
+      position: { lat: 50.06, lng: 19.94 },
+      speed_kmh: speedKmh,
+      status,
+    },
+    kpi_metrics: { current_time_saved_sec: 12, total_time_elapsed_sec: 42 },
+    intersections: [],
+    signal_phases: [],
+  };
+}
+
+describe("vehicleSpeedPresentation", () => {
+  const LAST_INTERVAL = "Speed during last simulated second";
+  const NO_CURRENT = { value: "—", label: "No current speed" };
+  const AWAITING = { value: "—", label: "Awaiting telemetry" };
+
+  it.each<[string, SimulationPhase, SimulationTickEvent | null, { value: string; label: string }]>([
+    [
+      "running, moving",
+      "RUNNING",
+      sample(37.46, "EN_ROUTE"),
+      { value: "37.5", label: LAST_INTERVAL },
+    ],
+    [
+      "running, zero-speed dwell",
+      "RUNNING",
+      sample(0, "APPROACHING_INTERSECTION"),
+      { value: "0.0", label: LAST_INTERVAL },
+    ],
+    [
+      "finished on a positive arrival tick",
+      "FINISHED",
+      sample(37.5, "ARRIVED"),
+      { value: "0.0", label: "At destination" },
+    ],
+    [
+      "finished with a non-arrived final sample",
+      "FINISHED",
+      sample(21.3, "EN_ROUTE"),
+      { value: "0.0", label: "At destination" },
+    ],
+    ["cancelled while moving", "CANCELLED", sample(54.2, "EN_ROUTE"), NO_CURRENT],
+    ["cancelled after an arrived sample", "CANCELLED", sample(37.5, "ARRIVED"), NO_CURRENT],
+    ["errored while moving", "ERROR", sample(48, "APPROACHING_INTERSECTION"), NO_CURRENT],
+    ["errored before any tick", "ERROR", null, NO_CURRENT],
+    ["setup", "SETUP", null, AWAITING],
+    ["starting", "STARTING", null, AWAITING],
+    ["running before the first tick", "RUNNING", null, AWAITING],
+  ])("%s", (_case, phase, telemetry, expected) => {
+    expect(vehicleSpeedPresentation(phase, telemetry)).toEqual(expected);
+  });
+
+  it("keeps the retained sample intact", () => {
+    const retained = sample(37.5, "ARRIVED");
+    vehicleSpeedPresentation("FINISHED", retained);
+    expect(retained.ambulance.speed_kmh).toBe(37.5);
   });
 });
