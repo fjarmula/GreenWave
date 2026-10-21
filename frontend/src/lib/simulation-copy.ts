@@ -4,6 +4,7 @@ import type { SimulationErrorInfo } from "@/lib/transport/errors";
 import type {
   CancelReason,
   ErrorCode,
+  GreenWaveMode,
   KpiMetrics,
   SimulationStartResponse,
 } from "@/types/telemetry";
@@ -63,17 +64,37 @@ export function formatSignedSeconds(seconds: number): string {
   return rounded < 0 ? `−${Math.abs(rounded)}s` : `+${rounded}s`;
 }
 
+export function greenWaveModeLabel(mode: GreenWaveMode): string {
+  return mode === "ENABLED" ? "ER Green Wave enabled" : "ER Green Wave disabled";
+}
+
+/**
+ * The simulated arrival time first, then the mode it was run in. Estimates are simulated
+ * baselines; the GreenWave estimate is shown only for a run that used ER Green Wave.
+ */
 export function summarizeFinishedRun(
   route: Pick<
     SimulationStartResponse,
-    "estimated_normal_time_sec" | "estimated_greenwave_time_sec"
+    "estimated_normal_time_sec" | "estimated_greenwave_time_sec" | "green_wave_mode"
   >,
   finalKpis: KpiMetrics,
 ): { label: string; value: string }[] {
+  const enabled = route.green_wave_mode === "ENABLED";
   return [
-    { label: "Estimated normal", value: formatDuration(route.estimated_normal_time_sec) },
-    { label: "Estimated GreenWave", value: formatDuration(route.estimated_greenwave_time_sec) },
-    { label: "Simulated elapsed", value: formatDuration(finalKpis.total_time_elapsed_sec) },
-    { label: "Final time saved", value: formatDuration(finalKpis.current_time_saved_sec) },
+    { label: "Total travel time", value: formatDuration(finalKpis.total_time_elapsed_sec) },
+    { label: "ER Green Wave", value: enabled ? "Enabled" : "Disabled" },
+    { label: "Normal-traffic estimate", value: formatDuration(route.estimated_normal_time_sec) },
+    ...(enabled
+      ? [
+          {
+            label: "GreenWave estimate",
+            value: formatDuration(route.estimated_greenwave_time_sec),
+          },
+        ]
+      : []),
+    {
+      label: "Saved vs normal-traffic estimate",
+      value: formatDuration(finalKpis.current_time_saved_sec),
+    },
   ];
 }

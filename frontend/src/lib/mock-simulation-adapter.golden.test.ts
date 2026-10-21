@@ -2,11 +2,12 @@ import { afterEach, expect, it, vi } from "vitest";
 import { createMockSimulationAdapter } from "@/lib/mock-simulation-adapter";
 import { MOCK_STREAM_INTERVAL_MILLISECONDS } from "@/lib/mock-simulation-config";
 import type { SimulationStreamSubscriber } from "@/lib/simulation-adapter";
-import type { SimulationStartRequest } from "@/types/telemetry";
+import type { GreenWaveMode, SimulationStartRequest } from "@/types/telemetry";
 
 type Scenario = {
   cascade: boolean;
   playback: 1 | 5;
+  mode?: GreenWaveMode;
   // Stopped runs call stop() after this many intervals instead of running to completion.
   stopAfterIntervals?: number;
 };
@@ -16,7 +17,22 @@ const SCENARIOS: readonly Scenario[] = [
   { cascade: false, playback: 1 },
   { cascade: true, playback: 5 },
   { cascade: true, playback: 1, stopAfterIntervals: 2 },
+  { cascade: true, playback: 5, mode: "DISABLED" },
 ];
+
+/** One line per tick for the phase samples, so the recording stays reviewable. */
+function compactPhases(payload: unknown): unknown {
+  if (typeof payload !== "object" || payload === null || !("signal_phases" in payload)) {
+    return payload;
+  }
+  const phases = (payload as { signal_phases: Array<Record<string, string>> }).signal_phases;
+  return {
+    ...payload,
+    signal_phases: phases
+      .map((p) => `${p.intersection_id}/${p.signal_key}/${p.kind}/${p.color}`)
+      .join(" "),
+  };
+}
 
 const MAX_INTERVALS = 10_000;
 const POST_STOP_INTERVALS = 5;
@@ -34,7 +50,7 @@ it("mock stream matches the recorded event sequence", async () => {
   for (const [index, scenario] of SCENARIOS.entries()) {
     const adapter = createMockSimulationAdapter();
     const request: SimulationStartRequest = {
-      green_wave_mode: "ENABLED",
+      green_wave_mode: scenario.mode ?? "ENABLED",
       simulation_id: `SIM-golden-${index}`,
       origin: { lng: originLng, lat: originLat },
       destination: { lng: destinationLng, lat: destinationLat },
@@ -45,7 +61,7 @@ it("mock stream matches the recorded event sequence", async () => {
     };
     let terminal = false;
     const record = (callback: string) => (payload: unknown) => {
-      records.push({ scenario: index, callback, payload });
+      records.push({ scenario: index, callback, payload: compactPhases(payload) });
     };
     const subscriber: SimulationStreamSubscriber = {
       onTick: record("onTick"),

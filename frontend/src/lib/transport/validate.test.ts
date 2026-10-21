@@ -218,3 +218,55 @@ describe("validateDatasetQuality", () => {
     expect(validateDatasetQuality(body).msip_export_timestamp).toBeNull();
   });
 });
+
+describe("ER Green Wave mode and signal phases", () => {
+  const PHASE = {
+    intersection_id: "INT-0360",
+    signal_key: "OSM-L4",
+    kind: "VEHICLE",
+    color: "GREEN",
+    position: { lat: 50.0612, lng: 19.9571 },
+    accessible_label: "Simulated vehicle signal OSM-L4 at INT-0360: green",
+  };
+  const withPhase = (mutate: (phase: Record<string, unknown>) => void = () => undefined) =>
+    wire(tickEventExample, (c) => {
+      const phase: Record<string, unknown> = JSON.parse(JSON.stringify(PHASE));
+      mutate(phase);
+      c.signal_phases = [phase];
+    });
+
+  it.each(["ENABLED", "DISABLED"])("accepts a start response in %s mode", (mode) => {
+    const body = wire(startResponseExample, (c) => (c.green_wave_mode = mode));
+    expect(parseStartResponse(body).green_wave_mode).toBe(mode);
+  });
+
+  it.each([
+    ["a missing mode", (c: Record<string, unknown>) => delete c.green_wave_mode],
+    ["an unknown mode", (c: Record<string, unknown>) => (c.green_wave_mode = "OFF")],
+  ])("rejects a start response with %s", (_label, mutate) => {
+    expect(() => parseStartResponse(wire(startResponseExample, mutate))).toThrow(TypeError);
+  });
+
+  it("accepts a tick with a valid phase indicator", () => {
+    expect(parseStreamEvent(withPhase(), SIMULATION_ID)).not.toBeNull();
+  });
+
+  it("rejects a tick without signal_phases", () => {
+    const event = wire(tickEventExample, (c) => delete c.signal_phases);
+    expect(parseStreamEvent(event, SIMULATION_ID)).toBeNull();
+  });
+
+  it.each([
+    ["an unknown colour", (p: Record<string, unknown>) => (p.color = "AMBER")],
+    ["an unknown kind", (p: Record<string, unknown>) => (p.kind = "CYCLIST")],
+    ["a missing position", (p: Record<string, unknown>) => delete p.position],
+    [
+      "a non-finite position",
+      (p: Record<string, unknown>) => (record(p.position).lat = JSON.parse("1e999")),
+    ],
+    ["a missing signal key", (p: Record<string, unknown>) => delete p.signal_key],
+    ["a missing label", (p: Record<string, unknown>) => delete p.accessible_label],
+  ])("rejects a phase indicator with %s", (_label, mutate) => {
+    expect(parseStreamEvent(withPhase(mutate), SIMULATION_ID)).toBeNull();
+  });
+});

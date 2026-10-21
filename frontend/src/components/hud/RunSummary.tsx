@@ -9,6 +9,7 @@ import {
   describeSimulationError,
   summarizeFinishedRun,
 } from "@/lib/simulation-copy";
+import type { SimulationCompletedEvent } from "@/types/telemetry";
 
 type RunSummaryProps = {
   onBackToSetup: () => void;
@@ -20,21 +21,7 @@ export function RunSummary({ onBackToSetup }: RunSummaryProps) {
 
   if (simulationState === "FINISHED" && routeData && completion) {
     return (
-      <SummaryCard
-        tone="success"
-        title="Simulated run completed"
-        detail="The simulated ambulance arrived and every simulated signal is back to NORMAL."
-        onBackToSetup={onBackToSetup}
-      >
-        <dl className="mt-3 grid grid-cols-2 gap-3">
-          {summarizeFinishedRun(routeData, completion.kpi_metrics).map(({ label, value }) => (
-            <div key={label}>
-              <dt className="text-[10px] text-muted-foreground">{label}</dt>
-              <dd className="mt-1 font-mono text-sm font-bold">{value}</dd>
-            </div>
-          ))}
-        </dl>
-      </SummaryCard>
+      <FinishedRunSummary route={routeData} completion={completion} onBackToSetup={onBackToSetup} />
     );
   }
 
@@ -65,6 +52,40 @@ export function RunSummary({ onBackToSetup }: RunSummaryProps) {
   }
 
   return null;
+}
+
+/** Completed run: the total travel time leads, in the mode the run used. */
+export function FinishedRunSummary({
+  route,
+  completion,
+  onBackToSetup,
+}: {
+  route: Parameters<typeof summarizeFinishedRun>[0];
+  completion: SimulationCompletedEvent;
+  onBackToSetup: () => void;
+}) {
+  const [total, ...details] = summarizeFinishedRun(route, completion.kpi_metrics);
+  return (
+    <SummaryCard
+      tone="success"
+      title="Simulated run completed"
+      detail="The simulated vehicle arrived and every simulated signal is back to NORMAL. Simulated times, not a real-world measurement."
+      onBackToSetup={onBackToSetup}
+    >
+      <dl className="mt-3 grid grid-cols-2 gap-3">
+        <div className="col-span-2 rounded-lg border border-emerald-500/25 bg-emerald-500/7 px-3 py-2">
+          <dt className="text-[10px] text-muted-foreground">{total.label}</dt>
+          <dd className="mt-1 font-mono text-2xl font-bold">{total.value}</dd>
+        </div>
+        {details.map(({ label, value }) => (
+          <div key={label}>
+            <dt className="text-[10px] text-muted-foreground">{label}</dt>
+            <dd className="mt-1 font-mono text-sm font-bold">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </SummaryCard>
+  );
 }
 
 const TONES = {

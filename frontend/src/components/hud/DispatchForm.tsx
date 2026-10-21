@@ -4,6 +4,7 @@ import { ArrowUpRight, Gauge, Radio, ShieldCheck, Target, TriangleAlert, Zap } f
 import { useState, type ReactNode } from "react";
 
 import { CascadeToggle } from "@/components/hud/dispatch/CascadeToggle";
+import { GreenWaveToggle } from "@/components/hud/dispatch/GreenWaveToggle";
 import { IncidentInput } from "@/components/hud/dispatch/IncidentInput";
 import { PlaybackSpeedSelector } from "@/components/hud/dispatch/PlaybackSpeedSelector";
 import { PreflightEstimate } from "@/components/hud/dispatch/PreflightEstimate";
@@ -16,6 +17,7 @@ import { DEFAULT_TRAFFIC_DENSITY_MULTIPLIER } from "@/lib/mock-simulation-config
 import type { PlaybackSpeed } from "@/lib/playback-speed";
 import type { DispatchSettings } from "@/lib/start-request";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
+import type { GreenWaveMode } from "@/types/telemetry";
 
 type DispatchFormProps = {
   /** Called only when a ranking exists; the dashboard starts from its best station. */
@@ -44,6 +46,7 @@ export function DispatchForm({
 }: DispatchFormProps) {
   const [trafficDensity, setTrafficDensity] = useState(DEFAULT_TRAFFIC_DENSITY_MULTIPLIER);
   const [cascadeEnabled, setCascadeEnabled] = useState(true);
+  const [greenWaveMode, setGreenWaveMode] = useState<GreenWaveMode>("ENABLED");
   const [playbackSpeed, setPlaybackSpeed] = useState<PlaybackSpeed>(1);
   const isMockTransport = getFrontendConfig().transport === "mock";
   const { incident, ranking, rankStatus } = dispatch;
@@ -101,9 +104,11 @@ export function DispatchForm({
       </div>
 
       <TrafficDensityControl value={trafficDensity} onChange={setTrafficDensity} />
+      <GreenWaveToggle mode={greenWaveMode} onChange={setGreenWaveMode} />
       <CascadeToggle
         enabled={cascadeEnabled}
         onToggle={() => setCascadeEnabled((enabled) => !enabled)}
+        disabled={greenWaveMode === "DISABLED"}
       />
       <PlaybackSpeedSelector value={playbackSpeed} onChange={setPlaybackSpeed} />
 
@@ -112,11 +117,17 @@ export function DispatchForm({
         data-testid="start-corridor"
         disabled={pending || !canStart}
         aria-busy={pending}
-        onClick={() => onInitialize({ trafficDensity, cascadeEnabled, playbackSpeed })}
+        onClick={() =>
+          onInitialize({ trafficDensity, cascadeEnabled, playbackSpeed, greenWaveMode })
+        }
         className={`mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 text-xs font-extrabold tracking-[0.08em] text-emerald-950 uppercase shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:opacity-70 disabled:hover:bg-emerald-500 ${pending ? "disabled:cursor-wait" : "disabled:cursor-not-allowed"}`}
       >
         <Zap className="size-4" aria-hidden />
-        {pending ? "Computing route…" : "Initialize green corridor"}
+        {pending
+          ? "Computing route…"
+          : greenWaveMode === "ENABLED"
+            ? "Initialize green corridor"
+            : "Start standard-traffic run"}
         <ArrowUpRight className="ml-auto size-4" aria-hidden />
       </button>
 

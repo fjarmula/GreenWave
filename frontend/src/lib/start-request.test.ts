@@ -16,7 +16,7 @@ it("starts at the station and ends at the incident with the vehicle type", () =>
     STATION,
     { position: { lat: 50.0617, lng: 19.9373 }, label: "Rynek Główny 1", source: "address" },
     "FIRE_TRUCK",
-    { trafficDensity: 2.3, cascadeEnabled: false, playbackSpeed: 5 },
+    { trafficDensity: 2.3, cascadeEnabled: false, playbackSpeed: 5, greenWaveMode: "ENABLED" },
     "SIM-1",
   );
 
@@ -30,4 +30,17 @@ it("starts at the station and ends at the incident with the vehicle type", () =>
     vehicle_type: "FIRE_TRUCK",
     green_wave_mode: "ENABLED",
   });
+});
+
+it("sends the selected ER Green Wave mode", () => {
+  const request = buildStartRequest(
+    STATION,
+    { position: { lat: 50.0617, lng: 19.9373 }, label: "Rynek Główny 1", source: "address" },
+    "AMBULANCE",
+    { trafficDensity: 1.5, cascadeEnabled: true, playbackSpeed: 1, greenWaveMode: "DISABLED" },
+    "SIM-2",
+  );
+
+  expect(request.green_wave_mode).toBe("DISABLED");
+  expect(request.enable_cascade_mode).toBe(true); // kept for the wire; ignored when disabled
 });
