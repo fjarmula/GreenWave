@@ -6,7 +6,7 @@ from tests.support.route_fixtures import corridor_index, position_at
 from greenwave.its import MockItsGateway
 from greenwave.routing.estimates import estimate_times
 from greenwave.routing.planner import plan_route
-from greenwave.schemas import SimulationStartRequest
+from greenwave.schemas import GreenWaveMode, SimulationStartRequest
 from greenwave.simulation.assembly import plan_simulation
 from greenwave.simulation.engine import SimulationEngine
 from greenwave.simulation.route_model import build_route_model, to_start_response
@@ -62,3 +62,41 @@ def test_assembly_logs_one_warning_per_mismatch_and_still_starts(
     assert "INT-A" in records[0].message and "INT-TWIN" in records[0].message
     assert "along_route_m=250.0" in records[0].message
     assert "candidate_m=None" in records[0].message
+
+
+def _mode_request(**extra: object) -> SimulationStartRequest:
+    return SimulationStartRequest.model_validate(
+        {
+            "simulation_id": "SIM-mode",
+            "origin": position_at(_X + 1_000).model_dump(),
+            "destination": position_at(_X + 1_850.02).model_dump(),
+            "traffic_density_multiplier": 1.5,
+            "enable_cascade_mode": True,
+            **extra,
+        }
+    )
+
+
+def test_a_legacy_request_plans_an_enabled_run_with_its_cascade() -> None:
+    settings, index, gateway = SimulationSettings(), corridor_index(), MockItsGateway()
+
+    planned = plan_simulation(index, _mode_request(), settings, gateway)
+
+    assert planned.response.green_wave_mode is GreenWaveMode.ENABLED
+    assert planned.engine.green_wave_mode is GreenWaveMode.ENABLED
+    assert planned.response.route_intersections[0].cascade_targets == ["INT-TWIN"]
+
+
+def test_a_disabled_run_ignores_the_cascade_toggle() -> None:
+    """Cascade is a Green Wave detail; a disabled run must never pre-clear later intersections."""
+    settings, index, gateway = SimulationSettings(), corridor_index(), MockItsGateway()
+
+    planned = plan_simulation(index, _mode_request(green_wave_mode="DISABLED"), settings, gateway)
+
+    assert planned.response.green_wave_mode is GreenWaveMode.DISABLED
+    assert planned.engine.green_wave_mode is GreenWaveMode.DISABLED
+    assert all(item.cascade_targets == [] for item in planned.response.route_intersections)
+    assert all(
+        planned.engine.route_model.cascade_targets(item.id) == ()
+        for item in planned.engine.route_model.intersections
+    )

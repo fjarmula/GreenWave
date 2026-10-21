@@ -53,6 +53,24 @@ class VehicleType(StrEnum):
     POLICE_CAR = "POLICE_CAR"
 
 
+class GreenWaveMode(StrEnum):
+    """Whether the run pre-empts signals (``ENABLED``) or crosses them in standard traffic."""
+
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
+
+
+class SignalPhaseColor(StrEnum):
+    RED = "RED"
+    YELLOW = "YELLOW"
+    GREEN = "GREEN"
+
+
+class SignalMovementKind(StrEnum):
+    VEHICLE = "VEHICLE"
+    PEDESTRIAN = "PEDESTRIAN"
+
+
 class ErrorCode(StrEnum):
     ORIGIN_OFF_NETWORK = "ORIGIN_OFF_NETWORK"
     DESTINATION_OFF_NETWORK = "DESTINATION_OFF_NETWORK"
@@ -87,6 +105,8 @@ class SimulationStartRequest(BaseModel):
     playback_speed: Annotated[int, Field(ge=1, le=10)] = 1
     # Optional so clients from before dispatch (ADR 0006) still start ambulance runs.
     vehicle_type: VehicleType = VehicleType.AMBULANCE
+    # Optional so clients from before the mode choice keep the existing priority behaviour.
+    green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED
 
 
 class SnappedEndpoint(BaseModel):
@@ -119,6 +139,7 @@ class SimulationStartResponse(BaseModel):
     route_intersections: list[RouteIntersection]  # route order; same ids as intersections_on_route
     origin_snapped: SnappedEndpoint
     destination_snapped: SnappedEndpoint
+    green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED  # the mode this run uses
 
 
 class AmbulanceTelemetry(BaseModel):
@@ -142,6 +163,17 @@ class IntersectionTelemetry(BaseModel):
     is_active_corridor: bool  # state in {CLEARING, PRIORITY_GREEN}; computed by the backend
 
 
+class SignalPhaseIndicator(BaseModel):
+    """One simulated signal indication at a known signal position; never a live signal state."""
+
+    intersection_id: str
+    signal_key: Annotated[str, Field(min_length=1)]  # stable within the intersection
+    kind: SignalMovementKind
+    color: SignalPhaseColor
+    position: Position
+    accessible_label: Annotated[str, Field(min_length=1)]
+
+
 class SimulationTickEvent(BaseModel):
     schema_version: SchemaVersion
     is_simulated: Literal[True]
@@ -152,6 +184,8 @@ class SimulationTickEvent(BaseModel):
     ambulance: AmbulanceTelemetry
     kpi_metrics: KpiMetrics
     intersections: list[IntersectionTelemetry]  # every route intersection, in route order
+    # Only intersections with known signal positions; additive, so it defaults to empty.
+    signal_phases: list[SignalPhaseIndicator] = []  # Pydantic copies the default per instance
 
 
 class ItsDispatchPayload(BaseModel):
@@ -234,6 +268,7 @@ __all__ = [
     "CancelReason",
     "ErrorCode",
     "ErrorResponse",
+    "GreenWaveMode",
     "IntersectionKind",
     "IntersectionState",
     "IntersectionTelemetry",
@@ -243,6 +278,9 @@ __all__ = [
     "Position",
     "RouteGeometry",
     "RouteIntersection",
+    "SignalMovementKind",
+    "SignalPhaseColor",
+    "SignalPhaseIndicator",
     "SimulationCancelledEvent",
     "SimulationCompletedEvent",
     "SimulationStartRequest",

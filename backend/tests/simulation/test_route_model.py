@@ -4,7 +4,7 @@ from tests.support.route_fixtures import corridor_index, position_at
 
 from greenwave.routing.estimates import Estimates
 from greenwave.routing.planner import plan_route
-from greenwave.schemas import SimulationStartResponse
+from greenwave.schemas import GreenWaveMode, SimulationStartResponse
 from greenwave.simulation.route_model import build_route_model, to_start_response
 from greenwave.simulation_settings import SimulationSettings
 
@@ -121,3 +121,22 @@ def test_start_response_cascade_targets_empty_when_cascade_disabled() -> None:
     response = _start_response(cascade_enabled=False)
 
     assert all(item.cascade_targets == [] for item in response.route_intersections)
+
+
+def test_start_response_reports_the_selected_green_wave_mode() -> None:
+    """A response that drops the mode lets a disabled result be read as a Green Wave one."""
+    settings = SimulationSettings()
+    index = corridor_index()
+    route = plan_route(index, position_at(7_422_000), position_at(7_422_850.02), settings)
+    model = build_route_model(route, index, settings, cascade_enabled=False)
+
+    response = to_start_response(
+        simulation_id="route-model-test",
+        route=route,
+        route_model=model,
+        estimates=Estimates(normal_seconds=185.002, greenwave_seconds=77.386153846),
+        index=index,
+        green_wave_mode=GreenWaveMode.DISABLED,
+    )
+
+    assert response.green_wave_mode is GreenWaveMode.DISABLED

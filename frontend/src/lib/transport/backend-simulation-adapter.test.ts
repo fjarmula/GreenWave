@@ -79,6 +79,7 @@ function latestSource(): FakeEventSource {
 }
 
 const request: SimulationStartRequest = {
+  green_wave_mode: "ENABLED",
   simulation_id: SIMULATION_ID,
   origin: { lat: 50.0612, lng: 19.9571 },
   destination: { lat: 50.0134, lng: 19.9982 },

@@ -28,5 +28,6 @@ it("starts at the station and ends at the incident with the vehicle type", () =>
     enable_cascade_mode: false,
     playback_speed: 5,
     vehicle_type: "FIRE_TRUCK",
+    green_wave_mode: "ENABLED",
   });
 });

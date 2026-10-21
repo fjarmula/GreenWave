@@ -11,6 +11,7 @@ from greenwave.its import ItsGateway
 from greenwave.routing.estimates import Estimates
 from greenwave.routing.planner import PlannedRoute
 from greenwave.schemas import (
+    GreenWaveMode,
     IntersectionState,
     ItsDispatchEvent,
     SimulationCompletedEvent,
@@ -51,9 +52,10 @@ class SimulationEngine:
         settings: SimulationSettings,
         gateway: ItsGateway,
         vehicle_type: VehicleType = VehicleType.AMBULANCE,
+        green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED,
     ) -> None:
         self.simulation_id, self.route, self.route_model = simulation_id, route, route_model
-        self.vehicle_type = vehicle_type
+        self.vehicle_type, self.green_wave_mode = vehicle_type, green_wave_mode
         self.traffic_density_multiplier = traffic_density_multiplier
         self.estimates, self.settings, self.gateway = estimates, settings, gateway
         self._track = RouteTrack.from_route(route, settings)

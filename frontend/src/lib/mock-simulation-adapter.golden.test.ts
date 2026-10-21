@@ -34,6 +34,7 @@ it("mock stream matches the recorded event sequence", async () => {
   for (const [index, scenario] of SCENARIOS.entries()) {
     const adapter = createMockSimulationAdapter();
     const request: SimulationStartRequest = {
+      green_wave_mode: "ENABLED",
       simulation_id: `SIM-golden-${index}`,
       origin: { lng: originLng, lat: originLat },
       destination: { lng: destinationLng, lat: destinationLat },

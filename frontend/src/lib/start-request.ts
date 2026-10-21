@@ -24,5 +24,6 @@ export function buildStartRequest(
     enable_cascade_mode: settings.cascadeEnabled,
     playback_speed: settings.playbackSpeed,
     vehicle_type: vehicleType,
+    green_wave_mode: "ENABLED",
   };
 }

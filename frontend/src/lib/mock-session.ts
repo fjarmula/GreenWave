@@ -105,6 +105,7 @@ function createMockRoute(request: SimulationStartRequest): SimulationStartRespon
     route_intersections: routeIntersections,
     origin_snapped: { position: request.origin, snap_distance_m: 0 },
     destination_snapped: { position: request.destination, snap_distance_m: 0 },
+    green_wave_mode: request.green_wave_mode,
   };
 }
 
@@ -190,6 +191,7 @@ export function buildMockTick(session: MockSession, timestamp: string): Simulati
       total_time_elapsed_sec: elapsed,
     },
     intersections,
+    signal_phases: [],
   };
 }
 

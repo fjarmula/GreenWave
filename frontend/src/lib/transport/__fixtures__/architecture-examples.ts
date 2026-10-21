@@ -14,6 +14,7 @@ import type {
 export const SIMULATION_ID = "SIM-20261025-01";
 
 export const startResponseExample: SimulationStartResponse = {
+  green_wave_mode: "ENABLED",
   schema_version: "1.0",
   is_simulated: true,
   simulation_id: SIMULATION_ID,
@@ -59,6 +60,7 @@ export const startResponseExample: SimulationStartResponse = {
 };
 
 export const tickEventExample: SimulationTickEvent = {
+  signal_phases: [],
   schema_version: "1.0",
   is_simulated: true,
   event_type: "SIMULATION_TICK",

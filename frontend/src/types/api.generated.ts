@@ -245,6 +245,12 @@ export interface components {
             label: string;
             position: components["schemas"]["Position"];
         };
+        /**
+         * GreenWaveMode
+         * @description Whether the run pre-empts signals (``ENABLED``) or crosses them in standard traffic.
+         * @enum {string}
+         */
+        GreenWaveMode: "ENABLED" | "DISABLED";
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -435,6 +441,31 @@ export interface components {
             /** Signal Count */
             signal_count: number;
         };
+        /**
+         * SignalMovementKind
+         * @enum {string}
+         */
+        SignalMovementKind: "VEHICLE" | "PEDESTRIAN";
+        /**
+         * SignalPhaseColor
+         * @enum {string}
+         */
+        SignalPhaseColor: "RED" | "YELLOW" | "GREEN";
+        /**
+         * SignalPhaseIndicator
+         * @description One simulated signal indication at a known signal position; never a live signal state.
+         */
+        SignalPhaseIndicator: {
+            /** Accessible Label */
+            accessible_label: string;
+            color: components["schemas"]["SignalPhaseColor"];
+            /** Intersection Id */
+            intersection_id: string;
+            kind: components["schemas"]["SignalMovementKind"];
+            position: components["schemas"]["Position"];
+            /** Signal Key */
+            signal_key: string;
+        };
         /** SimulationCancelledEvent */
         SimulationCancelledEvent: {
             /**
@@ -496,6 +527,8 @@ export interface components {
             destination: components["schemas"]["Position"];
             /** Enable Cascade Mode */
             enable_cascade_mode: boolean;
+            /** @default ENABLED */
+            green_wave_mode: components["schemas"]["GreenWaveMode"];
             origin: components["schemas"]["Position"];
             /**
              * Playback Speed
@@ -516,6 +549,8 @@ export interface components {
             estimated_greenwave_time_sec: number;
             /** Estimated Normal Time Sec */
             estimated_normal_time_sec: number;
+            /** @default ENABLED */
+            green_wave_mode: components["schemas"]["GreenWaveMode"];
             /** Intersections On Route */
             intersections_on_route: string[];
             /**
@@ -571,6 +606,11 @@ export interface components {
              * @constant
              */
             schema_version: "1.0";
+            /**
+             * Signal Phases
+             * @default []
+             */
+            signal_phases: components["schemas"]["SignalPhaseIndicator"][];
             /** Simulation Id */
             simulation_id: string;
             /** Tick */

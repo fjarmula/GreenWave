@@ -5,6 +5,7 @@ import { selectSimulationAdapter } from "@/lib/simulation-adapter";
 import type { SimulationStartRequest } from "@/types/telemetry";
 
 const request: SimulationStartRequest = {
+  green_wave_mode: "ENABLED",
   simulation_id: "select-test",
   origin: { lat: 50.06, lng: 19.95 },
   destination: { lat: 50.07, lng: 19.96 },

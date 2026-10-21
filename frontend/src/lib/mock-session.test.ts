@@ -4,6 +4,7 @@ import type { SimulationStartRequest } from "@/types/telemetry";
 
 function requestWithCascade(enableCascadeMode: boolean): SimulationStartRequest {
   return {
+    green_wave_mode: "ENABLED",
     simulation_id: "cascade",
     origin: { lat: 50.06, lng: 19.95 },
     destination: { lat: 50.07, lng: 19.96 },

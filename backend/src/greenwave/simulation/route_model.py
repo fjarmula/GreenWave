@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from greenwave.routing.network_index import RoutingIndex
 from greenwave.routing.planner import PlannedRoute
 from greenwave.schemas.simulation import (
+    GreenWaveMode,
     Position,
     RouteGeometry,
     SimulationStartResponse,
@@ -90,6 +91,7 @@ def to_start_response(
     route_model: RouteModel,
     estimates: "Estimates",
     index: RoutingIndex,
+    green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED,
 ) -> SimulationStartResponse:
     """Map route domain data to the frozen start-response contract at the API boundary."""
     route_intersections = [
@@ -124,4 +126,5 @@ def to_start_response(
             position=route.destination_snap.position,
             snap_distance_m=route.destination_snap.snap_distance_m,
         ),
+        green_wave_mode=green_wave_mode,
     )

@@ -11,6 +11,7 @@ import type {
 } from "@/types/telemetry";
 
 const request: SimulationStartRequest = {
+  green_wave_mode: "ENABLED",
   simulation_id: "test",
   origin: { lat: 50.06, lng: 19.95 },
   destination: { lat: 50.07, lng: 19.96 },

@@ -8,7 +8,10 @@ from pydantic import BaseModel, ValidationError
 
 from greenwave.schemas import (
     ErrorResponse,
+    GreenWaveMode,
     ItsDispatchEvent,
+    SignalMovementKind,
+    SignalPhaseColor,
     SimulationCancelledEvent,
     SimulationCompletedEvent,
     SimulationStartRequest,
@@ -282,3 +285,75 @@ def test_route_intersection_rejects_zero_signal_count() -> None:
             needs_review=False,
             cascade_targets=[],
         )
+
+
+def test_a_legacy_start_request_without_a_mode_runs_green_wave_enabled() -> None:
+    """Defaulting to disabled would silently change every existing client's runs."""
+    body = {k: v for k, v in start_request().items() if k != "green_wave_mode"}
+    assert SimulationStartRequest.model_validate(body).green_wave_mode is GreenWaveMode.ENABLED
+
+
+@pytest.mark.parametrize("mode", ["ENABLED", "DISABLED"])
+def test_start_request_accepts_both_green_wave_modes(mode: str) -> None:
+    body = {**start_request(), "green_wave_mode": mode}
+    assert SimulationStartRequest.model_validate(body).green_wave_mode == mode
+
+
+@pytest.mark.parametrize("mode", ["OFF", "enabled", True, None])
+def test_start_request_rejects_an_unknown_green_wave_mode(mode: object) -> None:
+    with pytest.raises(ValidationError):
+        SimulationStartRequest.model_validate({**start_request(), "green_wave_mode": mode})
+
+
+def test_start_response_carries_the_selected_mode() -> None:
+    body = {**example("route_geometry"), "green_wave_mode": "DISABLED"}
+    response = SimulationStartResponse.model_validate(body)
+    assert response.model_dump(mode="json")["green_wave_mode"] == "DISABLED"
+
+
+def test_start_response_without_a_mode_reports_enabled() -> None:
+    assert (
+        SimulationStartResponse.model_validate(example("route_geometry")).green_wave_mode
+        is GreenWaveMode.ENABLED
+    )
+
+
+def _phase(**overrides: object) -> dict[str, Any]:
+    return {
+        "intersection_id": "INT-1",
+        "signal_key": "INT-1:S1",
+        "kind": "VEHICLE",
+        "color": "GREEN",
+        "position": {"lat": 50.06, "lng": 19.94},
+        "accessible_label": "Simulated vehicle signal INT-1:S1: green",
+        **overrides,
+    }
+
+
+def test_a_tick_without_phases_has_an_empty_phase_list() -> None:
+    """Intersections without signal geometry must yield no markers, not an invalid tick."""
+    assert SimulationTickEvent.model_validate(tick()).signal_phases == []
+
+
+def test_a_tick_carries_valid_phase_indicators() -> None:
+    body = {**tick(), "signal_phases": [_phase(), _phase(kind="PEDESTRIAN", color="RED")]}
+    phases = SimulationTickEvent.model_validate(body).signal_phases
+    assert [(item.kind, item.color) for item in phases] == [
+        (SignalMovementKind.VEHICLE, SignalPhaseColor.GREEN),
+        (SignalMovementKind.PEDESTRIAN, SignalPhaseColor.RED),
+    ]
+
+
+@pytest.mark.parametrize(
+    "override",
+    [
+        {"color": "AMBER"},
+        {"kind": "CYCLIST"},
+        {"position": {"lat": 91.0, "lng": 19.94}},
+        {"signal_key": ""},
+        {"accessible_label": ""},
+    ],
+)
+def test_a_tick_rejects_an_invalid_phase_indicator(override: dict[str, object]) -> None:
+    with pytest.raises(ValidationError):
+        SimulationTickEvent.model_validate({**tick(), "signal_phases": [_phase(**override)]})

@@ -107,6 +107,7 @@
      "total_time_elapsed_sec": 1
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 1,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -162,6 +163,7 @@
      "total_time_elapsed_sec": 2
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 2,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -217,6 +219,7 @@
      "total_time_elapsed_sec": 3
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 3,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -272,6 +275,7 @@
      "total_time_elapsed_sec": 4
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 4,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -327,6 +331,7 @@
      "total_time_elapsed_sec": 5
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 5,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -382,6 +387,7 @@
      "total_time_elapsed_sec": 6
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 6,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -458,6 +464,7 @@
      "total_time_elapsed_sec": 7
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 7,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -513,6 +520,7 @@
      "total_time_elapsed_sec": 8
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 8,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -568,6 +576,7 @@
      "total_time_elapsed_sec": 9
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 9,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -623,6 +632,7 @@
      "total_time_elapsed_sec": 10
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 10,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -678,6 +688,7 @@
      "total_time_elapsed_sec": 11
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 11,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -733,6 +744,7 @@
      "total_time_elapsed_sec": 12
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 12,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -788,6 +800,7 @@
      "total_time_elapsed_sec": 13
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 13,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -843,6 +856,7 @@
      "total_time_elapsed_sec": 14
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 14,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -898,6 +912,7 @@
      "total_time_elapsed_sec": 15
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 15,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -953,6 +968,7 @@
      "total_time_elapsed_sec": 16
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 16,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1008,6 +1024,7 @@
      "total_time_elapsed_sec": 17
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 17,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1063,6 +1080,7 @@
      "total_time_elapsed_sec": 18
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 18,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1118,6 +1136,7 @@
      "total_time_elapsed_sec": 19
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 19,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1173,6 +1192,7 @@
      "total_time_elapsed_sec": 20
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 20,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1228,6 +1248,7 @@
      "total_time_elapsed_sec": 21
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 21,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1283,6 +1304,7 @@
      "total_time_elapsed_sec": 22
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 22,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1338,6 +1360,7 @@
      "total_time_elapsed_sec": 23
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 23,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1393,6 +1416,7 @@
      "total_time_elapsed_sec": 24
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 24,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1448,6 +1472,7 @@
      "total_time_elapsed_sec": 25
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 25,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1503,6 +1528,7 @@
      "total_time_elapsed_sec": 26
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 26,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1558,6 +1584,7 @@
      "total_time_elapsed_sec": 27
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 27,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1613,6 +1640,7 @@
      "total_time_elapsed_sec": 28
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 28,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1689,6 +1717,7 @@
      "total_time_elapsed_sec": 29
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 29,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1744,6 +1773,7 @@
      "total_time_elapsed_sec": 30
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 30,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1799,6 +1829,7 @@
      "total_time_elapsed_sec": 31
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 31,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1854,6 +1885,7 @@
      "total_time_elapsed_sec": 32
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 32,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1909,6 +1941,7 @@
      "total_time_elapsed_sec": 33
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 33,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -1964,6 +1997,7 @@
      "total_time_elapsed_sec": 34
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 34,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2019,6 +2053,7 @@
      "total_time_elapsed_sec": 35
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 35,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2074,6 +2109,7 @@
      "total_time_elapsed_sec": 36
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 36,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2129,6 +2165,7 @@
      "total_time_elapsed_sec": 37
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 37,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2184,6 +2221,7 @@
      "total_time_elapsed_sec": 38
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 38,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2239,6 +2277,7 @@
      "total_time_elapsed_sec": 39
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 39,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2294,6 +2333,7 @@
      "total_time_elapsed_sec": 40
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 40,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2349,6 +2389,7 @@
      "total_time_elapsed_sec": 41
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 41,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2404,6 +2445,7 @@
      "total_time_elapsed_sec": 42
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 42,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2459,6 +2501,7 @@
      "total_time_elapsed_sec": 43
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 43,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2514,6 +2557,7 @@
      "total_time_elapsed_sec": 44
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 44,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2569,6 +2613,7 @@
      "total_time_elapsed_sec": 45
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 45,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2624,6 +2669,7 @@
      "total_time_elapsed_sec": 46
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 46,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2679,6 +2725,7 @@
      "total_time_elapsed_sec": 47
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 47,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2734,6 +2781,7 @@
      "total_time_elapsed_sec": 48
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 48,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2789,6 +2837,7 @@
      "total_time_elapsed_sec": 49
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 49,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2844,6 +2893,7 @@
      "total_time_elapsed_sec": 50
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 50,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2899,6 +2949,7 @@
      "total_time_elapsed_sec": 51
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 51,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -2954,6 +3005,7 @@
      "total_time_elapsed_sec": 52
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 52,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3009,6 +3061,7 @@
      "total_time_elapsed_sec": 53
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 53,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3064,6 +3117,7 @@
      "total_time_elapsed_sec": 54
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 54,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3119,6 +3173,7 @@
      "total_time_elapsed_sec": 55
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 55,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3174,6 +3229,7 @@
      "total_time_elapsed_sec": 56
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 56,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3229,6 +3285,7 @@
      "total_time_elapsed_sec": 57
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 57,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3284,6 +3341,7 @@
      "total_time_elapsed_sec": 58
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 58,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3339,6 +3397,7 @@
      "total_time_elapsed_sec": 59
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 59,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3394,6 +3453,7 @@
      "total_time_elapsed_sec": 60
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 60,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3449,6 +3509,7 @@
      "total_time_elapsed_sec": 61
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 61,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3504,6 +3565,7 @@
      "total_time_elapsed_sec": 62
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 62,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3559,6 +3621,7 @@
      "total_time_elapsed_sec": 63
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 63,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3614,6 +3677,7 @@
      "total_time_elapsed_sec": 64
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 64,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3669,6 +3733,7 @@
      "total_time_elapsed_sec": 65
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 65,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3724,6 +3789,7 @@
      "total_time_elapsed_sec": 66
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 66,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3779,6 +3845,7 @@
      "total_time_elapsed_sec": 67
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 67,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3834,6 +3901,7 @@
      "total_time_elapsed_sec": 68
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 68,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3889,6 +3957,7 @@
      "total_time_elapsed_sec": 69
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 69,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3944,6 +4013,7 @@
      "total_time_elapsed_sec": 70
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 70,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -3999,6 +4069,7 @@
      "total_time_elapsed_sec": 71
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 71,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4054,6 +4125,7 @@
      "total_time_elapsed_sec": 72
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 72,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4109,6 +4181,7 @@
      "total_time_elapsed_sec": 73
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 73,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4164,6 +4237,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 74,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4219,6 +4293,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 75,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4274,6 +4349,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 76,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4329,6 +4405,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 77,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4384,6 +4461,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 78,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4439,6 +4517,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 79,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4494,6 +4573,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 80,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4549,6 +4629,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 81,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4604,6 +4685,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 82,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4659,6 +4741,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 83,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4714,6 +4797,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 84,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4769,6 +4853,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 85,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4824,6 +4909,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 86,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4879,6 +4965,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 87,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4934,6 +5021,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 88,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -4989,6 +5077,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 89,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5044,6 +5133,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x1",
     "tick": 90,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5209,6 +5299,7 @@
      "total_time_elapsed_sec": 5
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 5,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5285,6 +5376,7 @@
      "total_time_elapsed_sec": 10
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 10,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5340,6 +5432,7 @@
      "total_time_elapsed_sec": 15
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 15,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5395,6 +5488,7 @@
      "total_time_elapsed_sec": 20
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 20,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5450,6 +5544,7 @@
      "total_time_elapsed_sec": 25
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 25,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5526,6 +5621,7 @@
      "total_time_elapsed_sec": 30
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 30,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5581,6 +5677,7 @@
      "total_time_elapsed_sec": 35
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 35,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5636,6 +5733,7 @@
      "total_time_elapsed_sec": 40
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 40,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5691,6 +5789,7 @@
      "total_time_elapsed_sec": 45
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 45,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5746,6 +5845,7 @@
      "total_time_elapsed_sec": 50
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 50,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5801,6 +5901,7 @@
      "total_time_elapsed_sec": 55
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 55,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5856,6 +5957,7 @@
      "total_time_elapsed_sec": 60
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 60,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5911,6 +6013,7 @@
      "total_time_elapsed_sec": 65
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 65,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -5966,6 +6069,7 @@
      "total_time_elapsed_sec": 70
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 70,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6021,6 +6125,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 75,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6076,6 +6181,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 80,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6131,6 +6237,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 85,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6186,6 +6293,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-cascade_x5",
     "tick": 90,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6351,6 +6459,7 @@
      "total_time_elapsed_sec": 1
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 1,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6406,6 +6515,7 @@
      "total_time_elapsed_sec": 2
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 2,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6461,6 +6571,7 @@
      "total_time_elapsed_sec": 3
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 3,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6516,6 +6627,7 @@
      "total_time_elapsed_sec": 4
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 4,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6571,6 +6683,7 @@
      "total_time_elapsed_sec": 5
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 5,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6626,6 +6739,7 @@
      "total_time_elapsed_sec": 6
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 6,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6702,6 +6816,7 @@
      "total_time_elapsed_sec": 7
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 7,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6757,6 +6872,7 @@
      "total_time_elapsed_sec": 8
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 8,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6812,6 +6928,7 @@
      "total_time_elapsed_sec": 9
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 9,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6867,6 +6984,7 @@
      "total_time_elapsed_sec": 10
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 10,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6922,6 +7040,7 @@
      "total_time_elapsed_sec": 11
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 11,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -6977,6 +7096,7 @@
      "total_time_elapsed_sec": 12
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 12,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7032,6 +7152,7 @@
      "total_time_elapsed_sec": 13
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 13,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7087,6 +7208,7 @@
      "total_time_elapsed_sec": 14
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 14,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7142,6 +7264,7 @@
      "total_time_elapsed_sec": 15
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 15,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7197,6 +7320,7 @@
      "total_time_elapsed_sec": 16
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 16,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7252,6 +7376,7 @@
      "total_time_elapsed_sec": 17
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 17,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7307,6 +7432,7 @@
      "total_time_elapsed_sec": 18
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 18,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7362,6 +7488,7 @@
      "total_time_elapsed_sec": 19
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 19,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7417,6 +7544,7 @@
      "total_time_elapsed_sec": 20
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 20,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7472,6 +7600,7 @@
      "total_time_elapsed_sec": 21
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 21,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7527,6 +7656,7 @@
      "total_time_elapsed_sec": 22
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 22,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7582,6 +7712,7 @@
      "total_time_elapsed_sec": 23
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 23,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7637,6 +7768,7 @@
      "total_time_elapsed_sec": 24
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 24,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7692,6 +7824,7 @@
      "total_time_elapsed_sec": 25
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 25,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7747,6 +7880,7 @@
      "total_time_elapsed_sec": 26
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 26,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7802,6 +7936,7 @@
      "total_time_elapsed_sec": 27
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 27,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7857,6 +7992,7 @@
      "total_time_elapsed_sec": 28
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 28,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7933,6 +8069,7 @@
      "total_time_elapsed_sec": 29
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 29,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -7988,6 +8125,7 @@
      "total_time_elapsed_sec": 30
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 30,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8043,6 +8181,7 @@
      "total_time_elapsed_sec": 31
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 31,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8098,6 +8237,7 @@
      "total_time_elapsed_sec": 32
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 32,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8153,6 +8293,7 @@
      "total_time_elapsed_sec": 33
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 33,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8208,6 +8349,7 @@
      "total_time_elapsed_sec": 34
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 34,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8263,6 +8405,7 @@
      "total_time_elapsed_sec": 35
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 35,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8318,6 +8461,7 @@
      "total_time_elapsed_sec": 36
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 36,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8373,6 +8517,7 @@
      "total_time_elapsed_sec": 37
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 37,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8428,6 +8573,7 @@
      "total_time_elapsed_sec": 38
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 38,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8483,6 +8629,7 @@
      "total_time_elapsed_sec": 39
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 39,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8538,6 +8685,7 @@
      "total_time_elapsed_sec": 40
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 40,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8593,6 +8741,7 @@
      "total_time_elapsed_sec": 41
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 41,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8648,6 +8797,7 @@
      "total_time_elapsed_sec": 42
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 42,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8703,6 +8853,7 @@
      "total_time_elapsed_sec": 43
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 43,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8758,6 +8909,7 @@
      "total_time_elapsed_sec": 44
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 44,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8813,6 +8965,7 @@
      "total_time_elapsed_sec": 45
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 45,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8868,6 +9021,7 @@
      "total_time_elapsed_sec": 46
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 46,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8923,6 +9077,7 @@
      "total_time_elapsed_sec": 47
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 47,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -8978,6 +9133,7 @@
      "total_time_elapsed_sec": 48
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 48,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9033,6 +9189,7 @@
      "total_time_elapsed_sec": 49
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 49,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9088,6 +9245,7 @@
      "total_time_elapsed_sec": 50
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 50,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9143,6 +9301,7 @@
      "total_time_elapsed_sec": 51
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 51,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9198,6 +9357,7 @@
      "total_time_elapsed_sec": 52
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 52,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9253,6 +9413,7 @@
      "total_time_elapsed_sec": 53
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 53,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9308,6 +9469,7 @@
      "total_time_elapsed_sec": 54
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 54,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9363,6 +9525,7 @@
      "total_time_elapsed_sec": 55
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 55,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9418,6 +9581,7 @@
      "total_time_elapsed_sec": 56
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 56,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9473,6 +9637,7 @@
      "total_time_elapsed_sec": 57
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 57,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9528,6 +9693,7 @@
      "total_time_elapsed_sec": 58
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 58,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9583,6 +9749,7 @@
      "total_time_elapsed_sec": 59
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 59,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9638,6 +9805,7 @@
      "total_time_elapsed_sec": 60
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 60,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9693,6 +9861,7 @@
      "total_time_elapsed_sec": 61
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 61,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9748,6 +9917,7 @@
      "total_time_elapsed_sec": 62
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 62,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9803,6 +9973,7 @@
      "total_time_elapsed_sec": 63
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 63,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9858,6 +10029,7 @@
      "total_time_elapsed_sec": 64
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 64,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9913,6 +10085,7 @@
      "total_time_elapsed_sec": 65
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 65,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -9968,6 +10141,7 @@
      "total_time_elapsed_sec": 66
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 66,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10023,6 +10197,7 @@
      "total_time_elapsed_sec": 67
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 67,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10078,6 +10253,7 @@
      "total_time_elapsed_sec": 68
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 68,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10133,6 +10309,7 @@
      "total_time_elapsed_sec": 69
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 69,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10188,6 +10365,7 @@
      "total_time_elapsed_sec": 70
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 70,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10243,6 +10421,7 @@
      "total_time_elapsed_sec": 71
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 71,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10298,6 +10477,7 @@
      "total_time_elapsed_sec": 72
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 72,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10353,6 +10533,7 @@
      "total_time_elapsed_sec": 73
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 73,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10408,6 +10589,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 74,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10463,6 +10645,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 75,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10518,6 +10701,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 76,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10573,6 +10757,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 77,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10628,6 +10813,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 78,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10683,6 +10869,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 79,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10738,6 +10925,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 80,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10793,6 +10981,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 81,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10848,6 +11037,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 82,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10903,6 +11093,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 83,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -10958,6 +11149,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 84,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11013,6 +11205,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 85,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11068,6 +11261,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 86,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11123,6 +11317,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 87,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11178,6 +11373,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 88,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11233,6 +11429,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 89,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11288,6 +11485,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-no_cascade_x1",
     "tick": 90,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11453,6 +11651,7 @@
      "total_time_elapsed_sec": 1
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 1,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11508,6 +11707,7 @@
      "total_time_elapsed_sec": 2
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 2,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11563,6 +11763,7 @@
      "total_time_elapsed_sec": 3
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 3,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11618,6 +11819,7 @@
      "total_time_elapsed_sec": 4
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 4,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11673,6 +11875,7 @@
      "total_time_elapsed_sec": 5
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 5,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11728,6 +11931,7 @@
      "total_time_elapsed_sec": 6
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 6,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11783,6 +11987,7 @@
      "total_time_elapsed_sec": 7
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 7,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11838,6 +12043,7 @@
      "total_time_elapsed_sec": 8
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 8,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11893,6 +12099,7 @@
      "total_time_elapsed_sec": 9
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 9,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -11948,6 +12155,7 @@
      "total_time_elapsed_sec": 10
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 10,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12003,6 +12211,7 @@
      "total_time_elapsed_sec": 11
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 11,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12058,6 +12267,7 @@
      "total_time_elapsed_sec": 12
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 12,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12113,6 +12323,7 @@
      "total_time_elapsed_sec": 13
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 13,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12168,6 +12379,7 @@
      "total_time_elapsed_sec": 14
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 14,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12223,6 +12435,7 @@
      "total_time_elapsed_sec": 15
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 15,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12278,6 +12491,7 @@
      "total_time_elapsed_sec": 16
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 16,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12333,6 +12547,7 @@
      "total_time_elapsed_sec": 17
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 17,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12388,6 +12603,7 @@
      "total_time_elapsed_sec": 18
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 18,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12443,6 +12659,7 @@
      "total_time_elapsed_sec": 19
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 19,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12498,6 +12715,7 @@
      "total_time_elapsed_sec": 20
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 20,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12553,6 +12771,7 @@
      "total_time_elapsed_sec": 21
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 21,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12608,6 +12827,7 @@
      "total_time_elapsed_sec": 22
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 22,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12663,6 +12883,7 @@
      "total_time_elapsed_sec": 23
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 23,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12718,6 +12939,7 @@
      "total_time_elapsed_sec": 24
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 24,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12773,6 +12995,7 @@
      "total_time_elapsed_sec": 25
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 25,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12828,6 +13051,7 @@
      "total_time_elapsed_sec": 26
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 26,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12883,6 +13107,7 @@
      "total_time_elapsed_sec": 27
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 27,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12938,6 +13163,7 @@
      "total_time_elapsed_sec": 28
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 28,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -12993,6 +13219,7 @@
      "total_time_elapsed_sec": 29
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 29,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13048,6 +13275,7 @@
      "total_time_elapsed_sec": 30
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 30,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13103,6 +13331,7 @@
      "total_time_elapsed_sec": 31
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 31,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13158,6 +13387,7 @@
      "total_time_elapsed_sec": 32
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 32,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13213,6 +13443,7 @@
      "total_time_elapsed_sec": 33
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 33,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13268,6 +13499,7 @@
      "total_time_elapsed_sec": 34
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 34,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13323,6 +13555,7 @@
      "total_time_elapsed_sec": 35
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 35,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13378,6 +13611,7 @@
      "total_time_elapsed_sec": 36
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 36,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13433,6 +13667,7 @@
      "total_time_elapsed_sec": 37
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 37,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13488,6 +13723,7 @@
      "total_time_elapsed_sec": 38
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 38,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13543,6 +13779,7 @@
      "total_time_elapsed_sec": 39
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 39,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13598,6 +13835,7 @@
      "total_time_elapsed_sec": 40
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 40,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13653,6 +13891,7 @@
      "total_time_elapsed_sec": 41
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 41,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13708,6 +13947,7 @@
      "total_time_elapsed_sec": 42
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 42,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13784,6 +14024,7 @@
      "total_time_elapsed_sec": 43
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 43,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13839,6 +14080,7 @@
      "total_time_elapsed_sec": 44
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 44,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13894,6 +14136,7 @@
      "total_time_elapsed_sec": 45
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 45,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -13949,6 +14192,7 @@
      "total_time_elapsed_sec": 46
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 46,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14004,6 +14248,7 @@
      "total_time_elapsed_sec": 47
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 47,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14059,6 +14304,7 @@
      "total_time_elapsed_sec": 48
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 48,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14114,6 +14360,7 @@
      "total_time_elapsed_sec": 49
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 49,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14169,6 +14416,7 @@
      "total_time_elapsed_sec": 50
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 50,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14224,6 +14472,7 @@
      "total_time_elapsed_sec": 51
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 51,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14279,6 +14528,7 @@
      "total_time_elapsed_sec": 52
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 52,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14334,6 +14584,7 @@
      "total_time_elapsed_sec": 53
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 53,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14389,6 +14640,7 @@
      "total_time_elapsed_sec": 54
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 54,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14444,6 +14696,7 @@
      "total_time_elapsed_sec": 55
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 55,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14499,6 +14752,7 @@
      "total_time_elapsed_sec": 56
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 56,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14554,6 +14808,7 @@
      "total_time_elapsed_sec": 57
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 57,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14609,6 +14864,7 @@
      "total_time_elapsed_sec": 58
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 58,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14664,6 +14920,7 @@
      "total_time_elapsed_sec": 59
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 59,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14719,6 +14976,7 @@
      "total_time_elapsed_sec": 60
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 60,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14774,6 +15032,7 @@
      "total_time_elapsed_sec": 61
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 61,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14829,6 +15088,7 @@
      "total_time_elapsed_sec": 62
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 62,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14884,6 +15144,7 @@
      "total_time_elapsed_sec": 63
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 63,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -14939,6 +15200,7 @@
      "total_time_elapsed_sec": 64
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 64,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15015,6 +15277,7 @@
      "total_time_elapsed_sec": 65
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 65,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15070,6 +15333,7 @@
      "total_time_elapsed_sec": 66
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 66,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15125,6 +15389,7 @@
      "total_time_elapsed_sec": 67
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 67,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15180,6 +15445,7 @@
      "total_time_elapsed_sec": 68
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 68,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15235,6 +15501,7 @@
      "total_time_elapsed_sec": 69
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 69,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15290,6 +15557,7 @@
      "total_time_elapsed_sec": 70
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 70,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15345,6 +15613,7 @@
      "total_time_elapsed_sec": 71
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 71,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15400,6 +15669,7 @@
      "total_time_elapsed_sec": 72
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 72,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15455,6 +15725,7 @@
      "total_time_elapsed_sec": 73
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 73,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15510,6 +15781,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 74,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15565,6 +15837,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 75,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15620,6 +15893,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 76,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15675,6 +15949,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 77,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15730,6 +16005,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 78,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15785,6 +16061,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 79,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15840,6 +16117,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 80,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15895,6 +16173,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 81,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -15950,6 +16229,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 82,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16005,6 +16285,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 83,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16060,6 +16341,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 84,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16115,6 +16397,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 85,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16170,6 +16453,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 86,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16225,6 +16509,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 87,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16280,6 +16565,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 88,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16335,6 +16621,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 89,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16390,6 +16677,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_cascade_x1",
     "tick": 90,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16563,6 +16851,7 @@
      "total_time_elapsed_sec": 1
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 1,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16618,6 +16907,7 @@
      "total_time_elapsed_sec": 2
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 2,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16673,6 +16963,7 @@
      "total_time_elapsed_sec": 3
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 3,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16728,6 +17019,7 @@
      "total_time_elapsed_sec": 4
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 4,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16783,6 +17075,7 @@
      "total_time_elapsed_sec": 5
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 5,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16838,6 +17131,7 @@
      "total_time_elapsed_sec": 6
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 6,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16893,6 +17187,7 @@
      "total_time_elapsed_sec": 7
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 7,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -16948,6 +17243,7 @@
      "total_time_elapsed_sec": 8
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 8,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17003,6 +17299,7 @@
      "total_time_elapsed_sec": 9
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 9,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17058,6 +17355,7 @@
      "total_time_elapsed_sec": 10
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 10,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17113,6 +17411,7 @@
      "total_time_elapsed_sec": 11
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 11,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17168,6 +17467,7 @@
      "total_time_elapsed_sec": 12
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 12,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17223,6 +17523,7 @@
      "total_time_elapsed_sec": 13
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 13,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17278,6 +17579,7 @@
      "total_time_elapsed_sec": 14
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 14,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17333,6 +17635,7 @@
      "total_time_elapsed_sec": 15
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 15,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17388,6 +17691,7 @@
      "total_time_elapsed_sec": 16
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 16,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17443,6 +17747,7 @@
      "total_time_elapsed_sec": 17
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 17,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17498,6 +17803,7 @@
      "total_time_elapsed_sec": 18
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 18,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17553,6 +17859,7 @@
      "total_time_elapsed_sec": 19
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 19,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17608,6 +17915,7 @@
      "total_time_elapsed_sec": 20
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 20,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17684,6 +17992,7 @@
      "total_time_elapsed_sec": 21
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 21,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17739,6 +18048,7 @@
      "total_time_elapsed_sec": 22
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 22,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17794,6 +18104,7 @@
      "total_time_elapsed_sec": 23
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 23,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17849,6 +18160,7 @@
      "total_time_elapsed_sec": 24
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 24,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17904,6 +18216,7 @@
      "total_time_elapsed_sec": 25
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 25,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -17959,6 +18272,7 @@
      "total_time_elapsed_sec": 26
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 26,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18014,6 +18328,7 @@
      "total_time_elapsed_sec": 27
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 27,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18069,6 +18384,7 @@
      "total_time_elapsed_sec": 28
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 28,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18124,6 +18440,7 @@
      "total_time_elapsed_sec": 29
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 29,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18179,6 +18496,7 @@
      "total_time_elapsed_sec": 30
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 30,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18234,6 +18552,7 @@
      "total_time_elapsed_sec": 31
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 31,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18289,6 +18608,7 @@
      "total_time_elapsed_sec": 32
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 32,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18344,6 +18664,7 @@
      "total_time_elapsed_sec": 33
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 33,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18399,6 +18720,7 @@
      "total_time_elapsed_sec": 34
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 34,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18454,6 +18776,7 @@
      "total_time_elapsed_sec": 35
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 35,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18509,6 +18832,7 @@
      "total_time_elapsed_sec": 36
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 36,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18564,6 +18888,7 @@
      "total_time_elapsed_sec": 37
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 37,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18619,6 +18944,7 @@
      "total_time_elapsed_sec": 38
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 38,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18674,6 +19000,7 @@
      "total_time_elapsed_sec": 39
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 39,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18729,6 +19056,7 @@
      "total_time_elapsed_sec": 40
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 40,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18784,6 +19112,7 @@
      "total_time_elapsed_sec": 41
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 41,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18839,6 +19168,7 @@
      "total_time_elapsed_sec": 42
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 42,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18915,6 +19245,7 @@
      "total_time_elapsed_sec": 43
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 43,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -18970,6 +19301,7 @@
      "total_time_elapsed_sec": 44
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 44,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19025,6 +19357,7 @@
      "total_time_elapsed_sec": 45
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 45,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19080,6 +19413,7 @@
      "total_time_elapsed_sec": 46
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 46,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19135,6 +19469,7 @@
      "total_time_elapsed_sec": 47
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 47,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19190,6 +19525,7 @@
      "total_time_elapsed_sec": 48
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 48,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19245,6 +19581,7 @@
      "total_time_elapsed_sec": 49
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 49,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19300,6 +19637,7 @@
      "total_time_elapsed_sec": 50
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 50,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19355,6 +19693,7 @@
      "total_time_elapsed_sec": 51
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 51,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19410,6 +19749,7 @@
      "total_time_elapsed_sec": 52
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 52,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19465,6 +19805,7 @@
      "total_time_elapsed_sec": 53
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 53,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19520,6 +19861,7 @@
      "total_time_elapsed_sec": 54
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 54,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19575,6 +19917,7 @@
      "total_time_elapsed_sec": 55
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 55,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19630,6 +19973,7 @@
      "total_time_elapsed_sec": 56
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 56,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19685,6 +20029,7 @@
      "total_time_elapsed_sec": 57
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 57,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19740,6 +20085,7 @@
      "total_time_elapsed_sec": 58
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 58,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19795,6 +20141,7 @@
      "total_time_elapsed_sec": 59
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 59,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19850,6 +20197,7 @@
      "total_time_elapsed_sec": 60
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 60,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19905,6 +20253,7 @@
      "total_time_elapsed_sec": 61
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 61,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -19960,6 +20309,7 @@
      "total_time_elapsed_sec": 62
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 62,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20015,6 +20365,7 @@
      "total_time_elapsed_sec": 63
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 63,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20070,6 +20421,7 @@
      "total_time_elapsed_sec": 64
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 64,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20146,6 +20498,7 @@
      "total_time_elapsed_sec": 65
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 65,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20201,6 +20554,7 @@
      "total_time_elapsed_sec": 66
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 66,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20256,6 +20610,7 @@
      "total_time_elapsed_sec": 67
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 67,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20311,6 +20666,7 @@
      "total_time_elapsed_sec": 68
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 68,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20366,6 +20722,7 @@
      "total_time_elapsed_sec": 69
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 69,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20421,6 +20778,7 @@
      "total_time_elapsed_sec": 70
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 70,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20476,6 +20834,7 @@
      "total_time_elapsed_sec": 71
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 71,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20531,6 +20890,7 @@
      "total_time_elapsed_sec": 72
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 72,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20586,6 +20946,7 @@
      "total_time_elapsed_sec": 73
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 73,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20641,6 +21002,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 74,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20696,6 +21058,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 75,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20751,6 +21114,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 76,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20806,6 +21170,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 77,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20861,6 +21226,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 78,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20916,6 +21282,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 79,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -20971,6 +21338,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 80,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -21026,6 +21394,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 81,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -21081,6 +21450,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 82,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -21136,6 +21506,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 83,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -21191,6 +21562,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 84,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -21246,6 +21618,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 85,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -21301,6 +21674,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 86,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -21356,6 +21730,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 87,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -21411,6 +21786,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 88,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -21466,6 +21842,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 89,
     "timestamp": "2026-10-17T00:00:00Z"
@@ -21521,6 +21898,7 @@
      "total_time_elapsed_sec": 74
     },
     "schema_version": "1.0",
+    "signal_phases": [],
     "simulation_id": "SIM-short_window_no_cascade_x1",
     "tick": 90,
     "timestamp": "2026-10-17T00:00:00Z"
