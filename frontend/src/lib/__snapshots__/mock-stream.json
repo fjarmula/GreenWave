@@ -37401,9 +37401,7 @@
       "lat": 50.02815555555556,
       "lng": 19.95637037037037
      },
-     "cascade_targets": [
-      "INT-0366"
-     ]
+     "cascade_targets": []
     },
     {
      "id": "INT-0366",
@@ -37462,7 +37460,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 4,
+    "current_time_saved_sec": 5,
     "total_time_elapsed_sec": 5
    },
    "intersections": [
@@ -37506,7 +37504,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 8,
+    "current_time_saved_sec": 9,
     "total_time_elapsed_sec": 10
    },
    "intersections": [
@@ -37550,7 +37548,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 12,
+    "current_time_saved_sec": 14,
     "total_time_elapsed_sec": 15
    },
    "intersections": [
@@ -37594,7 +37592,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 16,
+    "current_time_saved_sec": 18,
     "total_time_elapsed_sec": 20
    },
    "intersections": [
@@ -37638,7 +37636,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 19,
+    "current_time_saved_sec": 23,
     "total_time_elapsed_sec": 25
    },
    "intersections": [
@@ -37682,7 +37680,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 23,
+    "current_time_saved_sec": 27,
     "total_time_elapsed_sec": 30
    },
    "intersections": [
@@ -37726,7 +37724,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 27,
+    "current_time_saved_sec": 32,
     "total_time_elapsed_sec": 35
    },
    "intersections": [
@@ -37770,7 +37768,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 31,
+    "current_time_saved_sec": 37,
     "total_time_elapsed_sec": 40
    },
    "intersections": [
@@ -37814,7 +37812,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 35,
+    "current_time_saved_sec": 41,
     "total_time_elapsed_sec": 45
    },
    "intersections": [
@@ -37858,7 +37856,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 39,
+    "current_time_saved_sec": 46,
     "total_time_elapsed_sec": 50
    },
    "intersections": [
@@ -37902,7 +37900,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 43,
+    "current_time_saved_sec": 50,
     "total_time_elapsed_sec": 55
    },
    "intersections": [
@@ -37946,7 +37944,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 47,
+    "current_time_saved_sec": 55,
     "total_time_elapsed_sec": 60
    },
    "intersections": [
@@ -37990,7 +37988,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 50,
+    "current_time_saved_sec": 59,
     "total_time_elapsed_sec": 65
    },
    "intersections": [
@@ -38034,7 +38032,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 54,
+    "current_time_saved_sec": 64,
     "total_time_elapsed_sec": 70
    },
    "intersections": [
@@ -38078,7 +38076,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 58,
+    "current_time_saved_sec": 69,
     "total_time_elapsed_sec": 75
    },
    "intersections": [
@@ -38122,7 +38120,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 62,
+    "current_time_saved_sec": 73,
     "total_time_elapsed_sec": 80
    },
    "intersections": [
@@ -38166,7 +38164,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 66,
+    "current_time_saved_sec": 78,
     "total_time_elapsed_sec": 85
    },
    "intersections": [
@@ -38210,7 +38208,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 70,
+    "current_time_saved_sec": 82,
     "total_time_elapsed_sec": 90
    },
    "intersections": [
@@ -38254,7 +38252,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 74,
+    "current_time_saved_sec": 87,
     "total_time_elapsed_sec": 95
    },
    "intersections": [
@@ -38298,7 +38296,7 @@
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 78,
+    "current_time_saved_sec": 91,
     "total_time_elapsed_sec": 100
    },
    "intersections": [
@@ -38335,14 +38333,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02815555555556,
-     "lng": 19.95637037037037
+     "lat": 50.02815971143726,
+     "lng": 19.956370803274712
     },
-    "speed_kmh": 0,
+    "speed_kmh": 9.3,
     "status": "CROSSING_INTERSECTION"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 81,
+    "current_time_saved_sec": 95,
     "total_time_elapsed_sec": 105
    },
    "intersections": [
@@ -38351,7 +38349,7 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     },
     {
@@ -38379,14 +38377,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02815555555556,
-     "lng": 19.95637037037037
+     "lat": 50.02818410465594,
+     "lng": 19.956373344234994
     },
-    "speed_kmh": 0,
+    "speed_kmh": 2,
     "status": "CROSSING_INTERSECTION"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 81,
+    "current_time_saved_sec": 95,
     "total_time_elapsed_sec": 110
    },
    "intersections": [
@@ -38395,7 +38393,7 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     },
     {
@@ -38423,14 +38421,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02815555555556,
-     "lng": 19.95637037037037
+     "lat": 50.02820849787463,
+     "lng": 19.95637588519527
     },
-    "speed_kmh": 0,
+    "speed_kmh": 2,
     "status": "CROSSING_INTERSECTION"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 81,
+    "current_time_saved_sec": 96,
     "total_time_elapsed_sec": 115
    },
    "intersections": [
@@ -38439,7 +38437,7 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     },
     {
@@ -38467,14 +38465,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02815555555556,
-     "lng": 19.95637037037037
+     "lat": 50.02823289109332,
+     "lng": 19.956378426155553
     },
-    "speed_kmh": 0,
+    "speed_kmh": 2,
     "status": "CROSSING_INTERSECTION"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 81,
+    "current_time_saved_sec": 96,
     "total_time_elapsed_sec": 120
    },
    "intersections": [
@@ -38483,7 +38481,7 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     },
     {
@@ -38511,14 +38509,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02815555555556,
-     "lng": 19.95637037037037
+     "lat": 50.028257284312,
+     "lng": 19.956380967115834
     },
-    "speed_kmh": 0,
+    "speed_kmh": 2,
     "status": "CROSSING_INTERSECTION"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 81,
+    "current_time_saved_sec": 96,
     "total_time_elapsed_sec": 125
    },
    "intersections": [
@@ -38527,7 +38525,7 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     },
     {
@@ -38555,14 +38553,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02815555555556,
-     "lng": 19.95637037037037
+     "lat": 50.028281677530686,
+     "lng": 19.95638350807611
     },
-    "speed_kmh": 0,
+    "speed_kmh": 2,
     "status": "CROSSING_INTERSECTION"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 81,
+    "current_time_saved_sec": 96,
     "total_time_elapsed_sec": 130
    },
    "intersections": [
@@ -38571,7 +38569,7 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     },
     {
@@ -38599,14 +38597,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02815555555556,
-     "lng": 19.95637037037037
+     "lat": 50.02830607074937,
+     "lng": 19.956386049036393
     },
-    "speed_kmh": 0,
+    "speed_kmh": 2,
     "status": "CROSSING_INTERSECTION"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 81,
+    "current_time_saved_sec": 96,
     "total_time_elapsed_sec": 135
    },
    "intersections": [
@@ -38615,7 +38613,7 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     },
     {
@@ -38643,14 +38641,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02815555555556,
-     "lng": 19.95637037037037
+     "lat": 50.028330463968054,
+     "lng": 19.95638858999667
     },
-    "speed_kmh": 0,
+    "speed_kmh": 2,
     "status": "CROSSING_INTERSECTION"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 81,
+    "current_time_saved_sec": 96,
     "total_time_elapsed_sec": 140
    },
    "intersections": [
@@ -38659,7 +38657,7 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     },
     {
@@ -38687,14 +38685,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02815555555556,
-     "lng": 19.95637037037037
+     "lat": 50.02835485718674,
+     "lng": 19.956391130956952
     },
-    "speed_kmh": 0,
+    "speed_kmh": 2,
     "status": "CROSSING_INTERSECTION"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 81,
+    "current_time_saved_sec": 97,
     "total_time_elapsed_sec": 145
    },
    "intersections": [
@@ -38703,7 +38701,7 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     },
     {
@@ -38731,14 +38729,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02815555555556,
-     "lng": 19.95637037037037
+     "lat": 50.02837925040542,
+     "lng": 19.95639367191723
     },
-    "speed_kmh": 0,
+    "speed_kmh": 2,
     "status": "CROSSING_INTERSECTION"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 81,
+    "current_time_saved_sec": 97,
     "total_time_elapsed_sec": 150
    },
    "intersections": [
@@ -38747,7 +38745,7 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     },
     {
@@ -38775,14 +38773,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02815555555556,
-     "lng": 19.95637037037037
+     "lat": 50.02840364362411,
+     "lng": 19.95639621287751
     },
-    "speed_kmh": 0,
+    "speed_kmh": 2,
     "status": "CROSSING_INTERSECTION"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 81,
+    "current_time_saved_sec": 97,
     "total_time_elapsed_sec": 155
    },
    "intersections": [
@@ -38791,7 +38789,7 @@
      "name": "Aleja 29 Listopada / Lublańska / Opolska",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     },
     {
@@ -38819,14 +38817,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02857894736842,
-     "lng": 19.95641447368421
+     "lat": 50.028572771929824,
+     "lng": 19.956413830409357
     },
     "speed_kmh": 62.7,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 83,
+    "current_time_saved_sec": 98,
     "total_time_elapsed_sec": 160
    },
    "intersections": [
@@ -38863,14 +38861,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.029210526315794,
-     "lng": 19.956480263157893
+     "lat": 50.029204350877194,
+     "lng": 19.95647961988304
     },
     "speed_kmh": 63.3,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 87,
+    "current_time_saved_sec": 103,
     "total_time_elapsed_sec": 165
    },
    "intersections": [
@@ -38907,14 +38905,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02950666666667,
-     "lng": 19.95651111111111
+     "lat": 50.029835929824564,
+     "lng": 19.956545409356725
     },
-    "speed_kmh": 0,
-    "status": "CROSSING_INTERSECTION"
+    "speed_kmh": 63.9,
+    "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 89,
+    "current_time_saved_sec": 107,
     "total_time_elapsed_sec": 170
    },
    "intersections": [
@@ -38931,7 +38929,7 @@
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     }
    ],
@@ -38951,14 +38949,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02950666666667,
-     "lng": 19.95651111111111
+     "lat": 50.03046750877193,
+     "lng": 19.95661119883041
     },
-    "speed_kmh": 0,
-    "status": "CROSSING_INTERSECTION"
+    "speed_kmh": 64.4,
+    "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 89,
+    "current_time_saved_sec": 112,
     "total_time_elapsed_sec": 175
    },
    "intersections": [
@@ -38975,7 +38973,7 @@
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     }
    ],
@@ -38995,14 +38993,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02950666666667,
-     "lng": 19.95651111111111
+     "lat": 50.0310990877193,
+     "lng": 19.956676988304093
     },
-    "speed_kmh": 0,
-    "status": "CROSSING_INTERSECTION"
+    "speed_kmh": 64.8,
+    "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 89,
+    "current_time_saved_sec": 117,
     "total_time_elapsed_sec": 180
    },
    "intersections": [
@@ -39019,7 +39017,7 @@
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     }
    ],
@@ -39039,14 +39037,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02950666666667,
-     "lng": 19.95651111111111
+     "lat": 50.03173066666667,
+     "lng": 19.956742777777777
     },
-    "speed_kmh": 0,
-    "status": "CROSSING_INTERSECTION"
+    "speed_kmh": 65.1,
+    "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 89,
+    "current_time_saved_sec": 121,
     "total_time_elapsed_sec": 185
    },
    "intersections": [
@@ -39063,7 +39061,7 @@
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     }
    ],
@@ -39083,14 +39081,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02950666666667,
-     "lng": 19.95651111111111
+     "lat": 50.03236224561404,
+     "lng": 19.95680856725146
     },
-    "speed_kmh": 0,
-    "status": "CROSSING_INTERSECTION"
+    "speed_kmh": 65.3,
+    "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 89,
+    "current_time_saved_sec": 126,
     "total_time_elapsed_sec": 190
    },
    "intersections": [
@@ -39107,7 +39105,7 @@
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     }
    ],
@@ -39127,14 +39125,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02950666666667,
-     "lng": 19.95651111111111
+     "lat": 50.0329938245614,
+     "lng": 19.956874356725145
     },
-    "speed_kmh": 0,
-    "status": "CROSSING_INTERSECTION"
+    "speed_kmh": 65.4,
+    "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 89,
+    "current_time_saved_sec": 130,
     "total_time_elapsed_sec": 195
    },
    "intersections": [
@@ -39151,7 +39149,7 @@
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     }
    ],
@@ -39171,14 +39169,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02950666666667,
-     "lng": 19.95651111111111
+     "lat": 50.03362540350877,
+     "lng": 19.95694014619883
     },
-    "speed_kmh": 0,
-    "status": "CROSSING_INTERSECTION"
+    "speed_kmh": 65.4,
+    "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 89,
+    "current_time_saved_sec": 135,
     "total_time_elapsed_sec": 200
    },
    "intersections": [
@@ -39195,7 +39193,7 @@
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     }
    ],
@@ -39215,14 +39213,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02950666666667,
-     "lng": 19.95651111111111
+     "lat": 50.03425698245614,
+     "lng": 19.957005935672512
     },
-    "speed_kmh": 0,
-    "status": "CROSSING_INTERSECTION"
+    "speed_kmh": 65.2,
+    "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 89,
+    "current_time_saved_sec": 139,
     "total_time_elapsed_sec": 205
    },
    "intersections": [
@@ -39239,7 +39237,7 @@
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     }
    ],
@@ -39259,14 +39257,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02950666666667,
-     "lng": 19.95651111111111
+     "lat": 50.03488856140351,
+     "lng": 19.957071725146196
     },
-    "speed_kmh": 0,
-    "status": "CROSSING_INTERSECTION"
+    "speed_kmh": 65,
+    "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 89,
+    "current_time_saved_sec": 144,
     "total_time_elapsed_sec": 210
    },
    "intersections": [
@@ -39283,7 +39281,7 @@
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     }
    ],
@@ -39303,14 +39301,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.02950666666667,
-     "lng": 19.95651111111111
+     "lat": 50.035520140350876,
+     "lng": 19.957137514619884
     },
-    "speed_kmh": 0,
-    "status": "CROSSING_INTERSECTION"
+    "speed_kmh": 64.6,
+    "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 89,
+    "current_time_saved_sec": 149,
     "total_time_elapsed_sec": 215
    },
    "intersections": [
@@ -39327,7 +39325,7 @@
      "name": "Aleja 29 Listopada / Jana Woronicza",
      "state": "NORMAL",
      "is_cascade": false,
-     "tti_seconds": 0,
+     "tti_seconds": null,
      "is_active_corridor": false
     }
    ],
@@ -39347,14 +39345,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.029526315789475,
-     "lng": 19.956513157894737
+     "lat": 50.036151719298246,
+     "lng": 19.957203304093568
     },
     "speed_kmh": 64.2,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 89,
+    "current_time_saved_sec": 153,
     "total_time_elapsed_sec": 220
    },
    "intersections": [
@@ -39391,14 +39389,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.030157894736845,
-     "lng": 19.95657894736842
+     "lat": 50.036783298245616,
+     "lng": 19.957269093567252
     },
     "speed_kmh": 63.6,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 93,
+    "current_time_saved_sec": 158,
     "total_time_elapsed_sec": 225
    },
    "intersections": [
@@ -39435,14 +39433,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.03078947368421,
-     "lng": 19.956644736842104
+     "lat": 50.03741487719299,
+     "lng": 19.957334883040936
     },
     "speed_kmh": 63.1,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 97,
+    "current_time_saved_sec": 162,
     "total_time_elapsed_sec": 230
    },
    "intersections": [
@@ -39479,14 +39477,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.03142105263158,
-     "lng": 19.95671052631579
+     "lat": 50.03804645614035,
+     "lng": 19.95740067251462
     },
     "speed_kmh": 62.5,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 101,
+    "current_time_saved_sec": 167,
     "total_time_elapsed_sec": 235
    },
    "intersections": [
@@ -39523,14 +39521,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.03205263157895,
-     "lng": 19.956776315789472
+     "lat": 50.03867803508772,
+     "lng": 19.957466461988304
     },
     "speed_kmh": 61.9,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 105,
+    "current_time_saved_sec": 171,
     "total_time_elapsed_sec": 240
    },
    "intersections": [
@@ -39567,14 +39565,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.03268421052632,
-     "lng": 19.956842105263156
+     "lat": 50.03930961403509,
+     "lng": 19.957532251461988
     },
     "speed_kmh": 61.3,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 109,
+    "current_time_saved_sec": 176,
     "total_time_elapsed_sec": 245
    },
    "intersections": [
@@ -39611,14 +39609,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.03331578947368,
-     "lng": 19.95690789473684
+     "lat": 50.03994119298246,
+     "lng": 19.95759804093567
     },
     "speed_kmh": 60.8,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 113,
+    "current_time_saved_sec": 181,
     "total_time_elapsed_sec": 250
    },
    "intersections": [
@@ -39655,14 +39653,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.03394736842105,
-     "lng": 19.956973684210524
+     "lat": 50.040572771929824,
+     "lng": 19.957663830409356
     },
     "speed_kmh": 60.3,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 116,
+    "current_time_saved_sec": 185,
     "total_time_elapsed_sec": 255
    },
    "intersections": [
@@ -39699,14 +39697,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.03457894736842,
-     "lng": 19.95703947368421
+     "lat": 50.041204350877194,
+     "lng": 19.95772961988304
     },
     "speed_kmh": 59.9,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 120,
+    "current_time_saved_sec": 190,
     "total_time_elapsed_sec": 260
    },
    "intersections": [
@@ -39743,14 +39741,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.035210526315794,
-     "lng": 19.957105263157896
+     "lat": 50.041835929824565,
+     "lng": 19.957795409356724
     },
     "speed_kmh": 59.6,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 124,
+    "current_time_saved_sec": 194,
     "total_time_elapsed_sec": 265
    },
    "intersections": [
@@ -39787,14 +39785,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.03584210526316,
-     "lng": 19.95717105263158
+     "lat": 50.04246750877193,
+     "lng": 19.957861198830408
     },
     "speed_kmh": 59.5,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 128,
+    "current_time_saved_sec": 199,
     "total_time_elapsed_sec": 270
    },
    "intersections": [
@@ -39831,14 +39829,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.03647368421053,
-     "lng": 19.957236842105264
+     "lat": 50.0430990877193,
+     "lng": 19.957926988304095
     },
     "speed_kmh": 59.4,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 132,
+    "current_time_saved_sec": 203,
     "total_time_elapsed_sec": 275
    },
    "intersections": [
@@ -39875,14 +39873,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.0371052631579,
-     "lng": 19.957302631578948
+     "lat": 50.04373066666667,
+     "lng": 19.95799277777778
     },
     "speed_kmh": 59.5,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 136,
+    "current_time_saved_sec": 208,
     "total_time_elapsed_sec": 280
    },
    "intersections": [
@@ -39919,14 +39917,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.03773684210527,
-     "lng": 19.95736842105263
+     "lat": 50.04436224561404,
+     "lng": 19.958058567251463
     },
     "speed_kmh": 59.6,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 140,
+    "current_time_saved_sec": 213,
     "total_time_elapsed_sec": 285
    },
    "intersections": [
@@ -39963,14 +39961,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.03836842105263,
-     "lng": 19.957434210526316
+     "lat": 50.0449938245614,
+     "lng": 19.958124356725147
     },
     "speed_kmh": 59.9,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 144,
+    "current_time_saved_sec": 217,
     "total_time_elapsed_sec": 290
    },
    "intersections": [
@@ -40007,14 +40005,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.039,
-     "lng": 19.9575
+     "lat": 50.04562540350877,
+     "lng": 19.95819014619883
     },
     "speed_kmh": 60.3,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 148,
+    "current_time_saved_sec": 222,
     "total_time_elapsed_sec": 295
    },
    "intersections": [
@@ -40051,14 +40049,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.03963157894737,
-     "lng": 19.957565789473684
+     "lat": 50.04625698245614,
+     "lng": 19.958255935672515
     },
     "speed_kmh": 60.8,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 151,
+    "current_time_saved_sec": 226,
     "total_time_elapsed_sec": 300
    },
    "intersections": [
@@ -40095,14 +40093,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.040263157894735,
-     "lng": 19.957631578947368
+     "lat": 50.04688856140351,
+     "lng": 19.9583217251462
     },
     "speed_kmh": 61.3,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 155,
+    "current_time_saved_sec": 231,
     "total_time_elapsed_sec": 305
    },
    "intersections": [
@@ -40139,14 +40137,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.040894736842105,
-     "lng": 19.95769736842105
+     "lat": 50.047520140350876,
+     "lng": 19.958387514619883
     },
     "speed_kmh": 61.9,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 159,
+    "current_time_saved_sec": 235,
     "total_time_elapsed_sec": 310
    },
    "intersections": [
@@ -40183,14 +40181,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.041526315789476,
-     "lng": 19.957763157894735
+     "lat": 50.04815171929825,
+     "lng": 19.958453304093567
     },
     "speed_kmh": 62.5,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 163,
+    "current_time_saved_sec": 240,
     "total_time_elapsed_sec": 315
    },
    "intersections": [
@@ -40227,14 +40225,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.042157894736846,
-     "lng": 19.95782894736842
+     "lat": 50.04878329824562,
+     "lng": 19.95851909356725
     },
     "speed_kmh": 63.1,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 167,
+    "current_time_saved_sec": 245,
     "total_time_elapsed_sec": 320
    },
    "intersections": [
@@ -40271,14 +40269,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.04278947368421,
-     "lng": 19.957894736842103
+     "lat": 50.04941487719299,
+     "lng": 19.958584883040935
     },
     "speed_kmh": 63.7,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 171,
+    "current_time_saved_sec": 249,
     "total_time_elapsed_sec": 325
    },
    "intersections": [
@@ -40315,14 +40313,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.04342105263158,
-     "lng": 19.95796052631579
+     "lat": 50.05004645614035,
+     "lng": 19.95865067251462
     },
     "speed_kmh": 64.2,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 175,
+    "current_time_saved_sec": 254,
     "total_time_elapsed_sec": 330
    },
    "intersections": [
@@ -40359,14 +40357,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.04405263157895,
-     "lng": 19.958026315789475
+     "lat": 50.05067803508772,
+     "lng": 19.958716461988303
     },
     "speed_kmh": 64.6,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 179,
+    "current_time_saved_sec": 258,
     "total_time_elapsed_sec": 335
    },
    "intersections": [
@@ -40403,14 +40401,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.04468421052632,
-     "lng": 19.95809210526316
+     "lat": 50.05130961403509,
+     "lng": 19.95878225146199
     },
     "speed_kmh": 65,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 182,
+    "current_time_saved_sec": 263,
     "total_time_elapsed_sec": 340
    },
    "intersections": [
@@ -40447,14 +40445,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.04531578947368,
-     "lng": 19.958157894736843
+     "lat": 50.05194119298246,
+     "lng": 19.958848040935674
     },
     "speed_kmh": 65.2,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 186,
+    "current_time_saved_sec": 267,
     "total_time_elapsed_sec": 345
    },
    "intersections": [
@@ -40491,14 +40489,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.045947368421054,
-     "lng": 19.958223684210527
+     "lat": 50.052572771929825,
+     "lng": 19.958913830409358
     },
     "speed_kmh": 65.4,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 190,
+    "current_time_saved_sec": 272,
     "total_time_elapsed_sec": 350
    },
    "intersections": [
@@ -40535,14 +40533,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.046578947368424,
-     "lng": 19.95828947368421
+     "lat": 50.053204350877195,
+     "lng": 19.958979619883042
     },
     "speed_kmh": 65.4,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 194,
+    "current_time_saved_sec": 277,
     "total_time_elapsed_sec": 355
    },
    "intersections": [
@@ -40579,14 +40577,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.047210526315794,
-     "lng": 19.958355263157895
+     "lat": 50.053835929824565,
+     "lng": 19.959045409356726
     },
     "speed_kmh": 65.3,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 198,
+    "current_time_saved_sec": 281,
     "total_time_elapsed_sec": 360
    },
    "intersections": [
@@ -40623,14 +40621,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.04784210526316,
-     "lng": 19.95842105263158
+     "lat": 50.05446750877193,
+     "lng": 19.95911119883041
     },
     "speed_kmh": 65.1,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 202,
+    "current_time_saved_sec": 286,
     "total_time_elapsed_sec": 365
    },
    "intersections": [
@@ -40667,14 +40665,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.04847368421053,
-     "lng": 19.958486842105263
+     "lat": 50.0550990877193,
+     "lng": 19.959176988304094
     },
     "speed_kmh": 64.8,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 206,
+    "current_time_saved_sec": 290,
     "total_time_elapsed_sec": 370
    },
    "intersections": [
@@ -40711,14 +40709,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.0491052631579,
-     "lng": 19.958552631578947
+     "lat": 50.05573066666667,
+     "lng": 19.959242777777778
     },
     "speed_kmh": 64.4,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 210,
+    "current_time_saved_sec": 295,
     "total_time_elapsed_sec": 375
    },
    "intersections": [
@@ -40755,14 +40753,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.04973684210527,
-     "lng": 19.95861842105263
+     "lat": 50.05636224561404,
+     "lng": 19.959308567251462
     },
     "speed_kmh": 63.9,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 213,
+    "current_time_saved_sec": 299,
     "total_time_elapsed_sec": 380
    },
    "intersections": [
@@ -40799,14 +40797,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.05036842105263,
-     "lng": 19.958684210526314
+     "lat": 50.0569938245614,
+     "lng": 19.959374356725146
     },
     "speed_kmh": 63.3,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 217,
+    "current_time_saved_sec": 304,
     "total_time_elapsed_sec": 385
    },
    "intersections": [
@@ -40843,14 +40841,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.051,
-     "lng": 19.958750000000002
+     "lat": 50.05762540350877,
+     "lng": 19.95944014619883
     },
     "speed_kmh": 62.7,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 221,
+    "current_time_saved_sec": 309,
     "total_time_elapsed_sec": 390
    },
    "intersections": [
@@ -40887,14 +40885,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.05163157894737,
-     "lng": 19.958815789473686
+     "lat": 50.05825698245614,
+     "lng": 19.959505935672514
     },
     "speed_kmh": 62.1,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 225,
+    "current_time_saved_sec": 313,
     "total_time_elapsed_sec": 395
    },
    "intersections": [
@@ -40931,14 +40929,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.052263157894735,
-     "lng": 19.95888157894737
+     "lat": 50.05888856140351,
+     "lng": 19.959571725146198
     },
     "speed_kmh": 61.5,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 229,
+    "current_time_saved_sec": 318,
     "total_time_elapsed_sec": 400
    },
    "intersections": [
@@ -40975,14 +40973,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.052894736842106,
-     "lng": 19.958947368421054
+     "lat": 50.05952014035088,
+     "lng": 19.959637514619885
     },
     "speed_kmh": 61,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 233,
+    "current_time_saved_sec": 322,
     "total_time_elapsed_sec": 405
    },
    "intersections": [
@@ -41019,14 +41017,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.053526315789476,
-     "lng": 19.959013157894738
+     "lat": 50.06015171929825,
+     "lng": 19.95970330409357
     },
     "speed_kmh": 60.5,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 237,
+    "current_time_saved_sec": 327,
     "total_time_elapsed_sec": 410
    },
    "intersections": [
@@ -41063,14 +41061,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.054157894736846,
-     "lng": 19.959078947368422
+     "lat": 50.06078329824562,
+     "lng": 19.959769093567253
     },
     "speed_kmh": 60.1,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 241,
+    "current_time_saved_sec": 331,
     "total_time_elapsed_sec": 415
    },
    "intersections": [
@@ -41107,14 +41105,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.05478947368421,
-     "lng": 19.959144736842106
+     "lat": 50.06141487719299,
+     "lng": 19.959834883040937
     },
     "speed_kmh": 59.7,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 245,
+    "current_time_saved_sec": 336,
     "total_time_elapsed_sec": 420
    },
    "intersections": [
@@ -41151,14 +41149,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.05542105263158,
-     "lng": 19.95921052631579
+     "lat": 50.06204645614035,
+     "lng": 19.95990067251462
     },
     "speed_kmh": 59.5,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 248,
+    "current_time_saved_sec": 341,
     "total_time_elapsed_sec": 425
    },
    "intersections": [
@@ -41195,14 +41193,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.05605263157895,
-     "lng": 19.959276315789474
+     "lat": 50.06267803508772,
+     "lng": 19.959966461988305
     },
     "speed_kmh": 59.4,
     "status": "EN_ROUTE"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 252,
+    "current_time_saved_sec": 345,
     "total_time_elapsed_sec": 430
    },
    "intersections": [
@@ -41239,14 +41237,14 @@
    "ambulance": {
     "id": "AMB-KRA-01",
     "position": {
-     "lat": 50.05668421052632,
-     "lng": 19.959342105263158
+     "lat": 50.063,
+     "lng": 19.96
     },
-    "speed_kmh": 59.4,
-    "status": "EN_ROUTE"
+    "speed_kmh": 0,
+    "status": "ARRIVED"
    },
    "kpi_metrics": {
-    "current_time_saved_sec": 256,
+    "current_time_saved_sec": 347,
     "total_time_elapsed_sec": 435
    },
    "intersections": [
@@ -41272,457 +41270,17 @@
  },
  {
   "scenario": 4,
-  "callback": "onTick",
-  "payload": {
-   "schema_version": "1.0",
-   "is_simulated": true,
-   "event_type": "SIMULATION_TICK",
-   "simulation_id": "SIM-golden-4",
-   "tick": 88,
-   "timestamp": "2026-10-17T00:15:31.000Z",
-   "ambulance": {
-    "id": "AMB-KRA-01",
-    "position": {
-     "lat": 50.057315789473684,
-     "lng": 19.95940789473684
-    },
-    "speed_kmh": 59.6,
-    "status": "EN_ROUTE"
-   },
-   "kpi_metrics": {
-    "current_time_saved_sec": 260,
-    "total_time_elapsed_sec": 440
-   },
-   "intersections": [
-    {
-     "id": "INT-0360",
-     "name": "Aleja 29 Listopada / Lublańska / Opolska",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    },
-    {
-     "id": "INT-0366",
-     "name": "Aleja 29 Listopada / Jana Woronicza",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    }
-   ],
-   "signal_phases": "INT-0360/INT-0360-S1/VEHICLE/GREEN INT-0360/INT-0360-S1/PEDESTRIAN/RED INT-0360/INT-0360-S2/VEHICLE/RED INT-0360/INT-0360-S2/PEDESTRIAN/GREEN INT-0366/INT-0366-S1/VEHICLE/GREEN INT-0366/INT-0366-S1/PEDESTRIAN/RED INT-0366/INT-0366-S2/VEHICLE/RED INT-0366/INT-0366-S2/PEDESTRIAN/GREEN"
-  }
- },
- {
-  "scenario": 4,
-  "callback": "onTick",
-  "payload": {
-   "schema_version": "1.0",
-   "is_simulated": true,
-   "event_type": "SIMULATION_TICK",
-   "simulation_id": "SIM-golden-4",
-   "tick": 89,
-   "timestamp": "2026-10-17T00:15:32.000Z",
-   "ambulance": {
-    "id": "AMB-KRA-01",
-    "position": {
-     "lat": 50.057947368421054,
-     "lng": 19.959473684210526
-    },
-    "speed_kmh": 59.8,
-    "status": "EN_ROUTE"
-   },
-   "kpi_metrics": {
-    "current_time_saved_sec": 264,
-    "total_time_elapsed_sec": 445
-   },
-   "intersections": [
-    {
-     "id": "INT-0360",
-     "name": "Aleja 29 Listopada / Lublańska / Opolska",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    },
-    {
-     "id": "INT-0366",
-     "name": "Aleja 29 Listopada / Jana Woronicza",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    }
-   ],
-   "signal_phases": "INT-0360/INT-0360-S1/VEHICLE/GREEN INT-0360/INT-0360-S1/PEDESTRIAN/RED INT-0360/INT-0360-S2/VEHICLE/RED INT-0360/INT-0360-S2/PEDESTRIAN/GREEN INT-0366/INT-0366-S1/VEHICLE/GREEN INT-0366/INT-0366-S1/PEDESTRIAN/RED INT-0366/INT-0366-S2/VEHICLE/RED INT-0366/INT-0366-S2/PEDESTRIAN/GREEN"
-  }
- },
- {
-  "scenario": 4,
-  "callback": "onTick",
-  "payload": {
-   "schema_version": "1.0",
-   "is_simulated": true,
-   "event_type": "SIMULATION_TICK",
-   "simulation_id": "SIM-golden-4",
-   "tick": 90,
-   "timestamp": "2026-10-17T00:15:33.000Z",
-   "ambulance": {
-    "id": "AMB-KRA-01",
-    "position": {
-     "lat": 50.058578947368424,
-     "lng": 19.95953947368421
-    },
-    "speed_kmh": 60.1,
-    "status": "EN_ROUTE"
-   },
-   "kpi_metrics": {
-    "current_time_saved_sec": 268,
-    "total_time_elapsed_sec": 450
-   },
-   "intersections": [
-    {
-     "id": "INT-0360",
-     "name": "Aleja 29 Listopada / Lublańska / Opolska",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    },
-    {
-     "id": "INT-0366",
-     "name": "Aleja 29 Listopada / Jana Woronicza",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    }
-   ],
-   "signal_phases": "INT-0360/INT-0360-S1/VEHICLE/YELLOW INT-0360/INT-0360-S1/PEDESTRIAN/RED INT-0360/INT-0360-S2/VEHICLE/RED INT-0360/INT-0360-S2/PEDESTRIAN/RED INT-0366/INT-0366-S1/VEHICLE/YELLOW INT-0366/INT-0366-S1/PEDESTRIAN/RED INT-0366/INT-0366-S2/VEHICLE/RED INT-0366/INT-0366-S2/PEDESTRIAN/RED"
-  }
- },
- {
-  "scenario": 4,
-  "callback": "onTick",
-  "payload": {
-   "schema_version": "1.0",
-   "is_simulated": true,
-   "event_type": "SIMULATION_TICK",
-   "simulation_id": "SIM-golden-4",
-   "tick": 91,
-   "timestamp": "2026-10-17T00:15:34.000Z",
-   "ambulance": {
-    "id": "AMB-KRA-01",
-    "position": {
-     "lat": 50.059210526315795,
-     "lng": 19.959605263157897
-    },
-    "speed_kmh": 60.6,
-    "status": "EN_ROUTE"
-   },
-   "kpi_metrics": {
-    "current_time_saved_sec": 272,
-    "total_time_elapsed_sec": 455
-   },
-   "intersections": [
-    {
-     "id": "INT-0360",
-     "name": "Aleja 29 Listopada / Lublańska / Opolska",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    },
-    {
-     "id": "INT-0366",
-     "name": "Aleja 29 Listopada / Jana Woronicza",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    }
-   ],
-   "signal_phases": "INT-0360/INT-0360-S1/VEHICLE/RED INT-0360/INT-0360-S1/PEDESTRIAN/GREEN INT-0360/INT-0360-S2/VEHICLE/RED INT-0360/INT-0360-S2/PEDESTRIAN/RED INT-0366/INT-0366-S1/VEHICLE/RED INT-0366/INT-0366-S1/PEDESTRIAN/GREEN INT-0366/INT-0366-S2/VEHICLE/RED INT-0366/INT-0366-S2/PEDESTRIAN/RED"
-  }
- },
- {
-  "scenario": 4,
-  "callback": "onTick",
-  "payload": {
-   "schema_version": "1.0",
-   "is_simulated": true,
-   "event_type": "SIMULATION_TICK",
-   "simulation_id": "SIM-golden-4",
-   "tick": 92,
-   "timestamp": "2026-10-17T00:15:35.000Z",
-   "ambulance": {
-    "id": "AMB-KRA-01",
-    "position": {
-     "lat": 50.05984210526316,
-     "lng": 19.95967105263158
-    },
-    "speed_kmh": 61.1,
-    "status": "EN_ROUTE"
-   },
-   "kpi_metrics": {
-    "current_time_saved_sec": 276,
-    "total_time_elapsed_sec": 460
-   },
-   "intersections": [
-    {
-     "id": "INT-0360",
-     "name": "Aleja 29 Listopada / Lublańska / Opolska",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    },
-    {
-     "id": "INT-0366",
-     "name": "Aleja 29 Listopada / Jana Woronicza",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    }
-   ],
-   "signal_phases": "INT-0360/INT-0360-S1/VEHICLE/RED INT-0360/INT-0360-S1/PEDESTRIAN/GREEN INT-0360/INT-0360-S2/VEHICLE/GREEN INT-0360/INT-0360-S2/PEDESTRIAN/RED INT-0366/INT-0366-S1/VEHICLE/RED INT-0366/INT-0366-S1/PEDESTRIAN/GREEN INT-0366/INT-0366-S2/VEHICLE/GREEN INT-0366/INT-0366-S2/PEDESTRIAN/RED"
-  }
- },
- {
-  "scenario": 4,
-  "callback": "onTick",
-  "payload": {
-   "schema_version": "1.0",
-   "is_simulated": true,
-   "event_type": "SIMULATION_TICK",
-   "simulation_id": "SIM-golden-4",
-   "tick": 93,
-   "timestamp": "2026-10-17T00:15:36.000Z",
-   "ambulance": {
-    "id": "AMB-KRA-01",
-    "position": {
-     "lat": 50.06047368421053,
-     "lng": 19.959736842105265
-    },
-    "speed_kmh": 61.7,
-    "status": "EN_ROUTE"
-   },
-   "kpi_metrics": {
-    "current_time_saved_sec": 279,
-    "total_time_elapsed_sec": 465
-   },
-   "intersections": [
-    {
-     "id": "INT-0360",
-     "name": "Aleja 29 Listopada / Lublańska / Opolska",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    },
-    {
-     "id": "INT-0366",
-     "name": "Aleja 29 Listopada / Jana Woronicza",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    }
-   ],
-   "signal_phases": "INT-0360/INT-0360-S1/VEHICLE/RED INT-0360/INT-0360-S1/PEDESTRIAN/GREEN INT-0360/INT-0360-S2/VEHICLE/GREEN INT-0360/INT-0360-S2/PEDESTRIAN/RED INT-0366/INT-0366-S1/VEHICLE/RED INT-0366/INT-0366-S1/PEDESTRIAN/GREEN INT-0366/INT-0366-S2/VEHICLE/GREEN INT-0366/INT-0366-S2/PEDESTRIAN/RED"
-  }
- },
- {
-  "scenario": 4,
-  "callback": "onTick",
-  "payload": {
-   "schema_version": "1.0",
-   "is_simulated": true,
-   "event_type": "SIMULATION_TICK",
-   "simulation_id": "SIM-golden-4",
-   "tick": 94,
-   "timestamp": "2026-10-17T00:15:37.000Z",
-   "ambulance": {
-    "id": "AMB-KRA-01",
-    "position": {
-     "lat": 50.0611052631579,
-     "lng": 19.95980263157895
-    },
-    "speed_kmh": 62.3,
-    "status": "EN_ROUTE"
-   },
-   "kpi_metrics": {
-    "current_time_saved_sec": 283,
-    "total_time_elapsed_sec": 470
-   },
-   "intersections": [
-    {
-     "id": "INT-0360",
-     "name": "Aleja 29 Listopada / Lublańska / Opolska",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    },
-    {
-     "id": "INT-0366",
-     "name": "Aleja 29 Listopada / Jana Woronicza",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    }
-   ],
-   "signal_phases": "INT-0360/INT-0360-S1/VEHICLE/RED INT-0360/INT-0360-S1/PEDESTRIAN/GREEN INT-0360/INT-0360-S2/VEHICLE/GREEN INT-0360/INT-0360-S2/PEDESTRIAN/RED INT-0366/INT-0366-S1/VEHICLE/RED INT-0366/INT-0366-S1/PEDESTRIAN/GREEN INT-0366/INT-0366-S2/VEHICLE/GREEN INT-0366/INT-0366-S2/PEDESTRIAN/RED"
-  }
- },
- {
-  "scenario": 4,
-  "callback": "onTick",
-  "payload": {
-   "schema_version": "1.0",
-   "is_simulated": true,
-   "event_type": "SIMULATION_TICK",
-   "simulation_id": "SIM-golden-4",
-   "tick": 95,
-   "timestamp": "2026-10-17T00:15:38.000Z",
-   "ambulance": {
-    "id": "AMB-KRA-01",
-    "position": {
-     "lat": 50.06173684210527,
-     "lng": 19.959868421052633
-    },
-    "speed_kmh": 62.8,
-    "status": "EN_ROUTE"
-   },
-   "kpi_metrics": {
-    "current_time_saved_sec": 287,
-    "total_time_elapsed_sec": 475
-   },
-   "intersections": [
-    {
-     "id": "INT-0360",
-     "name": "Aleja 29 Listopada / Lublańska / Opolska",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    },
-    {
-     "id": "INT-0366",
-     "name": "Aleja 29 Listopada / Jana Woronicza",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    }
-   ],
-   "signal_phases": "INT-0360/INT-0360-S1/VEHICLE/RED INT-0360/INT-0360-S1/PEDESTRIAN/GREEN INT-0360/INT-0360-S2/VEHICLE/GREEN INT-0360/INT-0360-S2/PEDESTRIAN/RED INT-0366/INT-0366-S1/VEHICLE/RED INT-0366/INT-0366-S1/PEDESTRIAN/GREEN INT-0366/INT-0366-S2/VEHICLE/GREEN INT-0366/INT-0366-S2/PEDESTRIAN/RED"
-  }
- },
- {
-  "scenario": 4,
-  "callback": "onTick",
-  "payload": {
-   "schema_version": "1.0",
-   "is_simulated": true,
-   "event_type": "SIMULATION_TICK",
-   "simulation_id": "SIM-golden-4",
-   "tick": 96,
-   "timestamp": "2026-10-17T00:15:39.000Z",
-   "ambulance": {
-    "id": "AMB-KRA-01",
-    "position": {
-     "lat": 50.06236842105263,
-     "lng": 19.959934210526317
-    },
-    "speed_kmh": 63.4,
-    "status": "EN_ROUTE"
-   },
-   "kpi_metrics": {
-    "current_time_saved_sec": 291,
-    "total_time_elapsed_sec": 480
-   },
-   "intersections": [
-    {
-     "id": "INT-0360",
-     "name": "Aleja 29 Listopada / Lublańska / Opolska",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    },
-    {
-     "id": "INT-0366",
-     "name": "Aleja 29 Listopada / Jana Woronicza",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    }
-   ],
-   "signal_phases": "INT-0360/INT-0360-S1/VEHICLE/RED INT-0360/INT-0360-S1/PEDESTRIAN/GREEN INT-0360/INT-0360-S2/VEHICLE/GREEN INT-0360/INT-0360-S2/PEDESTRIAN/RED INT-0366/INT-0366-S1/VEHICLE/RED INT-0366/INT-0366-S1/PEDESTRIAN/GREEN INT-0366/INT-0366-S2/VEHICLE/GREEN INT-0366/INT-0366-S2/PEDESTRIAN/RED"
-  }
- },
- {
-  "scenario": 4,
-  "callback": "onTick",
-  "payload": {
-   "schema_version": "1.0",
-   "is_simulated": true,
-   "event_type": "SIMULATION_TICK",
-   "simulation_id": "SIM-golden-4",
-   "tick": 97,
-   "timestamp": "2026-10-17T00:15:40.000Z",
-   "ambulance": {
-    "id": "AMB-KRA-01",
-    "position": {
-     "lat": 50.063,
-     "lng": 19.96
-    },
-    "speed_kmh": 0,
-    "status": "ARRIVED"
-   },
-   "kpi_metrics": {
-    "current_time_saved_sec": 295,
-    "total_time_elapsed_sec": 485
-   },
-   "intersections": [
-    {
-     "id": "INT-0360",
-     "name": "Aleja 29 Listopada / Lublańska / Opolska",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    },
-    {
-     "id": "INT-0366",
-     "name": "Aleja 29 Listopada / Jana Woronicza",
-     "state": "NORMAL",
-     "is_cascade": false,
-     "tti_seconds": null,
-     "is_active_corridor": false
-    }
-   ],
-   "signal_phases": "INT-0360/INT-0360-S1/VEHICLE/RED INT-0360/INT-0360-S1/PEDESTRIAN/RED INT-0360/INT-0360-S2/VEHICLE/YELLOW INT-0360/INT-0360-S2/PEDESTRIAN/RED INT-0366/INT-0366-S1/VEHICLE/RED INT-0366/INT-0366-S1/PEDESTRIAN/RED INT-0366/INT-0366-S2/VEHICLE/YELLOW INT-0366/INT-0366-S2/PEDESTRIAN/RED"
-  }
- },
- {
-  "scenario": 4,
   "callback": "onTerminal",
   "payload": {
    "schema_version": "1.0",
    "is_simulated": true,
    "event_type": "SIMULATION_COMPLETED",
    "simulation_id": "SIM-golden-4",
-   "tick": 97,
-   "timestamp": "2026-10-17T00:15:40.000Z",
+   "tick": 87,
+   "timestamp": "2026-10-17T00:15:30.000Z",
    "kpi_metrics": {
-    "current_time_saved_sec": 295,
-    "total_time_elapsed_sec": 485
+    "current_time_saved_sec": 347,
+    "total_time_elapsed_sec": 435
    }
   }
  }
