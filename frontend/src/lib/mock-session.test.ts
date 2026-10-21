@@ -285,3 +285,19 @@ describe("mock light under the animated vehicle", () => {
     },
   );
 });
+
+describe("mock playback speed", () => {
+  it("streams the same tick for every simulated second at every playback speed", () => {
+    const run = (playback: 1 | 5 | 10) =>
+      runToCompletion(
+        createMockSession(modeRequest("DISABLED", { playback_speed: playback })),
+      ).ticks.map((tick) => ({ ...tick, timestamp: "" })); // wall-clock time only
+    const baseline = run(1);
+
+    expect(baseline.map((tick) => tick.kpi_metrics.total_time_elapsed_sec)).toEqual(
+      baseline.map((_, index) => index + 1),
+    );
+    expect(run(5)).toEqual(baseline);
+    expect(run(10)).toEqual(baseline);
+  });
+});

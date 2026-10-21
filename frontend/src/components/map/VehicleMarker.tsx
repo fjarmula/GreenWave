@@ -6,6 +6,7 @@ import { Marker, type Map } from "maplibre-gl";
 
 import { VehicleIcon } from "@/components/map/VehicleIcon";
 import { VEHICLE_ICON_COLORS } from "@/components/map/vehicle-icons";
+import { createMarkerSlide, type MarkerSlide } from "@/lib/marker-slide";
 import { interpolateAlongRoute } from "@/lib/route-position";
 import type { RouteGeometry, VehicleType } from "@/types/telemetry";
 
@@ -18,6 +19,8 @@ type VehicleMarkerProps = {
   routeGeometry: RouteGeometry | null;
   /** No fresh telemetry (reconnecting, lost, ended with an error): dim the marker. */
   stale: boolean;
+  /** Slide time to each new position: one tick's wall-clock interval, so it arrives with the next. */
+  animationMilliseconds: number;
 };
 
 const VEHICLE_NAMES: Record<VehicleType, string> = {
@@ -33,8 +36,16 @@ export function VehicleMarker({
   vehicleType,
   routeGeometry,
   stale,
+  animationMilliseconds,
 }: VehicleMarkerProps) {
   const markerRef = useRef<Marker | null>(null);
+  const slideRef = useRef<MarkerSlide<[number, number]> | null>(null);
+  const routeRef = useRef(routeGeometry);
+  const durationRef = useRef(animationMilliseconds);
+  useEffect(() => {
+    routeRef.current = routeGeometry;
+    durationRef.current = animationMilliseconds;
+  }, [routeGeometry, animationMilliseconds]);
   // Created only in the browser (the map exists only there); the icon is portalled into it.
   const element = useMemo(() => {
     if (!map || !visible) return null;
@@ -48,9 +59,20 @@ export function VehicleMarker({
     if (!map || !element) return;
     const marker = new Marker({ element, anchor: "center" });
     markerRef.current = marker;
+    const slide = createMarkerSlide<[number, number]>({
+      show: (point) => marker.setLngLat(point),
+      interpolate: (from, to, progress) =>
+        interpolateAlongRoute(routeRef.current, from, to, progress),
+      now: () => performance.now(),
+      requestFrame: (callback) => requestAnimationFrame(callback),
+      cancelFrame: (handle) => cancelAnimationFrame(handle),
+    });
+    slideRef.current = slide;
     return () => {
+      slide.cancel();
       marker.remove();
       markerRef.current = null;
+      slideRef.current = null;
     };
   }, [map, element]);
 
@@ -71,28 +93,17 @@ export function VehicleMarker({
   const latitude = coordinates?.[1];
   useEffect(() => {
     const marker = markerRef.current;
-    if (!map || !marker || longitude === undefined || latitude === undefined) return;
+    const slide = slideRef.current;
+    if (!map || !marker || !slide || longitude === undefined || latitude === undefined) return;
     const target: [number, number] = [longitude, latitude];
-    if (!marker.getElement().isConnected) {
-      marker.setLngLat(target).addTo(map);
-      return;
-    }
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      marker.setLngLat(target);
-      return;
-    }
-    const current = marker.getLngLat();
-    const from: [number, number] = [current.lng, current.lat];
-    const started = performance.now();
-    let frame = 0;
-    const animate = (now: number) => {
-      const progress = Math.min(1, (now - started) / 1000);
-      marker.setLngLat(interpolateAlongRoute(routeGeometry, from, target, progress));
-      if (progress < 1) frame = requestAnimationFrame(animate);
-    };
-    frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
-  }, [map, element, longitude, latitude, routeGeometry]);
+    const placing = !marker.getElement().isConnected;
+    // One tick's slide, from the previous tick's position, over one tick's wall-clock interval;
+    // a playback-speed change applies from the next tick without restarting this one.
+    slide.moveTo(target, placing ? 0 : durationRef.current, {
+      reduceMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    });
+    if (placing) marker.addTo(map);
+  }, [map, element, longitude, latitude]);
 
   if (!element) return null;
   return createPortal(

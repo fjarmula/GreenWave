@@ -28,15 +28,13 @@ class _Engine:
     def initial_state(self) -> SimpleNamespace:
         return SimpleNamespace(tick=0, completed=False)
 
-    def run_tick(
-        self, state: SimpleNamespace, _: datetime, __: int
-    ) -> tuple[SimpleNamespace, list[object]]:
+    def step(self, state: SimpleNamespace, _: datetime) -> tuple[SimpleNamespace, list[object]]:
         return state, []
 
 
 class _CompletingEngine(_Engine):
-    def run_tick(
-        self, state: SimpleNamespace, timestamp: datetime, _: int
+    def step(
+        self, state: SimpleNamespace, timestamp: datetime
     ) -> tuple[SimpleNamespace, list[object]]:
         state.completed = True
         return state, [
@@ -166,9 +164,7 @@ async def test_failed_replacement_keeps_active_session(manager: SessionManager) 
 
 
 class _FailingEngine(_Engine):
-    def run_tick(
-        self, state: SimpleNamespace, _: datetime, __: int
-    ) -> tuple[SimpleNamespace, list[object]]:
+    def step(self, state: SimpleNamespace, _: datetime) -> tuple[SimpleNamespace, list[object]]:
         raise RuntimeError("engine bug")
 
 
@@ -186,3 +182,58 @@ async def test_engine_failure_is_logged_with_the_simulation_id(
     assert record.exc_info is not None
     assert getattr(record, "simulation_id", None) == "first"
     await manager.shutdown()
+
+
+async def _stream_at(playback: int, mode: str) -> tuple[list[dict[str, object]], list[float]]:
+    """Every event a subscriber receives for one corridor run, and every wall-clock sleep."""
+    from tests.support.route_fixtures import corridor_index, position_at
+
+    from greenwave.its import MockItsGateway
+
+    sleeps: list[float] = []
+
+    async def record_sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+        await asyncio.sleep(0)
+
+    manager = SessionManager(
+        corridor_index(),
+        SimulationSettings(),
+        MockItsGateway(),
+        clock=lambda: datetime(2026, 10, 21, tzinfo=UTC),
+        sleep=record_sleep,
+    )
+    request = SimulationStartRequest.model_validate(
+        {
+            "simulation_id": "SIM-speed",
+            "origin": position_at(7_422_000).model_dump(),
+            "destination": position_at(7_422_950.02).model_dump(),
+            "traffic_density_multiplier": 1.5,
+            "enable_cascade_mode": True,
+            "playback_speed": playback,
+            "green_wave_mode": mode,
+        }
+    )
+    await manager.start(request)
+
+    async def collect() -> list[dict[str, object]]:
+        return [event.model_dump(mode="json") async for event in manager.subscribe("SIM-speed")]
+
+    events = await asyncio.wait_for(collect(), timeout=30)
+    await manager.shutdown()
+    return events, sleeps
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode", ["ENABLED", "DISABLED"])
+async def test_every_simulated_second_is_streamed_whatever_the_playback_speed(mode: str) -> None:
+    """Playback speed only shortens the wall-clock gap; it never skips or batches a second."""
+    baseline, _ = await _stream_at(1, mode)
+    ticks = [event["tick"] for event in baseline if event["event_type"] == "SIMULATION_TICK"]
+    assert ticks == list(range(1, len(ticks) + 1))
+    for playback in (2, 5, 10):
+        events, sleeps = await _stream_at(playback, mode)
+        assert events == baseline
+        assert sleeps
+        assert all(seconds <= 1 / playback for seconds in sleeps)
+        assert max(sleeps) == pytest.approx(1 / playback, abs=0.01)

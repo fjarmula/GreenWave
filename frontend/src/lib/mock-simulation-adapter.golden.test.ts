@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { createMockSimulationAdapter } from "@/lib/mock-simulation-adapter";
-import { MOCK_STREAM_INTERVAL_MILLISECONDS } from "@/lib/mock-simulation-config";
+import { tickIntervalMilliseconds } from "@/lib/playback-speed";
 import type { SimulationStreamSubscriber } from "@/lib/simulation-adapter";
 import type { GreenWaveMode, SimulationStartRequest } from "@/types/telemetry";
 
@@ -75,12 +75,13 @@ it("mock stream matches the recorded event sequence", async () => {
     };
 
     records.push({ scenario: index, callback: "start", payload: await adapter.start(request) });
+    const interval = tickIntervalMilliseconds(scenario.playback);
     adapter.subscribe(request.simulation_id, subscriber);
     if (scenario.stopAfterIntervals !== undefined) {
-      vi.advanceTimersByTime(scenario.stopAfterIntervals * MOCK_STREAM_INTERVAL_MILLISECONDS);
+      vi.advanceTimersByTime(scenario.stopAfterIntervals * interval);
       await adapter.stop(request.simulation_id);
       const recordedAtStop = records.length;
-      vi.advanceTimersByTime(POST_STOP_INTERVALS * MOCK_STREAM_INTERVAL_MILLISECONDS);
+      vi.advanceTimersByTime(POST_STOP_INTERVALS * interval);
       expect(records.length).toBe(recordedAtStop);
       const terminals = records.filter(
         (entry) => entry.scenario === index && entry.callback === "onTerminal",
@@ -95,7 +96,7 @@ it("mock stream matches the recorded event sequence", async () => {
     }
     for (let interval = 0; !terminal; interval += 1) {
       if (interval >= MAX_INTERVALS) throw new Error(`scenario ${index} never terminated`);
-      vi.advanceTimersByTime(MOCK_STREAM_INTERVAL_MILLISECONDS);
+      vi.advanceTimersByTime(interval);
     }
   }
 

@@ -1,5 +1,5 @@
 import { advanceMockSession, createMockSession, type MockSession } from "@/lib/mock-session";
-import { MOCK_STREAM_INTERVAL_MILLISECONDS } from "@/lib/mock-simulation-config";
+import { tickIntervalMilliseconds } from "@/lib/playback-speed";
 import type { SimulationAdapter, SimulationStreamSubscriber } from "@/lib/simulation-adapter";
 import type {
   CancelReason,
@@ -48,7 +48,8 @@ export function createMockSimulationAdapter(): SimulationAdapter {
 
   const startTimer = () => {
     if (!session || timer || subscribers.size === 0) return;
-    timer = setInterval(emitNextTick, MOCK_STREAM_INTERVAL_MILLISECONDS);
+    // One simulated second per tick; playback only shortens the wall-clock gap, as the backend.
+    timer = setInterval(emitNextTick, tickIntervalMilliseconds(session.request.playback_speed));
   };
 
   return {

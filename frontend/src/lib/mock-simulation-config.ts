@@ -8,7 +8,6 @@ export const DEFAULT_TRAFFIC_DENSITY_MULTIPLIER = 1.5;
 export const MOCK_NORMAL_TRAVEL_TIME_SECONDS = 780;
 export const MOCK_GREENWAVE_TRAVEL_TIME_SECONDS = 380;
 export const MOCK_ROUTE_DISTANCE_METERS = 5400;
-export const MOCK_STREAM_INTERVAL_MILLISECONDS = 1000;
 
 // Mirrors of the architecture thresholds, used only by the mock's scripted timeline.
 export const MOCK_CLEARING_TTI_SECONDS = 40;

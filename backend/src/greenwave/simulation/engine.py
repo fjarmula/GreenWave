@@ -91,26 +91,19 @@ class SimulationEngine:
         )
 
     def step(
-        self,
-        state: EngineState,
-        wall_clock_utc: datetime,
-        interval_start_m: float | None = None,
+        self, state: EngineState, wall_clock_utc: datetime
     ) -> tuple[EngineState, list[EngineEvent]]:
         """One simulated second: move, advance signals, dispatch, then report.
 
         Motion and the reported phases read the same simulated programme
         (:func:`route_movement_color_at` mid-tick, :func:`advance_signal_phases` at tick end).
-        ``interval_start_m`` is where the ambulance was when the shown interval began (this step's
-        start unless :meth:`run_tick` shows several steps as one): the map animates the marker
-        across that interval under its final lights, so priority is released only for
-        intersections passed before it.
+        Every step is streamed as its own tick, and the map animates the marker across it under
+        that tick's lights, so priority is released only for intersections passed before it.
         """
         if state.completed:
             return state, []
         before = state
-        released_before_m = (
-            state.distance_travelled_m if interval_start_m is None else (interval_start_m)
-        )
+        released_before_m = state.distance_travelled_m
         state, actual_speed = move_one_second(
             state,
             self._track,
@@ -158,29 +151,6 @@ class SimulationEngine:
             state = replace(state, completed=True)
             events.append(completed_event(self.simulation_id, state, wall_clock_utc, kpi))
         return state, events
-
-    def run_tick(
-        self, state: EngineState, wall_clock_utc: datetime, playback_speed: int
-    ) -> tuple[EngineState, list[EngineEvent]]:
-        """``playback_speed`` steps; keep every dispatch, only the last tick, completion last."""
-        retained: list[EngineEvent] = []
-        final_tick: SimulationTickEvent | None = None
-        interval_start_m = state.distance_travelled_m
-        for _ in range(playback_speed):
-            state, events = self.step(state, wall_clock_utc, interval_start_m)
-            for event in events:
-                if event.event_type == "SIMULATION_TICK":
-                    final_tick = event
-                else:
-                    retained.append(event)
-            if state.completed:
-                break
-        terminal = [event for event in retained if event.event_type == "SIMULATION_COMPLETED"]
-        retained = [event for event in retained if event.event_type != "SIMULATION_COMPLETED"]
-        if final_tick is not None:
-            retained.append(final_tick)
-        retained.extend(terminal)
-        return state, retained
 
     def _dispatch(
         self, state: EngineState, ids: tuple[str, ...], now: datetime

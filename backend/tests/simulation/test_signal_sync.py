@@ -130,43 +130,19 @@ def test_without_a_late_start_the_trip_still_takes_t_greenwave() -> None:
     )
 
 
-def _run_emitted(
-    origin_x: float, settings: SimulationSettings, playback: int
-) -> tuple[SimulationEngine, list[tuple[float, SimulationTickEvent]]]:
-    """Run as the stream does: ``playback`` seconds per emitted tick, only the last one shown."""
-    index = corridor_index(signal_approaches=SIGNALS)
-    route = plan_route(index, position_at(origin_x), position_at(_X + 1_950.02), settings)
-    model = build_route_model(route, index, settings, cascade_enabled=True)
-    engine = SimulationEngine(
-        "SIM-sync",
-        route,
-        model,
-        estimate_times(route, model, 1.0, settings),
-        1.0,
-        settings,
-        MockItsGateway(),
-    )
-    state, emitted = engine.initial_state(), []
-    while not state.completed:
-        state, events = engine.run_tick(state, _NOW, playback)
-        tick = next(e for e in events if isinstance(e, SimulationTickEvent))
-        emitted.append((state.distance_travelled_m, tick))
-        assert state.simulated_time_s < 1_000
-    return engine, emitted
-
-
-@pytest.mark.parametrize("playback", [1, 2, 5, 10])
+@pytest.mark.parametrize("cascade", [False, True])
 @pytest.mark.parametrize("settings", _PROGRAMMES)
 @pytest.mark.parametrize("origin_x", _ORIGINS)
 def test_a_light_the_map_animates_the_ambulance_past_is_still_green(
-    origin_x: float, settings: SimulationSettings, playback: int
+    origin_x: float, settings: SimulationSettings, cascade: bool
 ) -> None:
-    """The map moves the marker across each emitted interval while showing that tick's lights.
+    """The map moves the marker across each tick (one simulated second at any playback speed)
+    while showing that tick's lights.
 
-    So a stop line crossed during an interval needs its route light green in that tick: priority
-    is released only in a later tick, never under the animated ambulance.
+    So a stop line crossed during a tick needs its route light green in that tick: priority is
+    released only in a later tick, never under the animated ambulance.
     """
-    engine, emitted = _run_emitted(origin_x, settings, playback)
+    engine, emitted = _run(origin_x, settings, cascade)
     lines = [
         (stop.intersection_id, stop.distance_along_route_m) for stop in engine.route.stop_lines
     ]
@@ -212,8 +188,7 @@ def test_a_destination_on_the_stop_line_releases_the_junction() -> None:
     assert _held(100.0, arrived=True, interval_start_m=90.0)
 
 
-@pytest.mark.parametrize("playback", [1, 10])
-def test_a_run_ending_on_a_stop_line_completes(playback: int) -> None:
+def test_a_run_ending_on_a_stop_line_completes() -> None:
     settings = SimulationSettings()
     index = corridor_index(signal_approaches=SIGNALS)
     route = plan_route(index, position_at(_X + 1_000), position_at(_X + 1_850.02), settings)
@@ -229,5 +204,5 @@ def test_a_run_ending_on_a_stop_line_completes(playback: int) -> None:
     )
     state = engine.initial_state()
     while not state.completed:
-        state, _ = engine.run_tick(state, _NOW, playback)
+        state, _ = engine.step(state, _NOW)
         assert state.simulated_time_s < 1_000

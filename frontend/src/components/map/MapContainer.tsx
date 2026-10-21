@@ -12,6 +12,7 @@ import { StationLayer } from "@/components/map/StationLayer";
 import { useMaplibreMap } from "@/components/map/useMaplibreMap";
 import { useRouteFit } from "@/components/map/useRouteFit";
 import { VehicleMarker } from "@/components/map/VehicleMarker";
+import { tickIntervalMilliseconds } from "@/lib/playback-speed";
 import { useSimulationState } from "@/components/simulation-provider";
 import { isTelemetryStale } from "@/lib/simulation-state";
 import type {
@@ -102,6 +103,7 @@ export function MapContainer({
         coordinates={vehiclePosition ? [vehiclePosition.lng, vehiclePosition.lat] : null}
         routeGeometry={routeData?.route_geometry ?? null}
         stale={telemetryStale}
+        animationMilliseconds={tickIntervalMilliseconds(startRequest?.playback_speed ?? 1)}
       />
       <EndpointMarkers
         map={map}

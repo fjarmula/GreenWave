@@ -1,4 +1,5255 @@
 {
+ "cascade_dense": {
+  "dispatched": [
+   {
+    "action": "FORCE_GREEN_PHASE",
+    "expected_arrival_utc": "2026-10-17T00:00:06.692308Z",
+    "hold_duration_sec": 40,
+    "intersections_group": [
+     "INT-A",
+     "INT-TWIN"
+    ],
+    "priority_level": 1,
+    "vehicle_type": "AMBULANCE"
+   },
+   {
+    "action": "FORCE_GREEN_PHASE",
+    "expected_arrival_utc": "2026-10-17T00:00:39.154615Z",
+    "hold_duration_sec": 45,
+    "intersections_group": [
+     "INT-C"
+    ],
+    "priority_level": 1,
+    "vehicle_type": "AMBULANCE"
+   },
+   {
+    "action": "FORCE_GREEN_PHASE",
+    "expected_arrival_utc": "2026-10-17T00:00:39.505008Z",
+    "hold_duration_sec": 45,
+    "intersections_group": [
+     "INT-B"
+    ],
+    "priority_level": 1,
+    "vehicle_type": "AMBULANCE"
+   }
+  ],
+  "events": [
+   {
+    "event_type": "ITS_DISPATCH",
+    "is_simulated": true,
+    "message_id": "MSG-ITS-1",
+    "payload": {
+     "action": "FORCE_GREEN_PHASE",
+     "expected_arrival_utc": "2026-10-17T00:00:06.692308Z",
+     "hold_duration_sec": 40,
+     "intersections_group": [
+      "INT-A",
+      "INT-TWIN"
+     ],
+     "priority_level": 1,
+     "vehicle_type": "AMBULANCE"
+    },
+    "schema_version": "1.0",
+    "simulation_id": "SIM-cascade_dense",
+    "system_source": "ER_GREENWAVE_ENGINE",
+    "target_system": "STeR_KRAKOW_ITS",
+    "tick": 1,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00011176051085,
+      "lng": 19.912153218126413
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 7
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 26
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 45
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 64
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 2,
+     "total_time_elapsed_sec": 1
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 1,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00011345964248,
+      "lng": 19.912334521906637
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 6
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 25
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 44
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 63
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 3,
+     "total_time_elapsed_sec": 2
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 2,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000115158774115,
+      "lng": 19.912515825686864
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 5
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 24
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 43
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 62
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 5,
+     "total_time_elapsed_sec": 3
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 3,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000116857905745,
+      "lng": 19.912697129467087
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 4
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 23
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 42
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 61
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 6,
+     "total_time_elapsed_sec": 4
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 4,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000118557037375,
+      "lng": 19.912878433247315
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 3
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 22
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 41
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 60
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 8,
+     "total_time_elapsed_sec": 5
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 5,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000120256169005,
+      "lng": 19.913059737027538
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 2
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 21
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 40
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 59
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 10,
+     "total_time_elapsed_sec": 6
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 6,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "event_type": "ITS_DISPATCH",
+    "is_simulated": true,
+    "message_id": "MSG-ITS-2",
+    "payload": {
+     "action": "FORCE_GREEN_PHASE",
+     "expected_arrival_utc": "2026-10-17T00:00:39.154615Z",
+     "hold_duration_sec": 45,
+     "intersections_group": [
+      "INT-C"
+     ],
+     "priority_level": 1,
+     "vehicle_type": "AMBULANCE"
+    },
+    "schema_version": "1.0",
+    "simulation_id": "SIM-cascade_dense",
+    "system_source": "ER_GREENWAVE_ENGINE",
+    "target_system": "STeR_KRAKOW_ITS",
+    "tick": 7,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000121955300635,
+      "lng": 19.913241040807765
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 1
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 20
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 39
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 58
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 11,
+     "total_time_elapsed_sec": 7
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 7,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00012313162249,
+      "lng": 19.91336655880946
+     },
+     "speed_kmh": 32.4,
+     "status": "CROSSING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 21
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 42
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 63
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 22,
+     "total_time_elapsed_sec": 8
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 8,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00012313162249,
+      "lng": 19.91336655880946
+     },
+     "speed_kmh": 0.0,
+     "status": "CROSSING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 28
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 56
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 83
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 21,
+     "total_time_elapsed_sec": 9
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 9,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00012313162249,
+      "lng": 19.91336655880946
+     },
+     "speed_kmh": 0.0,
+     "status": "CROSSING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 37
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 74
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 111
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 20,
+     "total_time_elapsed_sec": 10
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 10,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00012365325861,
+      "lng": 19.91342234461458
+     },
+     "speed_kmh": 14.4,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 41
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 82
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 123
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 20,
+     "total_time_elapsed_sec": 11
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 11,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00012534857601,
+      "lng": 19.913603648481224
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 30
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 62
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 94
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 21,
+     "total_time_elapsed_sec": 12
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 12,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000127043893414,
+      "lng": 19.913784952347868
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 24
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 52
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 79
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 23,
+     "total_time_elapsed_sec": 13
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 13,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00012873921082,
+      "lng": 19.913966256214515
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 21
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 45
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 70
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 25,
+     "total_time_elapsed_sec": 14
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 14,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000130434528224,
+      "lng": 19.914147560081158
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 18
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 41
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 64
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 26,
+     "total_time_elapsed_sec": 15
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 15,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00013212984563,
+      "lng": 19.9143288639478
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 16
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 38
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 60
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 28,
+     "total_time_elapsed_sec": 16
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 16,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00013382516303,
+      "lng": 19.914510167814445
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 14
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 36
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 57
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 29,
+     "total_time_elapsed_sec": 17
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 17,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00013552048044,
+      "lng": 19.91469147168109
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 13
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 34
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 54
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 31,
+     "total_time_elapsed_sec": 18
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 18,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00013721579784,
+      "lng": 19.91487277554773
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 12
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 32
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 52
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 33,
+     "total_time_elapsed_sec": 19
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 19,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00013891111525,
+      "lng": 19.915054079414375
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 10
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 30
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 50
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 34,
+     "total_time_elapsed_sec": 20
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 20,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00014060643265,
+      "lng": 19.915235383281022
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 9
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 29
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 49
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 36,
+     "total_time_elapsed_sec": 21
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 21,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00014230175005,
+      "lng": 19.915416687147665
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 8
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 28
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 47
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 37,
+     "total_time_elapsed_sec": 22
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 22,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00014399706746,
+      "lng": 19.91559799101431
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 7
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 27
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 46
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 39,
+     "total_time_elapsed_sec": 23
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 23,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00014569238486,
+      "lng": 19.915779294880952
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 6
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 25
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 45
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 41,
+     "total_time_elapsed_sec": 24
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 24,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00014738770227,
+      "lng": 19.915960598747596
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 5
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 24
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 44
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 42,
+     "total_time_elapsed_sec": 25
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 25,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00014908301967,
+      "lng": 19.91614190261424
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 4
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 23
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 43
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 44,
+     "total_time_elapsed_sec": 26
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 26,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00015077833708,
+      "lng": 19.916323206480882
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 3
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 22
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 42
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 45,
+     "total_time_elapsed_sec": 27
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 27,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00015247365448,
+      "lng": 19.91650451034753
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 2
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 21
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": 41
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 47,
+     "total_time_elapsed_sec": 28
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 28,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "event_type": "ITS_DISPATCH",
+    "is_simulated": true,
+    "message_id": "MSG-ITS-3",
+    "payload": {
+     "action": "FORCE_GREEN_PHASE",
+     "expected_arrival_utc": "2026-10-17T00:00:39.505008Z",
+     "hold_duration_sec": 45,
+     "intersections_group": [
+      "INT-B"
+     ],
+     "priority_level": 1,
+     "vehicle_type": "AMBULANCE"
+    },
+    "schema_version": "1.0",
+    "simulation_id": "SIM-cascade_dense",
+    "system_source": "ER_GREENWAVE_ENGINE",
+    "target_system": "STeR_KRAKOW_ITS",
+    "tick": 29,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00015416897189,
+      "lng": 19.916685814214173
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 1
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 20
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 40
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 49,
+     "total_time_elapsed_sec": 29
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 29,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00015573388009,
+      "lng": 19.91685317162954
+     },
+     "speed_kmh": 43.2,
+     "status": "CROSSING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 20
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 39
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 50,
+     "total_time_elapsed_sec": 30
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 30,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00015573388009,
+      "lng": 19.91685317162954
+     },
+     "speed_kmh": 0.0,
+     "status": "CROSSING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 26
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 52
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 49,
+     "total_time_elapsed_sec": 31
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 31,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00015573388009,
+      "lng": 19.91685317162954
+     },
+     "speed_kmh": 0.0,
+     "status": "CROSSING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 35
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 70
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 48,
+     "total_time_elapsed_sec": 32
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 32,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00015586386997,
+      "lng": 19.91686711809029
+     },
+     "speed_kmh": 3.6,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 44
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 89
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 47,
+     "total_time_elapsed_sec": 33
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 33,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00015755373836,
+      "lng": 19.917048422080054
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 32
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 65
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 49,
+     "total_time_elapsed_sec": 34
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 34,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00015924360676,
+      "lng": 19.91722972606982
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 25
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 53
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 50,
+     "total_time_elapsed_sec": 35
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 35,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00016093347516,
+      "lng": 19.917411030059583
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 21
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 47
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 52,
+     "total_time_elapsed_sec": 36
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 36,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000162623343556,
+      "lng": 19.917592334049345
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 18
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 42
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 54,
+     "total_time_elapsed_sec": 37
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 37,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000164313211954,
+      "lng": 19.91777363803911
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 16
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 39
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 55,
+     "total_time_elapsed_sec": 38
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 38,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00016600308035,
+      "lng": 19.917954942028874
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 15
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 36
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 57,
+     "total_time_elapsed_sec": 39
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 39,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00016769294875,
+      "lng": 19.91813624601864
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 13
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 34
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 58,
+     "total_time_elapsed_sec": 40
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 40,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00016938281714,
+      "lng": 19.918317550008403
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 12
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 32
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 60,
+     "total_time_elapsed_sec": 41
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 41,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00017107268554,
+      "lng": 19.91849885399817
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 11
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 31
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 62,
+     "total_time_elapsed_sec": 42
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 42,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00017276255394,
+      "lng": 19.918680157987932
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 9
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 29
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 63,
+     "total_time_elapsed_sec": 43
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 43,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000174452422335,
+      "lng": 19.918861461977695
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 8
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 28
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 65,
+     "total_time_elapsed_sec": 44
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 44,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000176142290734,
+      "lng": 19.91904276596746
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 7
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 27
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 66,
+     "total_time_elapsed_sec": 45
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 45,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00017783215913,
+      "lng": 19.919224069957224
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 6
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "CLEARING",
+      "tti_seconds": 26
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 68,
+     "total_time_elapsed_sec": 46
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 46,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00017952202753,
+      "lng": 19.91940537394699
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 5
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 25
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 70,
+     "total_time_elapsed_sec": 47
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 47,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00018121189592,
+      "lng": 19.919586677936753
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 4
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 24
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 71,
+     "total_time_elapsed_sec": 48
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 48,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00018290176432,
+      "lng": 19.91976798192652
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 3
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 23
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 73,
+     "total_time_elapsed_sec": 49
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 49,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00018459163272,
+      "lng": 19.91994928591628
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 2
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 21
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 74,
+     "total_time_elapsed_sec": 50
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 50,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000186281501115,
+      "lng": 19.920130589906044
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 1
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 20
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 76,
+     "total_time_elapsed_sec": 51
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 51,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00018797136951,
+      "lng": 19.92031189389581
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 19
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 78,
+     "total_time_elapsed_sec": 52
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 52,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00018823264902,
+      "lng": 19.920339926281923
+     },
+     "speed_kmh": 7.235999999999968,
+     "status": "CROSSING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 24
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 127,
+     "total_time_elapsed_sec": 53
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 53,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00018823264902,
+      "lng": 19.920339926281923
+     },
+     "speed_kmh": 0.0,
+     "status": "CROSSING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 33
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 126,
+     "total_time_elapsed_sec": 54
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 54,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00018823264902,
+      "lng": 19.920339926281923
+     },
+     "speed_kmh": 0.0,
+     "status": "CROSSING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 43
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 125,
+     "total_time_elapsed_sec": 55
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 55,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000189656631164,
+      "lng": 19.92049319798933
+     },
+     "speed_kmh": 39.564000000000036,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 34
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 126,
+     "total_time_elapsed_sec": 56
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 56,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00019134105044,
+      "lng": 19.920674502101818
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 26
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 128,
+     "total_time_elapsed_sec": 57
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 57,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00019302546971,
+      "lng": 19.92085580621431
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 22
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 129,
+     "total_time_elapsed_sec": 58
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 58,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00019470988899,
+      "lng": 19.9210371103268
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 19
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 131,
+     "total_time_elapsed_sec": 59
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 59,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00019639430827,
+      "lng": 19.92121841443929
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 17
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 133,
+     "total_time_elapsed_sec": 60
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 60,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00019807872754,
+      "lng": 19.921399718551783
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 15
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 134,
+     "total_time_elapsed_sec": 61
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 61,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00019976314682,
+      "lng": 19.921581022664274
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 13
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 136,
+     "total_time_elapsed_sec": 62
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 62,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00020144756609,
+      "lng": 19.92176232677676
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 12
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 137,
+     "total_time_elapsed_sec": 63
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 63,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00020313198537,
+      "lng": 19.921943630889253
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 11
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 139,
+     "total_time_elapsed_sec": 64
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 64,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00020481640465,
+      "lng": 19.922124935001744
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 10
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 141,
+     "total_time_elapsed_sec": 65
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 65,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00020650082392,
+      "lng": 19.922306239114235
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 9
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 142,
+     "total_time_elapsed_sec": 66
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 66,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000208185243196,
+      "lng": 19.922487543226726
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 8
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 144,
+     "total_time_elapsed_sec": 67
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 67,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00020986966247,
+      "lng": 19.922668847339217
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 6
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 145,
+     "total_time_elapsed_sec": 68
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 68,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00021155408175,
+      "lng": 19.922850151451705
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 5
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 147,
+     "total_time_elapsed_sec": 69
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 69,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000213238501026,
+      "lng": 19.923031455564196
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 4
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 149,
+     "total_time_elapsed_sec": 70
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 70,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.0002149229203,
+      "lng": 19.923212759676687
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 3
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 150,
+     "total_time_elapsed_sec": 71
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 71,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000216607339574,
+      "lng": 19.92339406378918
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 2
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 152,
+     "total_time_elapsed_sec": 72
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 72,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.000218291758856,
+      "lng": 19.92357536790167
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 1
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 153,
+     "total_time_elapsed_sec": 73
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 73,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00021997617813,
+      "lng": 19.92375667201416
+     },
+     "speed_kmh": 46.800000000000004,
+     "status": "APPROACHING_INTERSECTION"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 155,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 74,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 18.071999999999935,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": true,
+      "is_cascade": false,
+      "name": null,
+      "state": "PRIORITY_GREEN",
+      "tti_seconds": 0
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 75,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 76,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 77,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 78,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 79,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 80,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 81,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 82,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 83,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 84,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 85,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 86,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 87,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 88,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 89,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "RECOVERY",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 90,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "ambulance": {
+     "id": "SIM-cascade_dense",
+     "position": {
+      "lat": 50.00022062662311,
+      "lng": 19.92382668329452
+     },
+     "speed_kmh": 0.0,
+     "status": "ARRIVED"
+    },
+    "event_type": "SIMULATION_TICK",
+    "intersections": [
+     {
+      "id": "INT-A",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-TWIN",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-C",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     },
+     {
+      "id": "INT-B",
+      "is_active_corridor": false,
+      "is_cascade": false,
+      "name": null,
+      "state": "NORMAL",
+      "tti_seconds": null
+     }
+    ],
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "signal_phases": [],
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 91,
+    "timestamp": "2026-10-17T00:00:00Z"
+   },
+   {
+    "event_type": "SIMULATION_COMPLETED",
+    "is_simulated": true,
+    "kpi_metrics": {
+     "current_time_saved_sec": 196,
+     "total_time_elapsed_sec": 74
+    },
+    "schema_version": "1.0",
+    "simulation_id": "SIM-cascade_dense",
+    "tick": 91,
+    "timestamp": "2026-10-17T00:00:00Z"
+   }
+  ],
+  "final_state": {
+   "arrived": true,
+   "arrived_at_s": 74.38615384615385,
+   "cautious_crossing_remaining_m": 0.0,
+   "cautious_time_remaining_s": 0.0,
+   "completed": true,
+   "current_edge_index": 3,
+   "distance_travelled_m": 850.02,
+   "dwell_remaining_s": 0.0,
+   "dwelling_intersection_id": null,
+   "intersection_runtimes": [
+    {
+     "is_cascade": false,
+     "passed": true,
+     "recovery_started_at_s": 12.0,
+     "state": "NORMAL"
+    },
+    {
+     "is_cascade": false,
+     "passed": true,
+     "recovery_started_at_s": 57.0,
+     "state": "NORMAL"
+    },
+    {
+     "is_cascade": false,
+     "passed": true,
+     "recovery_started_at_s": 57.0,
+     "state": "NORMAL"
+    },
+    {
+     "is_cascade": false,
+     "passed": true,
+     "recovery_started_at_s": 76.0,
+     "state": "NORMAL"
+    }
+   ],
+   "message_sequence": 3,
+   "signal_heads": [],
+   "simulated_time_s": 91,
+   "tick": 91,
+   "v_avg_meters_per_second": 10.979896244124795
+  }
+ },
  "cascade_x1": {
   "dispatched": [
    {
@@ -5234,1225 +10485,6 @@
      "is_cascade": false,
      "passed": true,
      "recovery_started_at_s": 57.0,
-     "state": "NORMAL"
-    },
-    {
-     "is_cascade": false,
-     "passed": true,
-     "recovery_started_at_s": 76.0,
-     "state": "NORMAL"
-    }
-   ],
-   "message_sequence": 3,
-   "signal_heads": [],
-   "simulated_time_s": 91,
-   "tick": 91,
-   "v_avg_meters_per_second": 10.979896244124795
-  }
- },
- "cascade_x5": {
-  "dispatched": [
-   {
-    "action": "FORCE_GREEN_PHASE",
-    "expected_arrival_utc": "2026-10-17T00:00:06.692308Z",
-    "hold_duration_sec": 40,
-    "intersections_group": [
-     "INT-A",
-     "INT-TWIN"
-    ],
-    "priority_level": 1,
-    "vehicle_type": "AMBULANCE"
-   },
-   {
-    "action": "FORCE_GREEN_PHASE",
-    "expected_arrival_utc": "2026-10-17T00:00:39.154615Z",
-    "hold_duration_sec": 45,
-    "intersections_group": [
-     "INT-C"
-    ],
-    "priority_level": 1,
-    "vehicle_type": "AMBULANCE"
-   },
-   {
-    "action": "FORCE_GREEN_PHASE",
-    "expected_arrival_utc": "2026-10-17T00:00:39.505008Z",
-    "hold_duration_sec": 45,
-    "intersections_group": [
-     "INT-B"
-    ],
-    "priority_level": 1,
-    "vehicle_type": "AMBULANCE"
-   }
-  ],
-  "events": [
-   {
-    "event_type": "ITS_DISPATCH",
-    "is_simulated": true,
-    "message_id": "MSG-ITS-1",
-    "payload": {
-     "action": "FORCE_GREEN_PHASE",
-     "expected_arrival_utc": "2026-10-17T00:00:06.692308Z",
-     "hold_duration_sec": 40,
-     "intersections_group": [
-      "INT-A",
-      "INT-TWIN"
-     ],
-     "priority_level": 1,
-     "vehicle_type": "AMBULANCE"
-    },
-    "schema_version": "1.0",
-    "simulation_id": "SIM-cascade_x5",
-    "system_source": "ER_GREENWAVE_ENGINE",
-    "target_system": "STeR_KRAKOW_ITS",
-    "tick": 1,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.000118557037375,
-      "lng": 19.912878433247315
-     },
-     "speed_kmh": 46.800000000000004,
-     "status": "APPROACHING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 3
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 22
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": 41
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": 60
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 8,
-     "total_time_elapsed_sec": 5
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 5,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "event_type": "ITS_DISPATCH",
-    "is_simulated": true,
-    "message_id": "MSG-ITS-2",
-    "payload": {
-     "action": "FORCE_GREEN_PHASE",
-     "expected_arrival_utc": "2026-10-17T00:00:39.154615Z",
-     "hold_duration_sec": 45,
-     "intersections_group": [
-      "INT-C"
-     ],
-     "priority_level": 1,
-     "vehicle_type": "AMBULANCE"
-    },
-    "schema_version": "1.0",
-    "simulation_id": "SIM-cascade_x5",
-    "system_source": "ER_GREENWAVE_ENGINE",
-    "target_system": "STeR_KRAKOW_ITS",
-    "tick": 7,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00012313162249,
-      "lng": 19.91336655880946
-     },
-     "speed_kmh": 0.0,
-     "status": "CROSSING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 0
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 37
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "CLEARING",
-      "tti_seconds": 74
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": 111
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 20,
-     "total_time_elapsed_sec": 10
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 10,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.000130434528224,
-      "lng": 19.914147560081158
-     },
-     "speed_kmh": 46.800000000000004,
-     "status": "APPROACHING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 0
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 18
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "CLEARING",
-      "tti_seconds": 41
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": 64
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 26,
-     "total_time_elapsed_sec": 15
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 15,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00013891111525,
-      "lng": 19.915054079414375
-     },
-     "speed_kmh": 46.800000000000004,
-     "status": "APPROACHING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 10
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "CLEARING",
-      "tti_seconds": 30
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": 50
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 34,
-     "total_time_elapsed_sec": 20
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 20,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00014738770227,
-      "lng": 19.915960598747596
-     },
-     "speed_kmh": 46.800000000000004,
-     "status": "APPROACHING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 5
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 24
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": 44
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 42,
-     "total_time_elapsed_sec": 25
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 25,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "event_type": "ITS_DISPATCH",
-    "is_simulated": true,
-    "message_id": "MSG-ITS-3",
-    "payload": {
-     "action": "FORCE_GREEN_PHASE",
-     "expected_arrival_utc": "2026-10-17T00:00:39.505008Z",
-     "hold_duration_sec": 45,
-     "intersections_group": [
-      "INT-B"
-     ],
-     "priority_level": 1,
-     "vehicle_type": "AMBULANCE"
-    },
-    "schema_version": "1.0",
-    "simulation_id": "SIM-cascade_x5",
-    "system_source": "ER_GREENWAVE_ENGINE",
-    "target_system": "STeR_KRAKOW_ITS",
-    "tick": 29,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00015573388009,
-      "lng": 19.91685317162954
-     },
-     "speed_kmh": 43.2,
-     "status": "CROSSING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 0
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 20
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "CLEARING",
-      "tti_seconds": 39
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 50,
-     "total_time_elapsed_sec": 30
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 30,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00015924360676,
-      "lng": 19.91722972606982
-     },
-     "speed_kmh": 46.800000000000004,
-     "status": "APPROACHING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 0
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 25
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "CLEARING",
-      "tti_seconds": 53
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 50,
-     "total_time_elapsed_sec": 35
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 35,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00016769294875,
-      "lng": 19.91813624601864
-     },
-     "speed_kmh": 46.800000000000004,
-     "status": "APPROACHING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 0
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 13
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "CLEARING",
-      "tti_seconds": 34
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 58,
-     "total_time_elapsed_sec": 40
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 40,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.000176142290734,
-      "lng": 19.91904276596746
-     },
-     "speed_kmh": 46.800000000000004,
-     "status": "APPROACHING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 0
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 7
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "CLEARING",
-      "tti_seconds": 27
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 66,
-     "total_time_elapsed_sec": 45
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 45,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00018459163272,
-      "lng": 19.91994928591628
-     },
-     "speed_kmh": 46.800000000000004,
-     "status": "APPROACHING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 0
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 2
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 21
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 74,
-     "total_time_elapsed_sec": 50
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 50,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00018823264902,
-      "lng": 19.920339926281923
-     },
-     "speed_kmh": 0.0,
-     "status": "CROSSING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 0
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 0
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 43
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 125,
-     "total_time_elapsed_sec": 55
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 55,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00019639430827,
-      "lng": 19.92121841443929
-     },
-     "speed_kmh": 46.800000000000004,
-     "status": "APPROACHING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 0
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 0
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 17
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 133,
-     "total_time_elapsed_sec": 60
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 60,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00020481640465,
-      "lng": 19.922124935001744
-     },
-     "speed_kmh": 46.800000000000004,
-     "status": "APPROACHING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 10
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 141,
-     "total_time_elapsed_sec": 65
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 65,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.000213238501026,
-      "lng": 19.923031455564196
-     },
-     "speed_kmh": 46.800000000000004,
-     "status": "APPROACHING_INTERSECTION"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 4
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 149,
-     "total_time_elapsed_sec": 70
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 70,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00022062662311,
-      "lng": 19.92382668329452
-     },
-     "speed_kmh": 18.071999999999935,
-     "status": "ARRIVED"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": true,
-      "is_cascade": false,
-      "name": null,
-      "state": "PRIORITY_GREEN",
-      "tti_seconds": 0
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 196,
-     "total_time_elapsed_sec": 74
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 75,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00022062662311,
-      "lng": 19.92382668329452
-     },
-     "speed_kmh": 0.0,
-     "status": "ARRIVED"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 196,
-     "total_time_elapsed_sec": 74
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 80,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00022062662311,
-      "lng": 19.92382668329452
-     },
-     "speed_kmh": 0.0,
-     "status": "ARRIVED"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 196,
-     "total_time_elapsed_sec": 74
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 85,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00022062662311,
-      "lng": 19.92382668329452
-     },
-     "speed_kmh": 0.0,
-     "status": "ARRIVED"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "RECOVERY",
-      "tti_seconds": null
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 196,
-     "total_time_elapsed_sec": 74
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 90,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "ambulance": {
-     "id": "SIM-cascade_x5",
-     "position": {
-      "lat": 50.00022062662311,
-      "lng": 19.92382668329452
-     },
-     "speed_kmh": 0.0,
-     "status": "ARRIVED"
-    },
-    "event_type": "SIMULATION_TICK",
-    "intersections": [
-     {
-      "id": "INT-A",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-TWIN",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-C",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     },
-     {
-      "id": "INT-B",
-      "is_active_corridor": false,
-      "is_cascade": false,
-      "name": null,
-      "state": "NORMAL",
-      "tti_seconds": null
-     }
-    ],
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 196,
-     "total_time_elapsed_sec": 74
-    },
-    "schema_version": "1.0",
-    "signal_phases": [],
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 91,
-    "timestamp": "2026-10-17T00:00:00Z"
-   },
-   {
-    "event_type": "SIMULATION_COMPLETED",
-    "is_simulated": true,
-    "kpi_metrics": {
-     "current_time_saved_sec": 196,
-     "total_time_elapsed_sec": 74
-    },
-    "schema_version": "1.0",
-    "simulation_id": "SIM-cascade_x5",
-    "tick": 91,
-    "timestamp": "2026-10-17T00:00:00Z"
-   }
-  ],
-  "final_state": {
-   "arrived": true,
-   "arrived_at_s": 74.38615384615385,
-   "cautious_crossing_remaining_m": 0.0,
-   "cautious_time_remaining_s": 0.0,
-   "completed": true,
-   "current_edge_index": 3,
-   "distance_travelled_m": 850.02,
-   "dwell_remaining_s": 0.0,
-   "dwelling_intersection_id": null,
-   "intersection_runtimes": [
-    {
-     "is_cascade": false,
-     "passed": true,
-     "recovery_started_at_s": 16.0,
-     "state": "NORMAL"
-    },
-    {
-     "is_cascade": false,
-     "passed": true,
-     "recovery_started_at_s": 61.0,
-     "state": "NORMAL"
-    },
-    {
-     "is_cascade": false,
-     "passed": true,
-     "recovery_started_at_s": 61.0,
      "state": "NORMAL"
     },
     {

@@ -55,7 +55,7 @@ export type MockSession = {
   /** Shown vehicle light per synthetic signal key, so lights change only legally between ticks. */
   signalHeads: Map<string, MockSignalHead>;
   timeline: MockTimeline;
-  /** Elapsed seconds when the current emitted tick began; the map animates across the rest. */
+  /** Elapsed seconds when the current tick began; the map animates the vehicle across the tick. */
   intervalStartSeconds: number;
 };
 
@@ -226,7 +226,7 @@ function routeProgress(session: MockSession): number {
   return Math.min(1, metersAt(session, session.elapsedSeconds) / session.route.total_distance_m);
 }
 
-/** Advances one wall-clock tick as `playback_speed` one-second sub-steps. */
+/** Advances one tick: exactly one simulated second, whatever the playback speed. */
 export function advanceMockSession(session: MockSession): {
   tick: SimulationTickEvent;
   dispatch: ItsDispatchEvent | null;
@@ -235,10 +235,8 @@ export function advanceMockSession(session: MockSession): {
   const enteredClearing = new Set<number>();
   session.tick += 1;
   session.intervalStartSeconds = session.elapsedSeconds;
-  for (let step = 0; step < session.request.playback_speed; step += 1) {
-    session.elapsedSeconds += 1;
-    stepMockSignals(session, enteredClearing);
-  }
+  session.elapsedSeconds += 1;
+  stepMockSignals(session, enteredClearing);
 
   const timestamp = new Date().toISOString();
   const tick = buildMockTick(session, timestamp);
@@ -472,8 +470,8 @@ export function stepMockSignals(session: MockSession, enteredClearing: Set<numbe
       return;
     }
     if (signal.passed) return;
-    // Released only once reached before this emitted tick: the map animates the vehicle across the
-    // tick under its final lights, so priority must not end beneath it (as the backend does).
+    // Released only once reached before this tick: the map animates the vehicle across the tick
+    // under its final lights, so priority must not end beneath it (as the backend does).
     if (tti <= 0 && arrivalSeconds(session, index) <= session.intervalStartSeconds) {
       signal.passed = true;
       signal.state = "RECOVERY";
