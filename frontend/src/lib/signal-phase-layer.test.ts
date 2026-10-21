@@ -4,7 +4,7 @@ import {
   coarseMarkerIds,
   coarseMarkerLabels,
   createSignalPhaseLayer,
-  layoutPhaseMarkers,
+  layoutPhaseMarkers as layoutProjectedPhaseMarkers,
   phaseMarkerText,
   phaseMarkerView,
   SIGNAL_PHASE_DETAIL_ZOOM,
@@ -29,22 +29,37 @@ const PEDESTRIAN: SignalPhaseIndicator = {
   accessible_label: "Simulated pedestrian signal OSM-L4 at INT-0360: red",
 };
 
+function layoutPhaseMarkers(
+  phases: SignalPhaseIndicator[],
+  project: ZoomSource["project"] = ([lng, lat]) => ({ x: lng * 1000, y: -lat * 1000 }),
+) {
+  return layoutProjectedPhaseMarkers(phases, project);
+}
+
 /** A MapLibre stand-in: a zoom level and its `zoomend` listeners. */
 class FakeMap implements ZoomSource {
-  listeners = new Set<() => void>();
+  listeners = new Map<string, Set<() => void>>();
+  scale = 1000;
   constructor(public zoom: number) {}
   getZoom() {
     return this.zoom;
   }
-  on(_type: "zoomend", listener: () => void) {
-    this.listeners.add(listener);
+  project([lng, lat]: [number, number]) {
+    return { x: lng * this.scale, y: -lat * this.scale };
   }
-  off(_type: "zoomend", listener: () => void) {
-    this.listeners.delete(listener);
+  on(type: "zoomend" | "moveend" | "resize", listener: () => void) {
+    const listeners = this.listeners.get(type) ?? new Set();
+    listeners.add(listener);
+    this.listeners.set(type, listeners);
+  }
+  off(type: "zoomend" | "moveend" | "resize", listener: () => void) {
+    const listeners = this.listeners.get(type);
+    listeners?.delete(listener);
+    if (!listeners?.size) this.listeners.delete(type);
   }
   zoomTo(zoom: number) {
     this.zoom = zoom;
-    this.listeners.forEach((listener) => listener());
+    this.listeners.get("zoomend")?.forEach((listener) => listener());
   }
 }
 
@@ -174,6 +189,32 @@ const CROSS_PEDESTRIAN: SignalPhaseIndicator = {
 const ALL_AT_ONE_POINT = [VEHICLE, PEDESTRIAN, CROSS_VEHICLE, CROSS_PEDESTRIAN];
 
 describe("layoutPhaseMarkers", () => {
+  it("separates final screen positions when geographic positions cancel row offsets", () => {
+    const north = { ...CROSS_VEHICLE, position: { lat: -36, lng: 0 } };
+    const south = { ...VEHICLE, position: { lat: 0, lng: 0 } };
+    const phases = [
+      south,
+      { ...south, kind: "PEDESTRIAN" as const },
+      north,
+      { ...north, kind: "PEDESTRIAN" as const },
+    ];
+    const layout = layoutPhaseMarkers(phases, ([lng, lat]) => ({ x: lng, y: lat }));
+    const rows = [...layout.values()].map(({ phase, offset }) => phase.position.lat + offset[1]);
+    rows.forEach((row, i) =>
+      rows
+        .slice(i + 1)
+        .forEach((other) => expect(Math.abs(row - other)).toBeGreaterThanOrEqual(16)),
+    );
+  });
+
+  it("separates labels from nearby intersections in screen space", () => {
+    const other = { ...VEHICLE, intersection_id: "INT-0366", position: { lat: 0.5, lng: 0 } };
+    const phases = [{ ...VEHICLE, position: { lat: 0, lng: 0 } }, other];
+    const layout = layoutPhaseMarkers(phases, ([lng, lat]) => ({ x: lng, y: lat }));
+    const rows = [...layout.values()].map(({ phase, offset }) => phase.position.lat + offset[1]);
+    expect(Math.abs(rows[1] - rows[0])).toBeGreaterThanOrEqual(20);
+  });
+
   it("gives co-located markers of one intersection distinct, deterministic offsets", () => {
     const layout = layoutPhaseMarkers(ALL_AT_ONE_POINT);
     const offsets = [...layout.values()].map((item) => item.offset.join(","));
@@ -190,8 +231,15 @@ describe("layoutPhaseMarkers", () => {
     expect([...layoutPhaseMarkers([PEDESTRIAN]).keys()]).toEqual(["INT-0360|OSM-L4|PEDESTRIAN"]);
   });
 
-  it("lays out each intersection independently", () => {
-    const other = { ...VEHICLE, intersection_id: "INT-0366" };
+  it("leaves well-separated intersections at their geographic anchors", () => {
+    const other = {
+      ...VEHICLE,
+      intersection_id: "INT-0366",
+      position: {
+        ...VEHICLE.position,
+        lng: VEHICLE.position.lng + 1,
+      },
+    };
     const layout = layoutPhaseMarkers([VEHICLE, other]);
 
     expect(layout.get("INT-0366|OSM-L4|VEHICLE")?.offset).toEqual([0, 0]);
@@ -209,6 +257,35 @@ describe("layoutPhaseMarkers", () => {
 });
 
 describe("signal phase layer layout", () => {
+  it.each(["moveend", "resize"])("reprojects existing labels on %s", (event) => {
+    const map = new FakeMap(17);
+    const factory = markerFactory();
+    const layer = createSignalPhaseLayer(map, factory.create);
+    const other = {
+      ...VEHICLE,
+      intersection_id: "INT-0366",
+      position: {
+        ...VEHICLE.position,
+        lng: VEHICLE.position.lng + 1,
+      },
+    };
+    layer.setPhases([VEHICLE, other]);
+    expect(factory.live().every((marker) => marker.offset[1] === 0)).toBe(true);
+
+    map.scale = 1;
+    map.listeners.get(event)?.forEach((listener) => listener());
+
+    expect(factory.live()).toHaveLength(2);
+    const rows = factory
+      .live()
+      .map(
+        ({ shown, offset }) => map.project([shown.position.lng, shown.position.lat]).y + offset[1],
+      );
+    expect(Math.abs(rows[1] - rows[0])).toBeGreaterThanOrEqual(20);
+    layer.destroy();
+    expect(map.listeners.size).toBe(0);
+  });
+
   it("recalculates every member's offset when its group changes", () => {
     const factory = markerFactory();
     const layer = createSignalPhaseLayer(new FakeMap(17), factory.create);
