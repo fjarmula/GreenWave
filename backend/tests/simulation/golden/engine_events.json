@@ -4249,7 +4249,7 @@
       "lat": 50.00022062662311,
       "lng": 19.92382668329452
      },
-     "speed_kmh": 0.0,
+     "speed_kmh": 18.071999999999935,
      "status": "ARRIVED"
     },
     "event_type": "SIMULATION_TICK",
@@ -5154,6 +5154,8 @@
   "final_state": {
    "arrived": true,
    "arrived_at_s": 74.38615384615385,
+   "cautious_crossing_remaining_m": 0.0,
+   "cautious_time_remaining_s": 0.0,
    "completed": true,
    "current_edge_index": 3,
    "distance_travelled_m": 850.02,
@@ -5188,7 +5190,6 @@
    "message_sequence": 3,
    "signal_heads": [],
    "simulated_time_s": 90,
-   "speed_limited_remaining_m": 0.0,
    "tick": 90,
    "v_avg_meters_per_second": 10.979896244124795
   }
@@ -6083,7 +6084,7 @@
       "lat": 50.00022062662311,
       "lng": 19.92382668329452
      },
-     "speed_kmh": 0.0,
+     "speed_kmh": 18.071999999999935,
      "status": "ARRIVED"
     },
     "event_type": "SIMULATION_TICK",
@@ -6316,6 +6317,8 @@
   "final_state": {
    "arrived": true,
    "arrived_at_s": 74.38615384615385,
+   "cautious_crossing_remaining_m": 0.0,
+   "cautious_time_remaining_s": 0.0,
    "completed": true,
    "current_edge_index": 3,
    "distance_travelled_m": 850.02,
@@ -6350,7 +6353,6 @@
    "message_sequence": 3,
    "signal_heads": [],
    "simulated_time_s": 90,
-   "speed_limited_remaining_m": 0.0,
    "tick": 90,
    "v_avg_meters_per_second": 10.979896244124795
   }
@@ -10605,7 +10607,7 @@
       "lat": 50.00022062662311,
       "lng": 19.92382668329452
      },
-     "speed_kmh": 0.0,
+     "speed_kmh": 18.071999999999935,
      "status": "ARRIVED"
     },
     "event_type": "SIMULATION_TICK",
@@ -11510,6 +11512,8 @@
   "final_state": {
    "arrived": true,
    "arrived_at_s": 74.38615384615385,
+   "cautious_crossing_remaining_m": 0.0,
+   "cautious_time_remaining_s": 0.0,
    "completed": true,
    "current_edge_index": 3,
    "distance_travelled_m": 850.02,
@@ -11544,7 +11548,6 @@
    "message_sequence": 3,
    "signal_heads": [],
    "simulated_time_s": 90,
-   "speed_limited_remaining_m": 0.0,
    "tick": 90,
    "v_avg_meters_per_second": 10.979896244124795
   }
@@ -15799,7 +15802,7 @@
       "lat": 50.00022062662311,
       "lng": 19.92382668329452
      },
-     "speed_kmh": 0.0,
+     "speed_kmh": 18.071999999999935,
      "status": "ARRIVED"
     },
     "event_type": "SIMULATION_TICK",
@@ -16704,6 +16707,8 @@
   "final_state": {
    "arrived": true,
    "arrived_at_s": 74.38615384615385,
+   "cautious_crossing_remaining_m": 0.0,
+   "cautious_time_remaining_s": 0.0,
    "completed": true,
    "current_edge_index": 3,
    "distance_travelled_m": 850.02,
@@ -16738,7 +16743,6 @@
    "message_sequence": 3,
    "signal_heads": [],
    "simulated_time_s": 90,
-   "speed_limited_remaining_m": 0.0,
    "tick": 90,
    "v_avg_meters_per_second": 10.979896244124795
   }
@@ -21022,7 +21026,7 @@
       "lat": 50.00022062662311,
       "lng": 19.92382668329452
      },
-     "speed_kmh": 0.0,
+     "speed_kmh": 18.071999999999935,
      "status": "ARRIVED"
     },
     "event_type": "SIMULATION_TICK",
@@ -21927,6 +21931,8 @@
   "final_state": {
    "arrived": true,
    "arrived_at_s": 74.38615384615385,
+   "cautious_crossing_remaining_m": 0.0,
+   "cautious_time_remaining_s": 0.0,
    "completed": true,
    "current_edge_index": 3,
    "distance_travelled_m": 850.02,
@@ -21961,7 +21967,6 @@
    "message_sequence": 4,
    "signal_heads": [],
    "simulated_time_s": 90,
-   "speed_limited_remaining_m": 0.0,
    "tick": 90,
    "v_avg_meters_per_second": 10.979896244124795
   }

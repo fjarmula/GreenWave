@@ -34,7 +34,7 @@ def ambulance_telemetry(
 def _ambulance_status(state: EngineState) -> AmbulanceStatus:
     if state.arrived:
         return AmbulanceStatus.ARRIVED
-    if state.dwell_remaining_s or state.speed_limited_remaining_m:
+    if state.dwell_remaining_s or state.cautious_crossing_remaining_m:
         return AmbulanceStatus.CROSSING_INTERSECTION
     if any(
         not runtime.passed and runtime.state in ACTIVE_STATES

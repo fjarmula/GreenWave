@@ -21,7 +21,7 @@ from greenwave.schemas import (
 from greenwave.simulation.corridor import advance_corridor
 from greenwave.simulation.dispatch import build_dispatch_payload, dispatch_event
 from greenwave.simulation.motion import move_one_second
-from greenwave.simulation.phases import advance_signal_phases
+from greenwave.simulation.phases import advance_signal_phases, route_movement_color_at
 from greenwave.simulation.route_model import RouteModel
 from greenwave.simulation.route_track import RouteTrack
 from greenwave.simulation.state import EngineState
@@ -83,9 +83,14 @@ class SimulationEngine:
     def step(
         self, state: EngineState, wall_clock_utc: datetime
     ) -> tuple[EngineState, list[EngineEvent]]:
-        """One simulated second: move, advance signals, dispatch, then report."""
+        """One simulated second: move, advance signals, dispatch, then report.
+
+        Motion and the reported phases read the same simulated programme
+        (:func:`route_movement_color_at` mid-tick, :func:`advance_signal_phases` at tick end).
+        """
         if state.completed:
             return state, []
+        before = state
         state, actual_speed = move_one_second(
             state,
             self._track,
@@ -93,6 +98,9 @@ class SimulationEngine:
             self.settings,
             self.green_wave_mode,
             self.traffic_density_multiplier,
+            lambda intersection_id, at_s: route_movement_color_at(
+                self.route_model, before, intersection_id, at_s, self.settings
+            ),
         )
         corridor = advance_corridor(
             self.route_model,
