@@ -40,7 +40,7 @@ export function RoutePreview({
           ? "min-h-[calc(100dvh-126px)] sm:min-h-[calc(100dvh-76px)]"
           : "min-h-[54dvh] lg:min-h-[690px]"
       }`}
-      aria-label={isLive ? "Live corridor route preview" : "Planned corridor route preview"}
+      aria-label={isLive ? "Live corridor route preview" : "Station and incident selection map"}
     >
       <div
         className={
@@ -80,16 +80,44 @@ export function RoutePreview({
           </div>
         </>
       ) : (
-        <>
-          <div className="absolute top-4 left-4 z-20 flex items-center gap-3 rounded-xl border border-border/80 bg-card/88 px-4 py-3 shadow-xl backdrop-blur-xl sm:top-6 sm:left-6">
-            <Route className="size-5 text-cyan-600 dark:text-cyan-300" aria-hidden />
-            <div>
-              <p className="dashboard-eyebrow">Planned response corridor</p>
-              <strong className="mt-1 block font-mono text-xs">KRK-ROUTE-0942</strong>
-            </div>
-          </div>
-        </>
+        <SetupRouteStatus origin={origin} destination={destination} />
       )}
     </section>
+  );
+}
+
+/** Setup only: no route exists until the simulation starts, so describe the selection instead. */
+function SetupRouteStatus({
+  origin,
+  destination,
+}: {
+  origin: MapEndpoint | null;
+  destination: MapEndpoint | null;
+}) {
+  const status = !destination
+    ? "Choose an incident"
+    : origin
+      ? "Route computed when simulation starts"
+      : "No station selected";
+
+  return (
+    <div
+      role="status"
+      className="absolute top-4 left-4 z-20 flex max-w-[calc(100%-2rem)] items-center gap-3 rounded-xl border border-border/80 bg-card/88 px-4 py-3 shadow-xl backdrop-blur-xl sm:top-6 sm:left-6"
+    >
+      <Route className="size-5 shrink-0 text-cyan-600 dark:text-cyan-300" aria-hidden />
+      <div className="min-w-0">
+        <p className="dashboard-eyebrow">Response route</p>
+        <strong className="mt-1 block text-xs">{status}</strong>
+        {destination && (
+          <span
+            className="mt-0.5 block truncate text-xs text-muted-foreground"
+            title={destination.label}
+          >
+            Incident: {destination.label}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
