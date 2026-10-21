@@ -77,3 +77,35 @@ describe("createMockDispatchAdapter", () => {
     );
   });
 });
+
+describe("coincident station dispatch", () => {
+  it("reports the coincident station and chooses the next distinct station", async () => {
+    const adapter = createMockDispatchAdapter(STATIONS);
+    const result = await adapter.rank({
+      incident: STATIONS[1].position,
+      vehicle_type: "AMBULANCE",
+    });
+    expect(result.station_at_incident).toEqual(STATIONS[1]);
+    expect(result.candidates.map((item) => item.station.station_id)).toEqual(["STN-A-0001"]);
+    expect(result.candidates[0].distance_m).toBeGreaterThan(0);
+  });
+
+  it("rejects when the only station is coincident", async () => {
+    const adapter = createMockDispatchAdapter([STATIONS[0]]);
+    await expect(
+      adapter.rank({ incident: STATIONS[0].position, vehicle_type: "AMBULANCE" }),
+    ).rejects.toMatchObject({ code: "NO_STATION_REACHABLE" });
+  });
+
+  it("breaks equal positive distance ties by station ID", async () => {
+    const adapter = createMockDispatchAdapter([
+      station("STN-A-0002", "AMBULANCE", 50, 20),
+      station("STN-A-0001", "AMBULANCE", 50, 20),
+    ]);
+    const result = await adapter.rank({
+      incident: { lat: 50.01, lng: 20 },
+      vehicle_type: "AMBULANCE",
+    });
+    expect(result.candidates[0].station.station_id).toBe("STN-A-0001");
+  });
+});

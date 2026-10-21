@@ -1,19 +1,29 @@
 import { ArrowDownRight, TimerReset } from "lucide-react";
 
 import { formatMinutesSeconds } from "@/lib/format-duration";
-import {
-  estimateMockNormalTravelTimeSeconds,
-  MOCK_GREENWAVE_TRAVEL_TIME_SECONDS,
-} from "@/lib/mock-simulation-config";
+import { estimateMockRoute } from "@/lib/mock-route-metrics";
+import type { Position } from "@/types/telemetry";
 
 type PreflightEstimateProps = {
   isMockTransport: boolean;
   trafficDensity: number;
+  origin: Position | null;
+  incident: Position | null;
 };
 
-export function PreflightEstimate({ isMockTransport, trafficDensity }: PreflightEstimateProps) {
-  const normalSeconds = estimateMockNormalTravelTimeSeconds(trafficDensity);
-  const greenwaveSeconds = MOCK_GREENWAVE_TRAVEL_TIME_SECONDS;
+export function PreflightEstimate({
+  isMockTransport,
+  trafficDensity,
+  origin,
+  incident,
+}: PreflightEstimateProps) {
+  const metrics =
+    isMockTransport && origin && incident
+      ? estimateMockRoute(origin, incident, trafficDensity)
+      : null;
+  const hasEstimate = metrics !== null && metrics.distanceMeters > 0;
+  const normalSeconds = metrics?.normalSeconds ?? 0;
+  const greenwaveSeconds = metrics?.greenwaveSeconds ?? 0;
   const savedSeconds = normalSeconds - greenwaveSeconds;
 
   return (
@@ -22,7 +32,7 @@ export function PreflightEstimate({ isMockTransport, trafficDensity }: Preflight
         <TimerReset className="size-4 text-emerald-500" aria-hidden />
         <span>{isMockTransport ? "Mock pre-flight estimation" : "Pre-flight estimation"}</span>
         <span className="ml-auto font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-          {isMockTransport ? "READY" : "AFTER START"}
+          {isMockTransport ? (hasEstimate ? "READY" : "SELECT INCIDENT") : "AFTER START"}
         </span>
       </div>
       {/* Backend estimates exist only once the route is planned; never show mock numbers as real. */}
@@ -31,13 +41,24 @@ export function PreflightEstimate({ isMockTransport, trafficDensity }: Preflight
           Standard and GreenWave travel times are computed by the simulation backend when the route
           is initialized.
         </p>
+      ) : !hasEstimate ? (
+        <p className="mt-3 text-[11px] text-muted-foreground">
+          Select an incident and wait for a station selection to see approximate mock estimates.
+        </p>
       ) : (
         <>
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Approximate (mock) · straight line, not a drivable route or a real response-time
+            prediction.
+          </p>
           <div className="my-4 grid grid-cols-2 gap-3">
-            <Estimate label="Standard time" value={formatMinutesSeconds(normalSeconds)} />
+            <Estimate
+              label="Standard time"
+              value={formatMinutesSeconds(Math.round(normalSeconds))}
+            />
             <Estimate
               label="GreenWave time"
-              value={formatMinutesSeconds(greenwaveSeconds)}
+              value={formatMinutesSeconds(Math.round(greenwaveSeconds))}
               highlighted
             />
           </div>
@@ -47,7 +68,7 @@ export function PreflightEstimate({ isMockTransport, trafficDensity }: Preflight
               {Math.round((savedSeconds / normalSeconds) * 100)}% TIME SAVED
             </strong>
             <span className="ml-auto font-mono text-[10px] text-muted-foreground">
-              −{formatMinutesSeconds(savedSeconds)}
+              −{formatMinutesSeconds(Math.round(savedSeconds))}
             </span>
           </div>
         </>

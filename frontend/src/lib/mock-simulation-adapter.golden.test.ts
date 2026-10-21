@@ -98,6 +98,12 @@ it("mock stream matches the recorded event sequence", async () => {
       if (interval >= MAX_INTERVALS) throw new Error(`scenario ${index} never terminated`);
       vi.advanceTimersByTime(interval);
     }
+    const scenarioRecords = records.filter((entry) => entry.scenario === index);
+    expect(scenarioRecords.filter((entry) => entry.callback === "onTerminal")).toHaveLength(1);
+    expect(scenarioRecords.filter((entry) => entry.callback === "onError")).toEqual([]);
+    if (scenario.mode === "DISABLED") {
+      expect(scenarioRecords.filter((entry) => entry.callback === "onItsDispatch")).toEqual([]);
+    }
   }
 
   // Trailing newline keeps the golden file stable under the end-of-file-fixer hook.

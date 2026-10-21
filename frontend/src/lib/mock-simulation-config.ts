@@ -5,9 +5,9 @@
 import type { RouteIntersection } from "@/types/telemetry";
 
 export const DEFAULT_TRAFFIC_DENSITY_MULTIPLIER = 1.5;
-export const MOCK_NORMAL_TRAVEL_TIME_SECONDS = 780;
-export const MOCK_GREENWAVE_TRAVEL_TIME_SECONDS = 380;
-export const MOCK_ROUTE_DISTANCE_METERS = 5400;
+export const MOCK_REFERENCE_NORMAL_SECONDS = 780;
+export const MOCK_REFERENCE_GREENWAVE_SECONDS = 380;
+export const MOCK_REFERENCE_DISTANCE_METERS = 5400;
 
 // Mirrors of the architecture thresholds, used only by the mock's scripted timeline.
 export const MOCK_CLEARING_TTI_SECONDS = 40;
@@ -28,46 +28,29 @@ export const MOCK_STANDARD_CLEARANCE_SECONDS = 35;
 export const MOCK_STANDARD_CROSSING_DISTANCE_M = 30;
 export const MOCK_ORDINARY_SPEED_LIMIT_MPS = 50 / 3.6;
 
-/**
- * Real ids and names from the architecture example (Aleja 29 Listopada, about
- * 152 m apart). Positions are synthetic: the mock places them on its straight
- * line at these distances, not at the real junction coordinates.
- */
+/** Synthetic junctions projected at fixed fractions of each straight mock line. */
 export const MOCK_SAMPLE_INTERSECTIONS: ReadonlyArray<
   Pick<
     RouteIntersection,
-    | "id"
-    | "name"
-    | "kind"
-    | "distance_along_route_m"
-    | "signal_count"
-    | "approach_count"
-    | "needs_review"
-  >
+    "id" | "name" | "kind" | "signal_count" | "approach_count" | "needs_review"
+  > & { routeFraction: number }
 > = [
   {
-    id: "INT-0360",
-    name: "Aleja 29 Listopada / Lublańska / Opolska",
+    id: "INT-9001",
+    name: "Mock junction A",
     kind: "signalised_junction",
-    distance_along_route_m: 1480,
+    routeFraction: 1480 / MOCK_REFERENCE_DISTANCE_METERS,
     signal_count: 3,
     approach_count: 3,
     needs_review: false,
   },
   {
-    id: "INT-0366",
-    name: "Aleja 29 Listopada / Jana Woronicza",
+    id: "INT-9002",
+    name: "Mock junction B",
     kind: "signalised_junction",
-    distance_along_route_m: 1632,
+    routeFraction: 1632 / MOCK_REFERENCE_DISTANCE_METERS,
     signal_count: 1,
     approach_count: 2,
     needs_review: true,
   },
 ];
-
-export function estimateMockNormalTravelTimeSeconds(trafficDensityMultiplier: number): number {
-  return Math.round(
-    (MOCK_NORMAL_TRAVEL_TIME_SECONDS * trafficDensityMultiplier) /
-      DEFAULT_TRAFFIC_DENSITY_MULTIPLIER,
-  );
-}

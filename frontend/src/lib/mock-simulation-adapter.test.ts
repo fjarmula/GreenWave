@@ -14,8 +14,8 @@ import type {
 const request: SimulationStartRequest = {
   green_wave_mode: "ENABLED",
   simulation_id: "test",
-  origin: { lat: 50.06, lng: 19.95 },
-  destination: { lat: 50.07, lng: 19.96 },
+  origin: { lat: 0, lng: 0 },
+  destination: { lat: (5400 / 6_371_000) * (180 / Math.PI), lng: 0 },
   traffic_density_multiplier: 1.5,
   enable_cascade_mode: true,
   playback_speed: 10,
@@ -52,11 +52,11 @@ describe("mock simulation start", () => {
       is_simulated: true,
       simulation_id: "test",
       status: "INITIALIZED",
-      intersections_on_route: ["INT-0360", "INT-0366"],
+      intersections_on_route: ["INT-9001", "INT-9002"],
     });
     expect(route.route_intersections.map((intersection) => intersection.id)).toEqual([
-      "INT-0360",
-      "INT-0366",
+      "INT-9001",
+      "INT-9002",
     ]);
     expect(route.route_intersections.map((i) => i.distance_along_route_m)).toEqual([1480, 1632]);
     for (const intersection of route.route_intersections) {
@@ -97,11 +97,11 @@ describe("mock simulation stream", () => {
     vi.advanceTimersByTime(60_000);
     expect(events.dispatches).toHaveLength(1);
     const [dispatch] = events.dispatches;
-    expect(dispatch.payload.intersections_group).toEqual(["INT-0360", "INT-0366"]);
+    expect(dispatch.payload.intersections_group).toEqual(["INT-9001", "INT-9002"]);
     expect(dispatch.payload.hold_duration_sec).toBeGreaterThanOrEqual(40);
     expect(dispatch.message_id).toBe("MSG-ITS-1");
     const tickOfDispatch = events.ticks.find((tick) => tick.tick === dispatch.tick);
-    const cascaded = tickOfDispatch?.intersections.find((i) => i.id === "INT-0366");
+    const cascaded = tickOfDispatch?.intersections.find((i) => i.id === "INT-9002");
     expect(cascaded).toMatchObject({ state: "CLEARING", is_cascade: true });
     expect(tickOfDispatch?.intersections[0]).toMatchObject({
       state: "CLEARING",
@@ -137,8 +137,8 @@ describe("mock simulation stream", () => {
     adapter.subscribe("test", events.subscriber);
     vi.advanceTimersByTime(60_000);
     expect(events.dispatches.map((dispatch) => dispatch.payload.intersections_group)).toEqual([
-      ["INT-0360"],
-      ["INT-0366"],
+      ["INT-9001"],
+      ["INT-9002"],
     ]);
     const all = events.ticks.flatMap((tick) => tick.intersections);
     expect(all.some((intersection) => intersection.is_cascade)).toBe(false);
@@ -249,4 +249,22 @@ describe("mock transport parity with the backend contract", () => {
       else expect(events.dispatches.length).toBeGreaterThan(0);
     },
   );
+});
+
+it("keeps public estimate seconds integral without stalling a subsecond trip", async () => {
+  vi.useFakeTimers();
+  const adapter = createMockSimulationAdapter();
+  const route = await adapter.start({
+    ...request,
+    destination: { lat: (1 / 6_371_000) * (180 / Math.PI), lng: 0 },
+  });
+  expect(route.estimated_normal_time_sec).toBe(0);
+  expect(route.estimated_greenwave_time_sec).toBe(0);
+  const events = collect();
+  adapter.subscribe("test", events.subscriber);
+  vi.advanceTimersByTime(5000);
+  expect(events.completions).toHaveLength(1);
+  expect(events.ticks[0].ambulance.position).toEqual(route.destination_snapped.position);
+  expect(events.ticks[0].ambulance.speed_kmh).toBe(3.6);
+  expect(events.completions[0].kpi_metrics.total_time_elapsed_sec).toBe(0);
 });

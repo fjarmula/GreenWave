@@ -141,7 +141,12 @@ export function DispatchForm({
         </p>
       )}
 
-      <PreflightEstimate isMockTransport={isMockTransport} trafficDensity={trafficDensity} />
+      <PreflightEstimate
+        isMockTransport={isMockTransport}
+        trafficDensity={trafficDensity}
+        origin={canStart ? (ranking?.candidates[0]?.station.position ?? null) : null}
+        incident={incident?.position ?? null}
+      />
 
       <p className="mt-5 flex items-center gap-2 text-[10px] leading-relaxed text-muted-foreground">
         <ShieldCheck className="size-4 shrink-0 text-emerald-500" aria-hidden />
