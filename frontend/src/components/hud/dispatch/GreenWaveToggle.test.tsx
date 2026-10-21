@@ -37,6 +37,29 @@ describe("GreenWaveToggle", () => {
     expect(markup).toMatch(/simulated/i);
   });
 
+  it("explains disabled mode as rolling standard traffic without priority", () => {
+    const markup = renderToStaticMarkup(
+      <GreenWaveToggle mode="DISABLED" onChange={() => undefined} />,
+    );
+
+    expect(markup).toMatch(/simulated standard traffic/i);
+    expect(markup).toMatch(/no signal priority/i);
+    expect(markup).toMatch(/red or yellow/i);
+    expect(markup).toMatch(/rolls through cautiously without stopping/i);
+    expect(markup).not.toMatch(/waits for a life corridor/i);
+    expect(markup).not.toMatch(/crosses at the speed limit/i);
+  });
+
+  it("keeps the enabled-mode explanation unchanged", () => {
+    const markup = renderToStaticMarkup(
+      <GreenWaveToggle mode="ENABLED" onChange={() => undefined} />,
+    );
+
+    expect(markup).toContain(
+      "Simulated signal priority clears each intersection ahead of the vehicle.",
+    );
+  });
+
   it.each([
     ["Disabled", "DISABLED"],
     ["Enabled", "ENABLED"],
