@@ -11,6 +11,7 @@ from greenwave.schemas.simulation import (
     GreenWaveMode,
     Position,
     RouteGeometry,
+    SignalMovementKind,
     SimulationStartResponse,
     SnappedEndpoint,
 )
@@ -33,6 +34,8 @@ class RouteIntersection:
     delay_seconds: float
     approach_edge_ids: tuple[str, ...] = ()  # route edges ending at one of its stop lines
     signals: tuple[SignalApproachRef, ...] = ()  # known signal positions; empty without geometry
+    # Vehicle-capable signals controlling the route approach: the only lights priority turns green.
+    route_signal_keys: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,7 +81,13 @@ def build_route_model(
             last_stop_line_m=max(positions[intersection_id]),
             delay_seconds=index.intersection(intersection_id).delay_seconds,
             approach_edge_ids=tuple(edge_ids[intersection_id]),
-            signals=index.signal_approaches(intersection_id),
+            signals=(signals := index.signal_approaches(intersection_id)),
+            route_signal_keys=frozenset(
+                signal.signal_key
+                for signal in signals
+                if SignalMovementKind.VEHICLE in signal.movement_kinds
+                and not set(signal.controlled_edge_ids).isdisjoint(edge_ids[intersection_id])
+            ),
         )
         for intersection_id in ordered_ids
     )
