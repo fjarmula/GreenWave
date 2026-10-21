@@ -12,7 +12,7 @@ from greenwave.schemas import (
     SignalPhaseColor,
     SignalPhaseIndicator,
 )
-from greenwave.simulation.phases import project_signal_phases
+from greenwave.simulation.phases import advance_signal_phases, project_signal_phases
 from greenwave.simulation.route_model import RouteModel, build_route_model
 from greenwave.simulation.state import EngineState
 from greenwave.simulation.state_machine import IntersectionRuntime
@@ -122,15 +122,31 @@ def test_priority_green_gives_the_route_approach_green_and_holds_conflicts_red(
     }
 
 
-def test_clearing_ends_conflicting_green_with_yellow_and_stops_pedestrians() -> None:
-    assert _colors(30, IntersectionState.CLEARING) == {
+def test_clearing_ends_conflicting_green_with_yellow_then_red() -> None:
+    """Shown lights carry over ticks: the moving cross street gets its yellow, then stops."""
+    model = _model(corridor_index(signal_approaches=SIGNALS))
+
+    def colors_after(state: EngineState) -> tuple[EngineState, dict[object, SignalPhaseColor]]:
+        heads, phases = advance_signal_phases(model, state, SETTINGS)
+        return replace(state, signal_heads=heads), {
+            (item.signal_key, item.kind): item.color for item in phases
+        }
+
+    state, _ = colors_after(_state(model, 29, IntersectionState.NORMAL))  # cross street green
+    state, at_30 = colors_after(
+        replace(_state(model, 30, IntersectionState.CLEARING), signal_heads=state.signal_heads)
+    )
+    state, at_33 = colors_after(
+        replace(_state(model, 33, IntersectionState.CLEARING), signal_heads=state.signal_heads)
+    )
+
+    assert at_30 == {
         ("sig-a", VEHICLE): RED,  # the route arm keeps its cycle colour until PRIORITY_GREEN
         ("sig-a-cross", VEHICLE): YELLOW,
         ("sig-a", PEDESTRIAN): RED,
         ("sig-a-cross", PEDESTRIAN): RED,
     }
-    assert _colors(10, IntersectionState.CLEARING)[("sig-a", VEHICLE)] is GREEN
-    assert _colors(10, IntersectionState.CLEARING)[("sig-a-cross", VEHICLE)] is RED
+    assert at_33[("sig-a-cross", VEHICLE)] is RED
 
 
 @pytest.mark.parametrize("now_s", [0, 20, 30])
@@ -227,3 +243,60 @@ def test_engine_ticks_carry_the_projected_phases() -> None:
     tick = next(event for event in events if event.event_type == "SIMULATION_TICK")
     assert tick.signal_phases == project_signal_phases(model, state, SETTINGS)
     assert len(tick.signal_phases) == 4
+
+
+_LEGAL_VEHICLE_CHANGES = {(GREEN, YELLOW), (YELLOW, RED), (RED, GREEN)}
+
+
+@pytest.mark.parametrize("green_s", [4, 7, 11, 13, 20, 30])
+@pytest.mark.parametrize("clearing_tti_s", [10.0, 40.0])
+def test_consecutive_ticks_only_change_vehicle_lights_legally(
+    green_s: float, clearing_tti_s: float
+) -> None:
+    """A light jumping RED->YELLOW or GREEN->RED would contradict the explanatory display."""
+    from datetime import UTC, datetime
+
+    from greenwave.its import MockItsGateway
+    from greenwave.routing.estimates import estimate_times
+    from greenwave.simulation.engine import SimulationEngine
+
+    settings = SimulationSettings(
+        signal_green_seconds=green_s,
+        signal_yellow_seconds=3,
+        signal_all_red_seconds=2,
+        clearing_tti_seconds=clearing_tti_s,
+        priority_green_tti_seconds=min(clearing_tti_s, 25.0),
+    )
+    index = corridor_index(signal_approaches=SIGNALS)
+    route = plan_route(index, position_at(_X + 1_000), position_at(_X + 1_850.02), settings)
+    model = build_route_model(route, index, settings, cascade_enabled=True)
+    engine = SimulationEngine(
+        "SIM-sequence",
+        route,
+        model,
+        estimate_times(route, model, 1.0, settings),
+        1.0,
+        settings,
+        MockItsGateway(),
+    )
+    state, previous = engine.initial_state(), None
+    seen_priority = False
+    while not state.completed:
+        state, events = engine.step(state, datetime(2026, 10, 21, tzinfo=UTC))
+        tick = next(event for event in events if event.event_type == "SIMULATION_TICK")
+        seen_priority |= any(item.state == "PRIORITY_GREEN" for item in tick.intersections)
+        colors = {
+            item.signal_key: item.color for item in tick.signal_phases if item.kind == VEHICLE
+        }
+        if previous is not None:
+            for key, color in colors.items():
+                change = (previous[key], color)
+                assert change[0] == change[1] or change in _LEGAL_VEHICLE_CHANGES, (
+                    tick.tick,
+                    key,
+                    change,
+                )
+        if colors.get("sig-a") is GREEN and tick.intersections[0].state == "PRIORITY_GREEN":
+            assert colors["sig-a-cross"] is RED  # never green beside a still-moving conflict
+        previous = colors
+    assert seen_priority

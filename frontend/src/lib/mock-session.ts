@@ -50,7 +50,11 @@ export type MockSession = {
   elapsedSeconds: number;
   signals: MockSignal[];
   dispatchCount: number;
+  /** Shown vehicle light per synthetic signal key, so lights change only legally between ticks. */
+  signalHeads: Map<string, MockSignalHead>;
 };
+
+type MockSignalHead = { color: SignalPhaseColor; sinceSeconds: number };
 
 export function createMockSession(request: SimulationStartRequest): MockSession {
   const route = createMockRoute(request);
@@ -66,6 +70,7 @@ export function createMockSession(request: SimulationStartRequest): MockSession 
       passed: false,
     })),
     dispatchCount: 0,
+    signalHeads: new Map(),
   };
 }
 
@@ -266,26 +271,62 @@ function cycleColors(group: number, nowSeconds: number): [SignalPhaseColor, Sign
   return [vehicle, "RED"];
 }
 
+/** The next shown vehicle light, as the backend limits it: GREEN → YELLOW → RED → GREEN only. */
+function nextHead(
+  prior: MockSignalHead | undefined,
+  target: SignalPhaseColor,
+  now: number,
+  mayTurnGreen: boolean,
+): MockSignalHead {
+  if (!prior) return { color: target, sinceSeconds: now };
+  if (prior.color === "GREEN") {
+    return target === "GREEN" ? prior : { color: "YELLOW", sinceSeconds: now };
+  }
+  if (prior.color === "YELLOW") {
+    return now - prior.sinceSeconds >= MOCK_SIGNAL_YELLOW_SECONDS
+      ? { color: "RED", sinceSeconds: now }
+      : prior;
+  }
+  return target === "GREEN" && mayTurnGreen ? { color: "GREEN", sinceSeconds: now } : prior;
+}
+
+/** Mirrors the backend projection, then records the shown lights on the session. */
 function mockSignalPhases(session: MockSession): SignalPhaseIndicator[] {
+  const now = session.elapsedSeconds;
   return session.route.route_intersections.flatMap((intersection, index) => {
     const { state } = session.signals[index];
-    return MOCK_SIGNALS.flatMap((signal, group) => {
-      let [vehicle, pedestrian] = cycleColors(group, session.elapsedSeconds);
+    const signals = MOCK_SIGNALS.map((signal, group) => {
+      let [vehicle, pedestrian] = cycleColors(group, now);
       const onRoute = signal.suffix === "S1";
       if (state === "PRIORITY_GREEN") {
         [vehicle, pedestrian] = [onRoute ? "GREEN" : "RED", "RED"];
       } else if (state === "CLEARING") {
-        if (!onRoute && vehicle !== "RED") vehicle = "YELLOW";
-        pedestrian = "RED";
+        [vehicle, pedestrian] = [onRoute ? vehicle : "RED", "RED"];
       }
+      const key = `${intersection.id}-${signal.suffix}`;
+      return { signal, key, vehicle, pedestrian, prior: session.signalHeads.get(key) };
+    });
+    return signals.flatMap(({ signal, key, vehicle, pedestrian, prior }) => {
+      // Green only once every light not also turning green has stopped.
+      const mayTurnGreen = signals.every(
+        (other) =>
+          other.key === key || other.vehicle === "GREEN" || (other.prior?.color ?? "RED") === "RED",
+      );
+      const head = nextHead(prior, vehicle, now, mayTurnGreen);
+      session.signalHeads.set(key, head);
       const position = {
         lat: intersection.position.lat + signal.latOffset,
         lng: intersection.position.lng + signal.lngOffset,
       };
-      const key = `${intersection.id}-${signal.suffix}`;
       return [
-        mockPhase(intersection, key, "VEHICLE", vehicle, position),
-        mockPhase(intersection, key, "PEDESTRIAN", pedestrian, position),
+        mockPhase(intersection, key, "VEHICLE", head.color, position),
+        mockPhase(
+          intersection,
+          key,
+          "PEDESTRIAN",
+          head.color === "RED" ? pedestrian : "RED",
+          position,
+        ),
       ];
     });
   });

@@ -21,7 +21,7 @@ from greenwave.schemas import (
 from greenwave.simulation.corridor import advance_corridor
 from greenwave.simulation.dispatch import build_dispatch_payload, dispatch_event
 from greenwave.simulation.motion import move_one_second
-from greenwave.simulation.phases import project_signal_phases
+from greenwave.simulation.phases import advance_signal_phases
 from greenwave.simulation.route_model import RouteModel
 from greenwave.simulation.route_track import RouteTrack
 from greenwave.simulation.state import EngineState
@@ -110,7 +110,8 @@ class SimulationEngine:
         )
         ambulance = ambulance_telemetry(self.simulation_id, state, actual_speed, self._track)
         intersections = intersection_telemetry(self.route_model, state)
-        phases = project_signal_phases(self.route_model, state, self.settings)
+        heads, phases = advance_signal_phases(self.route_model, state, self.settings)
+        state = replace(state, signal_heads=heads)
         events.append(
             tick_event(
                 self.simulation_id, state, wall_clock_utc, ambulance, kpi, intersections, phases

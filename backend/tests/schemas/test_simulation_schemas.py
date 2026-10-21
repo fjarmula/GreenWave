@@ -332,7 +332,8 @@ def _phase(**overrides: object) -> dict[str, Any]:
 
 def test_a_tick_without_phases_has_an_empty_phase_list() -> None:
     """Intersections without signal geometry must yield no markers, not an invalid tick."""
-    assert SimulationTickEvent.model_validate(tick()).signal_phases == []
+    body = {k: v for k, v in tick().items() if k != "signal_phases"}
+    assert SimulationTickEvent.model_validate(body).signal_phases == []
 
 
 def test_a_tick_carries_valid_phase_indicators() -> None:

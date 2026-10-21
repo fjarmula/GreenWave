@@ -5186,6 +5186,7 @@
     }
    ],
    "message_sequence": 3,
+   "signal_heads": [],
    "simulated_time_s": 90,
    "speed_limited_remaining_m": 0.0,
    "tick": 90,
@@ -6347,6 +6348,7 @@
     }
    ],
    "message_sequence": 3,
+   "signal_heads": [],
    "simulated_time_s": 90,
    "speed_limited_remaining_m": 0.0,
    "tick": 90,
@@ -11540,6 +11542,7 @@
     }
    ],
    "message_sequence": 3,
+   "signal_heads": [],
    "simulated_time_s": 90,
    "speed_limited_remaining_m": 0.0,
    "tick": 90,
@@ -16733,6 +16736,7 @@
     }
    ],
    "message_sequence": 3,
+   "signal_heads": [],
    "simulated_time_s": 90,
    "speed_limited_remaining_m": 0.0,
    "tick": 90,
@@ -21955,6 +21959,7 @@
     }
    ],
    "message_sequence": 4,
+   "signal_heads": [],
    "simulated_time_s": 90,
    "speed_limited_remaining_m": 0.0,
    "tick": 90,

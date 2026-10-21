@@ -195,3 +195,36 @@ describe("mock signal phases", () => {
     });
   });
 });
+
+describe("mock signal light sequence", () => {
+  const LEGAL = new Set(["GREEN>YELLOW", "YELLOW>RED", "RED>GREEN"]);
+
+  it.each([1, 2, 3])(
+    "only changes vehicle lights GREEN→YELLOW→RED→GREEN across ticks (density %s)",
+    (density) => {
+      const { ticks } = runToCompletion(
+        createMockSession(modeRequest("ENABLED", { traffic_density_multiplier: density })),
+      );
+      let previous = new Map<string, string>();
+      let changes = 0;
+      for (const tick of ticks) {
+        const current = new Map(
+          tick.signal_phases
+            .filter((phase) => phase.kind === "VEHICLE")
+            .map((phase) => [phase.signal_key, phase.color] as const),
+        );
+        for (const [key, color] of current) {
+          const before = previous.get(key);
+          if (before !== undefined && before !== color) {
+            changes += 1;
+            expect(LEGAL.has(`${before}>${color}`), `${tick.tick} ${key} ${before}>${color}`).toBe(
+              true,
+            );
+          }
+        }
+        previous = current;
+      }
+      expect(changes).toBeGreaterThan(0);
+    },
+  );
+});
