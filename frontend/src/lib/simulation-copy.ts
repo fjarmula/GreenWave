@@ -55,6 +55,29 @@ const CANCEL_REASON_LABELS: Record<CancelReason, string> = {
   SERVER_ERROR: "Server error",
 };
 
+/** A phase, refined by why a cancelled run ended: a user stop and a server failure read differently. */
+export type RunStatusKey = SimulationPhase | "STOPPED" | "SERVER_ERROR";
+
+export function runStatusKey(
+  phase: SimulationPhase,
+  cancelReason: CancelReason | null,
+): RunStatusKey {
+  if (phase === "CANCELLED" && cancelReason === "STOPPED") return "STOPPED";
+  if (phase === "CANCELLED" && cancelReason === "SERVER_ERROR") return "SERVER_ERROR";
+  return phase;
+}
+
+export const RUN_STATUS_LABELS: Record<RunStatusKey, string> = {
+  SETUP: "System ready",
+  STARTING: "Computing route",
+  RUNNING: "Simulation running",
+  FINISHED: "Simulation finished",
+  CANCELLED: "Simulation cancelled",
+  STOPPED: "Simulation stopped",
+  SERVER_ERROR: "Simulation server error",
+  ERROR: "Simulation error",
+};
+
 export function cancelReasonLabel(reason: CancelReason): string {
   return CANCEL_REASON_LABELS[reason];
 }
@@ -65,6 +88,14 @@ export function formatDuration(seconds: number): string {
   const whole = Math.abs(rounded);
   const sign = rounded < 0 ? "−" : "";
   return `${sign}${String(Math.floor(whole / 60)).padStart(2, "0")}m ${String(whole % 60).padStart(2, "0")}s`;
+}
+
+export type TimeSavedTone = "positive" | "neutral" | "negative";
+
+/** The sign of a saving as displayed (whole seconds), so "+0s" never reads as a gain. */
+export function timeSavedTone(seconds: number): TimeSavedTone {
+  const rounded = Math.round(seconds);
+  return rounded > 0 ? "positive" : rounded < 0 ? "negative" : "neutral";
 }
 
 export function formatSignedSeconds(seconds: number): string {
@@ -80,6 +111,8 @@ export function greenWaveModeLabel(mode: GreenWaveMode): string {
  * The simulated arrival time first, then the mode it was run in. Estimates are simulated
  * baselines; the GreenWave estimate is shown only for a run that used ER Green Wave.
  */
+export const SAVED_LABEL = "Saved vs normal-traffic estimate";
+
 export function summarizeFinishedRun(
   route: Pick<
     SimulationStartResponse,
@@ -100,10 +133,7 @@ export function summarizeFinishedRun(
           },
         ]
       : []),
-    {
-      label: "Saved vs normal-traffic estimate",
-      value: formatDuration(finalKpis.current_time_saved_sec),
-    },
+    { label: SAVED_LABEL, value: formatDuration(finalKpis.current_time_saved_sec) },
   ];
 }
 

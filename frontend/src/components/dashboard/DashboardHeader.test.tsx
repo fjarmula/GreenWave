@@ -1,15 +1,23 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { initialSimulationState } from "@/lib/simulation-state";
+import {
+  initialSimulationState,
+  type SimulationPhase,
+  type SimulationState,
+} from "@/lib/simulation-state";
+import type { CancelReason } from "@/types/telemetry";
 
-vi.mock("@/components/simulation-provider", () => ({
-  useSimulationState: () => initialSimulationState,
-}));
+let state: SimulationState = initialSimulationState;
+vi.mock("@/components/simulation-provider", () => ({ useSimulationState: () => state }));
 vi.mock("@/components/hud/ThemeToggle", () => ({ ThemeToggle: () => null }));
 
 describe("DashboardHeader", () => {
+  beforeEach(() => {
+    state = initialSimulationState;
+  });
+
   it.each([
     ["setup", "Dispatch setup", "Live operations"],
     ["live", "Live operations", "Dispatch setup"],
@@ -20,5 +28,28 @@ describe("DashboardHeader", () => {
     expect(markup).not.toContain('aria-label="Dashboard mode"');
     expect(markup).toContain(shown);
     expect(markup).not.toContain(hidden);
+  });
+
+  it.each([
+    ["SETUP", null, "System ready", "bg-emerald-500"],
+    ["STARTING", null, "Computing route", "bg-amber-500"],
+    ["RUNNING", null, "Simulation running", "bg-emerald-500"],
+    ["FINISHED", null, "Simulation finished", "bg-muted-foreground"],
+    ["CANCELLED", "SUPERSEDED", "Simulation cancelled", "bg-amber-500"],
+    ["CANCELLED", "STOPPED", "Simulation stopped", "bg-muted-foreground"],
+    ["CANCELLED", "SERVER_ERROR", "Simulation server error", "bg-red-500"],
+    ["ERROR", null, "Simulation error", "bg-red-500"],
+  ] as const)("%s (%s) reads %s with a matching dot", (phase, reason, label, dot) => {
+    state = {
+      ...initialSimulationState,
+      simulationState: phase as SimulationPhase,
+      cancelReason: reason as CancelReason | null,
+    };
+    const markup = renderToStaticMarkup(<DashboardHeader mode="live" />);
+    const status = markup.match(/<span class="(size-2 rounded-full[^"]*)"><\/span><span>([^<]*)</)!;
+
+    expect(status[2]).toBe(label);
+    expect(status[1].split(" ")).toContain(dot);
+    if (dot !== "bg-emerald-500") expect(status[1]).not.toContain("emerald");
   });
 });

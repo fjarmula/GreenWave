@@ -7,9 +7,12 @@ import { getFrontendConfig } from "@/lib/config";
 import {
   cancelReasonLabel,
   describeSimulationError,
+  SAVED_LABEL,
   SERVER_ERROR_COPY,
   summarizeFinishedRun,
+  timeSavedTone,
 } from "@/lib/simulation-copy";
+import { SAVED_VALUE_TONES } from "@/components/hud/time-saved-tone";
 import type { SimulationCompletedEvent } from "@/types/telemetry";
 
 type RunSummaryProps = {
@@ -138,6 +141,7 @@ export function FinishedRunSummary({
   onBackToSetup: () => void;
 }) {
   const [total, ...details] = summarizeFinishedRun(route, completion.kpi_metrics);
+  const savedTone = SAVED_VALUE_TONES[timeSavedTone(completion.kpi_metrics.current_time_saved_sec)];
   return (
     <SummaryCard
       tone="success"
@@ -153,7 +157,13 @@ export function FinishedRunSummary({
         {details.map(({ label, value }) => (
           <div key={label}>
             <dt className="text-[10px] text-muted-foreground">{label}</dt>
-            <dd className="mt-1 font-mono text-sm font-bold">{value}</dd>
+            <dd
+              className={["mt-1 font-mono text-sm font-bold", label === SAVED_LABEL && savedTone]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {value}
+            </dd>
           </div>
         ))}
       </dl>

@@ -24,6 +24,8 @@ type DispatchFormProps = {
   onSettingsChange: (settings: DispatchSettings) => void;
   /** The last finished run of this page session, shown for comparison. */
   previousRun?: PreviousRun | null;
+  /** Why the station list could not be loaded, if it could not. */
+  stationsError?: string | null;
   /** Called only when a ranking exists; the dashboard starts from its best station. */
   onInitialize: (settings: DispatchSettings) => void;
   /** True while the start request is in flight (STARTING). */
@@ -42,6 +44,7 @@ export function DispatchForm({
   settings,
   onSettingsChange,
   previousRun = null,
+  stationsError = null,
   onInitialize,
   pending,
   errorMessage,
@@ -87,6 +90,16 @@ export function DispatchForm({
         rankError={dispatch.rankError}
         roadTimeRanking={capabilities.roadTimeRanking}
       />
+
+      {stationsError && (
+        <p
+          role="alert"
+          className="mt-3 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/8 px-3 py-2.5 text-xs font-medium text-red-700 dark:text-red-300"
+        >
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          {stationsError}
+        </p>
+      )}
 
       <button
         type="button"

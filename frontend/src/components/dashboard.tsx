@@ -26,7 +26,7 @@ export function Dashboard() {
   const { simulationState, routeData, error } = simulation;
   const config = getFrontendConfig();
   const dispatch = useIncidentDispatch(dispatchAdapter);
-  const stations = useStations(dispatchAdapter);
+  const { stations, error: stationsError } = useStations(dispatchAdapter);
   const { setIncident } = dispatch;
   const onMapClick = useCallback(
     (position: Position) => setIncident(pinnedIncident(position)),
@@ -84,6 +84,7 @@ export function Dashboard() {
             settings={settings}
             onSettingsChange={setSettings}
             previousRun={previousRun}
+            stationsError={stationsError}
             pending={simulationState === "STARTING"}
             errorMessage={startErrorMessage}
             dispatch={dispatch}

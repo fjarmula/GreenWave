@@ -1,21 +1,41 @@
 "use client";
 
-import { Ambulance, Square, TriangleAlert } from "lucide-react";
+import { ArrowDown, Square, TriangleAlert } from "lucide-react";
+import { VehicleIcon } from "@/components/map/VehicleIcon";
+import { VEHICLE_ICON_COLORS } from "@/components/map/vehicle-icons";
+import { RUN_OUTCOME_TEXT } from "@/components/hud/run-status-tone";
 import { useSimulationState } from "@/components/simulation-provider";
 import type { ConnectionStatus } from "@/lib/simulation-adapter";
+import { VEHICLE_NAMES } from "@/lib/station-copy";
 import {
   connectionLabel,
   formatSignedSeconds,
   greenWaveModeLabel,
+  RUN_STATUS_LABELS,
+  runStatusKey,
+  timeSavedTone,
   vehicleSpeedPresentation,
+  type RunStatusKey,
+  type TimeSavedTone,
 } from "@/lib/simulation-copy";
-import type { SimulationPhase } from "@/lib/simulation-state";
 
-const PHASE_BADGES: Partial<Record<SimulationPhase, string>> = {
+const OUTCOME_BADGES: Partial<Record<RunStatusKey, string>> = {
   FINISHED: "SIMULATION FINISHED",
   CANCELLED: "SIMULATION CANCELLED",
+  STOPPED: "SIMULATION STOPPED",
+  SERVER_ERROR: "SERVER ERROR",
   ERROR: "TELEMETRY STOPPED",
 };
+
+/** The phone run summary sits below the map; the strip's outcome chip jumps to it. */
+export const PHONE_RUN_SUMMARY_ID = "run-summary-phone";
+
+function showPhoneRunSummary() {
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document
+    .getElementById(PHONE_RUN_SUMMARY_ID)
+    ?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+}
 
 const CONNECTION_STYLES: Record<ConnectionStatus, string> = {
   open: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
@@ -24,22 +44,49 @@ const CONNECTION_STYLES: Record<ConnectionStatus, string> = {
   lost: "bg-red-500/10 text-red-700 dark:text-red-300",
 };
 
+// Only a real saving gets the success glow.
+const TIME_SAVED_STYLES: Record<TimeSavedTone, string> = {
+  positive: "text-emerald-600 drop-shadow-[0_0_12px_rgba(16,185,129,0.28)] dark:text-emerald-400",
+  neutral: "text-muted-foreground",
+  negative: "text-amber-700 dark:text-amber-300",
+};
+
 type KpiHeaderProps = {
   /** Phones only (the desktop Stop is in the run panel): stops the running simulation. */
   onStop?: () => void;
 };
 
 export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
-  const { liveTelemetry, simulationState, connection, routeData, stopRequested } =
-    useSimulationState();
+  const {
+    liveTelemetry,
+    simulationState,
+    connection,
+    routeData,
+    stopRequested,
+    cancelReason,
+    startRequest,
+  } = useSimulationState();
+  const vehicleType = startRequest?.vehicle_type ?? "AMBULANCE";
+  const status = runStatusKey(simulationState, cancelReason);
+  const ended =
+    simulationState === "FINISHED" ||
+    simulationState === "CANCELLED" ||
+    simulationState === "ERROR";
   const elapsed = liveTelemetry?.kpi_metrics.total_time_elapsed_sec ?? 0;
+  const saved = liveTelemetry?.kpi_metrics.current_time_saved_sec ?? 0;
   const speed = vehicleSpeedPresentation(simulationState, liveTelemetry);
   const elapsedLabel = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
   return (
     <section className="grid grid-cols-2 items-center gap-3 rounded-xl border border-border/80 bg-card/90 p-3 shadow-2xl backdrop-blur-xl sm:grid-cols-[1fr_auto_1fr] sm:px-4">
       <div className="flex min-w-0 items-center gap-2.5">
-        <Ambulance className="size-5 shrink-0 text-cyan-600 dark:text-cyan-300" aria-hidden />
+        <span
+          title={VEHICLE_NAMES[vehicleType]}
+          className={`grid size-7 shrink-0 place-items-center rounded-md ${VEHICLE_ICON_COLORS[vehicleType]}`}
+        >
+          <VehicleIcon type={vehicleType} className="size-4" />
+        </span>
         <div className="min-w-0">
+          <span className="sr-only">{VEHICLE_NAMES[vehicleType]} </span>
           <strong className="block truncate font-mono text-xs">
             {liveTelemetry?.ambulance.id ?? "Awaiting telemetry"}
           </strong>
@@ -49,7 +96,7 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
         </div>
         <span className="ml-1 hidden items-center gap-1 rounded-md bg-amber-500/10 px-2 py-1 text-[9px] font-bold text-amber-700 xl:inline-flex dark:text-amber-300">
           <TriangleAlert className="size-3" aria-hidden />
-          {PHASE_BADGES[simulationState] ??
+          {OUTCOME_BADGES[status] ??
             liveTelemetry?.ambulance.status.replaceAll("_", " ") ??
             "WAITING"}
         </span>
@@ -72,8 +119,8 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
 
       <div className="col-span-2 row-start-1 text-center sm:col-span-1 sm:col-start-2">
         <span className="dashboard-eyebrow block">Time saved</span>
-        <strong className="font-mono text-2xl text-emerald-600 drop-shadow-[0_0_12px_rgba(16,185,129,0.28)] dark:text-emerald-400">
-          {formatSignedSeconds(liveTelemetry?.kpi_metrics.current_time_saved_sec ?? 0)}
+        <strong className={`font-mono text-2xl ${TIME_SAVED_STYLES[timeSavedTone(saved)]}`}>
+          {formatSignedSeconds(saved)}
         </strong>
       </div>
 
@@ -98,6 +145,18 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
           >
             <Square className="size-3 fill-current" aria-hidden />
             {stopRequested ? "Stopping…" : "Stop"}
+          </button>
+        )}
+        {onStop && ended && (
+          <button
+            type="button"
+            data-testid="run-outcome"
+            onClick={showPhoneRunSummary}
+            className={`mt-1.5 ml-auto inline-flex min-h-8 items-center gap-1.5 rounded-md border border-border bg-background/70 px-2.5 text-[10px] font-bold transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 lg:hidden ${RUN_OUTCOME_TEXT[status]}`}
+          >
+            {RUN_STATUS_LABELS[status]}
+            <span className="font-medium text-muted-foreground">· Summary</span>
+            <ArrowDown className="size-3" aria-hidden />
           </button>
         )}
       </div>

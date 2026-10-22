@@ -57,7 +57,7 @@ Out of scope (known, unchanged): decorative 72 % speed bar; 320 px header trunca
 - [x] **[Completed] M5 — Session lifecycle hardening (B3, B4).** [Sub-plan](2026-10-22-m5-session-lifecycle.md). Dependency: M4 (same file, terminal semantics). Suggested commit: `fix: bound retained sessions and publish one terminal per run`.
 - [x] **[Completed] M6 — Map stability (F4, F6, F15).** [Sub-plan](2026-10-22-m6-map-stability.md). Dependency: M2, M3 (dashboard layout settled). Suggested commit: `fix: keep the map instance and user zoom across interactions`.
 - [x] **[Completed] M7 — Simulation ids outside secure contexts (F5).** [Sub-plan](2026-10-22-m7-simulation-id.md). Dependency: none. Suggested commit: `fix: generate simulation ids outside secure contexts`.
-- [ ] **[Pending] M8 — HUD accuracy and feedback (F7–F12, F14).** [Sub-plan](2026-10-22-m8-hud-feedback.md). Dependency: M1 (vehicle ids), M2 (header). Suggested commit: `fix: make live HUD state and search feedback accurate`.
+- [x] **[Completed] M8 — HUD accuracy and feedback (F7–F12, F14).** [Sub-plan](2026-10-22-m8-hud-feedback.md). Dependency: M1 (vehicle ids), M2 (header). Suggested commit: `fix: make live HUD state and search feedback accurate`.
 
 Order rationale: M1–M3 are what a jury sees first in backend mode; M4–M5 close the backend run lifecycle; M6–M7 remove demo-day failure modes; M8 is polish.
 
@@ -248,6 +248,72 @@ Order rationale: M1–M3 are what a jury sees first in backend mode; M4–M5 clo
 - Deviations / rulings:
   1. The browser found that `next dev` blocks LAN hosts by default (`allowedDevOrigins`). Hydration never happened over the LAN IP, so the backend-transport check used a production build instead. The README tells phone testers to use `npm run build && npx next start -H 0.0.0.0` and does not change `next.config.ts`.
 
-## Final closeout
+## M8 verification — 2026-10-22
 
-After M8: confirm eight `[Completed]` entries with evidence; run both full gates; run one real-backend browser pass covering rank → start → stop → back → change mode → start → finish → previous-run card at 1440 × 1000 and 390 × 844; check `git status --short`; report remaining limitations. New findings outside this scope go in a separate record.
+- Branch `fix/m8-hud-feedback` (from `main` at `0400871`), uncommitted for human review. Presentation only: no transport, simulation, contract, backend or dependency change.
+- Fixes and TDD (each test was observed failing, then passing):
+  - **F7 (ITS log):** `ItsConsole` marks only the newest visible row (`aria-current`, emerald) and numbers rows by the `MSG-ITS-<n>` sequence. 4 cases.
+  - **F8 (time saved):** `timeSavedTone` (rounded sign) drives the KPI (glow only when positive, muted at 0, amber when negative), the finished summary's saved value and, for consistency, M3's previous-run card. Shared classes live in `hud/time-saved-tone.ts`; the label is the constant `SAVED_LABEL`. 4 + 3 + 1 + 2 cases.
+  - **F9 (address search):**
+    - The search state records the `query` its results belong to.
+    - `searchFeedback` gives an "error" alert ("Address search unavailable — click the map instead") or a "no-match" status ("No matching address"), the latter only once the results belong to the text in the box.
+    - `enterSelection` makes Enter pick the highlighted or else the first suggestion, and do nothing without suggestions.
+    - `SearchFeedback` renders the message.
+    - 10 cases; the two idle-state `toEqual` expectations gained `query: ""`.
+  - **F10 (header status):**
+    - `runStatusKey` splits CANCELLED into STOPPED and SERVER_ERROR. `RUN_STATUS_LABELS` (in `simulation-copy.ts`) and `RUN_STATUS_DOTS` (in `hud/run-status-tone.ts`) drive the header dot and label: SETUP/RUNNING emerald, STARTING/CANCELLED amber, FINISHED/STOPPED muted, ERROR/SERVER_ERROR red.
+    - The KPI badge reads SIMULATION STOPPED or SERVER ERROR.
+    - **M2 and M4 follow-ups:** below `lg`, an ended run shows an outcome chip in the KPI strip ("Simulation finished · Summary ↓"), which scrolls to the phone summary (`#run-summary-phone`, smooth unless reduced motion).
+    - 6 + 8 + 7 cases.
+  - **F11 (vehicle type):** `KpiHeader` and `VehicleTelemetry` show the run's `VehicleIcon` on its `VEHICLE_ICON_COLORS` tile, with `VEHICLE_NAMES` ("Fire truck", "Police car"; ambulance before a run). Only presentational map pieces are imported. 4 + 3 cases.
+  - **F12 (intersection list):** upcoming signals first in route order (`distance_along_route_m`, otherwise tick order), then a collapsed `<details>` "Passed (n)". The heading reads "Route signals (TTI)". 3 cases; one RED regex was a test bug (it did not allow the chevron icon inside `<summary>`) and was corrected.
+  - **F14 (station list):** a pure `loadStations` returns `{stations, error}`, and `useStations` stores it. `DispatchForm` shows the `role="alert"` "Station list unavailable — check the backend" below the ranking. Mock never errors. 3 + 2 cases.
+- Snapshots (word diffs):
+  - `RunSummary.{enabled,disabled}.html`: only the saved `<dd>` gains `text-emerald-700 dark:text-emerald-300` (fixture +260 s).
+  - `IntersectionList.review.html`: only "Active corridor" → "Route" in the heading.
+  - Dashboard and DispatchForm setup snapshots are unchanged.
+- Gates: frontend `lint`, `typecheck`, `format:check`, `test` (**51 files, 488 tests**), `build` — all exit 0. Backend gate re-run for closeout: **930 passed**. `git diff --check` clean. `graphify update .` run.
+- Browser (`playwright-cli`, scripts, JSON and screenshots in `.tmp/playwright/repo-audit/m8/`):
+  - **Real police run** (backend, POLICE_CAR → "Kalwaryjska 20", 3 signals, 10×) at 1440 × 1000 light and 390 × 844 dark:
+    - police icon and "Police car" / `POL-KRA-01`;
+    - the ITS highlight moves to the newest row (01 → 02);
+    - upcoming signals lead, and "Passed (1→2→3)" collects the rest;
+    - the header reads "Simulation finished" with the muted dot;
+    - phone: the outcome chip is in the viewport, and tapping it brings the summary to y 231;
+    - no overflow, 0 console errors.
+
+    The mock build at 1440 and 390 shows the same ordering and chip.
+  - **Feedback** at the same two sizes and themes:
+    - stations 503 (stub) shows the station alert;
+    - geocode 503 (stub) shows the search alert;
+    - real "Xqzwvy" shows "No matching address" only after the debounce (no flash while typing);
+    - Enter selects the first suggestion;
+    - a negative saving (stubbed stream) shows "−12s" in amber.
+
+    The console errors are only the stubbed 503s.
+  - `emil-design-eng` review: no in-scope changes needed.
+- Deviations / rulings:
+  1. **Negative saving needed a stub:** a real DISABLED run's saving never went negative (`min` 0 on all three probe routes), because the KPI is measured against the density-scaled normal estimate. The negative tone was therefore checked with a stubbed stream (the neutral `+0s` is real at the first tick).
+  2. **Heading:** it reads "Route signals (TTI)" in every phase, not only RUNNING, because the list always holds every route signal.
+  3. **Phone outcome:** a tappable chip in the KPI strip instead of auto-scrolling the page.
+  4. **M3 card:** its saved value uses the same tone as the summary, for consistency.
+  5. **Harness slip:** the first closeout attempt hung because a stubbed stream route from the feedback script stayed on the shared page; a fresh browser fixed it. This was a test-harness issue, not a product one.
+
+## Final closeout — 2026-10-22
+
+- All eight milestones are `[Completed]` with evidence above.
+- Both full gates are green on `fix/m8-hud-feedback`:
+  - backend **930 passed**;
+  - frontend **51 files, 488 tests**, plus lint, typecheck, format and build.
+- Real-backend pass at 1440 × 1000 and 390 × 844 (`closeout-*.json` in `.tmp/playwright/repo-audit/m8/`), with 0 console errors and no horizontal overflow. Flow: rank "Rynek Główny 1" → ENABLED 10× → finish (04m 08s, 3 ITS) → back → change to DISABLED 2.0× → finish (09m 46s) → back (previous-run card replaced, settings kept) → start → Stop → back (card unchanged).
+- `git status --short`: only this milestone's frontend files and the plan records.
+- Remaining limitations:
+  - A DISABLED run reports a positive "saved vs normal-traffic estimate", because the baseline is the density-scaled normal estimate (domain semantics, not changed).
+  - The KPI phase badge keeps its amber warning style for live statuses such as APPROACHING INTERSECTION.
+  - Theme switches re-request the basemap style JSON (same map instance).
+  - `next dev` needs `allowedDevOrigins` for LAN hosts; the README documents a production build instead.
+  - ADR 0007 is `Proposed` until maintainer approval.
+  - The Vitest environment has no DOM library, so click paths are verified in the browser.
+  - Already out of scope: the decorative 72 % speed bar, 320 px header truncation, and CORS origin pairing.
+
+(Original closeout checklist:) After M8: confirm eight `[Completed]` entries with evidence; run both full gates; run one real-backend browser pass covering rank → start → stop → back → change mode → start → finish → previous-run card at 1440 × 1000 and 390 × 844; check `git status --short`; report remaining limitations. New findings outside this scope go in a separate record.

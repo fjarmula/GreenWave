@@ -186,6 +186,26 @@ function formProps(
 
 const formTree = (...args: Parameters<typeof formProps>) => DispatchForm(formProps(...args));
 
+describe("DispatchForm station list failure", () => {
+  it("says so in the ranking area", () => {
+    const markup = renderToStaticMarkup(
+      <DispatchForm
+        {...formProps(DEFAULT_DISPATCH_SETTINGS)}
+        stationsError="Station list unavailable — check the backend"
+      />,
+    );
+    const alert = markup.indexOf("Station list unavailable — check the backend");
+
+    expect(markup).toMatch(/role="alert"[^>]*>.*Station list unavailable — check the backend/);
+    expect(alert).toBeGreaterThan(markup.indexOf("Dispatching from"));
+    expect(alert).toBeLessThan(markup.indexOf("View station and incident"));
+  });
+
+  it("shows nothing when the list loaded", () => {
+    expect(render(dispatchState())).not.toContain("Station list unavailable");
+  });
+});
+
 describe("DispatchForm settings", () => {
   it("renders the controls from the settings prop", () => {
     const markup = render(dispatchState(), true, CHOSEN);

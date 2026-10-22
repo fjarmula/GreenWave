@@ -43,3 +43,28 @@ describe.each(["ENABLED", "DISABLED"] as const)("FinishedRunSummary (%s)", (mode
     expect(markup).toContain(mode === "ENABLED" ? "Enabled" : "Disabled");
   });
 });
+
+describe("FinishedRunSummary saved tone", () => {
+  it("does not show a negative saving in the success colour", () => {
+    const markup = renderToStaticMarkup(
+      <FinishedRunSummary
+        route={{
+          estimated_normal_time_sec: 780,
+          estimated_greenwave_time_sec: 380,
+          green_wave_mode: "DISABLED",
+        }}
+        completion={{
+          ...COMPLETION,
+          kpi_metrics: { current_time_saved_sec: -32, total_time_elapsed_sec: 812 },
+        }}
+        onBackToSetup={() => undefined}
+      />,
+    );
+    const saved = markup.match(
+      /Saved vs normal-traffic estimate<\/dt><dd class="([^"]*)">([^<]*)</,
+    )!;
+
+    expect(saved[2]).toBe("−00m 32s");
+    expect(saved[1].split(" ")).toContain("text-amber-700");
+  });
+});

@@ -38,20 +38,29 @@ export function ItsConsole() {
               : "No simulated ITS dispatches yet."}
           </p>
         )}
-        {logEntries.map((entry, index) => (
-          <p
-            key={entry.messageId}
-            className={`flex gap-2 font-mono text-[9px] leading-relaxed ${
-              index === 2 ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"
-            }`}
-          >
-            <span className="shrink-0 text-muted-foreground opacity-60">
-              {String(index + 1).padStart(2, "0")}
-            </span>
-            <span>{entry.text}</span>
-          </p>
-        ))}
+        {logEntries.map((entry, index) => {
+          const newest = index === logEntries.length - 1;
+          return (
+            <p
+              key={entry.messageId}
+              aria-current={newest || undefined}
+              className={`flex gap-2 font-mono text-[9px] leading-relaxed ${
+                newest ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"
+              }`}
+            >
+              <span className="shrink-0 text-muted-foreground opacity-60">
+                {messageSequence(entry.messageId)}
+              </span>
+              <span>{entry.text}</span>
+            </p>
+          );
+        })}
       </div>
     </section>
   );
+}
+
+/** The contract's `MSG-ITS-<n>` sequence, zero-padded; stable as older rows scroll out. */
+function messageSequence(messageId: string): string {
+  return (messageId.match(/(\d+)$/)?.[1] ?? "").padStart(2, "0");
 }

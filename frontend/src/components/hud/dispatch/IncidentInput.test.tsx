@@ -1,10 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { IncidentInput } from "@/components/hud/dispatch/IncidentInput";
+import { IncidentInput, SearchFeedback } from "@/components/hud/dispatch/IncidentInput";
 import {
   createAddressSearch,
+  enterSelection,
   GEOCODE_DEBOUNCE_MILLISECONDS,
+  searchFeedback,
   suggestionToIncident,
 } from "@/lib/address-search";
 import type { GeocodeResult } from "@/types/telemetry";
@@ -23,7 +25,7 @@ describe("createAddressSearch", () => {
     await vi.advanceTimersByTimeAsync(GEOCODE_DEBOUNCE_MILLISECONDS * 2);
 
     expect(geocode).not.toHaveBeenCalled();
-    expect(search.getState()).toEqual({ results: [], status: "idle" });
+    expect(search.getState()).toEqual({ results: [], status: "idle", query: "" });
   });
 
   it("searches once, 250 ms after the last keystroke of 2+ characters", async () => {
@@ -41,7 +43,7 @@ describe("createAddressSearch", () => {
     expect(GEOCODE_DEBOUNCE_MILLISECONDS).toBe(250);
     expect(geocode).toHaveBeenCalledTimes(1);
     expect(geocode).toHaveBeenCalledWith("flo", expect.any(AbortSignal));
-    expect(search.getState()).toEqual({ results: [RESULT], status: "ready" });
+    expect(search.getState()).toEqual({ results: [RESULT], status: "ready", query: "flo" });
   });
 
   it("discards a slower older search", async () => {
@@ -73,7 +75,65 @@ describe("createAddressSearch", () => {
 
     search.setQuery("f");
 
-    expect(search.getState()).toEqual({ results: [], status: "idle" });
+    expect(search.getState()).toEqual({ results: [], status: "idle", query: "" });
+  });
+});
+
+describe("address search feedback", () => {
+  it("reports a failed search", async () => {
+    vi.useFakeTimers();
+    const search = createAddressSearch(async () => {
+      throw new Error("503");
+    });
+    search.setQuery("flo");
+    await vi.advanceTimersByTimeAsync(GEOCODE_DEBOUNCE_MILLISECONDS);
+
+    expect(searchFeedback(search.getState(), "flo")).toBe("error");
+  });
+
+  it("reports no match only for the query the empty results belong to", async () => {
+    vi.useFakeTimers();
+    const search = createAddressSearch(async () => []);
+    search.setQuery("xqzw");
+    await vi.advanceTimersByTimeAsync(GEOCODE_DEBOUNCE_MILLISECONDS);
+
+    expect(searchFeedback(search.getState(), "xqzw")).toBe("no-match");
+    expect(searchFeedback(search.getState(), " xqzw ")).toBe("no-match");
+    // Still typing: the empty results belong to an older query (debounce pending).
+    expect(searchFeedback(search.getState(), "xqzwv")).toBeNull();
+  });
+
+  it.each([
+    [{ results: [RESULT], status: "ready" as const, query: "flo" }, "flo"],
+    [{ results: [], status: "loading" as const, query: "" }, "flo"],
+    [{ results: [], status: "idle" as const, query: "" }, "f"],
+  ])("says nothing otherwise (%j)", (state, query) => {
+    expect(searchFeedback(state, query)).toBeNull();
+  });
+
+  it("renders the error as an alert and no match as a polite status", () => {
+    const error = renderToStaticMarkup(<SearchFeedback feedback="error" />);
+    const noMatch = renderToStaticMarkup(<SearchFeedback feedback="no-match" />);
+
+    expect(error).toMatch(/role="alert"[^>]*>.*Address search unavailable — click the map instead/);
+    expect(noMatch).toMatch(/role="status"[^>]*>.*No matching address/);
+    expect(renderToStaticMarkup(<SearchFeedback feedback={null} />)).toBe("");
+  });
+});
+
+describe("enterSelection", () => {
+  const SECOND: GeocodeResult = { ...RESULT, label: "Floriańska 2" };
+
+  it("chooses the highlighted suggestion", () => {
+    expect(enterSelection([RESULT, SECOND], 1)).toBe(SECOND);
+  });
+
+  it("chooses the first suggestion when none is highlighted", () => {
+    expect(enterSelection([RESULT, SECOND], -1)).toBe(RESULT);
+  });
+
+  it("does nothing without suggestions", () => {
+    expect(enterSelection([], -1)).toBeNull();
   });
 });
 

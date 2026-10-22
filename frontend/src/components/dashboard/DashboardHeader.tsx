@@ -2,20 +2,12 @@
 
 import { Activity, Settings2, Siren } from "lucide-react";
 
+import { RUN_STATUS_DOTS } from "@/components/hud/run-status-tone";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { useSimulationState } from "@/components/simulation-provider";
-import type { SimulationPhase } from "@/lib/simulation-state";
+import { RUN_STATUS_LABELS, runStatusKey } from "@/lib/simulation-copy";
 
 export type DashboardMode = "setup" | "live";
-
-const PHASE_LABELS: Record<SimulationPhase, string> = {
-  SETUP: "System ready",
-  STARTING: "Computing route",
-  RUNNING: "Simulation running",
-  FINISHED: "Simulation finished",
-  CANCELLED: "Simulation cancelled",
-  ERROR: "Simulation error",
-};
 
 type DashboardHeaderProps = {
   mode: DashboardMode;
@@ -26,7 +18,8 @@ type DashboardHeaderProps = {
  * live operations until the ended run's "Back to dispatch setup".
  */
 export function DashboardHeader({ mode }: DashboardHeaderProps) {
-  const { simulationState } = useSimulationState();
+  const { simulationState, cancelReason } = useSimulationState();
+  const status = runStatusKey(simulationState, cancelReason);
   return (
     <header className="z-50 flex flex-wrap items-center gap-3 border-b border-border bg-background/92 px-4 py-3 backdrop-blur-xl sm:px-6 lg:min-h-[76px] lg:flex-nowrap">
       <div className="flex min-w-0 flex-1 items-center gap-3 lg:min-w-[285px] lg:flex-none">
@@ -61,8 +54,8 @@ export function DashboardHeader({ mode }: DashboardHeaderProps) {
       </div>
 
       <div className="ml-2 hidden items-center gap-2 text-[11px] text-muted-foreground xl:flex">
-        <span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-        <span>{PHASE_LABELS[simulationState]}</span>
+        <span className={`size-2 rounded-full ${RUN_STATUS_DOTS[status]}`} />
+        <span>{RUN_STATUS_LABELS[status]}</span>
         <span className="mx-1 h-4 w-px bg-border" />
         <span className="font-mono">SIMULATION ENVIRONMENT</span>
       </div>
