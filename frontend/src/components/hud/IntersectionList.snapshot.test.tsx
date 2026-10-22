@@ -108,3 +108,66 @@ describe("IntersectionList", () => {
     expect(markup).not.toContain("Unnamed intersection");
   });
 });
+
+describe("IntersectionList ordering", () => {
+  /** Ticks in a scrambled order; distances give the route order INT-A … INT-D. */
+  function orderingState(): SimulationState {
+    const current = reviewState();
+    const distances: Record<string, number> = {
+      "INT-A": 100,
+      "INT-B": 200,
+      "INT-C": 300,
+      "INT-D": 400,
+    };
+    current.routeData!.route_intersections = Object.entries(distances).map(([id, distance]) => ({
+      ...current.routeData!.route_intersections[0],
+      id,
+      name: `Junction ${id.slice(-1)}`,
+      needs_review: false,
+      distance_along_route_m: distance,
+    }));
+    const tick = (id: string, tti: number | null) => ({
+      id,
+      name: `Junction ${id.slice(-1)}`,
+      state: tti === null ? ("NORMAL" as const) : ("CLEARING" as const),
+      is_cascade: false,
+      tti_seconds: tti,
+      is_active_corridor: tti !== null,
+    });
+    current.liveTelemetry!.intersections = [
+      tick("INT-D", 40),
+      tick("INT-B", null),
+      tick("INT-C", 12),
+      tick("INT-A", null),
+    ];
+    return current;
+  }
+
+  const ids = (markup: string) =>
+    [...markup.matchAll(/font-mono text-xs">(INT-[A-D])</g)].map(([, id]) => id);
+
+  it("lists upcoming signals first in route order, then passed ones in a collapsed group", () => {
+    state.current = orderingState();
+    const markup = renderToStaticMarkup(<IntersectionList />);
+    const [upcoming, passed] = markup.split("<details");
+
+    expect(ids(upcoming)).toEqual(["INT-C", "INT-D"]);
+    expect(passed).toBeDefined();
+    expect(passed).not.toMatch(/^[^>]*\sopen/);
+    expect(passed).toMatch(/<summary[^>]*>.*?Passed \(2\)<\/summary>/);
+    expect(ids(passed)).toEqual(["INT-A", "INT-B"]);
+  });
+
+  it("has no passed group before any signal is passed", () => {
+    state.current = reviewState();
+    expect(renderToStaticMarkup(<IntersectionList />)).not.toContain("<details");
+  });
+
+  it("calls the list route signals, since it holds all of them", () => {
+    state.current = orderingState();
+    const markup = renderToStaticMarkup(<IntersectionList />);
+
+    expect(markup).toMatch(/<h2[^>]*>Route signals <span[^>]*>\(TTI\)<\/span><\/h2>/);
+    expect(markup).not.toContain("Active corridor signals");
+  });
+});

@@ -7,7 +7,7 @@ import type { DashboardMode } from "@/components/dashboard/DashboardHeader";
 import { VehicleTelemetry } from "@/components/dashboard/VehicleTelemetry";
 import { IntersectionList } from "@/components/hud/IntersectionList";
 import { ItsConsole } from "@/components/hud/ItsConsole";
-import { KpiHeader } from "@/components/hud/KpiHeader";
+import { KpiHeader, PHONE_RUN_SUMMARY_ID } from "@/components/hud/KpiHeader";
 import { RunSummary } from "@/components/hud/RunSummary";
 import type { MapEndpoint } from "@/components/map/EndpointMarkers";
 import { MapContainer } from "@/components/map/MapContainer";
@@ -76,7 +76,7 @@ export function RoutePreview({
           </div>
           <div className="relative z-20 mt-[420px] grid gap-3 px-3 pb-3 sm:mt-[550px] sm:grid-cols-2 sm:px-4 lg:hidden">
             {onBackToSetup && onStop && (
-              <div className="sm:col-span-2">
+              <div id={PHONE_RUN_SUMMARY_ID} className="scroll-mt-3 sm:col-span-2">
                 <RunSummary onBackToSetup={onBackToSetup} onStop={onStop} />
               </div>
             )}

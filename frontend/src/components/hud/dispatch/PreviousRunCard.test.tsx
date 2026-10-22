@@ -53,3 +53,15 @@ describe("PreviousRunCard", () => {
     expect(content).toContain("Saved vs normal-traffic estimate 06m 20s");
   });
 });
+
+describe("PreviousRunCard saved tone", () => {
+  it.each([
+    [-32, "text-amber-700"],
+    [380, "text-emerald-700"],
+  ])("colours %i s saved by its sign", (savedSeconds, colour) => {
+    const markup = renderToStaticMarkup(<PreviousRunCard run={{ ...RUN, savedSeconds }} />);
+    const saved = markup.match(/Saved vs normal-traffic estimate<\/dt><dd class="([^"]*)"/)!;
+
+    expect(saved[1].split(" ")).toContain(colour);
+  });
+});

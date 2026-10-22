@@ -1,6 +1,6 @@
 "use client";
 
-import { Signal } from "lucide-react";
+import { ChevronRight, Signal } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
 import { isCascadeClearing } from "@/lib/signal-visuals";
 import type { IntersectionTelemetry, RouteIntersection } from "@/types/telemetry";
@@ -17,13 +17,21 @@ export function IntersectionList() {
   const routeIntersections = new Map(
     (routeData?.route_intersections ?? []).map((intersection) => [intersection.id, intersection]),
   );
+  const { upcoming, passed } = splitByPassage(intersections, routeIntersections);
+  const card = (intersection: IntersectionTelemetry) => (
+    <IntersectionCard
+      key={intersection.id}
+      telemetry={intersection}
+      detail={routeIntersections.get(intersection.id)}
+    />
+  );
   return (
     <section className="rounded-xl border border-border/80 bg-card/92 p-4 shadow-2xl backdrop-blur-xl">
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="dashboard-eyebrow">Corridor monitoring</p>
           <h2 className="mt-1 text-sm font-semibold">
-            Active corridor signals <span className="font-normal text-muted-foreground">(TTI)</span>
+            Route signals <span className="font-normal text-muted-foreground">(TTI)</span>
           </h2>
         </div>
         <Signal className="size-5 text-cyan-600 dark:text-cyan-300" aria-hidden />
@@ -33,15 +41,42 @@ export function IntersectionList() {
         {!intersections.length && (
           <p className="text-xs text-muted-foreground">Waiting for simulation telemetry.</p>
         )}
-        {intersections.map((intersection) => {
-          const detail = routeIntersections.get(intersection.id);
-          return (
-            <IntersectionCard key={intersection.id} telemetry={intersection} detail={detail} />
-          );
-        })}
+        {upcoming.map(card)}
+        {passed.length > 0 && (
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-md py-1 text-[11px] font-semibold text-muted-foreground select-none hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 [&::-webkit-details-marker]:hidden">
+              <ChevronRight
+                className="size-3.5 transition-transform group-open:rotate-90 motion-reduce:transition-none"
+                aria-hidden
+              />
+              Passed ({passed.length})
+            </summary>
+            <div className="mt-2 space-y-3">{passed.map(card)}</div>
+          </details>
+        )}
       </div>
     </section>
   );
+}
+
+/**
+ * The next signal leads: upcoming ones in route order, then the passed ones (no TTI left).
+ * Route order comes from the start response; ticks without it keep their own order.
+ */
+function splitByPassage(
+  intersections: IntersectionTelemetry[],
+  routeIntersections: Map<string, RouteIntersection>,
+) {
+  const distance = (intersection: IntersectionTelemetry) =>
+    routeIntersections.get(intersection.id)?.distance_along_route_m ?? Number.POSITIVE_INFINITY;
+  const inRouteOrder = intersections
+    .map((intersection, index) => ({ intersection, index }))
+    .sort((a, b) => distance(a.intersection) - distance(b.intersection) || a.index - b.index)
+    .map(({ intersection }) => intersection);
+  return {
+    upcoming: inRouteOrder.filter((intersection) => intersection.tti_seconds !== null),
+    passed: inRouteOrder.filter((intersection) => intersection.tti_seconds === null),
+  };
 }
 
 function IntersectionCard({

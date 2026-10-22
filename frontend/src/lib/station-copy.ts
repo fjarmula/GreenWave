@@ -15,3 +15,10 @@ export const VEHICLE_TYPE_LABELS: Record<VehicleType, string> = {
   FIRE_TRUCK: "Fire",
   POLICE_CAR: "Police",
 };
+
+/** The vehicle on its own, e.g. in the live panels ("Fire" alone reads as the event). */
+export const VEHICLE_NAMES: Record<VehicleType, string> = {
+  AMBULANCE: "Ambulance",
+  FIRE_TRUCK: "Fire truck",
+  POLICE_CAR: "Police car",
+};

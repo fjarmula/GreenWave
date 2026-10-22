@@ -1,7 +1,13 @@
 import { History } from "lucide-react";
 
 import type { PreviousRun } from "@/lib/previous-run";
-import { formatDuration, greenWaveModeLabel } from "@/lib/simulation-copy";
+import { SAVED_VALUE_TONES } from "@/components/hud/time-saved-tone";
+import {
+  formatDuration,
+  greenWaveModeLabel,
+  SAVED_LABEL,
+  timeSavedTone,
+} from "@/lib/simulation-copy";
 
 type PreviousRunCardProps = {
   run: PreviousRun;
@@ -40,8 +46,12 @@ export function PreviousRunCard({ run }: PreviousRunCardProps) {
           <dd className="mt-1 font-mono text-lg font-bold">{formatDuration(run.totalSeconds)}</dd>
         </div>
         <div className="flex flex-col justify-between">
-          <dt className="text-[10px] text-muted-foreground">Saved vs normal-traffic estimate</dt>
-          <dd className="mt-1 font-mono text-lg font-bold">{formatDuration(run.savedSeconds)}</dd>
+          <dt className="text-[10px] text-muted-foreground">{SAVED_LABEL}</dt>
+          <dd
+            className={`mt-1 font-mono text-lg font-bold ${SAVED_VALUE_TONES[timeSavedTone(run.savedSeconds)]}`}
+          >
+            {formatDuration(run.savedSeconds)}
+          </dd>
         </div>
       </dl>
     </section>

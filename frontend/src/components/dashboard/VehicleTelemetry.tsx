@@ -1,22 +1,28 @@
 "use client";
 
-import { Ambulance, Gauge } from "lucide-react";
+import { Gauge } from "lucide-react";
 
+import { VehicleIcon } from "@/components/map/VehicleIcon";
+import { VEHICLE_ICON_COLORS } from "@/components/map/vehicle-icons";
 import { useSimulationState } from "@/components/simulation-provider";
 import { getFrontendConfig } from "@/lib/config";
 import { vehicleSpeedPresentation } from "@/lib/simulation-copy";
+import { VEHICLE_NAMES } from "@/lib/station-copy";
 
 export function VehicleTelemetry() {
-  const { liveTelemetry, simulationState } = useSimulationState();
+  const { liveTelemetry, simulationState, startRequest } = useSimulationState();
+  const vehicleType = startRequest?.vehicle_type ?? "AMBULANCE";
   const speed = vehicleSpeedPresentation(simulationState, liveTelemetry);
   return (
     <div className="absolute top-36 left-6 z-20 hidden w-[292px] space-y-3 lg:block">
       <div className="flex gap-3 rounded-xl border border-border/80 bg-card/88 p-4 shadow-xl backdrop-blur-xl">
-        <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-cyan-500/12 text-cyan-600 dark:text-cyan-300">
-          <Ambulance className="size-5" aria-hidden />
+        <div
+          className={`grid size-9 shrink-0 place-items-center rounded-lg ${VEHICLE_ICON_COLORS[vehicleType]}`}
+        >
+          <VehicleIcon type={vehicleType} className="size-5" />
         </div>
         <div>
-          <p className="dashboard-eyebrow">Priority vehicle</p>
+          <p className="dashboard-eyebrow">{VEHICLE_NAMES[vehicleType]}</p>
           <h2 className="mt-1 font-mono text-sm font-bold">
             {liveTelemetry?.ambulance.id ?? "Awaiting telemetry"}
           </h2>

@@ -1,9 +1,15 @@
 "use client";
 
-import { LoaderCircle, MapPin } from "lucide-react";
+import { LoaderCircle, MapPin, SearchX, TriangleAlert } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 
-import { createAddressSearch, suggestionToIncident } from "@/lib/address-search";
+import {
+  createAddressSearch,
+  enterSelection,
+  searchFeedback,
+  suggestionToIncident,
+  type SearchFeedback as Feedback,
+} from "@/lib/address-search";
 import type { Incident } from "@/lib/useIncidentDispatch";
 import type { GeocodeResult } from "@/types/telemetry";
 
@@ -30,11 +36,8 @@ export function IncidentInput({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [search] = useState(() => createAddressSearch(geocode));
-  const { results, status } = useSyncExternalStore(
-    search.subscribe,
-    search.getState,
-    search.getState,
-  );
+  const searchState = useSyncExternalStore(search.subscribe, search.getState, search.getState);
+  const { results, status } = searchState;
   useEffect(() => () => search.dispose(), [search]);
   const expanded = open && results.length > 0;
 
@@ -51,9 +54,11 @@ export function IncidentInput({
       event.preventDefault();
       const step = event.key === "ArrowDown" ? 1 : -1;
       setActive((index) => (index + step + results.length) % results.length);
-    } else if (event.key === "Enter" && active >= 0) {
+    } else if (event.key === "Enter") {
+      const selection = enterSelection(results, active);
+      if (!selection) return;
       event.preventDefault();
-      choose(results[active]);
+      choose(selection);
     } else if (event.key === "Escape") {
       setOpen(false);
     }
@@ -124,10 +129,38 @@ export function IncidentInput({
           </ul>
         )}
       </div>
+      <SearchFeedback feedback={geocodeEnabled ? searchFeedback(searchState, query) : null} />
       <p className="mt-1.5 text-[11px] text-muted-foreground">or click the map</p>
       {!geocodeEnabled && (
         <p className="mt-1 text-[11px] text-muted-foreground">Address search needs the backend</p>
       )}
     </div>
   );
+}
+
+/** Inline outcome of the last address search: a failure is an alert, no match is a status. */
+export function SearchFeedback({ feedback }: { feedback: Feedback }) {
+  if (feedback === "error") {
+    return (
+      <p
+        role="alert"
+        className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-red-700 dark:text-red-300"
+      >
+        <TriangleAlert className="size-3.5 shrink-0" aria-hidden />
+        Address search unavailable — click the map instead
+      </p>
+    );
+  }
+  if (feedback === "no-match") {
+    return (
+      <p
+        role="status"
+        className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-300"
+      >
+        <SearchX className="size-3.5 shrink-0" aria-hidden />
+        No matching address
+      </p>
+    );
+  }
+  return null;
 }

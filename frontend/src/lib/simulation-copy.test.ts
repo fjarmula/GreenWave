@@ -7,6 +7,8 @@ import {
   formatDuration,
   formatSignedSeconds,
   greenWaveModeLabel,
+  runStatusKey,
+  timeSavedTone,
   summarizeFinishedRun,
   vehicleSpeedPresentation,
 } from "@/lib/simulation-copy";
@@ -197,5 +199,33 @@ describe("vehicleSpeedPresentation", () => {
     const retained = sample(37.5, "ARRIVED");
     vehicleSpeedPresentation("FINISHED", retained);
     expect(retained.ambulance.speed_kmh).toBe(37.5);
+  });
+});
+
+describe("timeSavedTone", () => {
+  it.each([
+    [42, "positive"],
+    [0, "neutral"],
+    [-12, "negative"],
+  ] as const)("calls %i seconds saved %s", (seconds, tone) => {
+    expect(timeSavedTone(seconds)).toBe(tone);
+  });
+
+  it("judges the value as displayed, so a rounded 0 is neutral", () => {
+    expect(timeSavedTone(0.4)).toBe("neutral");
+    expect(timeSavedTone(-0.4)).toBe("neutral");
+  });
+});
+
+describe("runStatusKey", () => {
+  it.each([
+    ["SETUP", null, "SETUP"],
+    ["RUNNING", null, "RUNNING"],
+    ["CANCELLED", "STOPPED", "STOPPED"],
+    ["CANCELLED", "SERVER_ERROR", "SERVER_ERROR"],
+    ["CANCELLED", "SUPERSEDED", "CANCELLED"],
+    ["ERROR", null, "ERROR"],
+  ] as const)("%s with reason %s reads as %s", (phase, reason, key) => {
+    expect(runStatusKey(phase, reason)).toBe(key);
   });
 });
