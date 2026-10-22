@@ -70,13 +70,15 @@ export function DispatchForm({
     : "none";
 
   return (
-    <aside className="border-border/80 bg-card/95 p-5 shadow-2xl backdrop-blur-xl sm:p-6 lg:h-full lg:overflow-y-auto lg:border-r">
-      <div className="flex items-start justify-between gap-4">
+    <aside className="p-5 sm:p-6 lg:h-full lg:overflow-y-auto">
+      <div className="hud-head">
         <div>
           <p className="dashboard-eyebrow">Dispatch console / 01</p>
-          <h2 className="mt-1 text-lg font-semibold tracking-tight">Incident dispatch</h2>
+          <h2 className="hud-title text-lg">Incident dispatch</h2>
         </div>
-        <Radio className="size-5 text-emerald-500" aria-hidden />
+        <span className="hud-icon tone-emergency">
+          <Radio aria-hidden />
+        </span>
       </div>
 
       <div className="mt-6 space-y-5">
@@ -98,11 +100,8 @@ export function DispatchForm({
       />
 
       {stationsError && (
-        <p
-          role="alert"
-          className="mt-3 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/8 px-3 py-2.5 text-xs font-medium text-red-700 dark:text-red-300"
-        >
-          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+        <p role="alert" className="hud-alert tone-emergency mt-3">
+          <TriangleAlert aria-hidden />
           {stationsError}
         </p>
       )}
@@ -111,20 +110,22 @@ export function DispatchForm({
         type="button"
         onClick={onFocusMap}
         disabled={!incident}
-        className="mt-4 flex w-full items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/8 px-3 py-2.5 text-left text-xs font-semibold text-cyan-700 transition hover:bg-cyan-500/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 disabled:cursor-not-allowed disabled:opacity-60 dark:text-cyan-300"
+        className="hud-secondary tone-beacon pressable mt-4"
       >
-        <Target className="size-4" aria-hidden />
+        <Target aria-hidden />
         View station and incident
       </button>
 
-      <div className="my-6 h-px bg-border" />
+      <div className="hud-divider" />
 
-      <div className="flex items-start justify-between gap-4">
+      <div className="hud-head">
         <div>
           <p className="dashboard-eyebrow">Simulation parameters</p>
-          <h3 className="mt-1 text-sm font-semibold">Traffic model</h3>
+          <h3 className="hud-title">Traffic model</h3>
         </div>
-        <Gauge className="size-5 text-emerald-500" aria-hidden />
+        <span className="hud-icon tone-beacon">
+          <Gauge aria-hidden />
+        </span>
       </div>
 
       <TrafficDensityControl
@@ -132,9 +133,10 @@ export function DispatchForm({
         onChange={(value) => update({ trafficDensity: value })}
       />
       {intent === "comparison" ? (
-        <p className="mt-4 text-sm font-medium">Green Wave and standard traffic · same scenario</p>
+        <p className="mt-5 text-sm font-medium">Green Wave and standard traffic · same scenario</p>
       ) : modeLocked ? (
-        <p className="mt-4 text-sm font-medium">
+        <p className={`hud-chip mt-5 ${greenWaveMode === "ENABLED" ? "tone-go" : "tone-caution"}`}>
+          <span className="hud-dot" aria-hidden />
           {greenWaveMode === "ENABLED"
             ? "Green Wave enabled"
             : "Standard traffic · Green Wave disabled"}
@@ -170,7 +172,7 @@ export function DispatchForm({
         disabled={pending || !canStart}
         aria-busy={pending}
         onClick={() => onInitialize(settings)}
-        className={`mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 text-xs font-extrabold tracking-[0.08em] text-emerald-950 uppercase shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:opacity-70 disabled:hover:bg-emerald-500 ${pending ? "disabled:cursor-wait" : "disabled:cursor-not-allowed"}`}
+        className={`hud-primary pressable mt-7 ${pending ? "disabled:cursor-wait" : "disabled:cursor-not-allowed"}`}
       >
         <Zap className="size-4" aria-hidden />
         {pending
@@ -188,11 +190,8 @@ export function DispatchForm({
       </button>
 
       {errorMessage && (
-        <p
-          role="alert"
-          className="mt-3 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/8 px-3 py-2.5 text-xs font-medium text-red-700 dark:text-red-300"
-        >
-          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+        <p role="alert" className="hud-alert tone-emergency mt-3">
+          <TriangleAlert aria-hidden />
           {errorMessage}
         </p>
       )}
@@ -204,8 +203,8 @@ export function DispatchForm({
         incident={incident?.position ?? null}
       />
 
-      <p className="mt-5 flex items-center gap-2 text-[10px] leading-relaxed text-muted-foreground">
-        <ShieldCheck className="size-4 shrink-0 text-emerald-500" aria-hidden />
+      <p className="mt-5 flex items-center gap-2 text-[11px] leading-relaxed text-muted-foreground">
+        <ShieldCheck className="size-4 shrink-0 text-go" aria-hidden />
         {isMockTransport
           ? "Demo uses synthetic route estimates and sample signal telemetry."
           : "Route estimates come from the simulation backend after initialization. All signal states are simulated."}

@@ -72,15 +72,15 @@ describe("KpiHeader time saved", () => {
   }
 
   it.each([
-    [42, "+42s", "text-emerald-600"],
+    [42, "+42s", "text-go"],
     [0, "+0s", "text-muted-foreground"],
-    [-12, "−12s", "text-amber-700"],
+    [-12, "−12s", "text-caution"],
   ])("colours %i s saved by its sign and keeps the sign", (saved, text, colour) => {
     const [, classes, value] = savedMarkup(saved);
 
     expect(value).toBe(text);
     expect(classes.split(" ")).toContain(colour);
-    if (saved <= 0) expect(classes).not.toContain("emerald");
+    if (saved <= 0) expect(classes).not.toContain("text-go");
   });
 });
 

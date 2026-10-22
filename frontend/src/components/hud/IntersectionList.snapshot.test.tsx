@@ -144,7 +144,7 @@ describe("IntersectionList ordering", () => {
   }
 
   const ids = (markup: string) =>
-    [...markup.matchAll(/font-mono text-xs">(INT-[A-D])</g)].map(([, id]) => id);
+    [...markup.matchAll(/<strong[^>]*>(INT-[A-D])<\/strong>/g)].map(([, id]) => id);
 
   it("lists upcoming signals first in route order, then passed ones in a collapsed group", () => {
     state.current = orderingState();

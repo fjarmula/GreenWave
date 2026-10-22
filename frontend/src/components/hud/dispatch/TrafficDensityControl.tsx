@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 type TrafficDensityControlProps = {
   value: number;
   onChange: (value: number) => void;
@@ -10,10 +12,7 @@ export function TrafficDensityControl({ value, onChange }: TrafficDensityControl
         <label htmlFor="traffic-density" className="dashboard-label">
           Traffic density multiplier
         </label>
-        <output
-          htmlFor="traffic-density"
-          className="font-mono text-base font-bold text-cyan-600 dark:text-cyan-300"
-        >
+        <output htmlFor="traffic-density" className="hud-value text-base font-semibold">
           {value.toFixed(1)}x
         </output>
       </div>
@@ -25,9 +24,10 @@ export function TrafficDensityControl({ value, onChange }: TrafficDensityControl
         step="0.1"
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="mt-3 w-full accent-cyan-500"
+        className="hud-range mt-3"
+        style={{ "--fill": `${((value - 1) / 2) * 100}%` } as CSSProperties}
       />
-      <div className="mt-1 flex justify-between font-mono text-[10px] text-muted-foreground">
+      <div className="hud-value mt-1 flex justify-between text-[10px] text-muted-foreground">
         <span>1.0x normal</span>
         <span>3.0x peak</span>
       </div>

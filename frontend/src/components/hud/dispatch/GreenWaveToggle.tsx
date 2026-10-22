@@ -20,11 +20,7 @@ export function GreenWaveToggle({ mode, onChange }: GreenWaveToggleProps) {
           ? "Simulated signal priority clears each intersection ahead of the vehicle."
           : "Simulated standard traffic, no signal priority: at a red or yellow signal the vehicle rolls through cautiously without stopping, within the ordinary speed limit."}
       </p>
-      <div
-        role="radiogroup"
-        aria-label="ER Green Wave"
-        className="mt-2 grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-1"
-      >
+      <div role="radiogroup" aria-label="ER Green Wave" className="hud-segmented mt-2">
         {MODES.map((option) => (
           <button
             key={option.mode}
@@ -32,7 +28,7 @@ export function GreenWaveToggle({ mode, onChange }: GreenWaveToggleProps) {
             role="radio"
             aria-checked={mode === option.mode}
             onClick={() => onChange(option.mode)}
-            className="flex min-h-9 items-center justify-center rounded-md text-xs font-semibold text-muted-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/70 aria-checked:bg-emerald-500/15 aria-checked:text-emerald-700 dark:aria-checked:text-emerald-300"
+            className={`hud-segment ${option.mode === "ENABLED" ? "tone-go" : ""}`}
           >
             {option.label}
           </button>

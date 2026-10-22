@@ -61,7 +61,7 @@ Skills: emil-design-eng, animate.
 - [x] "Return to … simulation" as a live status pill with a pulsing dot.
 - [x] Tool links (Diagnostics, Driver) and the simulation disclaimer restyled.
 
-### 3. Workspace chrome (done, awaiting human commit)
+### 3. Workspace chrome (done)
 
 Skills: emil-design-eng, mobile-native.
 
@@ -71,15 +71,16 @@ Skills: emil-design-eng, mobile-native.
 - [ ] Follow-up for milestone 5: check provenance against the comparison replay transport bar.
 - [x] MapLibre controls follow the tokens.
 
-### 4. Inspector / HUD
+### 4. Inspector / HUD (done, awaiting human commit)
 
 Skills: emil-design-eng, find-animation-opportunities.
 
-- [ ] Consistent section cards and type scale across DispatchForm and its controls (vehicle type, location, density, cascade, playback speed, primary CTA).
-- [ ] KpiHeader: large tabular numbers; status and connection chips on semantic tokens.
-- [ ] Run panel and Stop button on `emergency` tokens.
-- [ ] IntersectionList: status chips; TTI bar animated via `transform: scaleX` with a linear 1s transition between ticks; "View JSON" demoted to a small icon button.
-- [ ] RunSummary (finished moment may get a subtle entrance), DataQualityPanel, StationRanking, PreviousRunCard.
+- [x] Consistent section cards and type scale across DispatchForm and its controls (vehicle type, location, density, cascade, playback speed, primary CTA).
+- [x] KpiHeader: large tabular numbers; status and connection chips on semantic tokens.
+- [x] Run panel and Stop button on `emergency` tokens.
+- [x] IntersectionList: status chips; TTI bar animated via `transform: scaleX` with a linear transition lasting one tick (follows playback speed); "View JSON" demoted to a quiet inline action.
+- [x] Shared `hud-*` vocabulary in `@layer components` (panel, head, icon, segmented, input, range, switch, primary/secondary/danger, alert, chip, value) with `tone-*` modifiers.
+- [x] RunSummary (finished moment may get a subtle entrance), DataQualityPanel, StationRanking, PreviousRunCard.
 
 ### 5. Sub-screens
 

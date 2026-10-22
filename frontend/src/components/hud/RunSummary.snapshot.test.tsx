@@ -65,6 +65,6 @@ describe("FinishedRunSummary saved tone", () => {
     )!;
 
     expect(saved[2]).toBe("−00m 32s");
-    expect(saved[1].split(" ")).toContain("text-amber-700");
+    expect(saved[1].split(" ")).toContain("text-caution");
   });
 });

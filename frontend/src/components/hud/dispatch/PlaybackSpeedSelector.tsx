@@ -19,11 +19,7 @@ export function PlaybackSpeedSelector({
         </span>
         <span className="font-mono text-[10px] text-muted-foreground">simulated s per real s</span>
       </div>
-      <div
-        role="radiogroup"
-        aria-labelledby="playback-speed-label"
-        className="mt-2 grid grid-cols-4 gap-1 rounded-lg border border-border bg-muted/45 p-1"
-      >
+      <div role="radiogroup" aria-labelledby="playback-speed-label" className="hud-segmented mt-2">
         {PLAYBACK_SPEEDS.map((speed) => (
           <button
             key={speed}
@@ -31,11 +27,7 @@ export function PlaybackSpeedSelector({
             role="radio"
             aria-checked={value === speed}
             onClick={() => onChange(speed)}
-            className={`min-h-8 rounded-md font-mono text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 ${
-              value === speed
-                ? "bg-background text-cyan-700 shadow-sm dark:text-cyan-300"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className="hud-segment hud-value"
           >
             {speed}×
           </button>

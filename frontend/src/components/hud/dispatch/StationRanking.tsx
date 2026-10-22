@@ -22,18 +22,15 @@ export function StationRanking({
   if (rankStatus === "loading") {
     return (
       <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
-        <LoaderCircle className="size-4 animate-spin text-cyan-500" aria-hidden />
+        <LoaderCircle className="size-4 animate-spin text-beacon" aria-hidden />
         Ranking stations…
       </p>
     );
   }
   if (rankStatus === "error" && rankError) {
     return (
-      <p
-        role="alert"
-        className="mt-4 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/8 px-3 py-2.5 text-xs font-medium text-red-700 dark:text-red-300"
-      >
-        <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <p role="alert" className="hud-alert tone-emergency mt-4">
+        <TriangleAlert aria-hidden />
         {rankError}
       </p>
     );
@@ -50,18 +47,16 @@ export function StationRanking({
   return (
     <div className="mt-4 space-y-2" aria-live="polite">
       {ranking.station_at_incident && (
-        <p className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/8 px-3 py-2 text-[11px] text-amber-800 dark:text-amber-300">
-          <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />A station of this type is at this
-          location; dispatching from the next fastest.
+        <p className="hud-alert tone-caution text-[11px]">
+          <Info aria-hidden />A station of this type is at this location; dispatching from the next
+          fastest.
         </p>
       )}
-      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/8 p-3">
+      <div className="rounded-xl border border-go/30 bg-go/8 p-3">
         <div className="flex items-center justify-between gap-2">
           <p className="dashboard-eyebrow">Dispatching from</p>
           {!roadTimeRanking && (
-            <span className="rounded-full border border-amber-500/40 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
-              Approximate (mock)
-            </span>
+            <span className="hud-chip tone-caution text-[10px]">Approximate (mock)</span>
           )}
         </div>
         <CandidateRow candidate={winner} roadTimeRanking={roadTimeRanking} emphasis />
@@ -105,8 +100,8 @@ function CandidateRow({
       <span
         className={`shrink-0 font-mono ${
           emphasis
-            ? "text-sm font-bold text-emerald-700 dark:text-emerald-300"
-            : "text-xs text-muted-foreground"
+            ? "hud-value text-sm font-semibold text-go"
+            : "hud-value text-xs text-muted-foreground"
         }`}
       >
         {roadTimeRanking

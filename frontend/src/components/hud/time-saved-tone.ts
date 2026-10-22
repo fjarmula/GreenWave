@@ -5,7 +5,7 @@ import type { TimeSavedTone } from "@/lib/simulation-copy";
  * is never the only signal; a non-positive saving is not shown as a success.
  */
 export const SAVED_VALUE_TONES: Record<TimeSavedTone, string> = {
-  positive: "text-emerald-700 dark:text-emerald-300",
+  positive: "text-go",
   neutral: "text-muted-foreground",
-  negative: "text-amber-700 dark:text-amber-300",
+  negative: "text-caution",
 };

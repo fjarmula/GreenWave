@@ -126,7 +126,7 @@ export function Dashboard({
       inspector={
         <>
           {operationOwner === "comparison" && (
-            <p role="status" className="p-4 text-sm">
+            <p role="status" className="hud-alert tone-beacon m-4 block text-sm">
               A comparison owns the simulation.{" "}
               <Link className="underline" href="/compare">
                 Return to recording or cancel it
@@ -135,7 +135,7 @@ export function Dashboard({
             </p>
           )}
           {policy.requiresReplacement && (
-            <p role="status" className="p-4 text-sm bg-amber-500/10">
+            <p role="status" className="hud-alert tone-caution m-4 block text-sm">
               A{" "}
               {simulation.startRequest?.green_wave_mode === "ENABLED"
                 ? "Green Wave"

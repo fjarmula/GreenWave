@@ -27,11 +27,11 @@ export function PreflightEstimate({
   const savedSeconds = normalSeconds - greenwaveSeconds;
 
   return (
-    <div className="mt-5 rounded-xl border border-emerald-500/25 bg-emerald-500/7 p-4">
+    <div className="mt-5 rounded-xl border border-border bg-muted/40 p-4">
       <div className="flex items-center gap-2 text-[11px] font-medium">
-        <TimerReset className="size-4 text-emerald-500" aria-hidden />
+        <TimerReset className="size-4 text-beacon" aria-hidden />
         <span>{isMockTransport ? "Mock pre-flight estimation" : "Pre-flight estimation"}</span>
-        <span className="ml-auto font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+        <span className="hud-value ml-auto text-[10px] font-semibold text-muted-foreground">
           {isMockTransport ? (hasEstimate ? "READY" : "SELECT INCIDENT") : "AFTER START"}
         </span>
       </div>
@@ -62,12 +62,12 @@ export function PreflightEstimate({
               highlighted
             />
           </div>
-          <div className="flex items-center gap-2 border-t border-emerald-500/20 pt-3 text-emerald-600 dark:text-emerald-400">
+          <div className="flex items-center gap-2 border-t border-border pt-3 text-go">
             <ArrowDownRight className="size-4" aria-hidden />
-            <strong className="text-[11px]">
+            <strong className="text-xs font-semibold">
               {Math.round((savedSeconds / normalSeconds) * 100)}% TIME SAVED
             </strong>
-            <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+            <span className="hud-value ml-auto text-[11px] text-muted-foreground">
               −{formatMinutesSeconds(Math.round(savedSeconds))}
             </span>
           </div>
@@ -90,7 +90,7 @@ function Estimate({
     <div>
       <span className="block text-[10px] text-muted-foreground">{label}</span>
       <strong
-        className={`mt-1 block font-mono text-sm ${highlighted ? "text-emerald-600 dark:text-emerald-400" : ""}`}
+        className={`hud-value mt-1 block text-base font-semibold ${highlighted ? "text-go" : ""}`}
       >
         {value}
       </strong>

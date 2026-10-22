@@ -19,7 +19,7 @@ export function PreviousRunCard({ run }: PreviousRunCardProps) {
   return (
     <section
       aria-labelledby="previous-run-heading"
-      className="mt-6 rounded-xl border border-border bg-muted/35 p-4"
+      className="mt-6 rounded-xl border border-border bg-muted/40 p-4"
     >
       <div className="flex items-start justify-between gap-3">
         <h3 id="previous-run-heading" className="text-sm font-semibold">
@@ -27,13 +27,7 @@ export function PreviousRunCard({ run }: PreviousRunCardProps) {
         </h3>
         <History className="size-4 shrink-0 text-muted-foreground" aria-hidden />
       </div>
-      <p
-        className={`mt-2 inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold ${
-          enabled
-            ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"
-            : "border border-border bg-background text-foreground/80"
-        }`}
-      >
+      <p className={`hud-chip mt-2 ${enabled ? "tone-go" : "tone-caution"}`}>
         {greenWaveModeLabel(run.greenWaveMode)}
       </p>
       <p className="mt-2 text-[11px] break-words text-muted-foreground">
@@ -43,12 +37,14 @@ export function PreviousRunCard({ run }: PreviousRunCardProps) {
         {/* Values share a baseline even when one label wraps onto two lines. */}
         <div className="flex flex-col justify-between">
           <dt className="text-[10px] text-muted-foreground">Total travel time</dt>
-          <dd className="mt-1 font-mono text-lg font-bold">{formatDuration(run.totalSeconds)}</dd>
+          <dd className="hud-value mt-1 text-lg font-semibold">
+            {formatDuration(run.totalSeconds)}
+          </dd>
         </div>
         <div className="flex flex-col justify-between">
           <dt className="text-[10px] text-muted-foreground">{SAVED_LABEL}</dt>
           <dd
-            className={`mt-1 font-mono text-lg font-bold ${SAVED_VALUE_TONES[timeSavedTone(run.savedSeconds)]}`}
+            className={`hud-value mt-1 text-lg font-semibold ${SAVED_VALUE_TONES[timeSavedTone(run.savedSeconds)]}`}
           >
             {formatDuration(run.savedSeconds)}
           </dd>

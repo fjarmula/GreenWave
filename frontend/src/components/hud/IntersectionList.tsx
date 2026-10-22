@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import {
   JsonInspectButton,
   JsonViewer,
@@ -8,6 +8,7 @@ import {
 } from "@/components/diagnostics/JsonDetails";
 import { ChevronRight, Signal } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
+import { tickIntervalMilliseconds } from "@/lib/playback-speed";
 import { isCascadeClearing } from "@/lib/signal-visuals";
 import type { IntersectionTelemetry, RouteIntersection } from "@/types/telemetry";
 
@@ -19,7 +20,9 @@ const KIND_LABELS: Record<RouteIntersection["kind"], string> = {
 
 export function IntersectionList() {
   const [selection, setSelection] = useState<JsonInspection | null>(null);
-  const { liveTelemetry, routeData } = useSimulationState();
+  const { liveTelemetry, routeData, startRequest } = useSimulationState();
+  // TTI bars glide between ticks, so their transition lasts exactly one tick.
+  const tick = { "--tick": `${tickIntervalMilliseconds(startRequest?.playback_speed ?? 1)}ms` };
   const intersections = liveTelemetry?.intersections ?? [];
   const routeIntersections = new Map(
     (routeData?.route_intersections ?? []).map((intersection) => [intersection.id, intersection]),
@@ -49,15 +52,17 @@ export function IntersectionList() {
     />
   );
   return (
-    <section className="rounded-xl border border-border/80 bg-card/92 p-4 shadow-2xl backdrop-blur-xl">
-      <div className="flex items-center justify-between gap-4">
+    <section className="hud-panel" style={tick as CSSProperties}>
+      <div className="hud-head">
         <div>
           <p className="dashboard-eyebrow">Corridor monitoring</p>
-          <h2 className="mt-1 text-sm font-semibold">
+          <h2 className="hud-title">
             Route signals <span className="font-normal text-muted-foreground">(TTI)</span>
           </h2>
         </div>
-        <Signal className="size-5 text-cyan-600 dark:text-cyan-300" aria-hidden />
+        <span className="hud-icon tone-beacon">
+          <Signal aria-hidden />
+        </span>
       </div>
 
       <div className="mt-3 space-y-3">
@@ -67,9 +72,9 @@ export function IntersectionList() {
         {upcoming.map(card)}
         {passed.length > 0 && (
           <details className="group">
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-md py-1 text-[11px] font-semibold text-muted-foreground select-none hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 [&::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md text-xs font-semibold text-muted-foreground select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
               <ChevronRight
-                className="size-3.5 transition-transform group-open:rotate-90 motion-reduce:transition-none"
+                className="size-3.5 transition-transform duration-200 ease-out group-open:rotate-90 motion-reduce:transition-none"
                 aria-hidden
               />
               Passed ({passed.length})
@@ -117,57 +122,53 @@ function IntersectionCard({
   const detail = active ? "SIMULATED CORRIDOR ACTIVE" : "NO PRIORITY REQUEST";
 
   return (
-    <article className="rounded-lg border border-border/70 bg-background/65 p-3">
+    <article className="intersection-card">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <strong className="block font-mono text-xs">{id}</strong>
-          <span className="mt-1 block text-[10px] text-muted-foreground">
+          <strong className="hud-value block text-xs font-semibold">{id}</strong>
+          <span className="mt-1 block text-xs text-muted-foreground">
             {name ?? routeDetail?.name ?? "Unnamed intersection"}
           </span>
           {routeDetail && (
-            <span className="mt-1 block text-[9px] text-muted-foreground">
+            <span className="mt-0.5 block text-[11px] text-muted-foreground">
               {KIND_LABELS[routeDetail.kind]} · {routeDetail.signal_count} signals
             </span>
           )}
           {routeDetail?.needs_review && (
-            <span className="mt-1 block text-[9px] font-semibold text-amber-600 dark:text-amber-300">
+            <span className="mt-1 block text-[11px] font-semibold text-caution">
               Source data flagged for review
             </span>
           )}
         </div>
         <span
-          className={`inline-flex items-center gap-1.5 font-mono text-[9px] font-bold ${
-            isCascade
-              ? "text-violet-600 dark:text-violet-300"
-              : active
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-muted-foreground"
+          className={`hud-chip hud-value shrink-0 text-[10px] ${
+            isCascade ? "tone-cascade" : active ? "tone-go" : ""
           }`}
         >
-          <i className="size-1.5 rounded-full bg-current shadow-[0_0_8px_currentColor]" />
+          <i className="hud-dot shadow-[0_0_8px_currentColor]" />
           {state}
           {isCascade && " · CASCADE"}
         </span>
       </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 font-mono">
-        <strong className="text-[11px] text-muted-foreground">
-          TTI:{" "}
-          <span className="text-foreground">
+      <div className="hud-value mt-3 flex flex-wrap items-center justify-between gap-2">
+        <strong className="text-xs font-medium text-muted-foreground">
+          TTI{" "}
+          <span className="text-sm font-semibold text-foreground">
             {ttiSeconds === null ? "Passed" : `${ttiSeconds}s`}
           </span>
         </strong>
-        <span className="text-[9px] text-muted-foreground">{detail}</span>
+        <span className="text-[10px] text-muted-foreground">{detail}</span>
       </div>
-      <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
+      <div className="intersection-tti">
         <span
-          className={`block h-full rounded-full shadow-[0_0_8px_currentColor] ${
-            isCascade ? "bg-violet-500 text-violet-500" : "bg-emerald-500 text-emerald-500"
-          }`}
-          style={{ width: `${Math.min(100, Math.max(0, (ttiSeconds ?? 0) * 2.5))}%` }}
+          className={isCascade ? "bg-cascade" : "bg-go"}
+          style={{
+            transform: `scaleX(${Math.min(100, Math.max(0, (ttiSeconds ?? 0) * 2.5)) / 100})`,
+          }}
         />
       </div>
       {onInspect && (
-        <div className="mt-3 border-t border-border/60 pt-2">
+        <div className="mt-2 flex justify-end">
           <JsonInspectButton title={id} onClick={onInspect} />
         </div>
       )}

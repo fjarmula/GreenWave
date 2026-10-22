@@ -86,22 +86,22 @@ export function DataQualityPanel({ mode, apiBaseUrl }: DataQualityPanelProps) {
 
   return (
     <details
-      className="group rounded-xl border border-border/80 bg-background/60"
+      className="group rounded-xl border border-border bg-card"
       onToggle={(event) => {
         if (event.currentTarget.open) void loader.expand();
       }}
     >
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 [&::-webkit-details-marker]:hidden">
         <span>
           <span className="dashboard-eyebrow block">Source data checks</span>
-          <span className="mt-1 block text-sm font-semibold">Data quality</span>
+          <span className="hud-title block">Data quality</span>
         </span>
         <ChevronDown
-          className="size-4 text-muted-foreground transition group-open:rotate-180"
+          className="size-4 text-muted-foreground transition-transform duration-200 ease-out group-open:rotate-180 motion-reduce:transition-none"
           aria-hidden
         />
       </summary>
-      <div className="border-t border-border/80 px-4 py-3">
+      <div className="border-t border-border px-4 py-3">
         <DataQualityView state={state} />
       </div>
     </details>
@@ -113,17 +113,17 @@ const STATUS_STYLE: Record<QualityStatus, { label: string; icon: typeof Info; cl
     pass: {
       label: "Pass",
       icon: CircleCheck,
-      className: "border-emerald-500/35 text-emerald-700 dark:text-emerald-300",
+      className: "tone-go",
     },
     info: {
       label: "Info",
       icon: Info,
-      className: "border-cyan-500/35 text-cyan-700 dark:text-cyan-300",
+      className: "tone-beacon",
     },
     warn: {
       label: "Warn",
       icon: TriangleAlert,
-      className: "border-amber-500/40 text-amber-700 dark:text-amber-300",
+      className: "tone-caution",
     },
   };
 
@@ -152,10 +152,7 @@ export function DataQualityView({ state }: { state: DataQualityState }) {
       );
     case "error":
       return (
-        <p
-          role="alert"
-          className="flex items-start gap-2 text-xs font-medium text-red-700 dark:text-red-300"
-        >
+        <p role="alert" className="flex items-start gap-2 text-xs font-medium text-emergency">
           <ShieldAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
           Data quality summary unavailable: {state.message}
         </p>
@@ -179,7 +176,7 @@ function QualitySummary({ data }: { data: DatasetQualityResponse }) {
         <ul className="space-y-2 text-[11px] leading-relaxed text-muted-foreground">
           {data.sources.map((source) => (
             <li key={source.path}>
-              <span className="block break-all font-mono text-foreground">{source.path}</span>
+              <span className="hud-value block break-all text-foreground">{source.path}</span>
               {source.attribution && <span className="block">{source.attribution}</span>}
               <span className="block">
                 {[source.licence, `retrieved ${source.retrieved_on}`].filter(Boolean).join(" · ")}
@@ -190,7 +187,7 @@ function QualitySummary({ data }: { data: DatasetQualityResponse }) {
         {data.msip_export_timestamp && (
           <p className="text-[11px] text-muted-foreground">
             MSIP export timestamp:{" "}
-            <span className="font-mono text-foreground">{data.msip_export_timestamp}</span>
+            <span className="hud-value text-foreground">{data.msip_export_timestamp}</span>
           </p>
         )}
       </section>
@@ -204,13 +201,11 @@ function QualityCheckItem({ check }: { check: QualityCheck }) {
   const { label, icon: Icon, className } = STATUS_STYLE[check.status];
   const metrics = Object.entries(check.metrics).slice(0, MAX_METRICS);
   return (
-    <li className="rounded-lg border border-border/70 bg-card/70 p-3">
+    <li className="rounded-lg border border-border bg-muted/40 p-3">
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-xs font-semibold">{check.title}</h3>
-        <span
-          className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${className}`}
-        >
-          <Icon className="size-3" aria-hidden />
+        <span className={`hud-chip shrink-0 text-[10px] uppercase ${className}`}>
+          <Icon aria-hidden />
           {label}
         </span>
       </div>
@@ -220,7 +215,7 @@ function QualityCheckItem({ check }: { check: QualityCheck }) {
           {metrics.map(([name, value]) => (
             <div key={name}>
               <dt className="text-[10px] text-muted-foreground">{metricLabel(name)}</dt>
-              <dd className="font-mono text-xs font-bold">{metricValue(name, value)}</dd>
+              <dd className="hud-value text-xs font-semibold">{metricValue(name, value)}</dd>
             </div>
           ))}
         </dl>

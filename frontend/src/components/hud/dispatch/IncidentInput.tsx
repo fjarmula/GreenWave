@@ -91,16 +91,16 @@ export function IncidentInput({
           onFocus={() => setOpen(true)}
           onBlur={() => setOpen(false)}
           onKeyDown={onKeyDown}
-          className="w-full rounded-lg border border-border bg-background px-3 py-3 pr-10 text-sm outline-none transition placeholder:text-muted-foreground/70 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-70"
+          className="hud-input"
         />
         {status === "loading" ? (
           <LoaderCircle
-            className="pointer-events-none absolute top-3 right-3 size-4 animate-spin text-cyan-600 dark:text-cyan-300"
+            className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-beacon"
             aria-hidden
           />
         ) : (
           <MapPin
-            className="pointer-events-none absolute top-3 right-3 size-4 text-cyan-600 dark:text-cyan-300"
+            className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-beacon"
             aria-hidden
           />
         )}
@@ -108,7 +108,7 @@ export function IncidentInput({
           <ul
             id={LISTBOX_ID}
             role="listbox"
-            className="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-border bg-card py-1 shadow-xl"
+            className="absolute z-30 mt-1.5 max-h-64 w-full overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-float"
           >
             {results.map((result, index) => (
               <li
@@ -121,7 +121,7 @@ export function IncidentInput({
                   event.preventDefault();
                   choose(result);
                 }}
-                className="cursor-pointer px-3 py-2 text-sm hover:bg-muted aria-selected:bg-cyan-500/15"
+                className="cursor-pointer rounded-lg px-3 py-2 text-sm hover:bg-muted aria-selected:bg-accent"
               >
                 {result.label}
               </li>
@@ -144,7 +144,7 @@ export function SearchFeedback({ feedback }: { feedback: Feedback }) {
     return (
       <p
         role="alert"
-        className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-red-700 dark:text-red-300"
+        className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-emergency"
       >
         <TriangleAlert className="size-3.5 shrink-0" aria-hidden />
         Address search unavailable — click the map instead
@@ -155,7 +155,7 @@ export function SearchFeedback({ feedback }: { feedback: Feedback }) {
     return (
       <p
         role="status"
-        className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-300"
+        className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-caution"
       >
         <SearchX className="size-3.5 shrink-0" aria-hidden />
         No matching address

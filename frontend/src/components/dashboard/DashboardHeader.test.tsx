@@ -31,14 +31,14 @@ describe("DashboardHeader", () => {
   });
 
   it.each([
-    ["SETUP", null, "System ready", "bg-emerald-500"],
-    ["STARTING", null, "Computing route", "bg-amber-500"],
-    ["RUNNING", null, "Simulation running", "bg-emerald-500"],
+    ["SETUP", null, "System ready", "bg-go"],
+    ["STARTING", null, "Computing route", "bg-caution"],
+    ["RUNNING", null, "Simulation running", "bg-go"],
     ["FINISHED", null, "Simulation finished", "bg-muted-foreground"],
-    ["CANCELLED", "SUPERSEDED", "Simulation cancelled", "bg-amber-500"],
+    ["CANCELLED", "SUPERSEDED", "Simulation cancelled", "bg-caution"],
     ["CANCELLED", "STOPPED", "Simulation stopped", "bg-muted-foreground"],
-    ["CANCELLED", "SERVER_ERROR", "Simulation server error", "bg-red-500"],
-    ["ERROR", null, "Simulation error", "bg-red-500"],
+    ["CANCELLED", "SERVER_ERROR", "Simulation server error", "bg-emergency"],
+    ["ERROR", null, "Simulation error", "bg-emergency"],
   ] as const)("%s (%s) reads %s with a matching dot", (phase, reason, label, dot) => {
     state = {
       ...initialSimulationState,
@@ -50,6 +50,6 @@ describe("DashboardHeader", () => {
 
     expect(status[2]).toBe(label);
     expect(status[1].split(" ")).toContain(dot);
-    if (dot !== "bg-emerald-500") expect(status[1]).not.toContain("emerald");
+    if (dot !== "bg-go") expect(status[1]).not.toContain("bg-go");
   });
 });
