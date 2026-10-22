@@ -52,7 +52,7 @@ Out of scope (known, unchanged): decorative 72 % speed bar; 320 px header trunca
 
 - [x] **[Completed] M1 — Backend telemetry identity (B1, B2).** [Sub-plan](2026-10-22-m1-telemetry-identity.md). Dependency: none. Suggested commit: `fix: stream intersection names and vehicle ids in ticks`.
 - [x] **[Completed] M2 — Live-run flow and Stop (D1; F2, F13).** [Sub-plan](2026-10-22-m2-live-run-flow.md). Dependency: none. Suggested commit: `feat: stop a live run from the live operations view`.
-- [ ] **[Pending] M3 — Keep settings and previous result (F1, F3).** [Sub-plan](2026-10-22-m3-run-comparison-state.md). Dependency: M2 (back-to-setup path). Suggested commit: `fix: keep run settings and previous result across runs`.
+- [x] **[Completed] M3 — Keep settings and previous result (F1, F3).** [Sub-plan](2026-10-22-m3-run-comparison-state.md). Dependency: M2 (back-to-setup path). Suggested commit: `fix: keep run settings and previous result across runs`.
 - [ ] **[Pending] M4 — Server-error terminal (D2; B5).** [Sub-plan](2026-10-22-m4-server-error-terminal.md). Dependency: M2 (summary card). **Contract change; tell the human before editing `GreenWave_ARCHITECTURE.md`.** Suggested commit: `feat: report simulation server errors to the dashboard`.
 - [ ] **[Pending] M5 — Session lifecycle hardening (B3, B4).** [Sub-plan](2026-10-22-m5-session-lifecycle.md). Dependency: M4 (same file, terminal semantics). Suggested commit: `fix: bound retained sessions and publish one terminal per run`.
 - [ ] **[Pending] M6 — Map stability (F4, F6, F15).** [Sub-plan](2026-10-22-m6-map-stability.md). Dependency: M2, M3 (dashboard layout settled). Suggested commit: `fix: keep the map instance and user zoom across interactions`.
@@ -112,6 +112,35 @@ Order rationale: M1–M3 are what a jury sees first in backend mode; M4–M5 clo
   2. The first browser run caught a real defect, now fixed with a regression test: the scroll effect's expression body returned a value, which React called as a cleanup ("destroy is not a function").
   3. Click behaviour is verified in the browser rather than in unit tests, because the Vitest environment is `node` with no DOM library, and adding one needs dependency approval.
   4. Found and deferred to M8 Task 4: after a user stop, the header phase label and KPI badge still read "Simulation cancelled" (they key on phase, not reason).
+
+## M3 verification — 2026-10-22
+
+- Branch `fix/m3-run-comparison-state` (from `main` at `bf83a8c`), uncommitted for human review.
+- Root cause as planned: `DispatchForm` held the four settings in `useState` and is unmounted in live mode, so each return to setup restored the defaults. Back to dispatch setup dispatched `RESET`, which dropped `routeData` and `completion`, the only record of the result.
+- Fix:
+  - **Settings:** `DEFAULT_DISPATCH_SETTINGS` (`start-request.ts`); `Dashboard` owns `settings`, and `DispatchForm` is controlled (`settings`, `onSettingsChange`).
+  - **Capture:** `src/lib/previous-run.ts` (new). `toPreviousRun` returns a record only for FINISHED with request, route and completion. `nextPreviousRun` keeps the current record otherwise. `Dashboard.backToSetup` calls it before `stopSimulation()` resets the run.
+  - **Card:** `PreviousRunCard` (new) sits between Playback speed and the Start button. It is a `section` labelled by the "Previous simulated run" heading and shows, in order: the mode, station → incident and density, total travel time, and saved vs normal-traffic estimate. It uses `formatDuration` / `greenWaveModeLabel`, as the finished summary does.
+- TDD:
+  - `previous-run.test.ts`: 8 cases failed (module missing), then passed.
+  - DispatchForm settings: 4 cases failed against the old form, then passed. These cover controls rendered from the prop, full-settings `onSettingsChange` for mode, density, speed and cascade, the cascade disabled only under DISABLED, and Start sending the given settings. Re-checked by restoring the old `DispatchForm.tsx`: 4 failed.
+  - Card placement: 1 case failed (card absent), then passed.
+  - `PreviousRunCard.test.tsx`: 4 cases failed (module missing), then passed.
+- Snapshots: none changed. `DispatchForm.{mock,backend}.html` and `Dashboard.setup.{mock,backend}.html` are byte-identical (no `git diff`), since setup without a previous run renders the same markup.
+- Gates: frontend `lint`, `typecheck`, `format:check`, `test` (**44 files, 405 tests**), `build` — all exit 0 (run twice, the second after the design-review tweak). `git diff --check` clean. No backend, schema, contract, dependency or lockfile change. `graphify update .` run.
+- Browser (`playwright-cli`, scripts, JSON and screenshots in `.tmp/playwright/repo-audit/m3/`): real backend (`uvicorn` :8000, backend-transport dev server :3101) and mock production build (:3100), each at 1440 × 1000, 390 × 844 and 360 × 740. Flow: incident → 10× → ENABLED run to completion → back → DISABLED + density 2.0 → run to completion → back → start + Stop → back. In all 6 runs:
+  - settings persist at every step (10×, mode, density, cascade);
+  - the card appears after the first finished run, shows the enabled result before the disabled run, and is replaced by the disabled result afterwards;
+  - a stopped run leaves the card unchanged, and the incident is kept;
+  - the card stays inside the aside (no internal overflow) and `main.scrollWidth == innerWidth`;
+  - console 0 errors.
+
+  Real backend, ambulance → "Rynek Główny 1" (the plan's baseline route, 5 route intersections): ENABLED 04m 08s with 3 ITS dispatches; DISABLED at 2.0x 09m 46s. Card checked in light and dark mode at 390 px.
+- Deviations / rulings:
+  1. Task 3's dashboard-level RED test is not possible without a DOM library (Vitest runs in `node`). The capture rule is unit-tested through `nextPreviousRun` (finish replaces, stop keeps), the form slot through markup, and the click path in the browser.
+  2. The card does not call `summarizeFinishedRun`, which needs the route and KPI objects that the flat `PreviousRun` record drops. It reuses the same formatters and labels instead.
+  3. `emil-design-eng` review: the two values now share a baseline when the "Saved vs normal-traffic estimate" label wraps (`flex-col justify-between`). The DISABLED mode pill is neutral, not amber, because amber means warning/cancelled elsewhere. `mobile-native`: the card has no controls, so no touch fixes apply.
+  4. Browser setup: the first backend attempt used a pinned map point and then "Floriańska 1". Both routes had no signals, so ENABLED and DISABLED times were identical. A route probe through `/dispatch/rank` + `/simulation/start` picked "Rynek Główny 1" instead; the probe runs were stopped.
 
 ## Final closeout
 

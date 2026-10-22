@@ -7,7 +7,8 @@ import { useSimulationState } from "@/components/simulation-provider";
 import { getFrontendConfig } from "@/lib/config";
 import { dispatchAdapter } from "@/lib/dispatch-adapter";
 import { describeSimulationError } from "@/lib/simulation-copy";
-import { buildStartRequest } from "@/lib/start-request";
+import { nextPreviousRun, type PreviousRun } from "@/lib/previous-run";
+import { buildStartRequest, DEFAULT_DISPATCH_SETTINGS } from "@/lib/start-request";
 import { pinnedIncident, useIncidentDispatch } from "@/lib/useIncidentDispatch";
 import { useStations } from "@/lib/useStations";
 import { scrollViewToTop } from "@/lib/view-scroll";
@@ -20,7 +21,8 @@ import type { Position } from "@/types/telemetry";
 
 export function Dashboard() {
   const { startSimulation, stopSimulation, stopRun } = useSimulationStream();
-  const { simulationState, routeData, error } = useSimulationState();
+  const simulation = useSimulationState();
+  const { simulationState, routeData, error } = simulation;
   const config = getFrontendConfig();
   const dispatch = useIncidentDispatch(dispatchAdapter);
   const stations = useStations(dispatchAdapter);
@@ -36,14 +38,26 @@ export function Dashboard() {
       : null;
   const [mode, setMode] = useState<DashboardMode>("setup");
   const [mapFocusRequest, setMapFocusRequest] = useState(0);
+  // Kept here, not in the form, so they survive every setup ↔ live switch.
+  const [settings, setSettings] = useState(DEFAULT_DISPATCH_SETTINGS);
+  const [previousRun, setPreviousRun] = useState<PreviousRun | null>(null);
   useEffect(() => {
     scrollViewToTop(window);
   }, [mode]);
+  const chosenStation = dispatch.ranking?.candidates[0]?.station ?? null;
   const backToSetup = () => {
+    // Captured before the stop resets the run; only a finished run replaces the previous one.
+    setPreviousRun((current) =>
+      nextPreviousRun(
+        current,
+        simulation,
+        chosenStation?.name ?? "Unknown station",
+        dispatch.incident?.label ?? "Unknown incident",
+      ),
+    );
     stopSimulation();
     setMode("setup");
   };
-  const chosenStation = dispatch.ranking?.candidates[0]?.station ?? null;
   const origin: MapEndpoint | null = chosenStation
     ? { label: chosenStation.name, position: chosenStation.position }
     : null;
@@ -66,18 +80,21 @@ export function Dashboard() {
         <section className="grid min-h-0 flex-1 lg:grid-cols-[370px_minmax(0,1fr)]">
           <div className="order-2 min-w-0 lg:order-1">
             <DispatchForm
+              settings={settings}
+              onSettingsChange={setSettings}
+              previousRun={previousRun}
               pending={simulationState === "STARTING"}
               errorMessage={startErrorMessage}
               dispatch={dispatch}
               capabilities={dispatchAdapter.capabilities}
               geocode={dispatchAdapter.geocode}
-              onInitialize={(settings) => {
+              onInitialize={(runSettings) => {
                 if (!chosenStation || !dispatch.incident) return;
                 const request = buildStartRequest(
                   chosenStation,
                   dispatch.incident,
                   dispatch.vehicleType,
-                  settings,
+                  runSettings,
                   crypto.randomUUID(),
                 );
                 void startSimulation(request).then((started) => {

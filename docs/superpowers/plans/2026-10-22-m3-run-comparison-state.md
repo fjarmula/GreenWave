@@ -25,23 +25,23 @@
 
 ### Task 1: Pure capture
 
-- [ ] RED (`previous-run.test.ts`): FINISHED → record with mode, total and saved from `completion.kpi_metrics`, the normal estimate from `routeData`, and density from `startRequest`; CANCELLED, ERROR, RUNNING and SETUP → `null`.
-- [ ] GREEN.
+- [x] RED (`previous-run.test.ts`): FINISHED → record with mode, total and saved from `completion.kpi_metrics`, the normal estimate from `routeData`, and density from `startRequest`; CANCELLED, ERROR, RUNNING and SETUP → `null`.
+- [x] GREEN.
 
 ### Task 2: Controlled form
 
-- [ ] RED (`DispatchForm` test): changing mode or density calls `onSettingsChange` with the full updated settings, and the rendered controls reflect the `settings` prop; the cascade toggle stays disabled under DISABLED.
-- [ ] GREEN; existing snapshots must be byte-identical (word diff empty).
+- [x] RED (`DispatchForm` test): changing mode or density calls `onSettingsChange` with the full updated settings, and the rendered controls reflect the `settings` prop; the cascade toggle stays disabled under DISABLED.
+- [x] GREEN; existing snapshots must be byte-identical (word diff empty).
 
 ### Task 3: Dashboard wiring and card
 
-- [ ] RED (dashboard-level test with the mock adapter and fake timers, or the existing dashboard test harness): set DISABLED and density 2.0 → start → let the mock run finish → Back to dispatch setup → the form still shows DISABLED and 2.0, and a "Previous run" card shows "ER Green Wave disabled" and the total time. Start an ENABLED run and finish it → the card now shows the enabled result. Stopping a run (M2) leaves the previous card unchanged.
-- [ ] RED (`PreviousRunCard` test): labelled as simulated ("Previous simulated run"), mode first, then total travel time and saved vs normal; region role and heading for screen readers.
-- [ ] GREEN; frontend gate.
+- [x] RED (dashboard-level test with the mock adapter and fake timers, or the existing dashboard test harness): set DISABLED and density 2.0 → start → let the mock run finish → Back to dispatch setup → the form still shows DISABLED and 2.0, and a "Previous run" card shows "ER Green Wave disabled" and the total time. Start an ENABLED run and finish it → the card now shows the enabled result. Stopping a run (M2) leaves the previous card unchanged.
+- [x] RED (`PreviousRunCard` test): labelled as simulated ("Previous simulated run"), mode first, then total travel time and saved vs normal; region role and heading for screen readers.
+- [x] GREEN; frontend gate.
 
 ### Task 4: Browser acceptance
 
-- [ ] Real backend at 1440 × 1000 and 390 × 844: same incident, run ENABLED at 10× to the end → back → switch to DISABLED → card shows the enabled result → run → back → card shows the disabled result; settings unchanged at each step. The card fits within the 320 px and 390 px aside without horizontal overflow (`main.scrollWidth == innerWidth`). Run the `emil-design-eng` review. Evidence under `.tmp/playwright/repo-audit/m3/`.
+- [x] Real backend at 1440 × 1000 and 390 × 844: same incident, run ENABLED at 10× to the end → back → switch to DISABLED → card shows the enabled result → run → back → card shows the disabled result; settings unchanged at each step. The card fits within the 320 px and 390 px aside without horizontal overflow (`main.scrollWidth == innerWidth`). Run the `emil-design-eng` review. Evidence under `.tmp/playwright/repo-audit/m3/`.
 
 ## Acceptance
 

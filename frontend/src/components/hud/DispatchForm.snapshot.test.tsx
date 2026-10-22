@@ -1,9 +1,16 @@
+import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+import { CascadeToggle } from "@/components/hud/dispatch/CascadeToggle";
+import { GreenWaveToggle } from "@/components/hud/dispatch/GreenWaveToggle";
+import { PlaybackSpeedSelector } from "@/components/hud/dispatch/PlaybackSpeedSelector";
 import { PreflightEstimate } from "@/components/hud/dispatch/PreflightEstimate";
+import { TrafficDensityControl } from "@/components/hud/dispatch/TrafficDensityControl";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import type { SimulationTransport } from "@/lib/config";
+import type { PreviousRun } from "@/lib/previous-run";
+import { DEFAULT_DISPATCH_SETTINGS, type DispatchSettings } from "@/lib/start-request";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
 import type { DispatchRankResponse } from "@/types/telemetry";
 
@@ -55,9 +62,15 @@ function dispatchState(patch: Partial<IncidentDispatch> = {}): IncidentDispatch 
   };
 }
 
-function render(dispatch: IncidentDispatch, roadTimeRanking = true) {
+function render(
+  dispatch: IncidentDispatch,
+  roadTimeRanking = true,
+  settings: DispatchSettings = DEFAULT_DISPATCH_SETTINGS,
+) {
   return renderToStaticMarkup(
     <DispatchForm
+      settings={settings}
+      onSettingsChange={() => undefined}
       onInitialize={() => undefined}
       pending={false}
       errorMessage={null}
@@ -77,6 +90,8 @@ describe.each(["mock", "backend"] as const)("DispatchForm markup (%s transport)"
     transport.current = name;
     const markup = renderToStaticMarkup(
       <DispatchForm
+        settings={DEFAULT_DISPATCH_SETTINGS}
+        onSettingsChange={() => undefined}
         onInitialize={() => undefined}
         pending={false}
         errorMessage="Simulation backend unreachable"
@@ -118,6 +133,122 @@ describe("DispatchForm start button", () => {
     const markup = render(dispatchState());
     for (const label of ["Ambulance", "Fire", "Police"]) expect(markup).toContain(label);
     expect(markup).toMatch(/aria-pressed="true"[^>]*>[^<]*Fire/);
+  });
+});
+
+/** The first element of a (hook-free) element tree that matches. */
+function findElement(node: ReactNode, matches: (element: ReactElement) => boolean): ReactElement {
+  const stack = [node];
+  while (stack.length > 0) {
+    const next = stack.shift();
+    if (Array.isArray(next)) stack.unshift(...next);
+    else if (isValidElement<{ children?: ReactNode }>(next)) {
+      if (matches(next)) return next;
+      stack.unshift(next.props.children);
+    }
+  }
+  throw new Error("element not found");
+}
+
+const ofType =
+  <P,>(type: (props: P) => ReactNode) =>
+  (element: ReactElement) =>
+    element.type === type;
+
+function propsOf<P>(tree: ReactNode, type: (props: P) => ReactNode): P {
+  return findElement(tree, ofType(type)).props as P;
+}
+
+const CHOSEN: DispatchSettings = {
+  trafficDensity: 2,
+  cascadeEnabled: false,
+  playbackSpeed: 10,
+  greenWaveMode: "DISABLED",
+};
+
+function formProps(
+  settings: DispatchSettings,
+  onSettingsChange: (settings: DispatchSettings) => void = () => undefined,
+  onInitialize: (settings: DispatchSettings) => void = () => undefined,
+): Parameters<typeof DispatchForm>[0] {
+  return {
+    settings,
+    onSettingsChange,
+    onInitialize,
+    pending: false,
+    errorMessage: null,
+    dispatch: dispatchState(),
+    capabilities: { geocode: true, roadTimeRanking: true },
+    geocode: async () => [],
+    onFocusMap: () => undefined,
+  };
+}
+
+const formTree = (...args: Parameters<typeof formProps>) => DispatchForm(formProps(...args));
+
+describe("DispatchForm settings", () => {
+  it("renders the controls from the settings prop", () => {
+    const markup = render(dispatchState(), true, CHOSEN);
+    expect(markup).toContain(">2.0x</output>");
+    expect(markup).toMatch(/role="radio" aria-checked="true"[^>]*>Disabled</);
+    expect(markup).toMatch(/role="radio" aria-checked="true"[^>]*>10×</);
+    expect(markup).toMatch(/role="switch" aria-checked="false"[^>]*disabled=""/);
+    expect(markup).toContain("Start standard-traffic run");
+  });
+
+  it("reports the full updated settings when a control changes", () => {
+    const onSettingsChange = vi.fn<(settings: DispatchSettings) => void>();
+    const tree = formTree(CHOSEN, onSettingsChange);
+
+    propsOf(tree, GreenWaveToggle).onChange("ENABLED");
+    propsOf(tree, TrafficDensityControl).onChange(2.7);
+    propsOf(tree, PlaybackSpeedSelector).onChange(5);
+    propsOf(tree, CascadeToggle).onToggle();
+
+    expect(onSettingsChange.mock.calls).toEqual([
+      [{ ...CHOSEN, greenWaveMode: "ENABLED" }],
+      [{ ...CHOSEN, trafficDensity: 2.7 }],
+      [{ ...CHOSEN, playbackSpeed: 5 }],
+      [{ ...CHOSEN, cascadeEnabled: true }],
+    ]);
+  });
+
+  it("keeps the cascade toggle disabled only while ER Green Wave is disabled", () => {
+    expect(propsOf(formTree(CHOSEN), CascadeToggle).disabled).toBe(true);
+    expect(propsOf(formTree({ ...CHOSEN, greenWaveMode: "ENABLED" }), CascadeToggle).disabled).toBe(
+      false,
+    );
+  });
+
+  it("shows the previous run above the start button only when there is one", () => {
+    const previousRun: PreviousRun = {
+      greenWaveMode: "ENABLED",
+      totalSeconds: 400,
+      savedSeconds: 380,
+      normalEstimateSeconds: 780,
+      stationName: "JRG PSP nr 1",
+      incidentLabel: "Rynek Główny 1",
+      trafficDensity: 1.5,
+    };
+    const withRun = renderToStaticMarkup(
+      <DispatchForm {...formProps(CHOSEN)} previousRun={previousRun} />,
+    );
+    const card = withRun.indexOf("Previous simulated run");
+
+    expect(card).toBeGreaterThan(withRun.indexOf("Playback speed"));
+    expect(card).toBeLessThan(withRun.indexOf('data-testid="start-corridor"'));
+    expect(render(dispatchState(), true, CHOSEN)).not.toContain("Previous simulated run");
+  });
+
+  it("starts with the settings it was given", () => {
+    const onInitialize = vi.fn<(settings: DispatchSettings) => void>();
+    const start = findElement(
+      formTree(CHOSEN, undefined, onInitialize),
+      (element) =>
+        (element.props as { "data-testid"?: string })["data-testid"] === "start-corridor",
+    );
+    (start.props as { onClick: () => void }).onClick();
+    expect(onInitialize).toHaveBeenCalledExactlyOnceWith(CHOSEN);
   });
 });
 

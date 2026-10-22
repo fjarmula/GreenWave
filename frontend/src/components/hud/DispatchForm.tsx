@@ -1,25 +1,29 @@
 "use client";
 
 import { ArrowUpRight, Gauge, Radio, ShieldCheck, Target, TriangleAlert, Zap } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { CascadeToggle } from "@/components/hud/dispatch/CascadeToggle";
 import { GreenWaveToggle } from "@/components/hud/dispatch/GreenWaveToggle";
 import { IncidentInput } from "@/components/hud/dispatch/IncidentInput";
 import { PlaybackSpeedSelector } from "@/components/hud/dispatch/PlaybackSpeedSelector";
 import { PreflightEstimate } from "@/components/hud/dispatch/PreflightEstimate";
+import { PreviousRunCard } from "@/components/hud/dispatch/PreviousRunCard";
 import { StationRanking } from "@/components/hud/dispatch/StationRanking";
 import { TrafficDensityControl } from "@/components/hud/dispatch/TrafficDensityControl";
 import { VehicleTypeControl } from "@/components/hud/dispatch/VehicleTypeControl";
 import { getFrontendConfig } from "@/lib/config";
 import type { DispatchAdapter } from "@/lib/dispatch-adapter";
-import { DEFAULT_TRAFFIC_DENSITY_MULTIPLIER } from "@/lib/mock-simulation-config";
-import type { PlaybackSpeed } from "@/lib/playback-speed";
+import type { PreviousRun } from "@/lib/previous-run";
 import type { DispatchSettings } from "@/lib/start-request";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
-import type { GreenWaveMode } from "@/types/telemetry";
 
 type DispatchFormProps = {
+  /** Owned by the dashboard so the chosen settings outlive each run. */
+  settings: DispatchSettings;
+  onSettingsChange: (settings: DispatchSettings) => void;
+  /** The last finished run of this page session, shown for comparison. */
+  previousRun?: PreviousRun | null;
   /** Called only when a ranking exists; the dashboard starts from its best station. */
   onInitialize: (settings: DispatchSettings) => void;
   /** True while the start request is in flight (STARTING). */
@@ -35,6 +39,9 @@ type DispatchFormProps = {
 };
 
 export function DispatchForm({
+  settings,
+  onSettingsChange,
+  previousRun = null,
   onInitialize,
   pending,
   errorMessage,
@@ -44,10 +51,8 @@ export function DispatchForm({
   onFocusMap,
   children,
 }: DispatchFormProps) {
-  const [trafficDensity, setTrafficDensity] = useState(DEFAULT_TRAFFIC_DENSITY_MULTIPLIER);
-  const [cascadeEnabled, setCascadeEnabled] = useState(true);
-  const [greenWaveMode, setGreenWaveMode] = useState<GreenWaveMode>("ENABLED");
-  const [playbackSpeed, setPlaybackSpeed] = useState<PlaybackSpeed>(1);
+  const { trafficDensity, cascadeEnabled, greenWaveMode, playbackSpeed } = settings;
+  const update = (patch: Partial<DispatchSettings>) => onSettingsChange({ ...settings, ...patch });
   const isMockTransport = getFrontendConfig().transport === "mock";
   const { incident, ranking, rankStatus } = dispatch;
   const canStart = rankStatus === "ready" && (ranking?.candidates.length ?? 0) > 0;
@@ -103,23 +108,29 @@ export function DispatchForm({
         <Gauge className="size-5 text-emerald-500" aria-hidden />
       </div>
 
-      <TrafficDensityControl value={trafficDensity} onChange={setTrafficDensity} />
-      <GreenWaveToggle mode={greenWaveMode} onChange={setGreenWaveMode} />
+      <TrafficDensityControl
+        value={trafficDensity}
+        onChange={(value) => update({ trafficDensity: value })}
+      />
+      <GreenWaveToggle mode={greenWaveMode} onChange={(mode) => update({ greenWaveMode: mode })} />
       <CascadeToggle
         enabled={cascadeEnabled}
-        onToggle={() => setCascadeEnabled((enabled) => !enabled)}
+        onToggle={() => update({ cascadeEnabled: !cascadeEnabled })}
         disabled={greenWaveMode === "DISABLED"}
       />
-      <PlaybackSpeedSelector value={playbackSpeed} onChange={setPlaybackSpeed} />
+      <PlaybackSpeedSelector
+        value={playbackSpeed}
+        onChange={(speed) => update({ playbackSpeed: speed })}
+      />
+
+      {previousRun && <PreviousRunCard run={previousRun} />}
 
       <button
         type="button"
         data-testid="start-corridor"
         disabled={pending || !canStart}
         aria-busy={pending}
-        onClick={() =>
-          onInitialize({ trafficDensity, cascadeEnabled, playbackSpeed, greenWaveMode })
-        }
+        onClick={() => onInitialize(settings)}
         className={`mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 text-xs font-extrabold tracking-[0.08em] text-emerald-950 uppercase shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:opacity-70 disabled:hover:bg-emerald-500 ${pending ? "disabled:cursor-wait" : "disabled:cursor-not-allowed"}`}
       >
         <Zap className="size-4" aria-hidden />
