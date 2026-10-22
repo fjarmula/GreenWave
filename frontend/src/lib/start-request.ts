@@ -1,3 +1,4 @@
+import { DEFAULT_TRAFFIC_DENSITY_MULTIPLIER } from "@/lib/mock-simulation-config";
 import type { PlaybackSpeed } from "@/lib/playback-speed";
 import type { Incident } from "@/lib/useIncidentDispatch";
 import type {
@@ -12,6 +13,13 @@ export type DispatchSettings = {
   cascadeEnabled: boolean;
   playbackSpeed: PlaybackSpeed;
   greenWaveMode: GreenWaveMode;
+};
+
+export const DEFAULT_DISPATCH_SETTINGS: DispatchSettings = {
+  trafficDensity: DEFAULT_TRAFFIC_DENSITY_MULTIPLIER,
+  cascadeEnabled: true,
+  playbackSpeed: 1,
+  greenWaveMode: "ENABLED",
 };
 
 /** The run goes from the chosen station to the incident; the engine itself is unchanged. */
