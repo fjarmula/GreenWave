@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react";
 import { useSimulationStream } from "@/lib/useSimulationStream";
 import { useSimulationState } from "@/components/simulation-provider";
 
@@ -76,55 +76,74 @@ export function Dashboard() {
     <main className="dashboard-theme-transition flex min-h-dvh min-w-80 flex-col overflow-x-hidden bg-background text-foreground">
       <DashboardHeader mode={mode} />
 
-      {mode === "setup" ? (
-        <section className="grid min-h-0 flex-1 lg:grid-cols-[370px_minmax(0,1fr)]">
-          <div className="order-2 min-w-0 lg:order-1">
-            <DispatchForm
-              settings={settings}
-              onSettingsChange={setSettings}
-              previousRun={previousRun}
-              pending={simulationState === "STARTING"}
-              errorMessage={startErrorMessage}
-              dispatch={dispatch}
-              capabilities={dispatchAdapter.capabilities}
-              geocode={dispatchAdapter.geocode}
-              onInitialize={(runSettings) => {
-                if (!chosenStation || !dispatch.incident) return;
-                const request = buildStartRequest(
-                  chosenStation,
-                  dispatch.incident,
-                  dispatch.vehicleType,
-                  runSettings,
-                  crypto.randomUUID(),
-                );
-                void startSimulation(request).then((started) => {
-                  if (started) setMode("live");
-                });
-              }}
-              onFocusMap={() => setMapFocusRequest((request) => request + 1)}
-            >
-              <DataQualityPanel mode={config.transport} apiBaseUrl={config.apiBaseUrl} />
-            </DispatchForm>
-          </div>
+      <DashboardLayout
+        mode={mode}
+        form={
+          <DispatchForm
+            settings={settings}
+            onSettingsChange={setSettings}
+            previousRun={previousRun}
+            pending={simulationState === "STARTING"}
+            errorMessage={startErrorMessage}
+            dispatch={dispatch}
+            capabilities={dispatchAdapter.capabilities}
+            geocode={dispatchAdapter.geocode}
+            onInitialize={(runSettings) => {
+              if (!chosenStation || !dispatch.incident) return;
+              const request = buildStartRequest(
+                chosenStation,
+                dispatch.incident,
+                dispatch.vehicleType,
+                runSettings,
+                crypto.randomUUID(),
+              );
+              void startSimulation(request).then((started) => {
+                if (started) setMode("live");
+              });
+            }}
+            onFocusMap={() => setMapFocusRequest((request) => request + 1)}
+          >
+            <DataQualityPanel mode={config.transport} apiBaseUrl={config.apiBaseUrl} />
+          </DispatchForm>
+        }
+        preview={
           <RoutePreview
-            mode="setup"
+            mode={mode}
             origin={origin}
             destination={destination}
             mapFocusRequest={mapFocusRequest}
+            onBackToSetup={backToSetup}
+            onStop={stopRun}
             map={mapProps}
           />
-        </section>
-      ) : (
-        <RoutePreview
-          mode="live"
-          origin={origin}
-          destination={destination}
-          mapFocusRequest={mapFocusRequest}
-          onBackToSetup={backToSetup}
-          onStop={stopRun}
-          map={mapProps}
-        />
-      )}
+        }
+      />
     </main>
+  );
+}
+
+/**
+ * Setup and live share one element path to the route preview, so React keeps the
+ * MapLibre instance across mode switches. Live uses `contents`, so the preview stays a
+ * flex child of `main` as before.
+ */
+export function DashboardLayout({
+  mode,
+  form,
+  preview,
+}: {
+  mode: DashboardMode;
+  form: ReactNode;
+  preview: ReactNode;
+}) {
+  return (
+    <section
+      className={
+        mode === "setup" ? "grid min-h-0 flex-1 lg:grid-cols-[370px_minmax(0,1fr)]" : "contents"
+      }
+    >
+      {mode === "setup" && <div className="order-2 min-w-0 lg:order-1">{form}</div>}
+      <Fragment key="route-preview">{preview}</Fragment>
+    </section>
   );
 }

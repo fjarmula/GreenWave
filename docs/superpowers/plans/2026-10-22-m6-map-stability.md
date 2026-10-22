@@ -30,34 +30,34 @@
 
 ### Task 1: One map instance across modes
 
-- [ ] RED: render `Dashboard` with the mock adapters, start a run (the mock start resolves), finish or stop it, and go back to setup. The `MapContainer` mock must report exactly one mount and zero unmounts.
-- [ ] GREEN: restructure; update the Dashboard snapshots (word diff: wrapper classes only).
+- [x] RED: render `Dashboard` with the mock adapters, start a run (the mock start resolves), finish or stop it, and go back to setup. The `MapContainer` mock must report exactly one mount and zero unmounts.
+- [x] GREEN: restructure; update the Dashboard snapshots (word diff: wrapper classes only).
 
 ### Task 2: Fit decision
 
-- [ ] RED (`endpoint-fit.test.ts`):
+- [x] RED (`endpoint-fit.test.ts`):
   - both points inside the view → `none`;
   - one point outside → `fit`;
   - focus requested with both inside → `fit`;
   - no points → `none`;
   - a point exactly on the bound counts as inside.
-- [ ] GREEN; wire it into `EndpointMarkers` (track the last applied `focusRequest` in a ref so a re-render does not re-fit).
+- [x] GREEN; wire it into `EndpointMarkers` (track the last applied `focusRequest` in a ref so a re-render does not re-fit).
 
 ### Task 3: Size guard
 
-- [ ] RED: a unit test with a fake map whose container is 0 × 0, for both `EndpointMarkers`' effect helper and `useRouteFit`; extract a small `canFit(map)` helper if that makes it testable. `fitBounds` is not called.
-- [ ] GREEN; frontend gate; `graphify update .`.
+- [x] RED: a unit test with a fake map whose container is 0 × 0, for both `EndpointMarkers`' effect helper and `useRouteFit`; extract a small `canFit(map)` helper if that makes it testable. `fitBounds` is not called.
+- [x] GREEN; frontend gate; `graphify update .`.
 
 ### Task 4: Browser acceptance
 
-- [ ] Mock production build and real backend, 1440 × 1000:
+- [x] Mock production build and real backend, 1440 × 1000:
   - zoom to 16, click a street → zoom stays 16 and the incident marker appears where clicked;
   - pick an address far outside the view → the map animates to include it;
   - start a run → no "Loading map tiles…" overlay;
   - Network panel or `performance.getEntriesByType('resource')` shows the style JSON fetched once per theme;
   - back to setup → the same.
-- [ ] 320 × 720 and 390 × 844: no console errors.
-- [ ] Evidence under `.tmp/playwright/repo-audit/m6/`.
+- [x] 320 × 720 and 390 × 844: no console errors.
+- [x] Evidence under `.tmp/playwright/repo-audit/m6/`.
 
 ## Acceptance
 

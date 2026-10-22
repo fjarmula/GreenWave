@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import * as maplibregl from "maplibre-gl";
+import { useEffect, useRef } from "react";
 import type { Map } from "maplibre-gl";
 
+import { applyEndpointFit } from "@/components/map/endpoint-fit";
 import { snapConnectorFeatures, SNAP_CONNECTOR_MIN_METERS } from "@/components/map/snap-connectors";
 import type { Position, SimulationStartRequest, SimulationStartResponse } from "@/types/telemetry";
 
@@ -24,7 +24,8 @@ type EndpointMarkersProps = {
 };
 
 /**
- * Fits the map to the chosen station and the incident, and draws the dashed snap
+ * Fits the map to the chosen station and the incident only when asked to or when one is
+ * off screen (the user's zoom is kept otherwise), and draws the dashed snap
  * connectors once a run starts. The pins themselves are `StationLayer` (station)
  * and `IncidentMarker` (incident).
  */
@@ -45,6 +46,8 @@ export function EndpointMarkers({
   const destinationLng = destination?.position.lng ?? null;
   const destinationLat = destination?.position.lat ?? null;
 
+  // A re-render or mode switch must not replay an old "View station and incident" request.
+  const appliedFocusRequest = useRef(focusRequest);
   useEffect(() => {
     if (!map || !fitToEndpoints) return;
     const points: Array<[number, number]> = [];
@@ -52,16 +55,13 @@ export function EndpointMarkers({
     if (destinationLng !== null && destinationLat !== null) {
       points.push([destinationLng, destinationLat]);
     }
-    if (points.length === 0) return;
-    const bounds = new maplibregl.LngLatBounds(points[0], points[0]);
-    points.forEach((point) => bounds.extend(point));
-    const mobile = map.getContainer().clientWidth < 640;
-    map.fitBounds(bounds, {
-      padding: mobile
-        ? { top: live ? 180 : 110, right: 100, bottom: 80, left: 40 }
-        : { top: 140, right: 160, bottom: 140, left: 160 },
-      maxZoom: points.length > 1 ? 13.2 : 14,
-      duration: focusRequest ? 600 : 0,
+    const focusRequested = focusRequest !== appliedFocusRequest.current;
+    appliedFocusRequest.current = focusRequest;
+    applyEndpointFit(map, {
+      points,
+      live,
+      focusRequested,
+      reduceMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     });
   }, [
     destinationLat,
