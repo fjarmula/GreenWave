@@ -42,7 +42,7 @@
 
 ## Milestones
 
-### 1. Foundation (done, awaiting human commit)
+### 1. Foundation (done)
 
 - [x] Night Corridor palette for light and dark; semantic tokens `go`, `caution`, `emergency`, `cascade`, `beacon` exposed as Tailwind colours.
 - [x] `shadow-panel` and `shadow-float` elevation tokens.
@@ -52,14 +52,14 @@
 - [x] Theme cross-fade only during the switch (`data-theme-switching`, 250ms, set by ThemeToggle; skipped under reduced motion; map canvas excluded).
 - [x] `theme-color` meta matches the new backgrounds; shadcn `Button` drops `transition-all` and uses a scale press.
 
-### 2. Home screen
+### 2. Home screen (done, awaiting human commit)
 
 Skills: emil-design-eng, animate.
 
-- [ ] Hero with an animated green-wave corridor SVG (CSS keyframes, looping, paused/static under reduced motion).
-- [ ] Destination cards: icons, `go`-tinted hover (fine pointers only), `pressable`, 40–60ms stagger on first load.
-- [ ] "Return to … simulation" as a live status pill with a pulsing dot.
-- [ ] Tool links (Diagnostics, Driver) and the simulation disclaimer restyled.
+- [x] Hero with an animated green-wave corridor SVG (CSS keyframes, one shared 8s loop; reduced motion pauses on a mid-run frame).
+- [x] Destination cards: icons, `go`-tinted hover (fine pointers only), `pressable`, 40–60ms stagger on first load.
+- [x] "Return to … simulation" as a live status pill with a pulsing dot.
+- [x] Tool links (Diagnostics, Driver) and the simulation disclaimer restyled.
 
 ### 3. Workspace chrome
 

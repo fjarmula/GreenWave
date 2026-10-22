@@ -180,7 +180,12 @@
 
 /* Press feedback for anything clickable: instant scale-down, quick release. */
 @utility pressable {
-  transition: transform 160ms var(--ease-out);
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
   &:active:not(:disabled, [aria-disabled="true"]) {
     transform: scale(0.97);
   }
@@ -914,5 +919,312 @@ button,
   .workspace-button:active,
   .json-inspect-button:active {
     transform: none;
+  }
+}
+
+/* Home: first-load reveal, corridor illustration and destination cards. */
+.home-main {
+  position: relative;
+  isolation: isolate;
+}
+.home-main::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 auto;
+  height: 32rem;
+  background: radial-gradient(
+    45% 60% at 50% 0%,
+    color-mix(in oklch, var(--go) 11%, transparent),
+    transparent
+  );
+  content: "";
+  pointer-events: none;
+}
+.home-mark {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 3px;
+  background: var(--go);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--go) 22%, transparent);
+}
+.home-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.home-reveal {
+  animation: home-reveal 420ms var(--ease-out) backwards;
+  animation-delay: calc(var(--reveal-step, 0) * 50ms);
+}
+.home-return {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  margin-top: 1.75rem;
+  padding: 0 1rem;
+  border: 1px solid color-mix(in oklch, var(--go) 35%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--go) 10%, transparent);
+  color: var(--go);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.home-return-dot {
+  position: relative;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+.home-return-dot[data-live]::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  animation: home-live 1.6s var(--ease-out) infinite;
+  content: "";
+}
+.home-art {
+  margin-top: 3.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--card);
+  box-shadow: var(--shadow-panel);
+}
+.home-art-caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.home-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.home-legend i {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+}
+.home-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--card);
+  box-shadow: var(--shadow-panel);
+}
+.home-card-icon {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 0.625rem;
+  color: var(--tone);
+  background: color-mix(in oklch, var(--tone) 13%, transparent);
+}
+.home-card-icon--go {
+  --tone: var(--go);
+}
+.home-card-icon--caution {
+  --tone: var(--caution);
+}
+.home-card-icon--beacon {
+  --tone: var(--beacon);
+}
+.home-card-arrow {
+  color: var(--muted-foreground);
+  transition:
+    opacity 150ms ease,
+    transform 200ms var(--ease-out);
+}
+.home-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+@media (hover: hover) and (pointer: fine) {
+  .home-card:hover {
+    border-color: color-mix(in oklch, var(--go) 40%, var(--border));
+  }
+  .home-card-arrow {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  .home-card:hover .home-card-arrow,
+  .home-card:focus-visible .home-card-arrow {
+    opacity: 1;
+    transform: none;
+  }
+  .home-tool:hover {
+    background: var(--muted);
+  }
+  .home-return:hover {
+    background: color-mix(in oklch, var(--go) 16%, transparent);
+  }
+}
+
+.corridor-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.corridor-block {
+  fill: color-mix(in oklch, var(--muted-foreground) 8%, transparent);
+}
+.corridor-cross {
+  stroke: color-mix(in oklch, var(--muted-foreground) 13%, transparent);
+  stroke-width: 12;
+}
+.corridor-road {
+  stroke: color-mix(in oklch, var(--muted-foreground) 20%, transparent);
+  stroke-width: 22;
+}
+.corridor-lane {
+  stroke: color-mix(in oklch, var(--muted-foreground) 35%, transparent);
+  stroke-width: 1.5;
+  stroke-dasharray: 10 12;
+}
+.corridor-post {
+  stroke: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
+  stroke-width: 2;
+}
+.corridor-lamp-stop {
+  fill: var(--emergency);
+  opacity: 0.85;
+}
+.corridor-lamp-go {
+  fill: var(--go);
+  filter: drop-shadow(0 0 6px var(--go));
+  opacity: 0;
+  animation: corridor-signal 8s linear infinite;
+}
+.corridor-label {
+  fill: var(--muted-foreground);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.corridor-vehicle {
+  animation: corridor-drive 8s linear infinite;
+}
+.corridor-vehicle-dot {
+  fill: #fff;
+  stroke: var(--emergency);
+  stroke-width: 3.5;
+}
+.corridor-vehicle-pulse {
+  fill: none;
+  stroke: var(--emergency);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: corridor-pulse 1.2s var(--ease-out) infinite;
+}
+
+@keyframes home-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes home-reveal-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes home-live {
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+@keyframes corridor-drive {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  3% {
+    opacity: 1;
+  }
+  85% {
+    transform: translateX(720px);
+    opacity: 1;
+  }
+  90%,
+  100% {
+    transform: translateX(720px);
+    opacity: 0;
+  }
+}
+/* Signals snap like real lamps: ~60ms switches, green ~1.5s before arrival. */
+@keyframes corridor-signal {
+  0%,
+  6% {
+    opacity: 0;
+  }
+  6.8%,
+  30% {
+    opacity: 1;
+  }
+  30.8%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes corridor-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 639px) {
+  .corridor-label {
+    display: none;
+  }
+}
+
+/* Reduced motion: fades only; the corridor freezes on its mid-run frame. */
+@media (prefers-reduced-motion: reduce) {
+  .home-reveal {
+    animation-name: home-reveal-fade;
+  }
+  .home-return-dot[data-live]::after {
+    animation: none;
+  }
+  .corridor-vehicle,
+  .corridor-lamp-go {
+    animation-play-state: paused;
+  }
+  .corridor-vehicle-pulse {
+    animation: none;
+    opacity: 0;
   }
 }
