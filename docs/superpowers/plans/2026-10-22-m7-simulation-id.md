@@ -20,14 +20,14 @@
 
 ## Tasks
 
-- [ ] RED (`simulation-id.test.ts`):
+- [x] RED (`simulation-id.test.ts`):
   - with `randomUUID` → its value;
   - without it → 32 lowercase hex characters matching the pattern;
   - 1 000 ids from the fallback are unique;
   - the output always matches `/^[A-Za-z0-9_-]{1,64}$/`.
-- [ ] GREEN; replace both call sites (grep that `randomUUID` remains only in the helper).
-- [ ] Frontend gate.
-- [ ] Browser: in a mock production build at `http://127.0.0.1:3100`, run `delete crypto.randomUUID` with `page.addInitScript`, pick an incident and press Start. The run starts and there are no console errors. Evidence under `.tmp/playwright/repo-audit/m7/`.
+- [x] GREEN; replace both call sites (grep that `randomUUID` remains only in the helper).
+- [x] Frontend gate.
+- [x] Browser: in a mock production build at `http://127.0.0.1:3100`, run `delete crypto.randomUUID` with `page.addInitScript`, pick an incident and press Start. The run starts and there are no console errors. Evidence under `.tmp/playwright/repo-audit/m7/`.
 
 ## Acceptance
 

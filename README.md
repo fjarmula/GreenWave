@@ -98,6 +98,12 @@ npm run dev
 
 Frontend: <http://localhost:3000>
 
+To try the dashboard on a phone over the LAN, use a production build: `next dev` blocks
+other hosts unless `allowedDevOrigins` is configured. Run `npm run build && npx next start
+-H 0.0.0.0` and open `http://<your-ip>:3000`. In backend mode, build with
+`NEXT_PUBLIC_API_BASE_URL=http://<your-ip>:8000`, start uvicorn with `--host 0.0.0.0`, and
+set `GREENWAVE_CORS_ORIGINS=http://<your-ip>:3000`.
+
 Docker Compose is optional. The native `uv` and `npm` commands above and in the
 subsystem READMEs remain the authoritative development workflow.
 

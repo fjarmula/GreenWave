@@ -56,7 +56,7 @@ Out of scope (known, unchanged): decorative 72 % speed bar; 320 px header trunca
 - [x] **[Completed] M4 — Server-error terminal (D2; B5).** [Sub-plan](2026-10-22-m4-server-error-terminal.md). Dependency: M2 (summary card). **Contract change; tell the human before editing `GreenWave_ARCHITECTURE.md`.** Suggested commit: `feat: report simulation server errors to the dashboard`.
 - [x] **[Completed] M5 — Session lifecycle hardening (B3, B4).** [Sub-plan](2026-10-22-m5-session-lifecycle.md). Dependency: M4 (same file, terminal semantics). Suggested commit: `fix: bound retained sessions and publish one terminal per run`.
 - [x] **[Completed] M6 — Map stability (F4, F6, F15).** [Sub-plan](2026-10-22-m6-map-stability.md). Dependency: M2, M3 (dashboard layout settled). Suggested commit: `fix: keep the map instance and user zoom across interactions`.
-- [ ] **[Pending] M7 — Simulation ids outside secure contexts (F5).** [Sub-plan](2026-10-22-m7-simulation-id.md). Dependency: none. Suggested commit: `fix: generate simulation ids outside secure contexts`.
+- [x] **[Completed] M7 — Simulation ids outside secure contexts (F5).** [Sub-plan](2026-10-22-m7-simulation-id.md). Dependency: none. Suggested commit: `fix: generate simulation ids outside secure contexts`.
 - [ ] **[Pending] M8 — HUD accuracy and feedback (F7–F12, F14).** [Sub-plan](2026-10-22-m8-hud-feedback.md). Dependency: M1 (vehicle ids), M2 (header). Suggested commit: `fix: make live HUD state and search feedback accurate`.
 
 Order rationale: M1–M3 are what a jury sees first in backend mode; M4–M5 close the backend run lifecycle; M6–M7 remove demo-day failure modes; M8 is polish.
@@ -227,6 +227,26 @@ Order rationale: M1–M3 are what a jury sees first in backend mode; M4–M5 clo
   1. **No DOM test for mounts:** the planned mount-count test needs a DOM (Vitest runs in `node`). It is replaced by a reconciliation-path test, since React keeps the subtree exactly when types, keys and positions match. Instance identity across modes is confirmed in the browser.
   2. **Reduced motion:** the focus-request fit is also instant under reduced motion (the plan said "animated 600 ms" for it), to match the off-screen fit and `useRouteFit`.
   3. **Theme switch:** a theme switch re-requests the style JSON (light → dark → light fetched positron twice). That is the existing `setStyle` swap on the same instance, not a new construction; left unchanged.
+
+## M7 verification — 2026-10-22
+
+- Branch `fix/m7-simulation-id` (from `main` at `5b04637`), uncommitted for human review.
+- Root cause as planned: `crypto.randomUUID()` exists only in secure contexts, so Start threw a `TypeError` over plain HTTP on a LAN address.
+- Fix:
+  - `src/lib/simulation-id.ts` (new) adds `createSimulationId(source = globalThis.crypto)`. It returns `randomUUID()` when available; otherwise it returns 32 lowercase hex characters from `getRandomValues(new Uint8Array(16))`.
+  - Used in `dashboard.tsx` and `useSimulationStream.ts`; `randomUUID` now appears only in the helper.
+  - README "Run locally" has the LAN instructions.
+- TDD: `simulation-id.test.ts` (4 cases: secure passthrough, hex fallback, 1 000 unique, contract pattern) failed (module missing), then passed.
+- Gates: frontend `lint`, `typecheck`, `format:check`, `test` (**48 files, 429 tests**), `build` — all exit 0. The first gate run failed on a test-typing error (`getRandomValues` parameter), which was fixed in the test. `git diff --check` clean. No backend, contract or dependency change.
+- Browser (`playwright-cli`, evidence in `.tmp/playwright/repo-audit/m7/`):
+  - **Stub:** mock production build at `http://127.0.0.1:3100` with `Crypto.prototype.randomUUID` deleted by an init script. Start runs, ticks advance, and console errors are 0.
+  - **Real insecure context** (the LAN IP `http://192.168.1.7`, which Chromium reports as `isSecureContext: false`, `randomUUID: undefined`):
+    - mock build at 390 × 844: Start runs;
+    - real backend (uvicorn `--host 0.0.0.0`, CORS set to the LAN origin) with a backend-transport production build at 390 × 844 and 1440 × 1000: Start sends contract-valid 32-hex ids (e.g. `834ccd83a2bd4eb0d96a2348bd956a6a`), and the run streams.
+
+    Console errors are 0 in all four runs.
+- Deviations / rulings:
+  1. The browser found that `next dev` blocks LAN hosts by default (`allowedDevOrigins`). Hydration never happened over the LAN IP, so the backend-transport check used a production build instead. The README tells phone testers to use `npm run build && npx next start -H 0.0.0.0` and does not change `next.config.ts`.
 
 ## Final closeout
 
