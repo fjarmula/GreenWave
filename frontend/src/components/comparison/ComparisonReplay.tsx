@@ -1,5 +1,7 @@
 "use client";
 
+import type { CSSProperties } from "react";
+import { Pause, Play, RotateCcw } from "lucide-react";
 import { MapContainer } from "@/components/map/MapContainer";
 import { selectReplayFrame } from "@/lib/comparison/replay";
 import type { ComparisonPair } from "@/lib/comparison/comparison-controller";
@@ -10,18 +12,31 @@ import { VEHICLE_NAMES } from "@/lib/station-copy";
 
 export type ComparisonPane = "enabled" | "disabled";
 
-function ReplayPane({ run, cursor, label }: { run: RecordedRun; cursor: number; label: string }) {
+function ReplayPane({
+  run,
+  cursor,
+  label,
+  tone,
+}: {
+  run: RecordedRun;
+  cursor: number;
+  label: string;
+  tone: string;
+}) {
   const snapshot = selectReplayFrame(run, cursor);
   const arrival = run.ticks.find((tick) => tick.ambulance.status === "ARRIVED")?.tick;
   return (
     <section className="comparison-pane" aria-label={`${label} recorded replay`}>
-      <div className="comparison-pane-title">
-        <h2 className="font-semibold">{label}</h2>
+      <div className={`comparison-pane-title ${tone}`}>
+        <h2 className="flex items-center gap-2 font-semibold tracking-tight">
+          <span aria-hidden className="size-2 rounded-full bg-(--tone)" />
+          {label}
+        </h2>
         <p className="text-sm text-muted-foreground">
           {VEHICLE_NAMES[run.request.vehicle_type]} ·{" "}
           {snapshot.liveTelemetry?.ambulance.status.replaceAll("_", " ").toLowerCase()}
         </p>
-        <p className="text-xs text-muted-foreground">
+        <p className="hud-value text-xs text-muted-foreground">
           Arrival {arrival ?? "unknown"}s · recovery complete {run.completion.tick}s
         </p>
       </div>
@@ -72,18 +87,25 @@ export function ComparisonReplay({
   return (
     <div className="comparison-stage">
       <div className={`comparison-maps comparison-${pane}`}>
-        <ReplayPane run={pair.enabled} cursor={cursor} label="Green Wave" />
-        <ReplayPane run={pair.disabled} cursor={cursor} label="Standard traffic" />
+        <ReplayPane run={pair.enabled} cursor={cursor} label="Green Wave" tone="tone-go" />
+        <ReplayPane
+          run={pair.disabled}
+          cursor={cursor}
+          label="Standard traffic"
+          tone="tone-caution"
+        />
       </div>
       <section className="comparison-transport" aria-label="Synchronized comparison playback">
         <div className="comparison-transport-actions">
-          <button className="workspace-button" onClick={onPlayPause}>
+          <button className="workspace-button workspace-button--primary" onClick={onPlayPause}>
+            {playing ? <Pause aria-hidden /> : <Play aria-hidden />}
             {playing ? "Pause replay" : cursor >= duration ? "Play again" : "Play replay"}
           </button>
           <button className="workspace-button" onClick={onRestart}>
+            <RotateCcw aria-hidden />
             Restart replay
           </button>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
             Replay speed
             <select
               className="workspace-button"
@@ -98,7 +120,7 @@ export function ComparisonReplay({
               ))}
             </select>
           </label>
-          <label className="comparison-phone-toggle flex items-center gap-2 text-sm">
+          <label className="comparison-phone-toggle flex items-center gap-2 text-sm text-muted-foreground">
             Map
             <select
               className="workspace-button"
@@ -110,10 +132,13 @@ export function ComparisonReplay({
               <option value="disabled">Standard traffic</option>
             </select>
           </label>
-          <p className="text-sm text-muted-foreground">Recorded simulation · one shared clock</p>
+          <p className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+            <span aria-hidden className="size-1.5 rounded-full bg-beacon" />
+            Recorded simulation · one shared clock
+          </p>
         </div>
         <label className="comparison-timeline">
-          <span className="text-sm tabular-nums">
+          <span className="hud-value text-sm">
             {formatMinutesSeconds(Math.floor(cursor))} / {formatMinutesSeconds(duration)}
           </span>
           <input
@@ -124,6 +149,8 @@ export function ComparisonReplay({
             step={0.1}
             value={cursor}
             onChange={(event) => onSeek(Number(event.target.value))}
+            className="hud-range"
+            style={{ "--fill": `${duration ? (cursor / duration) * 100 : 0}%` } as CSSProperties}
           />
         </label>
       </section>

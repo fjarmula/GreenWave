@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import { operations, type DiagnosticEntry, type Operation } from "@/lib/diagnostics/store";
 const names: Record<Operation, string> = {
   stations: "Stations",
@@ -13,13 +14,13 @@ export function DataFlowView({ entries }: { entries: ReadonlyArray<DiagnosticEnt
   return (
     <>
       <section aria-labelledby="architecture-title">
-        <h2 id="architecture-title" className="text-xl font-semibold">
+        <h2 id="architecture-title" className="text-xl font-semibold tracking-tight">
           How the simulation flows
         </h2>
         <p className="mt-2 text-muted-foreground">
           Architecture explanation — separate from observations below.
         </p>
-        <ol className="mt-6 grid gap-3 sm:grid-cols-3">
+        <ol className="flow-steps mt-6">
           {[
             "Stations / Geocode → incident",
             "Ranking → chosen station",
@@ -27,12 +28,23 @@ export function DataFlowView({ entries }: { entries: ReadonlyArray<DiagnosticEnt
             "SSE → validated telemetry",
             "Validation / state → Map and HUD",
             "Stop → terminal summary",
-          ].map((name, i) => (
-            <li key={name} className="rounded-xl border border-border p-4">
-              <span className="text-sm text-muted-foreground">{i + 1} / </span>
-              {name}
-            </li>
-          ))}
+          ].map((name, i) => {
+            const [source, result] = name.split(" → ");
+            return (
+              <li key={name} className="flow-step">
+                <span className="flow-step-index hud-value" aria-hidden>
+                  {i + 1}
+                </span>
+                <span className="sr-only">Step {i + 1}: </span>
+                <span className="font-medium">{source}</span>
+                <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <ArrowRight className="size-3.5 shrink-0 text-beacon" aria-hidden />
+                  <span className="sr-only">→ </span>
+                  {result}
+                </span>
+              </li>
+            );
+          })}
         </ol>
         <p className="mt-4 text-sm text-muted-foreground">
           ITS dispatch is an internal simulated gateway event, never an outbound signal-controller
@@ -40,7 +52,7 @@ export function DataFlowView({ entries }: { entries: ReadonlyArray<DiagnosticEnt
         </p>
       </section>
       <section className="mt-10" aria-labelledby="observations-title">
-        <h2 id="observations-title" className="text-xl font-semibold">
+        <h2 id="observations-title" className="text-xl font-semibold tracking-tight">
           Observed in this browser session
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -52,8 +64,20 @@ export function DataFlowView({ entries }: { entries: ReadonlyArray<DiagnosticEnt
           {operations.map((op) => {
             const entry = entries.findLast((e) => e.operation === op);
             return (
-              <div key={op} className="rounded-xl border border-border p-4">
-                <dt className="font-medium">{names[op]}</dt>
+              <div key={op} className="hud-panel">
+                <dt className="flex items-center gap-2 font-medium">
+                  <span
+                    aria-hidden
+                    className={`size-2 shrink-0 rounded-full ${
+                      !entry
+                        ? "bg-muted-foreground/40"
+                        : entry.outcome === "success"
+                          ? "bg-go"
+                          : "bg-caution"
+                    }`}
+                  />
+                  {names[op]}
+                </dt>
                 <dd className="mt-1 text-sm text-muted-foreground">
                   {entry
                     ? `${entry.transport === "mock" ? "Synthetic (mock)" : "Backend simulation"} · ${entry.outcome}${entry.tick === undefined ? "" : ` · tick ${entry.tick}`}${entry.durationMs === undefined ? "" : ` · browser ${entry.durationMs.toFixed(1)} ms`}${(entry.count ?? 0) > 1 ? ` · ${entry.count} sampled ticks` : ""}`

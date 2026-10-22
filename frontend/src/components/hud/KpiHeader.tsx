@@ -55,7 +55,7 @@ const OUTCOME_TONES: Partial<Record<RunStatusKey, string>> = {
 
 // Only a real saving gets the success glow.
 const TIME_SAVED_STYLES: Record<TimeSavedTone, string> = {
-  positive: "text-go [text-shadow:0_0_18px_color-mix(in_oklch,var(--go)_40%,transparent)]",
+  positive: "text-go [text-shadow:0_0_18px_color-mix(in_srgb,var(--go)_40%,transparent)]",
   neutral: "text-muted-foreground",
   negative: "text-caution",
 };

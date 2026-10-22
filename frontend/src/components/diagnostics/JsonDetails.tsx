@@ -115,12 +115,12 @@ function OpenJsonViewer({
             </p>
             <p className="mt-3 text-sm text-muted-foreground">{description}</p>
             <div className="json-dialog-actions">
-              <div className="flex gap-2" role="group" aria-label="Payload direction">
+              <div className="hud-segmented" role="group" aria-label="Payload direction">
                 {(["request", "response"] as const).map((value) => (
                   <button
                     type="button"
                     key={value}
-                    className="workspace-button"
+                    className="hud-segment px-3"
                     aria-pressed={side === value}
                     onClick={() => {
                       setSide(value);

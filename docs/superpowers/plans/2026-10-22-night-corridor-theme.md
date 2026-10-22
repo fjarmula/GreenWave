@@ -68,10 +68,10 @@ Skills: emil-design-eng, mobile-native.
 - [x] Header: segmented pill navigation, aligned theme toggle (sliding thumb), compact icon + label Details/Focus buttons (44px on coarse pointers).
 - [x] Map overlays ("Show route", "Resume following", zoom controls) as frosted floating controls.
 - [x] Provenance pill sits above the map attribution (and lifts over the expanded compact attribution on narrow maps).
-- [ ] Follow-up for milestone 5: check provenance against the comparison replay transport bar.
+- [x] Follow-up (done in milestone 5): in replay the provenance pill becomes a footer under the transport bar.
 - [x] MapLibre controls follow the tokens.
 
-### 4. Inspector / HUD (done, awaiting human commit)
+### 4. Inspector / HUD (done)
 
 Skills: emil-design-eng, find-animation-opportunities.
 
@@ -82,14 +82,17 @@ Skills: emil-design-eng, find-animation-opportunities.
 - [x] Shared `hud-*` vocabulary in `@layer components` (panel, head, icon, segmented, input, range, switch, primary/secondary/danger, alert, chip, value) with `tone-*` modifiers.
 - [x] RunSummary (finished moment may get a subtle entrance), DataQualityPanel, StationRanking, PreviousRunCard.
 
-### 5. Sub-screens
+### 5. Sub-screens (done, awaiting human commit)
 
 Skills: emil-design-eng.
 
-- [ ] Comparison: pane titles, transport bar, timeline slider, preparation card.
-- [ ] Diagnostics: the six steps as one connected flow; endpoint activity cards.
-- [ ] Driver status card.
-- [ ] JSON dialog: centred `.96 → 1` entrance and backdrop fade.
+- [x] Comparison: pane titles, transport bar, timeline slider, preparation card.
+- [x] Diagnostics: the six steps as one connected flow; endpoint activity cards.
+- [x] Driver status card.
+- [x] JSON dialog: centred `.96 → 1` entrance and backdrop fade.
+
+- [x] Fix: transparent colour-mixes use sRGB (OKLCH mixing with `transparent` produced a powerless hue that rendered reddish).
+- [x] Eyebrow and label styles unified app-wide (sentence case, 12px).
 
 ### 6. Polish pass
 

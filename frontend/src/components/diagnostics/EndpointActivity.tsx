@@ -6,17 +6,16 @@ export function EndpointActivity({ entries }: { entries: ReadonlyArray<Diagnosti
   const [selection, setSelection] = useState<JsonInspection | null>(null);
   return (
     <section className="mt-8" aria-labelledby="activity-title">
-      <h2 id="activity-title" className="text-xl font-semibold">
+      <h2 id="activity-title" className="text-xl font-semibold tracking-tight">
         Recent activity
       </h2>
-      <ol
-        className="mt-4 max-h-80 space-y-2 overflow-auto rounded-xl border border-border p-4 text-sm"
-        aria-label="Observed activity"
-      >
+      <ol className="activity-log mt-4" aria-label="Observed activity">
         {entries.slice(-30).map((e, i) => (
           <li key={i}>
             {e.transport === "mock" ? "Synthetic" : "Backend"} · {e.operation} ·{" "}
-            <strong>{e.outcome}</strong>
+            <strong className={e.outcome === "success" ? "text-go" : "text-caution"}>
+              {e.outcome}
+            </strong>
             {e.tick === undefined ? "" : ` · tick ${e.tick}`}
             {(e.count ?? 0) > 1 ? ` · ${e.count} sampled ticks · latest payload` : ""}
             {e.capture && (
@@ -38,7 +37,7 @@ export function EndpointActivity({ entries }: { entries: ReadonlyArray<Diagnosti
             )}
           </li>
         ))}
-        {!entries.length && <li>Not observed</li>}
+        {!entries.length && <li className="text-muted-foreground">Not observed</li>}
       </ol>
       <JsonViewer selection={selection} onClose={() => setSelection(null)} />
     </section>

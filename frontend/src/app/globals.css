@@ -170,11 +170,11 @@
     outline-offset: 2px;
   }
   ::selection {
-    background: color-mix(in oklch, var(--go) 28%, transparent);
+    background: color-mix(in srgb, var(--go) 28%, transparent);
   }
   * {
     scrollbar-width: thin;
-    scrollbar-color: color-mix(in oklch, var(--muted-foreground) 35%, transparent) transparent;
+    scrollbar-color: color-mix(in srgb, var(--muted-foreground) 35%, transparent) transparent;
   }
 }
 
@@ -198,11 +198,11 @@
 
 @layer components {
   .dashboard-eyebrow {
-    @apply m-0 text-[9px] font-bold tracking-[0.14em] text-muted-foreground uppercase;
+    @apply m-0 text-xs font-semibold tracking-[0.02em] text-muted-foreground;
   }
 
   .dashboard-label {
-    @apply block text-[10px] font-bold tracking-[0.08em] text-muted-foreground uppercase;
+    @apply block text-xs font-semibold tracking-[0.02em] text-muted-foreground;
   }
 
   .dashboard-map {
@@ -287,7 +287,7 @@
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 0.625rem;
-  background-color: color-mix(in oklch, var(--card) 82%, transparent);
+  background-color: color-mix(in srgb, var(--card) 82%, transparent);
   color: var(--foreground);
   backdrop-filter: blur(12px) saturate(1.4);
 }
@@ -300,7 +300,7 @@
 .dashboard-map .maplibregl-ctrl-attrib.maplibregl-compact,
 .dashboard-map .maplibregl-ctrl-attrib.maplibregl-compact-show {
   border: 1px solid var(--border);
-  background-color: color-mix(in oklch, var(--card) 78%, transparent);
+  background-color: color-mix(in srgb, var(--card) 78%, transparent);
   color: var(--muted-foreground);
   font-size: 10px;
   backdrop-filter: blur(8px);
@@ -445,7 +445,7 @@
   scrollbar-width: none;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: color-mix(in oklch, var(--muted) 60%, transparent);
+  background: color-mix(in srgb, var(--muted) 60%, transparent);
   font-size: 0.8125rem;
   white-space: nowrap;
   color: var(--muted-foreground);
@@ -517,12 +517,12 @@
 }
 /* Controls floating over the map. */
 .workspace-float {
-  background: color-mix(in oklch, var(--card) 82%, transparent);
+  background: color-mix(in srgb, var(--card) 82%, transparent);
   box-shadow: var(--shadow-float);
   backdrop-filter: blur(12px) saturate(1.4);
 }
 .workspace-float[data-active] {
-  background: color-mix(in oklch, var(--accent) 88%, transparent);
+  background: color-mix(in srgb, var(--accent) 88%, transparent);
 }
 @media (pointer: coarse) {
   .workspace-button {
@@ -540,7 +540,7 @@
   padding: 3px;
   border: 1px solid var(--border);
   border-radius: 0.625rem;
-  background: color-mix(in oklch, var(--muted) 60%, transparent);
+  background: color-mix(in srgb, var(--muted) 60%, transparent);
 }
 .theme-toggle-thumb {
   position: absolute;
@@ -606,7 +606,7 @@
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: color-mix(in oklch, var(--card) 82%, transparent);
+  background: color-mix(in srgb, var(--card) 82%, transparent);
   box-shadow: var(--shadow-float);
   backdrop-filter: blur(12px) saturate(1.4);
   font-size: 0.6875rem;
@@ -770,13 +770,6 @@ button,
 .workspace-shell[data-focus="true"] .maplibregl-ctrl-group {
   display: none;
 }
-.workspace-shell .dashboard-eyebrow,
-.workspace-shell .dashboard-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: none;
-}
 
 /* These fields live in a 360px inspector even on a wide desktop viewport. */
 .kpi-panel {
@@ -824,12 +817,13 @@ button,
   top: 1rem;
   left: 1rem;
   right: 1rem;
-  width: min(28rem, calc(100% - 2rem));
+  width: min(26rem, calc(100% - 2rem));
   padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  background: var(--background);
-  box-shadow: 0 8px 30px #0002;
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  box-shadow: var(--shadow-float);
+  backdrop-filter: blur(14px) saturate(1.4);
 }
 .comparison-stage {
   display: grid;
@@ -847,6 +841,7 @@ button,
   padding: 0.75rem 1rem;
   background: var(--background);
   border-bottom: 1px solid var(--border);
+  box-shadow: inset 0 2px 0 var(--tone, transparent);
 }
 .comparison-pane-map {
   position: relative;
@@ -856,7 +851,7 @@ button,
 .comparison-transport {
   display: grid;
   gap: 0.75rem;
-  padding: 0.75rem 1rem calc(2rem + env(safe-area-inset-bottom));
+  padding: 0.75rem 1rem;
   background: var(--background);
   border-top: 1px solid var(--border);
 }
@@ -876,7 +871,6 @@ button,
   width: 100%;
   min-width: 0;
   min-height: 24px;
-  accent-color: var(--primary);
 }
 .comparison-phone-toggle {
   display: none;
@@ -960,6 +954,7 @@ button,
   }
 }
 .json-dialog {
+  box-shadow: var(--shadow-float);
   margin: auto;
   width: min(64rem, calc(100vw - 2rem));
   max-width: none;
@@ -967,20 +962,36 @@ button,
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 1rem;
-  background: var(--background);
+  background: var(--popover);
   color: var(--foreground);
   overflow: auto;
   overscroll-behavior: contain;
-  box-shadow: 0 20px 80px #0005;
 }
 .json-dialog::backdrop {
-  background: #0009;
+  background: oklch(0.1 0.02 255 / 60%);
+  backdrop-filter: blur(2px);
+}
+/* Modal: centred, fades and scales up once on open (exit stays instant). */
+.json-dialog[open] {
+  transition:
+    opacity 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.json-dialog[open]::backdrop {
+  transition: opacity 200ms ease;
+  @starting-style {
+    opacity: 0;
+  }
 }
 .json-dialog-header {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--background);
+  background: var(--popover);
   display: flex;
   align-items: start;
   justify-content: space-between;
@@ -1010,8 +1021,8 @@ button,
   overflow: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--border);
-  border-radius: 0.6rem;
-  background: var(--muted);
+  border-radius: 0.75rem;
+  background: color-mix(in oklch, var(--background) 70%, var(--muted));
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.8125rem;
   line-height: 1.6;
@@ -1032,11 +1043,6 @@ button,
   .json-dialog-header {
     padding: 0.75rem;
   }
-}
-
-.json-dialog-actions [aria-pressed="true"] {
-  background: var(--muted);
-  border-color: var(--foreground);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1061,7 +1067,7 @@ button,
   height: 32rem;
   background: radial-gradient(
     45% 60% at 50% 0%,
-    color-mix(in oklch, var(--go) 11%, transparent),
+    color-mix(in srgb, var(--go) 11%, transparent),
     transparent
   );
   content: "";
@@ -1072,7 +1078,7 @@ button,
   height: 0.625rem;
   border-radius: 3px;
   background: var(--go);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--go) 22%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--go) 22%, transparent);
 }
 .home-eyebrow {
   display: inline-flex;
@@ -1097,9 +1103,9 @@ button,
   min-height: 2.5rem;
   margin-top: 1.75rem;
   padding: 0 1rem;
-  border: 1px solid color-mix(in oklch, var(--go) 35%, transparent);
+  border: 1px solid color-mix(in srgb, var(--go) 35%, transparent);
   border-radius: 999px;
-  background: color-mix(in oklch, var(--go) 10%, transparent);
+  background: color-mix(in srgb, var(--go) 10%, transparent);
   color: var(--go);
   font-size: 0.875rem;
   font-weight: 500;
@@ -1163,7 +1169,7 @@ button,
   place-items: center;
   border-radius: 0.625rem;
   color: var(--tone);
-  background: color-mix(in oklch, var(--tone) 13%, transparent);
+  background: color-mix(in srgb, var(--tone) 13%, transparent);
 }
 .home-card-icon--go {
   --tone: var(--go);
@@ -1209,7 +1215,7 @@ button,
     background: var(--muted);
   }
   .home-return:hover {
-    background: color-mix(in oklch, var(--go) 16%, transparent);
+    background: color-mix(in srgb, var(--go) 16%, transparent);
   }
 }
 
@@ -1219,23 +1225,23 @@ button,
   height: auto;
 }
 .corridor-block {
-  fill: color-mix(in oklch, var(--muted-foreground) 8%, transparent);
+  fill: color-mix(in srgb, var(--muted-foreground) 8%, transparent);
 }
 .corridor-cross {
-  stroke: color-mix(in oklch, var(--muted-foreground) 13%, transparent);
+  stroke: color-mix(in srgb, var(--muted-foreground) 13%, transparent);
   stroke-width: 12;
 }
 .corridor-road {
-  stroke: color-mix(in oklch, var(--muted-foreground) 20%, transparent);
+  stroke: color-mix(in srgb, var(--muted-foreground) 20%, transparent);
   stroke-width: 22;
 }
 .corridor-lane {
-  stroke: color-mix(in oklch, var(--muted-foreground) 35%, transparent);
+  stroke: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
   stroke-width: 1.5;
   stroke-dasharray: 10 12;
 }
 .corridor-post {
-  stroke: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
+  stroke: color-mix(in srgb, var(--muted-foreground) 45%, transparent);
   stroke-width: 2;
 }
 .corridor-lamp-stop {
@@ -1400,7 +1406,7 @@ button,
     place-items: center;
     border-radius: 0.5rem;
     color: var(--tone, var(--muted-foreground));
-    background: color-mix(in oklch, var(--tone, var(--muted-foreground)) 13%, transparent);
+    background: color-mix(in srgb, var(--tone, var(--muted-foreground)) 13%, transparent);
   }
   .hud-icon svg {
     width: 1rem;
@@ -1419,7 +1425,7 @@ button,
     padding: 3px;
     border: 1px solid var(--border);
     border-radius: 0.625rem;
-    background: color-mix(in oklch, var(--muted) 60%, transparent);
+    background: color-mix(in srgb, var(--muted) 60%, transparent);
   }
   .hud-segment {
     display: flex;
@@ -1459,11 +1465,11 @@ button,
       box-shadow 150ms ease;
   }
   .hud-input::placeholder {
-    color: color-mix(in oklch, var(--muted-foreground) 80%, transparent);
+    color: color-mix(in srgb, var(--muted-foreground) 80%, transparent);
   }
   .hud-input:focus {
     border-color: var(--ring);
-    box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 22%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 22%, transparent);
   }
   .hud-input:disabled {
     cursor: not-allowed;
@@ -1483,7 +1489,7 @@ button,
     background: linear-gradient(
       to right,
       var(--beacon) var(--fill, 0%),
-      color-mix(in oklch, var(--muted-foreground) 22%, transparent) var(--fill, 0%)
+      color-mix(in srgb, var(--muted-foreground) 22%, transparent) var(--fill, 0%)
     );
   }
   .hud-range::-moz-range-track {
@@ -1492,7 +1498,7 @@ button,
     background: linear-gradient(
       to right,
       var(--beacon) var(--fill, 0%),
-      color-mix(in oklch, var(--muted-foreground) 22%, transparent) var(--fill, 0%)
+      color-mix(in srgb, var(--muted-foreground) 22%, transparent) var(--fill, 0%)
     );
   }
   .hud-range::-webkit-slider-thumb {
@@ -1517,10 +1523,10 @@ button,
     outline: none;
   }
   .hud-range:focus-visible::-webkit-slider-thumb {
-    box-shadow: 0 0 0 4px color-mix(in oklch, var(--ring) 35%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--ring) 35%, transparent);
   }
   .hud-range:focus-visible::-moz-range-thumb {
-    box-shadow: 0 0 0 4px color-mix(in oklch, var(--ring) 35%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--ring) 35%, transparent);
   }
   .hud-switch {
     position: relative;
@@ -1528,7 +1534,7 @@ button,
     width: 2.75rem;
     height: 1.5rem;
     border-radius: 999px;
-    background: color-mix(in oklch, var(--muted-foreground) 30%, transparent);
+    background: color-mix(in srgb, var(--muted-foreground) 30%, transparent);
     transition: background-color 150ms ease;
   }
   .hud-switch[aria-checked="true"] {
@@ -1564,7 +1570,7 @@ button,
     background: var(--primary);
     box-shadow:
       0 1px 0 oklch(1 0 0 / 20%) inset,
-      0 10px 24px -12px color-mix(in oklch, var(--go) 80%, transparent);
+      0 10px 24px -12px color-mix(in srgb, var(--go) 80%, transparent);
     font-size: 0.875rem;
     font-weight: 600;
     color: var(--primary-foreground);
@@ -1598,8 +1604,8 @@ button,
     opacity: 0.5;
   }
   .hud-danger {
-    border-color: color-mix(in oklch, var(--emergency) 40%, transparent);
-    background: color-mix(in oklch, var(--emergency) 10%, transparent);
+    border-color: color-mix(in srgb, var(--emergency) 40%, transparent);
+    background: color-mix(in srgb, var(--emergency) 10%, transparent);
     color: var(--emergency);
   }
   .hud-danger:disabled {
@@ -1611,9 +1617,9 @@ button,
     align-items: flex-start;
     gap: 0.5rem;
     padding: 0.625rem 0.75rem;
-    border: 1px solid color-mix(in oklch, var(--tone) 30%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
     border-radius: 0.625rem;
-    background: color-mix(in oklch, var(--tone) 8%, transparent);
+    background: color-mix(in srgb, var(--tone) 8%, transparent);
     font-size: 0.75rem;
     font-weight: 500;
     color: var(--tone);
@@ -1631,7 +1637,7 @@ button,
     gap: 0.3125rem;
     padding: 0.1875rem 0.5rem;
     border-radius: 999px;
-    background: color-mix(in oklch, var(--tone, var(--muted-foreground)) 12%, transparent);
+    background: color-mix(in srgb, var(--tone, var(--muted-foreground)) 12%, transparent);
     font-size: 0.6875rem;
     font-weight: 600;
     color: var(--tone, var(--muted-foreground));
@@ -1670,7 +1676,7 @@ button,
       background: var(--muted);
     }
     .hud-danger:not(:disabled):hover {
-      background: color-mix(in oklch, var(--emergency) 16%, transparent);
+      background: color-mix(in srgb, var(--emergency) 16%, transparent);
     }
   }
   @media (pointer: coarse) {
@@ -1690,7 +1696,7 @@ button,
     padding: 0.75rem;
     border: 1px solid var(--border);
     border-radius: 0.75rem;
-    background: color-mix(in oklch, var(--background) 55%, transparent);
+    background: color-mix(in srgb, var(--background) 55%, transparent);
   }
   /* TTI bar: scaleX glides linearly for exactly one tick (--tick), so it never jumps. */
   .intersection-tti {
@@ -1743,5 +1749,148 @@ button,
 @media (pointer: coarse) {
   .intersection-card .json-inspect-button {
     min-height: 44px;
+  }
+}
+
+/* Primary and quiet variants of the shared workspace button. */
+.workspace-button--primary {
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.workspace-button--primary svg {
+  color: currentColor;
+}
+.workspace-button--quiet {
+  min-height: 2rem;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted-foreground);
+}
+@media (hover: hover) and (pointer: fine) {
+  .workspace-button--primary:hover {
+    background: color-mix(in oklch, var(--primary), white 10%);
+  }
+}
+
+/* Replay: the provenance pill becomes a footer line under the transport, never over it. */
+.workspace-map-slot:has(.comparison-stage) {
+  display: flex;
+  flex-direction: column;
+}
+.workspace-map-slot:has(.comparison-stage) > .comparison-stage {
+  flex: 1;
+  height: auto;
+}
+.workspace-map-slot:has(.comparison-stage) .workspace-provenance {
+  position: static;
+  align-self: flex-start;
+  margin: 0 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  box-shadow: none;
+  transform: none;
+}
+.comparison-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.375rem;
+  margin-top: 1rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+.comparison-steps li {
+  padding-top: 0.5rem;
+  border-top: 3px solid color-mix(in srgb, var(--muted-foreground) 25%, transparent);
+}
+.comparison-steps li[data-state="done"] {
+  border-color: var(--go);
+  color: var(--foreground);
+}
+.comparison-steps li[data-state="active"] {
+  border-color: var(--beacon);
+  color: var(--foreground);
+}
+.comparison-delta {
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--tone, var(--muted-foreground)) 30%, transparent);
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--tone, var(--muted-foreground)) 9%, transparent);
+}
+.comparison-delta .hud-value {
+  color: var(--tone, var(--foreground));
+}
+
+/* Diagnostics: numbered pipeline with connectors between neighbouring steps. */
+.flow-steps {
+  display: grid;
+  gap: 0.75rem;
+  counter-reset: none;
+}
+.flow-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.75rem;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+  background: var(--card);
+  box-shadow: var(--shadow-panel);
+}
+.flow-step > :not(.flow-step-index, .sr-only) {
+  grid-column: 2;
+}
+.flow-step-index {
+  display: grid;
+  grid-row: span 2;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--beacon) 14%, transparent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--beacon);
+}
+@media (min-width: 640px) {
+  .flow-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .flow-step:not(:nth-child(3n))::after {
+    position: absolute;
+    top: 50%;
+    right: -0.75rem;
+    width: 0.75rem;
+    height: 1px;
+    background: color-mix(in srgb, var(--beacon) 50%, transparent);
+    content: "";
+  }
+}
+.activity-log {
+  max-height: 20rem;
+  padding: 0.75rem 1rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--muted) 45%, transparent);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+.activity-log > li + li {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+@media (prefers-reduced-motion: reduce) {
+  .json-dialog[open] {
+    transition: opacity 150ms ease;
+    @starting-style {
+      opacity: 0;
+      transform: none;
+    }
   }
 }
