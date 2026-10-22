@@ -10,6 +10,18 @@ const themeOptions = [
   { value: "dark", label: "Dark theme", icon: Moon },
 ] as const;
 
+let switchTimer: number | undefined;
+
+/** Cross-fades every surface for one switch only, so normal hovers stay instant. */
+function switchThemeSmoothly(apply: () => void) {
+  const root = document.documentElement;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return apply();
+  root.dataset.themeSwitching = "";
+  apply();
+  window.clearTimeout(switchTimer);
+  switchTimer = window.setTimeout(() => delete root.dataset.themeSwitching, 300);
+}
+
 const subscribe = () => () => undefined;
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
@@ -40,7 +52,7 @@ export function ThemeToggle() {
             aria-label={label}
             aria-pressed={isActive}
             title={label}
-            onClick={() => setTheme(value)}
+            onClick={() => switchThemeSmoothly(() => setTheme(value))}
             className={`grid size-7 place-items-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 ${
               isActive
                 ? "bg-background text-foreground shadow-sm"
