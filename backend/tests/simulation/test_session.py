@@ -7,6 +7,7 @@ import pytest
 from greenwave.routing.errors import OriginOffNetwork
 from greenwave.schemas import (
     CancelReason,
+    SimulationCancelledEvent,
     SimulationCompletedEvent,
     SimulationStartRequest,
     SimulationStartResponse,
@@ -181,6 +182,73 @@ async def test_engine_failure_is_logged_with_the_simulation_id(
     [record] = [r for r in caplog.records if r.getMessage() == "simulation_loop_failed"]
     assert record.exc_info is not None
     assert getattr(record, "simulation_id", None) == "first"
+    await manager.shutdown()
+
+
+class _TickThenFailEngine(_Engine):
+    """Publishes ticks 1-2 (stand-in tick events), then raises on the third step."""
+
+    def step(self, state: SimpleNamespace, _: datetime) -> tuple[SimpleNamespace, list[object]]:
+        if state.tick == 2:
+            raise RuntimeError("engine bug")
+        tick = state.tick + 1
+        return SimpleNamespace(tick=tick, completed=False), [SimpleNamespace(tick=tick)]
+
+
+async def _yield(_: float) -> None:
+    await asyncio.sleep(0)
+
+
+async def _failed_run(manager: SessionManager) -> list[object]:
+    """Every event one subscriber receives for a run whose loop crashes on its third step."""
+    manager._planner = _planner(_TickThenFailEngine)
+    manager._sleep = _yield
+    await manager.start(_request("first"))
+    return [event async for event in manager.subscribe("first")]
+
+
+@pytest.mark.asyncio
+async def test_engine_failure_publishes_a_server_error_terminal(manager: SessionManager) -> None:
+    """Without a terminal, clients wait out their silence timeout on a dead run (D2)."""
+    events = await asyncio.wait_for(_failed_run(manager), timeout=1)
+
+    *ticks, terminal = events
+    assert [event.tick for event in ticks] == [1, 2]  # type: ignore[attr-defined]
+    assert isinstance(terminal, SimulationCancelledEvent)
+    assert terminal.reason is CancelReason.SERVER_ERROR
+    assert terminal.tick == 2
+    assert terminal.simulation_id == "first"
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_failed_run_replays_only_its_terminal_and_stops_as_a_no_op(
+    manager: SessionManager,
+) -> None:
+    [*_, terminal] = await asyncio.wait_for(_failed_run(manager), timeout=1)
+    late = asyncio.Queue[object]()
+
+    replay = [event async for event in manager.subscribe("first")]
+    manager._sessions["first"].subscribers.add(late)  # type: ignore[arg-type]
+    response = await manager.stop("first")
+
+    assert replay == [terminal]
+    assert response.status == "STOPPED"
+    assert late.empty(), "stop published a second terminal"
+    assert manager._active is None
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_start_after_a_failed_run_supersedes_nothing(manager: SessionManager) -> None:
+    [*_, terminal] = await asyncio.wait_for(_failed_run(manager), timeout=1)
+    manager._planner = _planner(_Engine)
+
+    await manager.start(_request("second"))
+
+    assert [event async for event in manager.subscribe("first")] == [terminal]
+    assert manager._active is not None
+    assert manager._active.simulation_id == "second"
     await manager.shutdown()
 
 

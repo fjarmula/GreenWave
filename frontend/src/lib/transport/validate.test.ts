@@ -159,6 +159,14 @@ describe("parseStreamEvent", () => {
     expect(parseStreamEvent(event, SIMULATION_ID)).toBeNull();
   });
 
+  it("accepts a server-error cancellation", () => {
+    const event = wire(cancelledEventExample, (c) => (c.reason = "SERVER_ERROR"));
+    expect(parseStreamEvent(event, SIMULATION_ID)).toMatchObject({
+      event_type: "SIMULATION_CANCELLED",
+      reason: "SERVER_ERROR",
+    });
+  });
+
   it("drops a cancellation with an unknown reason", () => {
     const event = wire(cancelledEventExample, (c) => (c.reason = "CRASHED"));
     expect(parseStreamEvent(event, SIMULATION_ID)).toBeNull();

@@ -7,6 +7,7 @@ import { getFrontendConfig } from "@/lib/config";
 import {
   cancelReasonLabel,
   describeSimulationError,
+  SERVER_ERROR_COPY,
   summarizeFinishedRun,
 } from "@/lib/simulation-copy";
 import type { SimulationCompletedEvent } from "@/types/telemetry";
@@ -40,6 +41,17 @@ export function RunSummary({ onBackToSetup, onStop }: RunSummaryProps) {
         tone="neutral"
         title="Simulation stopped"
         detail="You stopped the simulated run; the map keeps its last simulated position."
+        onBackToSetup={onBackToSetup}
+      />
+    );
+  }
+
+  if (simulationState === "CANCELLED" && cancelReason === "SERVER_ERROR") {
+    return (
+      <SummaryCard
+        tone="error"
+        title={SERVER_ERROR_COPY}
+        detail="The simulation stopped on the server; the map shows the last received simulated position."
         onBackToSetup={onBackToSetup}
       />
     );

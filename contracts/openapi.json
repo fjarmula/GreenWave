@@ -41,7 +41,8 @@
       "CancelReason": {
         "enum": [
           "STOPPED",
-          "SUPERSEDED"
+          "SUPERSEDED",
+          "SERVER_ERROR"
         ],
         "title": "CancelReason",
         "type": "string"

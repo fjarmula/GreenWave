@@ -390,7 +390,7 @@ actually driven in that simulated second, including the arrival tick.
 
 The stream carries a discriminated union on `event_type`:
 `SIMULATION_TICK`, `ITS_DISPATCH`, `SIMULATION_COMPLETED`,
-`SIMULATION_CANCELLED` (`reason: STOPPED | SUPERSEDED`). Every event has
+`SIMULATION_CANCELLED` (`reason: STOPPED | SUPERSEDED | SERVER_ERROR`). Every event has
 `schema_version`, `is_simulated`, `simulation_id`, `tick` and `timestamp`
 (wall-clock UTC at emission; simulated time is
 `kpi_metrics.total_time_elapsed_sec`).
@@ -540,7 +540,8 @@ technology), instead of disappearing.
 ```
 
 **`SIMULATION_CANCELLED`** (terminal; `reason` is `STOPPED` after
-`POST /stop`, `SUPERSEDED` when another `POST /start` replaced the run):
+`POST /stop`, `SUPERSEDED` when another `POST /start` replaced the run,
+`SERVER_ERROR` when the simulation loop failed on the server):
 
 ```json
 {
@@ -644,3 +645,4 @@ All previously open questions have been resolved and approved:
 10. **Snapping:** the origin and destination snap to the nearest graph node (EPSG:2178) from which a route exists. A snap distance above **150 m** (engine configuration `max_snap_distance_meters`, not a contract field) is rejected with `ORIGIN_OFF_NETWORK` / `DESTINATION_OFF_NETWORK`.
 11. **Contract v1:** the stream event union, SSE framing, error codes, `playback_speed` and the remaining simulation semantics are recorded in `docs/adr/0003-simulation-contract-v1.md`. Its D9 (1 Hz wall-clock tick advancing `playback_speed` seconds) is superseded: every simulated second is streamed as its own tick and playback only shortens the wall-clock interval (section 4, Phase 1). The wire schema is unchanged.
 12. **ER Green Wave mode (additive to contract v1, `schema_version` stays `"1.0"`):** the start request and response carry `green_wave_mode: ENABLED | DISABLED` (closed enum, no boolean form; default `ENABLED`), and ticks carry `signal_phases` (default `[]`). Disabled runs use the standard-traffic crossing (section 3, model 3), stay `NORMAL`, never cascade or dispatch, and keep route choice and open-road motion identical to enabled runs. Signal phases are a simulated explanation drawn only at high zoom (section 4, Phase 2). The dashboard runs one mode at a time; a side-by-side comparison is out of scope, and the completed-run summary leads with the total travel time and names the mode. Design: `docs/superpowers/specs/2026-10-20-er-green-wave-mode-design.md`, amended by `docs/superpowers/specs/2026-10-21-er-green-wave-corrections-design.md` (rolling disabled crossing, supported signal movements, phase-detail fallback).
+13. **Server-side run failure (additive to contract v1, `schema_version` stays `"1.0"`):** if the simulation loop fails, the server logs it and ends the run with `SIMULATION_CANCELLED` (`reason: SERVER_ERROR`, the last completed tick) like any other terminal, so clients learn at once instead of after their silence timeout. The dashboard shows "Simulation server error. Retry the green corridor initialization.", which is also shown when a start fails with HTTP 5xx. Retry is manual from dispatch setup; the mock never emits it. Decision: `docs/adr/0007-server-error-cancel-reason.md`.

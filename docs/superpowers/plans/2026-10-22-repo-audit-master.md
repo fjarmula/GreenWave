@@ -53,7 +53,7 @@ Out of scope (known, unchanged): decorative 72 % speed bar; 320 px header trunca
 - [x] **[Completed] M1 — Backend telemetry identity (B1, B2).** [Sub-plan](2026-10-22-m1-telemetry-identity.md). Dependency: none. Suggested commit: `fix: stream intersection names and vehicle ids in ticks`.
 - [x] **[Completed] M2 — Live-run flow and Stop (D1; F2, F13).** [Sub-plan](2026-10-22-m2-live-run-flow.md). Dependency: none. Suggested commit: `feat: stop a live run from the live operations view`.
 - [x] **[Completed] M3 — Keep settings and previous result (F1, F3).** [Sub-plan](2026-10-22-m3-run-comparison-state.md). Dependency: M2 (back-to-setup path). Suggested commit: `fix: keep run settings and previous result across runs`.
-- [ ] **[Pending] M4 — Server-error terminal (D2; B5).** [Sub-plan](2026-10-22-m4-server-error-terminal.md). Dependency: M2 (summary card). **Contract change; tell the human before editing `GreenWave_ARCHITECTURE.md`.** Suggested commit: `feat: report simulation server errors to the dashboard`.
+- [x] **[Completed] M4 — Server-error terminal (D2; B5).** [Sub-plan](2026-10-22-m4-server-error-terminal.md). Dependency: M2 (summary card). **Contract change; tell the human before editing `GreenWave_ARCHITECTURE.md`.** Suggested commit: `feat: report simulation server errors to the dashboard`.
 - [ ] **[Pending] M5 — Session lifecycle hardening (B3, B4).** [Sub-plan](2026-10-22-m5-session-lifecycle.md). Dependency: M4 (same file, terminal semantics). Suggested commit: `fix: bound retained sessions and publish one terminal per run`.
 - [ ] **[Pending] M6 — Map stability (F4, F6, F15).** [Sub-plan](2026-10-22-m6-map-stability.md). Dependency: M2, M3 (dashboard layout settled). Suggested commit: `fix: keep the map instance and user zoom across interactions`.
 - [ ] **[Pending] M7 — Simulation ids outside secure contexts (F5).** [Sub-plan](2026-10-22-m7-simulation-id.md). Dependency: none. Suggested commit: `fix: generate simulation ids outside secure contexts`.
@@ -141,6 +141,40 @@ Order rationale: M1–M3 are what a jury sees first in backend mode; M4–M5 clo
   2. The card does not call `summarizeFinishedRun`, which needs the route and KPI objects that the flat `PreviousRun` record drops. It reuses the same formatters and labels instead.
   3. `emil-design-eng` review: the two values now share a baseline when the "Saved vs normal-traffic estimate" label wraps (`flex-col justify-between`). The DISABLED mode pill is neutral, not amber, because amber means warning/cancelled elsewhere. `mobile-native`: the card has no controls, so no touch fixes apply.
   4. Browser setup: the first backend attempt used a pinned map point and then "Floriańska 1". Both routes had no signals, so ENABLED and DISABLED times were identical. A route probe through `/dispatch/rank` + `/simulation/start` picked "Rynek Główny 1" instead; the probe runs were stopped.
+
+## M4 verification — 2026-10-22
+
+- Branch `feat/m4-server-error-terminal` (from `main` at `fcf563b`), uncommitted for human review.
+- Root cause as planned: `SessionManager._run` caught the loop exception and only logged it. No terminal was published, so subscribers waited out their 15 s silence timeout, and the dead run stayed `_active`.
+- Fix:
+  - **Contract:** `CancelReason.SERVER_ERROR` (additive, `schema_version` `"1.0"`).
+  - **Backend:** the `except` branch publishes `SIMULATION_CANCELLED`/`SERVER_ERROR` (last completed tick) through `_publish`. The event is built by `_cancelled_event`, which `_cancel` now shares. The stream closes, a reconnect replays only the terminal, `stop` is a no-op, and `_active` is cleared.
+  - **Frontend:** the validator accepts the reason, labelled "Server error". `SERVER_ERROR_COPY` is "Simulation server error. Retry the green corridor initialization.", and `describeSimulationError` returns it for HTTP ≥ 500 without a contract code. `RunSummary` shows an error-tone (`role="alert"`) card with Back to dispatch setup.
+  - **Docs:** ADR 0007 (Proposed, per `docs/adr/README.md`), an ADR 0003 additive-change note, and `GreenWave_ARCHITECTURE.md` §4 reasons plus §6 item 13. The architecture wording was approved by the human before the edit.
+- TDD:
+  - Session: 3 cases (terminal after ticks 1–2 with tick 2; replay plus stop no-op without a second terminal; a new start supersedes nothing) failed by timeout, then passed.
+  - SSE route: `test_stream_of_a_crashed_run_ends_with_a_server_error_terminal` passes with the fix. With `session.py` stashed it fails with "the crashed run published no terminal". It waits at most 2 s for the terminal, so a regression fails instead of hanging the suite.
+  - Frontend: 6 cases (validator, label, 5xx copy ×3, RunSummary) failed, then passed. The existing 4xx and network copy tests are unchanged and pass.
+- Contract regeneration: `export_openapi.py` + `npm run generate:types`. The word diff only adds `"SERVER_ERROR"` to `CancelReason` in `contracts/openapi.json` and `api.generated.ts`. `pytest -k openapi` passed (6). Before Task 3, typecheck failed exactly at `CANCEL_REASONS` and `CANCEL_REASON_LABELS`.
+- Snapshots: none changed.
+- Gates:
+  - Backend: `ruff check`, `ruff format --check`, `mypy`, `pytest` — **921 passed**.
+  - Frontend: `lint`, `typecheck`, `format:check`, `test` (**44 files, 410 tests**), `build` — all exit 0.
+  - `git diff --check` clean.
+- Browser (`playwright-cli`, scripts, JSON and screenshots in `.tmp/playwright/repo-audit/m4/`): real backend (:8000) with a backend-transport dev server (:3101), at 1440 × 1000, 390 × 844 and 360 × 740.
+  - The start is real (ambulance → "Rynek Główny 1", DISABLED, 5×). The stream is stubbed with `page.route`: two ticks, then `SIMULATION_CANCELLED`/`SERVER_ERROR`.
+  - The error card (`role="alert"`) appeared 470 / 201 / 292 ms after Start, not after 15 s. Stop is gone, and there is no horizontal overflow.
+  - Back to dispatch setup keeps the settings (DISABLED, 5×, 1.5x) and the incident, with no previous-run card, because the run did not finish.
+  - Start stubbed to HTTP 500 (plain text): the same copy appears as the setup alert.
+  - Console errors: only the stubbed 500.
+  - Mock production build (:3100) regression at 1440 × 1000 and 390 × 844 (M2 flow): Stop → stopped → back works, with 0 console errors.
+- Deviations / rulings:
+  1. ADR 0007 is `Proposed`, not `Accepted` as the sub-plan says: `docs/adr/README.md` requires Proposed until maintainer approval. Flip it on approval.
+  2. The SSE route test was written after the session fix. Its RED was shown by stashing the fix, and it was hardened to fail fast instead of hanging (no pytest-timeout dependency).
+  3. Follow-ups added to M8 Task 4:
+     - The header label and KPI badge read "Simulation cancelled" for SERVER_ERROR; they key on phase.
+     - At 360 × 740 every terminal summary card starts below the fold (y ≈ 697). This is pre-existing M2 placement, not introduced here.
+  4. Follow-up added to M5 Task 2: the `except` branch does not check `session.terminal`, so an exception after a terminal in the same step would publish a second one. This belongs with M5's one-terminal guard.
 
 ## Final closeout
 
