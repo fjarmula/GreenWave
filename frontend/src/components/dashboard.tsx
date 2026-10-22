@@ -9,6 +9,7 @@ import { dispatchAdapter } from "@/lib/dispatch-adapter";
 import { describeSimulationError } from "@/lib/simulation-copy";
 import { nextPreviousRun, type PreviousRun } from "@/lib/previous-run";
 import { buildStartRequest, DEFAULT_DISPATCH_SETTINGS } from "@/lib/start-request";
+import { createSimulationId } from "@/lib/simulation-id";
 import { pinnedIncident, useIncidentDispatch } from "@/lib/useIncidentDispatch";
 import { useStations } from "@/lib/useStations";
 import { scrollViewToTop } from "@/lib/view-scroll";
@@ -95,7 +96,7 @@ export function Dashboard() {
                 dispatch.incident,
                 dispatch.vehicleType,
                 runSettings,
-                crypto.randomUUID(),
+                createSimulationId(),
               );
               void startSimulation(request).then((started) => {
                 if (started) setMode("live");

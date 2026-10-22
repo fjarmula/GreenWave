@@ -3,6 +3,7 @@
 import { useCallback, useEffect } from "react";
 import { useSimulationDispatch, useSimulationState } from "@/components/simulation-provider";
 import { simulationAdapter } from "@/lib/simulation-adapter";
+import { createSimulationId } from "@/lib/simulation-id";
 import {
   connectSimulationStream,
   requestRunStop,
@@ -25,7 +26,7 @@ export function useSimulationStream() {
   /** Resolves true when the run started; failures are reported through the reducer. */
   const startSimulation = useCallback(
     (request: SimulationStartRequest) =>
-      requestSimulationStart(simulationAdapter, request, dispatch, () => crypto.randomUUID()),
+      requestSimulationStart(simulationAdapter, request, dispatch, createSimulationId),
     [dispatch],
   );
 
