@@ -2,12 +2,9 @@ import { useEffect } from "react";
 import * as maplibregl from "maplibre-gl";
 import type { Map } from "maplibre-gl";
 
+import { mapPadding } from "@/lib/workspace-layout";
 import { canFit } from "@/components/map/endpoint-fit";
 import type { SimulationStartResponse } from "@/types/telemetry";
-
-const ROUTE_FIT_DURATION_MILLISECONDS = 600;
-// The live HUD panels beside the map only exist from the `lg` breakpoint (1024 px).
-const SIDE_PANELS_MIN_WIDTH_PIXELS = 1024;
 
 /** Fits the whole route, leaving room for the live HUD panels beside the map. */
 export function applyRouteFit(
@@ -18,13 +15,11 @@ export function applyRouteFit(
   if (!canFit(map)) return;
   const bounds = new maplibregl.LngLatBounds(routeCoordinates[0], routeCoordinates[0]);
   routeCoordinates.forEach((coordinate) => bounds.extend(coordinate));
-  const sidePanels = map.getContainer().clientWidth >= SIDE_PANELS_MIN_WIDTH_PIXELS;
+  const { clientWidth, clientHeight } = map.getContainer();
   map.fitBounds(bounds, {
-    padding: sidePanels
-      ? { top: 160, right: 480, bottom: 120, left: 340 }
-      : { top: 180, right: 60, bottom: 80, left: 40 },
+    padding: mapPadding(clientWidth, clientHeight),
     maxZoom: 16,
-    duration: reduceMotion ? 0 : ROUTE_FIT_DURATION_MILLISECONDS,
+    duration: reduceMotion ? 0 : 200,
   });
 }
 
