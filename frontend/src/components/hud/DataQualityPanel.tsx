@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, CircleCheck, Info, ShieldAlert, TriangleAlert } from "lucide-react";
 
 import type { SimulationTransport } from "@/lib/config";
+import { observeOperation } from "@/lib/diagnostics/observe-adapters";
 import { fetchDatasetQuality } from "@/lib/transport/dataset-quality";
 import { toSimulationErrorInfo } from "@/lib/transport/errors";
 import type { DatasetQualityResponse, QualityCheck, QualityStatus } from "@/types/telemetry";
@@ -51,7 +52,9 @@ export function createDataQualityLoader({
       controller = current;
       onChange({ status: "loading" });
       try {
-        const data = await fetchQuality(apiBaseUrl, current.signal);
+        const data = await observeOperation("quality", "backend", () =>
+          fetchQuality(apiBaseUrl, current.signal),
+        );
         if (current.signal.aborted) return;
         done = true;
         onChange({ status: "loaded", data });

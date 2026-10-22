@@ -1,32 +1,58 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { DriverStatus } from "@/components/driver/DriverStatus";
+import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation";
+import { routeForMode, viewRunPolicy } from "@/lib/workspace-routes";
+import { Fragment, useCallback, useState, useSyncExternalStore, type ReactNode } from "react";
+import { simulationOperationSlot } from "@/lib/operation-slot";
 import { useSimulationStream } from "@/lib/useSimulationStream";
 import { useSimulationState } from "@/components/simulation-provider";
 
 import { getFrontendConfig } from "@/lib/config";
 import { dispatchAdapter } from "@/lib/dispatch-adapter";
 import { describeSimulationError } from "@/lib/simulation-copy";
-import { nextPreviousRun, type PreviousRun } from "@/lib/previous-run";
-import { buildStartRequest, DEFAULT_DISPATCH_SETTINGS } from "@/lib/start-request";
+import { useScenario } from "@/components/scenario-provider";
+import { captureRunLabels, settingsForMode } from "@/lib/scenario-state";
+import { buildStartRequest } from "@/lib/start-request";
 import { createSimulationId } from "@/lib/simulation-id";
-import { pinnedIncident, useIncidentDispatch } from "@/lib/useIncidentDispatch";
-import { useStations } from "@/lib/useStations";
-import { scrollViewToTop } from "@/lib/view-scroll";
-import { DashboardHeader, type DashboardMode } from "@/components/dashboard/DashboardHeader";
-import { RoutePreview } from "@/components/dashboard/RoutePreview";
-import { DataQualityPanel } from "@/components/hud/DataQualityPanel";
+import { pinnedIncident } from "@/lib/useIncidentDispatch";
+import { type DashboardMode } from "@/components/dashboard/DashboardHeader";
+import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
+import { MapContainer } from "@/components/map/MapContainer";
+import { KpiHeader } from "@/components/hud/KpiHeader";
+import { RunSummary } from "@/components/hud/RunSummary";
+import { IntersectionList } from "@/components/hud/IntersectionList";
+import { ItsConsole } from "@/components/hud/ItsConsole";
+import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import type { MapEndpoint } from "@/components/map/EndpointMarkers";
-import type { Position } from "@/types/telemetry";
+import type { GreenWaveMode, Position } from "@/types/telemetry";
 
-export function Dashboard() {
+export function Dashboard({
+  selectedMode = "ENABLED",
+  driver = false,
+}: { selectedMode?: GreenWaveMode; driver?: boolean } = {}) {
   const { startSimulation, stopSimulation, stopRun } = useSimulationStream();
   const simulation = useSimulationState();
+  const operationOwner = useSyncExternalStore(
+    simulationOperationSlot.subscribe,
+    simulationOperationSlot.getOwner,
+    () => null,
+  );
   const { simulationState, routeData, error } = simulation;
   const config = getFrontendConfig();
-  const dispatch = useIncidentDispatch(dispatchAdapter);
-  const { stations, error: stationsError } = useStations(dispatchAdapter);
+  const {
+    dispatch,
+    stations,
+    error: stationsError,
+    settings,
+    setSettings,
+    runLabels,
+    setRunLabels,
+    previousRun,
+    retainResult,
+  } = useScenario();
   const { setIncident } = dispatch;
   const onMapClick = useCallback(
     (position: Position) => setIncident(pinnedIncident(position)),
@@ -37,34 +63,30 @@ export function Dashboard() {
     simulationState === "ERROR" && !routeData && error
       ? describeSimulationError(error, config.apiBaseUrl)
       : null;
-  const [mode, setMode] = useState<DashboardMode>("setup");
+  const policy = viewRunPolicy(
+    selectedMode,
+    simulation.startRequest?.green_wave_mode ?? null,
+    simulationState,
+  );
+  const mode: DashboardMode = routeData && policy.showRun ? "live" : "setup";
   const [mapFocusRequest, setMapFocusRequest] = useState(0);
-  // Kept here, not in the form, so they survive every setup ↔ live switch.
-  const [settings, setSettings] = useState(DEFAULT_DISPATCH_SETTINGS);
-  const [previousRun, setPreviousRun] = useState<PreviousRun | null>(null);
-  useEffect(() => {
-    scrollViewToTop(window);
-  }, [mode]);
   const chosenStation = dispatch.ranking?.candidates[0]?.station ?? null;
   const backToSetup = () => {
-    // Captured before the stop resets the run; only a finished run replaces the previous one.
-    setPreviousRun((current) =>
-      nextPreviousRun(
-        current,
-        simulation,
-        chosenStation?.name ?? "Unknown station",
-        dispatch.incident?.label ?? "Unknown incident",
-      ),
-    );
+    retainResult(simulation);
     stopSimulation();
-    setMode("setup");
   };
-  const origin: MapEndpoint | null = chosenStation
-    ? { label: chosenStation.name, position: chosenStation.position }
-    : null;
-  const destination: MapEndpoint | null = dispatch.incident
-    ? { label: dispatch.incident.label, position: dispatch.incident.position }
-    : null;
+  const origin: MapEndpoint | null =
+    mode === "live" && runLabels
+      ? runLabels.origin
+      : chosenStation
+        ? { label: chosenStation.name, position: chosenStation.position }
+        : null;
+  const destination: MapEndpoint | null =
+    mode === "live" && runLabels
+      ? runLabels.destination
+      : dispatch.incident
+        ? { label: dispatch.incident.label, position: dispatch.incident.position }
+        : null;
   const mapProps = {
     stations,
     selectedVehicleType: dispatch.vehicleType,
@@ -74,53 +96,113 @@ export function Dashboard() {
   };
 
   return (
-    <main className="dashboard-theme-transition flex min-h-dvh min-w-80 flex-col overflow-x-hidden bg-background text-foreground">
-      <DashboardHeader mode={mode} />
-
-      <DashboardLayout
-        mode={mode}
-        form={
-          <DispatchForm
-            settings={settings}
-            onSettingsChange={setSettings}
-            previousRun={previousRun}
-            stationsError={stationsError}
-            pending={simulationState === "STARTING"}
-            errorMessage={startErrorMessage}
-            dispatch={dispatch}
-            capabilities={dispatchAdapter.capabilities}
-            geocode={dispatchAdapter.geocode}
-            onInitialize={(runSettings) => {
-              if (!chosenStation || !dispatch.incident) return;
-              const request = buildStartRequest(
-                chosenStation,
-                dispatch.incident,
-                dispatch.vehicleType,
-                runSettings,
-                createSimulationId(),
-              );
-              void startSimulation(request).then((started) => {
-                if (started) setMode("live");
-              });
-            }}
-            onFocusMap={() => setMapFocusRequest((request) => request + 1)}
-          >
-            <DataQualityPanel mode={config.transport} apiBaseUrl={config.apiBaseUrl} />
-          </DispatchForm>
-        }
-        preview={
-          <RoutePreview
-            mode={mode}
-            origin={origin}
-            destination={destination}
-            mapFocusRequest={mapFocusRequest}
-            onBackToSetup={backToSetup}
-            onStop={stopRun}
-            map={mapProps}
-          />
-        }
-      />
-    </main>
+    <WorkspaceShell
+      status={
+        driver && mode === "live" ? <DriverStatus state={simulation} onStop={stopRun} /> : undefined
+      }
+      header={
+        <div className="min-w-0 flex-1">
+          <WorkspaceNavigation current={driver ? "/driver" : routeForMode(selectedMode)} />
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-base font-semibold">
+              {driver
+                ? "Driver simulation"
+                : selectedMode === "ENABLED"
+                  ? "Green Wave"
+                  : "Standard traffic"}{" "}
+              <span className="text-muted-foreground">
+                / {mode === "live" ? "Simulation" : "Setup"}
+              </span>
+            </h1>
+            <ThemeToggle />
+          </div>
+        </div>
+      }
+      map={
+        <MapContainer
+          live={mode === "live"}
+          origin={origin}
+          destination={destination}
+          focusRequest={mapFocusRequest}
+          {...mapProps}
+        />
+      }
+      inspector={
+        <>
+          {operationOwner === "comparison" && (
+            <p role="status" className="p-4 text-sm">
+              A comparison owns the simulation.{" "}
+              <Link className="underline" href="/compare">
+                Return to recording or cancel it
+              </Link>
+              .
+            </p>
+          )}
+          {policy.requiresReplacement && (
+            <p role="status" className="p-4 text-sm bg-amber-500/10">
+              A{" "}
+              {simulation.startRequest?.green_wave_mode === "ENABLED"
+                ? "Green Wave"
+                : "standard traffic"}{" "}
+              simulation is {simulationState.toLowerCase()}.{" "}
+              <Link
+                className="underline"
+                href={routeForMode(simulation.startRequest!.green_wave_mode)}
+              >
+                Return to that run
+              </Link>
+              . Starting here requires explicit replacement.
+            </p>
+          )}
+          {mode === "setup" ? (
+            <DispatchForm
+              settings={settingsForMode(settings, selectedMode)}
+              modeLocked
+              replacement={policy.requiresReplacement}
+              onSettingsChange={setSettings}
+              previousRun={previousRun}
+              stationsError={stationsError}
+              pending={simulationState === "STARTING" || operationOwner === "comparison"}
+              errorMessage={startErrorMessage}
+              dispatch={dispatch}
+              capabilities={dispatchAdapter.capabilities}
+              geocode={dispatchAdapter.geocode}
+              onInitialize={(runSettings) => {
+                if (!chosenStation || !dispatch.incident) return;
+                const request = buildStartRequest(
+                  chosenStation,
+                  dispatch.incident,
+                  dispatch.vehicleType,
+                  settingsForMode(runSettings, selectedMode),
+                  createSimulationId(),
+                );
+                if (
+                  policy.requiresReplacement &&
+                  !window.confirm("Stop the active simulation and replace it with this scenario?")
+                )
+                  return;
+                retainResult(simulation);
+                const labels = captureRunLabels(
+                  { label: chosenStation.name, position: chosenStation.position },
+                  { label: dispatch.incident.label, position: dispatch.incident.position },
+                );
+                void startSimulation(request, policy.requiresReplacement).then((started) => {
+                  if (started) setRunLabels(labels);
+                });
+              }}
+              onFocusMap={() => setMapFocusRequest((request) => request + 1)}
+            />
+          ) : (
+            <div className="space-y-4 p-4">
+              <KpiHeader />
+              <RunSummary onBackToSetup={backToSetup} onStop={stopRun} />
+              <IntersectionList />
+              <ItsConsole />
+            </div>
+          )}
+        </>
+      }
+    />
   );
 }
 

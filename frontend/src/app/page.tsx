@@ -1,5 +1,4 @@
-import { Dashboard } from "@/components/dashboard";
-
-export default function Home() {
-  return <Dashboard />;
+import { HomeMenu } from "@/components/workspace/HomeMenu";
+export default function Page() {
+  return <HomeMenu />;
 }
