@@ -53,6 +53,9 @@
 
 ## Milestone closeout
 
-- [ ] Run the full frontend gate listed in the master; require exit 0 or explicitly record any baseline blocker without claiming completion.
-- [ ] Run `git diff --check`; inspect snapshots and focused diff for unrelated changes.
-- [ ] Record acceptance evidence, actual file/interface choices and deviations in the master. Propose its listed Conventional Commit; do not perform branch/push/PR operations.
+- [x] Run the full frontend gate listed in the master; require exit 0 or explicitly record any baseline blocker without claiming completion.
+- [x] Run `git diff --check`; inspect snapshots and focused diff for unrelated changes.
+- [x] Record acceptance evidence, actual file/interface choices and deviations in the master. Propose its listed Conventional Commit; do not perform branch/push/PR operations.
+
+
+Implementation closeout: see the master completion record for the actual interfaces, tests, browser artifacts and verification limits. The original task checklist is preserved as the detailed planning baseline; programme status is maintained only in the master.
