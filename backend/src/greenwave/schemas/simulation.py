@@ -83,6 +83,8 @@ class ErrorCode(StrEnum):
 class CancelReason(StrEnum):
     STOPPED = "STOPPED"
     SUPERSEDED = "SUPERSEDED"
+    # Additive in contract v1 (D2): the simulation loop failed on the server.
+    SERVER_ERROR = "SERVER_ERROR"
 
 
 class Position(BaseModel):

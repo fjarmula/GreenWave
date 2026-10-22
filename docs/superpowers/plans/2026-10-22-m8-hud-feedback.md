@@ -34,7 +34,7 @@ Each task is RED → GREEN with its own test, then snapshot word diffs. Run the 
 
 ### Task 4: Phase-aware header status (F10)
 
-- [ ] RED: `DashboardHeader` dot colour by phase: SETUP and RUNNING emerald, STARTING amber, FINISHED muted, CANCELLED amber, ERROR red. Put the mapping beside `PHASE_LABELS`. Also (found in M2): a CANCELLED run with reason STOPPED reads "Simulation stopped" / "SIMULATION STOPPED" in the header label and KPI badge, not "cancelled".
+- [ ] RED: `DashboardHeader` dot colour by phase: SETUP and RUNNING emerald, STARTING amber, FINISHED muted, CANCELLED amber, ERROR red. Put the mapping beside `PHASE_LABELS`. Also (found in M2): a CANCELLED run with reason STOPPED reads "Simulation stopped" / "SIMULATION STOPPED" in the header label and KPI badge, not "cancelled". Also (found in M4): reason SERVER_ERROR reads "Simulation server error" / "SERVER ERROR" with the red (ERROR) dot, not "Simulation cancelled". And on phones (360 × 740) every terminal summary card (finished, stopped, server error) starts below the fold (y ≈ 697), so only its title edge shows. Bring the outcome on screen, e.g. a terminal status in the KPI strip or scrolling the card into view once.
 - [ ] GREEN.
 
 ### Task 5: Vehicle-type icon and copy (F11)

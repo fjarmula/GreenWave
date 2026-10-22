@@ -53,7 +53,11 @@ const SIGNAL_MOVEMENT_KINDS: Record<SignalMovementKind, true> = {
   VEHICLE: true,
   PEDESTRIAN: true,
 };
-const CANCEL_REASONS: Record<CancelReason, true> = { STOPPED: true, SUPERSEDED: true };
+const CANCEL_REASONS: Record<CancelReason, true> = {
+  STOPPED: true,
+  SUPERSEDED: true,
+  SERVER_ERROR: true,
+};
 const ERROR_CODES: Record<ErrorCode, true> = {
   ORIGIN_OFF_NETWORK: true,
   DESTINATION_OFF_NETWORK: true,

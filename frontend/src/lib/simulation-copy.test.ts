@@ -45,6 +45,12 @@ describe("describeSimulationError", () => {
     );
   });
 
+  it.each([500, 502, 503])("asks to retry the initialization after an HTTP %i", (status) => {
+    expect(describeSimulationError({ kind: "http", status, message: "raw" }, API)).toBe(
+      "Simulation server error. Retry the green corridor initialization.",
+    );
+  });
+
   it("falls back to the HTTP status when there is no contract error code", () => {
     expect(describeSimulationError({ kind: "http", status: 422, message: "raw" }, API)).toBe(
       "The simulation backend rejected the request (HTTP 422)",
@@ -66,6 +72,7 @@ describe("labels", () => {
   it("labels cancel reasons", () => {
     expect(cancelReasonLabel("STOPPED")).toBe("Stopped");
     expect(cancelReasonLabel("SUPERSEDED")).toBe("Superseded by another dispatch");
+    expect(cancelReasonLabel("SERVER_ERROR")).toBe("Server error");
   });
 });
 

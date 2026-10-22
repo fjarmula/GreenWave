@@ -28,31 +28,31 @@
 
 ### Task 1: Backend terminal on failure
 
-- [ ] RED (`test_session.py`) with an engine whose `step` raises on tick 3:
+- [x] RED (`test_session.py`) with an engine whose `step` raises on tick 3:
   - a subscriber receives ticks 1–2 and then `SIMULATION_CANCELLED` with reason `SERVER_ERROR` and `tick == 2`, and the iterator ends;
   - a new `subscribe` gets only that terminal;
   - `stop` returns 200 without a second terminal;
   - a new `start` with another id is not reported as superseding (`_active` is `None`);
   - the exception is still logged with the simulation id.
-- [ ] GREEN: add the enum value and publish the terminal in the `except` branch. Rerun `uv run pytest tests/simulation/test_session.py -q`.
-- [ ] RED/GREEN at the HTTP level: the SSE route's frames end with `event: SIMULATION_CANCELLED` whose data has `"reason":"SERVER_ERROR"`.
+- [x] GREEN: add the enum value and publish the terminal in the `except` branch. Rerun `uv run pytest tests/simulation/test_session.py -q`.
+- [x] RED/GREEN at the HTTP level: the SSE route's frames end with `event: SIMULATION_CANCELLED` whose data has `"reason":"SERVER_ERROR"`.
 
 ### Task 2: Contract regeneration
 
-- [ ] `cd backend && uv run python scripts/export_openapi.py && cd ../frontend && npm run generate:types`; review that the diff only adds the enum value in both files. Run the contract drift test (`uv run pytest tests -k openapi`) and `npm run typecheck`. The typecheck should fail on `CANCEL_REASONS` and the reason label maps until Task 3, which confirms the types are wired.
+- [x] `cd backend && uv run python scripts/export_openapi.py && cd ../frontend && npm run generate:types`; review that the diff only adds the enum value in both files. Run the contract drift test (`uv run pytest tests -k openapi`) and `npm run typecheck`. The typecheck should fail on `CANCEL_REASONS` and the reason label maps until Task 3, which confirms the types are wired.
 
 ### Task 3: Frontend
 
-- [ ] RED: `validate` test accepts a `SERVER_ERROR` cancel frame; `simulation-copy.test.ts` covers the label and 5xx start copy; the RunSummary test shows "Simulation server error. Retry the green corridor initialization." with `role="alert"` and the Back to dispatch setup button; the 4xx and network error copy is unchanged.
-- [ ] GREEN; frontend gate (update and word-diff any snapshot that changes).
+- [x] RED: `validate` test accepts a `SERVER_ERROR` cancel frame; `simulation-copy.test.ts` covers the label and 5xx start copy; the RunSummary test shows "Simulation server error. Retry the green corridor initialization." with `role="alert"` and the Back to dispatch setup button; the 4xx and network error copy is unchanged.
+- [x] GREEN; frontend gate (update and word-diff any snapshot that changes).
 
 ### Task 4: Docs
 
-- [ ] Tell the human the exact §4 sentence(s) to be changed in `GreenWave_ARCHITECTURE.md`, then edit; write ADR 0007 (status Accepted, context D2, additive, mock never emits it).
+- [x] Tell the human the exact §4 sentence(s) to be changed in `GreenWave_ARCHITECTURE.md`, then edit; write ADR 0007 (status Accepted, context D2, additive, mock never emits it).
 
 ### Task 5: Browser acceptance
 
-- [ ] Backend-transport dev server with a `page.route` SSE stub: two ticks, then a `SIMULATION_CANCELLED`/`SERVER_ERROR` frame. A real crash cannot be triggered without code changes, and the backend half is covered by Task 1. Check that the server-error card appears at once (not after 15 s), Back to dispatch setup works, and settings are kept. Stub start → HTTP 500 and check the same copy in setup. Evidence under `.tmp/playwright/repo-audit/m4/`.
+- [x] Backend-transport dev server with a `page.route` SSE stub: two ticks, then a `SIMULATION_CANCELLED`/`SERVER_ERROR` frame. A real crash cannot be triggered without code changes, and the backend half is covered by Task 1. Check that the server-error card appears at once (not after 15 s), Back to dispatch setup works, and settings are kept. Stub start → HTTP 500 and check the same copy in setup. Evidence under `.tmp/playwright/repo-audit/m4/`.
 
 ## Acceptance
 

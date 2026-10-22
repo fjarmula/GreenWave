@@ -79,6 +79,22 @@ describe("RunSummary live controls", () => {
     expect(markup).toContain("Back to dispatch setup");
   });
 
+  it("reports a server-side run failure as an error with the way back to setup", () => {
+    state = {
+      ...initialSimulationState,
+      simulationState: "CANCELLED",
+      cancelReason: "SERVER_ERROR",
+    };
+    const markup = render();
+
+    expect(markup).toMatch(
+      /<section role="alert"[^>]*>.*<h2[^>]*>Simulation server error\. Retry the green corridor initialization\.<\/h2>/,
+    );
+    expect(markup).toContain("Back to dispatch setup");
+    expect(markup).not.toContain("Simulation cancelled");
+    expect(markup).not.toContain("Another dispatch started");
+  });
+
   it("renders nothing before a run exists", () => {
     expect(render()).toBe("");
   });

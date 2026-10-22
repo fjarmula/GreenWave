@@ -33,7 +33,7 @@
 
 ### Task 2: One terminal under a race
 
-- [ ] RED: with a planner that yields (`asyncio.sleep(0)`), call `asyncio.gather(manager.stop("A"), manager.start(request_B))` while A is live, then collect every event A's subscriber gets: exactly one `SIMULATION_CANCELLED` (`STOPPED` or `SUPERSEDED`, whichever won) and then the end of the stream. Repeat with the order swapped. Also: a stop that arrives just after natural completion publishes nothing.
+- [ ] RED: with a planner that yields (`asyncio.sleep(0)`), call `asyncio.gather(manager.stop("A"), manager.start(request_B))` while A is live, then collect every event A's subscriber gets: exactly one `SIMULATION_CANCELLED` (`STOPPED` or `SUPERSEDED`, whichever won) and then the end of the stream. Repeat with the order swapped. Also: a stop that arrives just after natural completion publishes nothing. Also (found in M4): the `_run` `except` branch publishes `SERVER_ERROR` without checking `session.terminal`, so an exception raised after a terminal was already published in the same step would add a second terminal. Cover it with the same one-terminal guard.
 - [ ] GREEN: idempotent `_cancel`.
 - [ ] Backend gate.
 

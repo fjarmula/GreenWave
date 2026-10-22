@@ -21,6 +21,10 @@ const ERROR_MESSAGES: Record<ErrorCode, string> = {
   NO_STATION_REACHABLE: "No station of this type can reach this location",
 };
 
+/** D2: a server-side failure (loop crash or 5xx start); the user retries from setup. */
+export const SERVER_ERROR_COPY =
+  "Simulation server error. Retry the green corridor initialization.";
+
 export function describeSimulationError(error: SimulationErrorInfo, apiBaseUrl: string): string {
   if (error.kind === "network") {
     return error.reason === "timeout"
@@ -28,6 +32,7 @@ export function describeSimulationError(error: SimulationErrorInfo, apiBaseUrl: 
       : `Simulation backend unreachable at ${apiBaseUrl}`;
   }
   if (error.code) return ERROR_MESSAGES[error.code];
+  if (error.status !== undefined && error.status >= 500) return SERVER_ERROR_COPY;
   return error.status
     ? `The simulation backend rejected the request (HTTP ${error.status})`
     : "The simulation backend sent an unexpected response";
@@ -47,6 +52,7 @@ export function connectionLabel(status: ConnectionStatus): string {
 const CANCEL_REASON_LABELS: Record<CancelReason, string> = {
   STOPPED: "Stopped",
   SUPERSEDED: "Superseded by another dispatch",
+  SERVER_ERROR: "Server error",
 };
 
 export function cancelReasonLabel(reason: CancelReason): string {

@@ -92,3 +92,8 @@ These fill details the list does not cover. Challenge them in review.
 `signal_count` (integer, at least 1), `approach_count` (integer, at least 1), `needs_review`
 (boolean), and `cascade_targets` (later intersection ids in route order; empty when cascade mode
 is disabled or there are no targets).
+
+## Additive change 2026-10-22
+
+`CancelReason` adds `SERVER_ERROR` (simulation loop failure) while retaining
+`schema_version: "1.0"`; see ADR 0007.

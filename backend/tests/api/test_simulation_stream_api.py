@@ -1,7 +1,9 @@
 """HTTP-level tests of the SSE stream route and the start route's 422 error mapping."""
 
 import json
+import time
 from collections.abc import Iterator
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,6 +11,7 @@ from fastapi.testclient import TestClient
 from greenwave.dataset import ProcessedDataset
 from greenwave.main import create_app
 from greenwave.schemas import ErrorResponse, SimulationStreamEvent
+from greenwave.simulation.engine import SimulationEngine
 
 ORIGIN = {"lat": 50.0, "lng": 19.9}
 DESTINATION = {"lat": 50.0, "lng": 19.904}
@@ -83,6 +86,38 @@ def test_stream_of_a_stopped_run_replays_only_the_cancelled_terminal(client: Tes
     terminal = json.loads(frames[1]["data"])
     assert terminal["event_type"] == "SIMULATION_CANCELLED"
     assert terminal["reason"] == "STOPPED"
+
+
+def test_stream_of_a_crashed_run_ends_with_a_server_error_terminal(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_step = SimulationEngine.step
+    calls = 0
+
+    def step_then_crash(self: SimulationEngine, *args: Any) -> Any:
+        nonlocal calls
+        calls += 1
+        if calls == 3:
+            raise RuntimeError("engine bug")
+        return real_step(self, *args)
+
+    monkeypatch.setattr(SimulationEngine, "step", step_then_crash)
+    assert client.post("/api/v1/simulation/start", json=_request()).status_code == 200
+    # Without a terminal the stream never closes; fail instead of hanging the suite.
+    session = client.app.state.session_manager._sessions["SIM-stream"]  # type: ignore[attr-defined]
+    deadline = time.monotonic() + 2
+    while session.terminal is None and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert session.terminal is not None, "the crashed run published no terminal"
+
+    _, frames = _frames(client, "SIM-stream")
+
+    assert frames[0] == {"retry": "2000"}
+    assert len(frames) == 2, "a finished run replays only its terminal"
+    assert frames[1]["event"] == "SIMULATION_CANCELLED"
+    terminal = json.loads(frames[1]["data"])
+    assert terminal["reason"] == "SERVER_ERROR"
+    assert frames[1]["id"] == str(terminal["tick"])
 
 
 def test_stream_of_an_unknown_run_is_a_json_404(client: TestClient) -> None:

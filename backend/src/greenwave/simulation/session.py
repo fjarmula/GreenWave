@@ -5,6 +5,8 @@ speed: playback only shortens the wall-clock gap between ticks (1 s at 1x, 0.1 s
 streamed run is identical at every speed.  Missed wall-clock deadlines are logged and the next
 iteration starts normally; it never emits a burst of catch-up ticks.  Subscriber queues are
 bounded and use drop-oldest for ordinary telemetry, while terminal events always displace a tick.
+If the loop itself fails, the run ends with a ``SERVER_ERROR`` cancellation like any other
+terminal, so clients learn at once instead of waiting out their silence timeout.
 """
 
 import asyncio
@@ -174,11 +176,10 @@ class SessionManager:
                         "simulation_tick_deadline_missed", extra={"overrun_ms": -remaining * 1000}
                     )
         except Exception:
-            # The run freezes without a terminal event; clients fall back to their stale/lost
-            # timeouts. Log so the frozen run can be diagnosed.
             logger.exception(
                 "simulation_loop_failed", extra={"simulation_id": session.simulation_id}
             )
+            self._publish(session, self._cancelled_event(session, CancelReason.SERVER_ERROR))
         finally:
             if self._active is session and session.terminal is not None:
                 self._active = None
@@ -188,7 +189,12 @@ class SessionManager:
             session.task.cancel()
             with suppress(asyncio.CancelledError):
                 await session.task
-        terminal = SimulationCancelledEvent(
+        self._publish(session, self._cancelled_event(session, reason))
+        if self._active is session:
+            self._active = None
+
+    def _cancelled_event(self, session: _Session, reason: CancelReason) -> SimulationCancelledEvent:
+        return SimulationCancelledEvent(
             schema_version="1.0",
             is_simulated=True,
             event_type="SIMULATION_CANCELLED",
@@ -197,10 +203,6 @@ class SessionManager:
             timestamp=self._clock(),
             reason=reason,
         )
-        session.terminal = terminal
-        self._publish(session, terminal)
-        if self._active is session:
-            self._active = None
 
     def _publish(self, session: _Session, event: SimulationEvent) -> None:
         if is_terminal(event):

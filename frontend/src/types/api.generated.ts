@@ -174,7 +174,7 @@ export interface components {
          * CancelReason
          * @enum {string}
          */
-        CancelReason: "STOPPED" | "SUPERSEDED";
+        CancelReason: "STOPPED" | "SUPERSEDED" | "SERVER_ERROR";
         /** DatasetQualityResponse */
         DatasetQualityResponse: {
             /** Checks */
