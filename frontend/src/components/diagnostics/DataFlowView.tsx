@@ -44,8 +44,9 @@ export function DataFlowView({ entries }: { entries: ReadonlyArray<DiagnosticEnt
           Observed in this browser session
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Browser durations only. Repeated ticks are coalesced; counts show sampled activity. No
-          addresses, coordinates, bodies or raw errors are retained.
+          Browser durations only. Repeated ticks are coalesced; counts show sampled activity. Bodies
+          and endpoint queries are retained temporarily for JSON inspection in this browser only.
+          Clear history removes them.
         </p>
         <dl className="mt-5 grid gap-3 sm:grid-cols-2">
           {operations.map((op) => {

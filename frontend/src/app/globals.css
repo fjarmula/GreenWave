@@ -749,3 +749,107 @@ button,
     gap: 1rem;
   }
 }
+
+.json-inspect-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--background);
+}
+.json-inspect-button:active {
+  transform: scale(0.97);
+}
+.json-inspect-button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .json-inspect-button:hover {
+    background: var(--muted);
+  }
+}
+.json-dialog {
+  margin: auto;
+  width: min(64rem, calc(100vw - 2rem));
+  max-width: none;
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--background);
+  color: var(--foreground);
+  overflow: auto;
+  overscroll-behavior: contain;
+  box-shadow: 0 20px 80px #0005;
+}
+.json-dialog::backdrop {
+  background: #0009;
+}
+.json-dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--background);
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.json-dialog-content {
+  padding: 1rem;
+}
+.json-endpoint,
+.json-activity-endpoint {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.json-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 1rem 0 0.5rem;
+}
+.json-body {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  max-height: 55dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--muted);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  white-space: pre;
+  tab-size: 2;
+}
+.json-body-note {
+  padding: 1rem 0;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+@media (max-width: 767px) {
+  .json-dialog {
+    width: calc(100vw - 1rem);
+    max-height: calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+  .json-dialog-content,
+  .json-dialog-header {
+    padding: 0.75rem;
+  }
+}
+
+.json-dialog-actions [aria-pressed="true"] {
+  background: var(--muted);
+  border-color: var(--foreground);
+}

@@ -90,3 +90,17 @@ it("diagnostic listener errors cannot interrupt stream delivery", async () => {
   subscriber.onTick(tick(2));
   expect(seen).toEqual([1, 2]);
 });
+
+it("labels mock request and response values as synthetic captures", async () => {
+  const store = createDiagnosticStore();
+  const observed = observeSimulation(
+    { start: async () => route(), stop: async () => {}, subscribe: () => () => {} },
+    "mock",
+    store,
+  );
+  await observed.start(request);
+  expect(store.getSnapshot().at(-1)).toMatchObject({
+    transport: "mock",
+    capture: { requestBody: JSON.stringify(request), responseBody: JSON.stringify(route()) },
+  });
+});

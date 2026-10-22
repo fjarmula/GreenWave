@@ -81,7 +81,14 @@ Reported travel time, first observed arrival tick and recovery-completion tick a
 
 Diagnostics stores at most 200 allowlisted observations, coalescing repeated ticks. Browser durations
 are not server latency; mock observations are synthetic. ITS dispatch is an internal simulated gateway
-event. Addresses, coordinates, response bodies, full URLs and raw errors are excluded.
+event. **View JSON** opens a frozen request/response or SSE snapshot with Copy. Backend captures
+retain the original body text, including error responses; mock values are explicitly synthetic.
+GET/Stop requests without a JSON body say so. Intersection cards expose the full validated received
+tick containing that intersection. Formatting preserves number and string tokens; Copy preserves the
+original body. Capture history stays only in memory: up to 200 observations, 2 MiB per body and 8 MiB
+of retained payload text. Consecutive ticks retain the latest payload and sampled count. Oversized
+bodies are explicitly omitted. **Clear observed history** or reload releases the captured history.
+No headers, credentials, extra requests or real traffic-controller commands are added.
 
 The driver view needs no geolocation. It shares this browser session's enabled run, including stale
 feedback and recoverable Stop errors. Phone browser chrome, safe-area and keyboard behavior still

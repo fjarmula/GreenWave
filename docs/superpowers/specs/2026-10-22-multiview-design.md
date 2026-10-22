@@ -81,7 +81,7 @@ Show stations/geocode → ranking → start → SSE → validation/state → map
 
 Separate the static architecture explanation from observations in this browser session. Observe adapter operations and subscription events without monkey-patching global fetch/EventSource or adding requests just to make nodes look active. Record operation, outcome, measurable browser duration, tick and connection state; no invented server timings. Label mock execution synthetic and unused operations Not observed.
 
-Use an in-memory ring of at most 200 entries. Never store raw addresses, coordinates, full URLs with queries, request/response bodies or uncontrolled error messages. Use an allowlist of operation/status fields. Sampling/coalescing repetitive ticks is allowed; retain terminal/failure visibility and label sampled counts. Diagnostics must not block stream delivery.
+Use an in-memory ring of at most 200 entries. The user subsequently requested full request/response JSON inspection; `2026-10-22-json-inspection-design.md` supersedes the original metadata-only retention choice. Capture bodies and relative endpoint/query in bounded session memory, with explicit size-limit omissions; never capture headers or credentials. Keep other operation/status fields allowlisted. Sampling/coalescing repetitive ticks is allowed; retain terminal/failure visibility and label sampled counts. Diagnostics must not block stream delivery.
 
 ## Driver and visual craft
 

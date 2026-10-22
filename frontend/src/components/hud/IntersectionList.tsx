@@ -1,5 +1,11 @@
 "use client";
 
+import { useState } from "react";
+import {
+  JsonInspectButton,
+  JsonViewer,
+  type JsonInspection,
+} from "@/components/diagnostics/JsonDetails";
 import { ChevronRight, Signal } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
 import { isCascadeClearing } from "@/lib/signal-visuals";
@@ -12,6 +18,7 @@ const KIND_LABELS: Record<RouteIntersection["kind"], string> = {
 };
 
 export function IntersectionList() {
+  const [selection, setSelection] = useState<JsonInspection | null>(null);
   const { liveTelemetry, routeData } = useSimulationState();
   const intersections = liveTelemetry?.intersections ?? [];
   const routeIntersections = new Map(
@@ -22,6 +29,22 @@ export function IntersectionList() {
     <IntersectionCard
       key={intersection.id}
       telemetry={intersection}
+      onInspect={
+        liveTelemetry
+          ? () =>
+              setSelection({
+                title: intersection.id,
+                description: `Full validated simulation tick ${liveTelemetry.tick} containing ${intersection.id}. This is received telemetry, not an outgoing controller command.`,
+                capture: {
+                  method: "GET",
+                  path: "/api/v1/simulation/" + liveTelemetry.simulation_id + "/stream",
+                  eventType: "SIMULATION_TICK",
+                  validation: "accepted",
+                  responseBody: JSON.stringify(liveTelemetry),
+                },
+              })
+          : undefined
+      }
       detail={routeIntersections.get(intersection.id)}
     />
   );
@@ -55,6 +78,7 @@ export function IntersectionList() {
           </details>
         )}
       </div>
+      <JsonViewer selection={selection} onClose={() => setSelection(null)} />
     </section>
   );
 }
@@ -81,9 +105,11 @@ function splitByPassage(
 
 function IntersectionCard({
   telemetry: intersection,
+  onInspect,
   detail: routeDetail,
 }: {
   telemetry: IntersectionTelemetry;
+  onInspect?: () => void;
   detail: RouteIntersection | undefined;
 }) {
   const { id, name, state, tti_seconds: ttiSeconds, is_active_corridor: active } = intersection;
@@ -140,6 +166,11 @@ function IntersectionCard({
           style={{ width: `${Math.min(100, Math.max(0, (ttiSeconds ?? 0) * 2.5))}%` }}
         />
       </div>
+      {onInspect && (
+        <div className="mt-3 border-t border-border/60 pt-2">
+          <JsonInspectButton title={id} onClick={onInspect} />
+        </div>
+      )}
     </article>
   );
 }

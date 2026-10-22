@@ -184,3 +184,7 @@ Final route-return regression: returning during recording originally left a read
 ### Local commit closeout — 2026-10-22
 
 The user subsequently authorized grouping and committing all workspace implementation changes. The work is organized into runtime/recording/diagnostics foundations, replay-aware maps and camera controls, integrated workspace routes/UI, and documentation/evidence. Fresh frontend verification passes all required checks, including 69 test files / 531 tests and production build (`.tmp/multiview/commit-gate.log`). Local commits remain on `feature/multiview-simulation-workspace`; no push or pull request was requested.
+
+### JSON inspection follow-up — 2026-10-22
+
+The user requested full request/response inspection after reviewing Recent activity and intersection cards. Implemented scoped transport-body capture and frozen, copyable JSON inspection in both locations. The user-authorized body retention supersedes the original diagnostics metadata-only restriction; no headers, credentials, backend lifecycle, public contracts or dependencies were added. See `../specs/2026-10-22-json-inspection-design.md` for retention limits, design and verification evidence. The full frontend gate passes at 71 files / 542 tests; browser checks compare actual backend bodies and clipboard text, plus frozen live ticks, phone bounds and a dark-theme HTTP error fixture. Proposed commit: `feat: inspect simulation request and response JSON`.

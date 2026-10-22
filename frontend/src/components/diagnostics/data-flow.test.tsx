@@ -24,3 +24,8 @@ it("separates architecture from unobserved endpoints and synthetic activity", ()
     expect(html).toContain(text);
   expect(html).not.toContain("server latency");
 });
+it("explains temporary payload retention for JSON inspection", () => {
+  const html = renderToStaticMarkup(<DataFlowView entries={[]} />);
+  expect(html).toContain("JSON inspection");
+  expect(html).not.toContain("No addresses, coordinates, bodies or raw errors are retained");
+});

@@ -48,7 +48,9 @@ export function selectSimulationAdapter(config: FrontendConfig): SimulationAdapt
 }
 
 /** Module-level singleton chosen by `NEXT_PUBLIC_SIMULATION_TRANSPORT` (default: mock, D22). */
-export const simulationAdapter: SimulationAdapter = observeSimulation(
-  selectSimulationAdapter(getFrontendConfig()),
-  getFrontendConfig().transport,
-);
+const config = getFrontendConfig();
+const selectedAdapter = selectSimulationAdapter(config);
+export const simulationAdapter: SimulationAdapter =
+  config.transport === "backend"
+    ? selectedAdapter
+    : observeSimulation(selectedAdapter, config.transport);

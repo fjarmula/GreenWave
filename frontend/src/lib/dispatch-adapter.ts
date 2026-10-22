@@ -33,7 +33,9 @@ export function selectDispatchAdapter(config: FrontendConfig): DispatchAdapter {
 }
 
 /** Module-level singleton chosen like `simulationAdapter` (`NEXT_PUBLIC_SIMULATION_TRANSPORT`). */
-export const dispatchAdapter: DispatchAdapter = observeDispatch(
-  selectDispatchAdapter(getFrontendConfig()),
-  getFrontendConfig().transport,
-);
+const config = getFrontendConfig();
+const selectedAdapter = selectDispatchAdapter(config);
+export const dispatchAdapter: DispatchAdapter =
+  config.transport === "backend"
+    ? selectedAdapter
+    : observeDispatch(selectedAdapter, config.transport);

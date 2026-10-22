@@ -467,3 +467,34 @@ describe("stop", () => {
     await expect(adapter().stop(SIMULATION_ID)).rejects.toMatchObject({ kind: "network" });
   });
 });
+
+it("retains raw named SSE data and validation rejection without delivering rejected events", async () => {
+  const { diagnosticStore } = await import("@/lib/diagnostics/store");
+  diagnosticStore.clear();
+  vi.stubGlobal("EventSource", FakeEventSource);
+  const seen = vi.fn();
+  const adapter = createBackendSimulationAdapter(BASE_URL, {
+    startTimeoutMilliseconds: 1000,
+    reconnectAttemptLimit: 2,
+  });
+  const off = adapter.subscribe(SIMULATION_ID, {
+    onTick: seen,
+    onItsDispatch: () => {},
+    onTerminal: () => {},
+    onConnectionChange: () => {},
+    onError: () => {},
+  });
+  const raw = JSON.stringify(tickEventExample, null, 1);
+  latestSource().emit(tickEventExample, raw);
+  expect(diagnosticStore.getSnapshot().at(-1)).toMatchObject({
+    capture: { responseBody: raw, eventType: "SIMULATION_TICK", validation: "accepted" },
+  });
+  latestSource().emit(tickEventExample, '{"invalid":true}');
+  expect(seen).toHaveBeenCalledTimes(1);
+  expect(diagnosticStore.getSnapshot().at(-1)).toMatchObject({
+    outcome: "failure",
+    capture: { responseBody: '{"invalid":true}', validation: "rejected" },
+  });
+  off();
+  vi.unstubAllGlobals();
+});
