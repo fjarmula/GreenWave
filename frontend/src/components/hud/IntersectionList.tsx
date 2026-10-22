@@ -123,8 +123,9 @@ function IntersectionCard({
 
   return (
     <article className="intersection-card">
-      <div className="flex items-start justify-between gap-3">
-        <div>
+      {/* A long state chip drops below the name instead of squeezing it on narrow panels. */}
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+        <div className="min-w-[min(9rem,100%)] flex-1">
           <strong className="hud-value block text-xs font-semibold">{id}</strong>
           <span className="mt-1 block text-xs text-muted-foreground">
             {name ?? routeDetail?.name ?? "Unnamed intersection"}

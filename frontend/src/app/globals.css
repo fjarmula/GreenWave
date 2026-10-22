@@ -314,9 +314,13 @@
   border-top-color: var(--border);
 }
 
-.dashboard-map .maplibregl-ctrl-group button:not(:disabled):hover,
 .dashboard-map .maplibregl-ctrl-group button:not(:disabled):active {
   background-color: var(--accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .dashboard-map .maplibregl-ctrl-group button:not(:disabled):hover {
+    background-color: var(--accent);
+  }
 }
 
 .dashboard-map .maplibregl-ctrl-attrib a {
@@ -701,8 +705,13 @@
     font-size: 16px !important;
   }
 }
+/* Every control has its own :active state, so the browser's grey tap flash only competes. */
 html {
+  -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+body {
   overscroll-behavior: none;
 }
 button,
@@ -714,6 +723,7 @@ button,
 [role="button"] {
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 @media (hover: hover) and (pointer: fine) {
   .workspace-button:hover {
@@ -773,6 +783,7 @@ button,
 
 /* These fields live in a 360px inspector even on a wide desktop viewport. */
 .kpi-panel {
+  container-type: inline-size;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: start;
@@ -801,10 +812,20 @@ button,
 .kpi-elapsed {
   text-align: right;
 }
+/* Numbers never break mid-value; a narrow card (or enlarged text) stacks the pair instead. */
 .kpi-value {
   display: block;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+@container (max-width: 20rem) {
+  .kpi-saved,
+  .kpi-elapsed {
+    grid-column: 1 / -1;
+  }
+  .kpi-elapsed {
+    text-align: left;
+  }
 }
 .comparison-setup-map {
   height: 100%;

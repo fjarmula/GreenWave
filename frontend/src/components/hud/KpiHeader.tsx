@@ -96,7 +96,10 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
         </span>
         <div className="min-w-0">
           <span className="sr-only">{VEHICLE_NAMES[vehicleType]} </span>
-          <strong className="hud-value block truncate text-sm font-semibold">
+          <strong
+            className="hud-value block truncate text-sm font-semibold"
+            title={liveTelemetry?.ambulance.id}
+          >
             {liveTelemetry?.ambulance.id ?? "Awaiting telemetry"}
           </strong>
           <span className="hud-value block text-xs text-muted-foreground" title={speed.label}>

@@ -82,7 +82,7 @@ Skills: emil-design-eng, find-animation-opportunities.
 - [x] Shared `hud-*` vocabulary in `@layer components` (panel, head, icon, segmented, input, range, switch, primary/secondary/danger, alert, chip, value) with `tone-*` modifiers.
 - [x] RunSummary (finished moment may get a subtle entrance), DataQualityPanel, StationRanking, PreviousRunCard.
 
-### 5. Sub-screens (done, awaiting human commit)
+### 5. Sub-screens (done)
 
 Skills: emil-design-eng.
 
@@ -94,11 +94,18 @@ Skills: emil-design-eng.
 - [x] Fix: transparent colour-mixes use sRGB (OKLCH mixing with `transparent` produced a powerless hue that rendered reddish).
 - [x] Eyebrow and label styles unified app-wide (sentence case, 12px).
 
-### 6. Polish pass
+### 6. Polish pass (done, awaiting human commit)
 
-Skills: mobile-native, break-ui, review-animations, verification-before-completion.
+Skills: mobile-native, break-ui, emil-design-eng (motion review; review-animations is not installed), verification-before-completion.
 
-- [ ] Phone layouts and safe areas; touch hover states.
-- [ ] Worst-case data (long names, many signals, missing fields).
-- [ ] Animation review: easing, durations, interruptibility, reduced motion.
-- [ ] Final light/dark/reduced-motion screenshots of every screen; all checks green.
+- [x] Phone layouts and safe areas; touch hover states.
+- [x] Worst-case data (long names, many signals, missing fields).
+- [x] Animation review: easing, durations, interruptibility, reduced motion.
+- [x] Final light/dark/reduced-motion screenshots of every screen; all checks green.
+
+Follow-ups (not done, need a decision or hardware):
+
+- Verify on a real phone: tap highlight, sticky hover, safe areas, keyboard with the address field, the 44px targets.
+- Unused v0 CSS (`dashboard-vehicle`, `dashboard-wave`, `dashboard-route-planned`, `dashboard-route-live`, `dashboard-road`, `dashboard-map-label` and their keyframes) can be deleted in a separate cleanup.
+- Time saved shows raw seconds in the KPI ("−754s") but minutes in summaries ("−12m 34s"); unify in `simulation-copy` if wanted.
+- TTI bars saturate above 40 s (existing 2.5%/s scale), so long approaches all look full.

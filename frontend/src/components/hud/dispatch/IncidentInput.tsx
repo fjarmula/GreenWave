@@ -75,6 +75,7 @@ export function IncidentInput({
           type="text"
           role="combobox"
           autoComplete="off"
+          enterKeyHint="search"
           aria-autocomplete="list"
           aria-expanded={expanded}
           aria-controls={LISTBOX_ID}
