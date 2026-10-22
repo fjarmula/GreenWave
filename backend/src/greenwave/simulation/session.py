@@ -6,7 +6,9 @@ streamed run is identical at every speed.  Missed wall-clock deadlines are logge
 iteration starts normally; it never emits a burst of catch-up ticks.  Subscriber queues are
 bounded and use drop-oldest for ordinary telemetry, while terminal events always displace a tick.
 If the loop itself fails, the run ends with a ``SERVER_ERROR`` cancellation like any other
-terminal, so clients learn at once instead of waiting out their silence timeout.
+terminal, so clients learn at once instead of waiting out their silence timeout.  Every run
+publishes exactly one terminal, and only the active run plus the most recent ended ones
+(``retained_session_limit``) stay streamable.
 """
 
 import asyncio
@@ -102,8 +104,11 @@ class SessionManager:
                 state=planned.engine.initial_state(),
                 playback_speed=request.playback_speed,
             )
+            # Re-inserted so a reused id counts as the newest session for eviction.
+            self._sessions.pop(session.simulation_id, None)
             self._sessions[session.simulation_id] = session
             self._active = session
+            self._evict_retained()
             session.task = asyncio.create_task(
                 self._run(session), name=f"simulation-{session.simulation_id}"
             )
@@ -156,6 +161,16 @@ class SessionManager:
                 await self._cancel(session, CancelReason.STOPPED)
             session.subscribers.clear()
 
+    def _evict_retained(self) -> None:
+        """Drop the oldest ended sessions beyond the limit; the active run is always kept."""
+        excess = len(self._sessions) - self._settings.retained_session_limit
+        for simulation_id, session in tuple(self._sessions.items()):
+            if excess <= 0:
+                break
+            if session is not self._active and session.terminal is not None:
+                del self._sessions[simulation_id]
+                excess -= 1
+
     async def _run(self, session: _Session) -> None:
         try:
             while not session.state.completed:
@@ -205,6 +220,10 @@ class SessionManager:
         )
 
     def _publish(self, session: _Session, event: SimulationEvent) -> None:
+        # One terminal per run: a racing stop/supersede, or a failure after the engine's own
+        # terminal, finds it already set and publishes nothing more.
+        if session.terminal is not None:
+            return
         if is_terminal(event):
             session.terminal = event
         else:
