@@ -1,3 +1,4 @@
+import { observeDispatch } from "@/lib/diagnostics/observe-adapters";
 import { getFrontendConfig, type FrontendConfig } from "@/lib/config";
 import { createMockDispatchAdapter } from "@/lib/mock-dispatch";
 import { createBackendDispatchAdapter } from "@/lib/transport/backend-dispatch-adapter";
@@ -32,4 +33,9 @@ export function selectDispatchAdapter(config: FrontendConfig): DispatchAdapter {
 }
 
 /** Module-level singleton chosen like `simulationAdapter` (`NEXT_PUBLIC_SIMULATION_TRANSPORT`). */
-export const dispatchAdapter: DispatchAdapter = selectDispatchAdapter(getFrontendConfig());
+const config = getFrontendConfig();
+const selectedAdapter = selectDispatchAdapter(config);
+export const dispatchAdapter: DispatchAdapter =
+  config.transport === "backend"
+    ? selectedAdapter
+    : observeDispatch(selectedAdapter, config.transport);

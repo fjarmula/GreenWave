@@ -171,3 +171,8 @@ describe("IntersectionList ordering", () => {
     expect(markup).not.toContain("Active corridor signals");
   });
 });
+
+it("offers a full received-tick JSON snapshot from each intersection", () => {
+  state.current = reviewState();
+  expect(renderToStaticMarkup(<IntersectionList />)).toContain("View JSON for INT-REVIEW");
+});

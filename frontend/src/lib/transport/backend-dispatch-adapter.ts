@@ -1,3 +1,5 @@
+import { beginHttpCapture } from "@/lib/diagnostics/wire-capture";
+import type { Operation } from "@/lib/diagnostics/store";
 /**
  * Backend transport for incident dispatch (ADR 0006): `GET /api/v1/stations`,
  * `GET /api/v1/geocode`, `POST /api/v1/dispatch/rank`. Failures become
@@ -34,6 +36,16 @@ export function createBackendDispatchAdapter(
     const abort = () => controller.abort(signal?.reason);
     signal?.addEventListener("abort", abort, { once: true });
     const timer = setTimeout(() => controller.abort(), options.timeoutMilliseconds);
+    const operation: Operation = path.includes("/stations")
+      ? "stations"
+      : path.includes("/geocode")
+        ? "geocode"
+        : "ranking";
+    const capture = beginHttpCapture(operation, {
+      method: init.method === "POST" ? "POST" : "GET",
+      path,
+      ...(typeof init.body === "string" ? { requestBody: init.body } : {}),
+    });
     try {
       let response: Response;
       let json: unknown;
@@ -43,7 +55,7 @@ export function createBackendDispatchAdapter(
           headers: { Accept: "application/json", ...init.headers },
           signal: controller.signal,
         });
-        json = await response.json().catch(() => undefined);
+        json = await capture.read(response);
       } catch (error) {
         if (signal?.aborted) throw error;
         throw new SimulationAdapterError(
@@ -67,8 +79,11 @@ export function createBackendDispatchAdapter(
         });
       }
       try {
-        return validate(json);
+        const result = validate(json);
+        capture.accepted();
+        return result;
       } catch (error) {
+        capture.rejected();
         throw new SimulationAdapterError({
           kind: "http",
           status: response.status,
@@ -76,6 +91,7 @@ export function createBackendDispatchAdapter(
         });
       }
     } finally {
+      capture.failed();
       clearTimeout(timer);
       signal?.removeEventListener("abort", abort);
     }

@@ -2,15 +2,20 @@ import { PLAYBACK_SPEEDS, type PlaybackSpeed } from "@/lib/playback-speed";
 
 type PlaybackSpeedSelectorProps = {
   value: PlaybackSpeed;
+  label?: string;
   onChange: (speed: PlaybackSpeed) => void;
 };
 
-export function PlaybackSpeedSelector({ value, onChange }: PlaybackSpeedSelectorProps) {
+export function PlaybackSpeedSelector({
+  value,
+  onChange,
+  label = "Playback speed",
+}: PlaybackSpeedSelectorProps) {
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
         <span id="playback-speed-label" className="dashboard-label">
-          Playback speed
+          {label}
         </span>
         <span className="font-mono text-[10px] text-muted-foreground">simulated s per real s</span>
       </div>

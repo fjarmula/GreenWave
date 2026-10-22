@@ -12,6 +12,8 @@ import type { RouteGeometry, VehicleType } from "@/types/telemetry";
 
 type VehicleMarkerProps = {
   map: Map | null;
+  ended?: boolean;
+  onDisplayedPosition?: (position: [number, number]) => void;
   coordinates: [number, number] | null;
   visible: boolean;
   vehicleType: VehicleType;
@@ -31,6 +33,8 @@ const VEHICLE_NAMES: Record<VehicleType, string> = {
 
 export function VehicleMarker({
   map,
+  ended = false,
+  onDisplayedPosition,
   coordinates,
   visible,
   vehicleType,
@@ -41,6 +45,10 @@ export function VehicleMarker({
   const markerRef = useRef<Marker | null>(null);
   const slideRef = useRef<MarkerSlide<[number, number]> | null>(null);
   const routeRef = useRef(routeGeometry);
+  const displayedRef = useRef(onDisplayedPosition);
+  useEffect(() => {
+    displayedRef.current = onDisplayedPosition;
+  }, [onDisplayedPosition]);
   const durationRef = useRef(animationMilliseconds);
   useEffect(() => {
     routeRef.current = routeGeometry;
@@ -60,7 +68,10 @@ export function VehicleMarker({
     const marker = new Marker({ element, anchor: "center" });
     markerRef.current = marker;
     const slide = createMarkerSlide<[number, number]>({
-      show: (point) => marker.setLngLat(point),
+      show: (point) => {
+        marker.setLngLat(point);
+        displayedRef.current?.(point);
+      },
       interpolate: (from, to, progress) =>
         interpolateAlongRoute(routeRef.current, from, to, progress),
       now: () => performance.now(),
@@ -99,11 +110,11 @@ export function VehicleMarker({
     const placing = !marker.getElement().isConnected;
     // One tick's slide, from the previous tick's position, over one tick's wall-clock interval;
     // a playback-speed change applies from the next tick without restarting this one.
-    slide.moveTo(target, placing ? 0 : durationRef.current, {
+    slide.moveTo(target, placing || stale || ended ? 0 : durationRef.current, {
       reduceMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     });
     if (placing) marker.addTo(map);
-  }, [map, element, longitude, latitude]);
+  }, [map, element, longitude, latitude, stale, ended]);
 
   if (!element) return null;
   return createPortal(

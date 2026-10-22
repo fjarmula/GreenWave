@@ -73,7 +73,7 @@ Keep one pair in memory with a planning cap of 10,000 tick frames per mode and 3
 
 Replay is driven by elapsed simulated seconds, supports play/pause/restart/scrub and freezes at its current cursor when hidden rather than jumping ahead. Hold an arrived vehicle at its destination while the other continues; distinguish arrival time from final recovery/completion time. Show total completion travel-time metrics using existing domain presentation, and label any separately calculated arrival metric precisely. Actual mode-to-mode difference comes from the two completed runs, never the preflight estimate or current_time_saved_sec treated as an actual pair delta.
 
-Desktop has two equal panes; small screens show one map with an enabled/disabled toggle retaining the same cursor. Focus is default on entry. Pane labels, replay provenance and attribution remain legible. Overview camera linking is optional; follow must center each pane on its own vehicle. No recursive camera event loops.
+Desktop has two equal panes; small screens show one map with an enabled/disabled toggle retaining the same cursor. Comparison opens in dispatch setup with the same map, destination and settings controls as the individual simulation views. After sequential preparation, both recordings start playing automatically at the selected replay speed; desktop shows two full-width panes with results initially collapsed. Focus remains available through the explicit control. Pane labels, replay provenance and attribution remain legible. Overview camera linking is optional; follow must center each pane on its own vehicle. No recursive camera event loops.
 
 ## Diagnostics
 
@@ -81,7 +81,7 @@ Show stations/geocode → ranking → start → SSE → validation/state → map
 
 Separate the static architecture explanation from observations in this browser session. Observe adapter operations and subscription events without monkey-patching global fetch/EventSource or adding requests just to make nodes look active. Record operation, outcome, measurable browser duration, tick and connection state; no invented server timings. Label mock execution synthetic and unused operations Not observed.
 
-Use an in-memory ring of at most 200 entries. Never store raw addresses, coordinates, full URLs with queries, request/response bodies or uncontrolled error messages. Use an allowlist of operation/status fields. Sampling/coalescing repetitive ticks is allowed; retain terminal/failure visibility and label sampled counts. Diagnostics must not block stream delivery.
+Use an in-memory ring of at most 200 entries. The user subsequently requested full request/response JSON inspection; `2026-10-22-json-inspection-design.md` supersedes the original metadata-only retention choice. Capture bodies and relative endpoint/query in bounded session memory, with explicit size-limit omissions; never capture headers or credentials. Keep other operation/status fields allowlisted. Sampling/coalescing repetitive ticks is allowed; retain terminal/failure visibility and label sampled counts. Diagnostics must not block stream delivery.
 
 ## Driver and visual craft
 
@@ -100,3 +100,13 @@ Consult the human before materially replacing the map-first/single-inspector str
 ## Acceptance and review ownership
 
 R1–R7 subplans own state, routing, shell, camera, comparison, diagnostics, and driver/closeout respectively. Each has behavior tests and browser acceptance. The master is the single implementation status record; historical audit plans are not automatically marked complete by this programme.
+
+
+## Implementation choices — 2026-10-22
+
+Execution was authorized after this design package. The six suggested routes were selected unchanged.
+Root runtime/scenario/comparison providers retain browser-session ownership; the shared viewport shell
+uses one bounded nonmodal inspector on phones. Comparison uses the common event-tick clock, with
+final reported travel time distinguished from observed arrival and recovery completion. Capture limits
+remain 10,000 frames per mode and 32 MiB per pair, conservatively counting serialized structure.
+The master plan records the software verification and physical-device checks still outstanding.

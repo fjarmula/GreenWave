@@ -133,3 +133,47 @@ describe("createBackendDispatchAdapter", () => {
     expect(error.name).toBe("AbortError");
   });
 });
+
+it("captures the full wire envelope and error JSON without changing validation", async () => {
+  const { diagnosticStore } = await import("@/lib/diagnostics/store");
+  diagnosticStore.clear();
+  const response = { schema_version: "1.0", stations: [STATION], extra: "wire field" };
+  const text = JSON.stringify(response, null, 1);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => new Response(text, { status: 200 })),
+  );
+  const adapter = createBackendDispatchAdapter(BASE, OPTIONS);
+  await expect(adapter.listStations()).resolves.toEqual([STATION]);
+  expect(diagnosticStore.getSnapshot().at(-1)).toMatchObject({
+    capture: { method: "GET", path: "/api/v1/stations", status: 200, responseBody: text },
+  });
+  respond(422, { detail: [{ msg: "invalid destination" }] });
+  const request = { incident: { lat: 50.06, lng: 19.94 }, vehicle_type: "FIRE_TRUCK" as const };
+  await expect(adapter.rank(request)).rejects.toBeInstanceOf(SimulationAdapterError);
+  expect(diagnosticStore.getSnapshot().at(-1)).toMatchObject({
+    outcome: "failure",
+    capture: {
+      requestBody: JSON.stringify(request),
+      responseBody: JSON.stringify({ detail: [{ msg: "invalid destination" }] }),
+      status: 422,
+    },
+  });
+});
+
+it("labels an HTTP 200 body rejected by validation as a failure with its original payload", async () => {
+  const { diagnosticStore } = await import("@/lib/diagnostics/store");
+  diagnosticStore.clear();
+  respond(200, { schema_version: "1.0", stations: "invalid" });
+  await expect(createBackendDispatchAdapter(BASE, OPTIONS).listStations()).rejects.toBeInstanceOf(
+    SimulationAdapterError,
+  );
+  expect(diagnosticStore.getSnapshot().at(-1)).toMatchObject({
+    outcome: "failure",
+    capture: {
+      status: 200,
+      validation: "rejected",
+      responseBody: JSON.stringify({ schema_version: "1.0", stations: "invalid" }),
+    },
+  });
+});

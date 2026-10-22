@@ -59,6 +59,10 @@ documentation are available at <http://localhost:8000/docs>. Compose selects the
 dashboard's backend transport automatically; HTTP and SSE updates use the local API.
 All routing, traffic-signal states, and priority dispatches remain simulated.
 
+The home menu links to enabled and standard simulations, sequential recorded comparison,
+diagnostics, and the phone driver presentation. Navigation preserves the scenario and current run;
+use explicit Stop to end it. See [frontend workspace guidance](frontend/README.md#simulation-workspace).
+
 The raw and processed GIS directories remain host-managed under `backend/data/` and
 are excluded from Docker images. If the processed artifacts are missing, stale, or
 inconsistent, backend startup stops with the existing ETL recovery guidance; Compose

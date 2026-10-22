@@ -65,10 +65,13 @@ export function useMaplibreMap(theme: "light" | "dark") {
       });
     };
     instance.on("style.load", onStyleLoad);
+    const resize = new ResizeObserver(() => instance.resize());
+    resize.observe(mapElement.current);
     mapRef.current = instance;
     appliedTheme.current = initialTheme.current;
 
     return () => {
+      resize.disconnect();
       instance.off("style.load", onStyleLoad);
       instance.remove();
       mapRef.current = null;

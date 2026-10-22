@@ -21,6 +21,9 @@ import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
 type DispatchFormProps = {
   /** Owned by the dashboard so the chosen settings outlive each run. */
   settings: DispatchSettings;
+  intent?: "simulation" | "comparison";
+  modeLocked?: boolean;
+  replacement?: boolean;
   onSettingsChange: (settings: DispatchSettings) => void;
   /** The last finished run of this page session, shown for comparison. */
   previousRun?: PreviousRun | null;
@@ -42,6 +45,9 @@ type DispatchFormProps = {
 
 export function DispatchForm({
   settings,
+  intent = "simulation",
+  modeLocked = false,
+  replacement = false,
   onSettingsChange,
   previousRun = null,
   stationsError = null,
@@ -125,17 +131,37 @@ export function DispatchForm({
         value={trafficDensity}
         onChange={(value) => update({ trafficDensity: value })}
       />
-      <GreenWaveToggle mode={greenWaveMode} onChange={(mode) => update({ greenWaveMode: mode })} />
+      {intent === "comparison" ? (
+        <p className="mt-4 text-sm font-medium">Green Wave and standard traffic · same scenario</p>
+      ) : modeLocked ? (
+        <p className="mt-4 text-sm font-medium">
+          {greenWaveMode === "ENABLED"
+            ? "Green Wave enabled"
+            : "Standard traffic · Green Wave disabled"}
+        </p>
+      ) : (
+        <GreenWaveToggle
+          mode={greenWaveMode}
+          onChange={(mode) => update({ greenWaveMode: mode })}
+        />
+      )}
       <CascadeToggle
         enabled={cascadeEnabled}
         onToggle={() => update({ cascadeEnabled: !cascadeEnabled })}
-        disabled={greenWaveMode === "DISABLED"}
+        disabled={intent !== "comparison" && greenWaveMode === "DISABLED"}
       />
       <PlaybackSpeedSelector
+        label={intent === "comparison" ? "Replay speed" : undefined}
         value={playbackSpeed}
         onChange={(speed) => update({ playbackSpeed: speed })}
       />
 
+      {intent === "comparison" && (
+        <p className="mt-4 text-sm text-muted-foreground">
+          Both modes are recorded sequentially at 10×, then played together at the selected replay
+          speed. Every displayed signal state is simulated.
+        </p>
+      )}
       {previousRun && <PreviousRunCard run={previousRun} />}
 
       <button
@@ -149,9 +175,15 @@ export function DispatchForm({
         <Zap className="size-4" aria-hidden />
         {pending
           ? "Computing route…"
-          : greenWaveMode === "ENABLED"
-            ? "Initialize green corridor"
-            : "Start standard-traffic run"}
+          : intent === "comparison"
+            ? replacement
+              ? "Replace run & compare"
+              : "Start comparison"
+            : replacement
+              ? "Replace active simulation"
+              : greenWaveMode === "ENABLED"
+                ? "Initialize green corridor"
+                : "Start standard-traffic run"}
         <ArrowUpRight className="ml-auto size-4" aria-hidden />
       </button>
 

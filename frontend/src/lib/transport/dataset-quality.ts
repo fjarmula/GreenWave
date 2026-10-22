@@ -1,3 +1,4 @@
+import { beginHttpCapture } from "@/lib/diagnostics/wire-capture";
 /**
  * Backend transport for the data quality summary (`GET /api/v1/dataset/quality`).
  * Failures become `SimulationAdapterError`: `network` when the backend cannot be
@@ -12,6 +13,7 @@ export async function fetchDatasetQuality(
   apiBaseUrl: string,
   signal?: AbortSignal,
 ): Promise<DatasetQualityResponse> {
+  const capture = beginHttpCapture("quality", { method: "GET", path: "/api/v1/dataset/quality" });
   let response: Response;
   try {
     response = await fetch(`${apiBaseUrl}/api/v1/dataset/quality`, {
@@ -20,19 +22,24 @@ export async function fetchDatasetQuality(
       signal,
     });
   } catch {
+    capture.failed();
     throw new SimulationAdapterError({ kind: "network", message: unreachableMessage(apiBaseUrl) });
   }
+  const body = await capture.read(response);
   if (!response.ok) {
+    capture.failed();
     throw new SimulationAdapterError({
       kind: "http",
       status: response.status,
       message: `Data quality summary unavailable (HTTP ${response.status})`,
     });
   }
-  const body: unknown = await response.json().catch(() => undefined);
   try {
-    return validateDatasetQuality(body);
+    const result = validateDatasetQuality(body);
+    capture.accepted();
+    return result;
   } catch (error) {
+    capture.rejected();
     throw new SimulationAdapterError({
       kind: "http",
       status: response.status,

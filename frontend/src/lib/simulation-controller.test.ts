@@ -436,3 +436,36 @@ describe("connectSimulationStream", () => {
     expect(store.actions).toHaveLength(before);
   });
 });
+
+it("stream cleanup is safe to call twice and unsubscribes only once", () => {
+  const adapter = createFakeAdapter();
+  const unsubscribe = vi.fn();
+  adapter.subscribe = () => unsubscribe;
+  const cleanup = connectSimulationStream(adapter, "run-1", () => undefined, 3000, 15000);
+  cleanup();
+  cleanup();
+  expect(unsubscribe).toHaveBeenCalledTimes(1);
+});
+
+it("failed stop accepts subsequent ticks and a successful retry", async () => {
+  const adapter = createFakeAdapter();
+  const store = createStore();
+  await startRunning(adapter, store, "run-1");
+  adapter.stop = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValue(undefined);
+  await requestRunStop(adapter, "run-1", store.dispatch);
+  store.dispatch({ type: "TICK", event: tick("run-1", 2) });
+  expect(store.state.liveTelemetry?.tick).toBe(2);
+  await requestRunStop(adapter, "run-1", store.dispatch);
+  expect(store.state.cancelReason).toBe("STOPPED");
+});
+it("cleans up a subscription that terminates synchronously during subscribe", () => {
+  const adapter = createFakeAdapter();
+  const off = vi.fn();
+  adapter.subscribe = (id, subscriber) => {
+    subscriber.onError({ kind: "network", message: "offline" });
+    return off;
+  };
+  const cleanup = connectSimulationStream(adapter, "run-1", () => {}, 3000, 15000);
+  cleanup();
+  expect(off).toHaveBeenCalledTimes(1);
+});

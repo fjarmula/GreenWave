@@ -2,6 +2,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { Dashboard } from "@/components/dashboard";
+import { SimulationRuntime } from "@/components/simulation-runtime";
+import { ScenarioProvider } from "@/components/scenario-provider";
 import { SimulationProvider } from "@/components/simulation-provider";
 import type { SimulationTransport } from "@/lib/config";
 
@@ -27,7 +29,11 @@ describe.each(["mock", "backend"] as const)("Dashboard setup markup (%s transpor
     transport.current = name;
     const markup = renderToStaticMarkup(
       <SimulationProvider>
-        <Dashboard />
+        <SimulationRuntime>
+          <ScenarioProvider>
+            <Dashboard />
+          </ScenarioProvider>
+        </SimulationRuntime>
       </SimulationProvider>,
     );
     await expect(`${markup}\n`).toMatchFileSnapshot(`./__snapshots__/Dashboard.setup.${name}.html`);

@@ -372,3 +372,14 @@ describe("mock preflight estimates", () => {
     expect(markup).not.toContain("Mock pre-flight");
   });
 });
+
+it("uses the shared dispatch controls to configure both comparison modes", () => {
+  const props = { ...formProps(CHOSEN), intent: "comparison" as const };
+  const tree = DispatchForm(props);
+  const html = renderToStaticMarkup(<DispatchForm {...props} />);
+  expect(html).toContain("Start comparison");
+  expect(html).toContain("Green Wave and standard traffic");
+  expect(html).not.toContain('aria-label="ER Green Wave mode"');
+  expect(propsOf(tree, CascadeToggle).disabled).toBe(false);
+  expect(propsOf(tree, PlaybackSpeedSelector).label).toBe("Replay speed");
+});

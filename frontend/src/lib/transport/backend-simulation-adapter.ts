@@ -1,3 +1,5 @@
+import { beginHttpCapture } from "@/lib/diagnostics/wire-capture";
+import { diagnosticStore } from "@/lib/diagnostics/store";
 /**
  * Backend transport: `fetch` for start/stop, `EventSource` for the SSE stream.
  *
@@ -68,13 +70,19 @@ export function createBackendSimulationAdapter(
         message: `Simulation backend at ${baseUrl} did not answer within ${Math.round(options.startTimeoutMilliseconds / 1000)} s`,
       });
     };
+    const requestBody = body === undefined ? undefined : JSON.stringify(body);
+    const capture = beginHttpCapture(url.endsWith("/start") ? "start" : "stop", {
+      method: "POST",
+      path: new URL(url).pathname,
+      ...(requestBody === undefined ? {} : { requestBody }),
+    });
     try {
       let response: Response;
       try {
         response = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: body === undefined ? undefined : JSON.stringify(body),
+          body: requestBody,
           signal: controller.signal,
         });
       } catch {
@@ -83,9 +91,12 @@ export function createBackendSimulationAdapter(
           : new SimulationAdapterError({ kind: "network", message: unreachableMessage(baseUrl) });
       }
       // A body that is not JSON is judged by the caller; an aborted body read is a timeout.
-      const json: unknown = await response.json().catch(() => undefined);
+      const json = await capture.read(response);
       if (controller.signal.aborted) throw timeoutError();
-      return { response, json };
+      return { response, json, capture };
+    } catch (error) {
+      capture.failed();
+      throw error;
     } finally {
       clearTimeout(timer);
     }
@@ -107,17 +118,27 @@ export function createBackendSimulationAdapter(
       // effort: a stop that lands before the run is registered gets 404, and that run keeps
       // going until the next start supersedes it (one active run at a time).
       const stopAbandonedStart = () => {
-        postJson(simulationUrl(request.simulation_id, "stop")).catch(() => undefined);
+        postJson(simulationUrl(request.simulation_id, "stop"))
+          .then(({ response, capture }) =>
+            response.ok || response.status === 404 ? capture.accepted(false) : capture.failed(),
+          )
+          .catch(() => undefined);
       };
-      const { response, json } = await postJson(
+      const { response, json, capture } = await postJson(
         `${baseUrl}/api/v1/simulation/start`,
         request,
         stopAbandonedStart,
       );
-      if (!response.ok) throw httpError(response.status, json);
+      if (!response.ok) {
+        capture.failed();
+        throw httpError(response.status, json);
+      }
       try {
-        return parseStartResponse(json);
+        const result = parseStartResponse(json);
+        capture.accepted();
+        return result;
       } catch (error) {
+        capture.rejected();
         throw new SimulationAdapterError({
           kind: "http",
           status: response.status,
@@ -143,9 +164,13 @@ export function createBackendSimulationAdapter(
     // The stream stays open: the server answers a stop with a SIMULATION_CANCELLED/STOPPED
     // terminal, which closes it like any other terminal.
     async stop(simulationId) {
-      const { response, json } = await postJson(simulationUrl(simulationId, "stop"));
+      const { response, json, capture } = await postJson(simulationUrl(simulationId, "stop"));
       // 404: the run is already gone, which is what the user asked for.
-      if (!response.ok && response.status !== 404) throw httpError(response.status, json);
+      if (!response.ok && response.status !== 404) {
+        capture.failed();
+        throw httpError(response.status, json);
+      }
+      capture.accepted(false);
     },
   };
 }
@@ -169,9 +194,13 @@ function openStream(
     if (closed) return;
     closed = true;
     source.close();
+    diagnosticStore.record({ operation: "sse", transport: "backend", outcome: "closed" });
     onClosed();
   };
-  const report = (status: ConnectionStatus) => subscriber.onConnectionChange(status);
+  const report = (status: ConnectionStatus) => {
+    diagnosticStore.record({ operation: "sse", transport: "backend", outcome: status });
+    subscriber.onConnectionChange(status);
+  };
   const giveUp = (error: SimulationErrorInfo) => {
     close();
     report("lost");
@@ -206,6 +235,27 @@ function openStream(
   const handle = (eventType: SimulationStreamEvent["event_type"], message: MessageEvent) => {
     if (closed) return;
     const event = decodeStreamFrame(eventType, message, simulationId);
+    diagnosticStore.record({
+      operation: eventType === "ITS_DISPATCH" ? "its" : "sse",
+      transport: "backend",
+      outcome: !event
+        ? "failure"
+        : eventType === "SIMULATION_TICK"
+          ? "tick"
+          : eventType === "SIMULATION_COMPLETED"
+            ? "completed"
+            : eventType === "SIMULATION_CANCELLED"
+              ? "cancelled"
+              : "success",
+      ...(event ? { tick: event.tick } : {}),
+      capture: {
+        method: "GET",
+        path: new URL(url).pathname,
+        eventType,
+        validation: event ? "accepted" : "rejected",
+        responseBody: String(message.data),
+      },
+    });
     if (!event) {
       // The server closes the stream after a terminal frame and re-sends the same retained
       // terminal on every reconnect; dropping it silently would reconnect forever.
