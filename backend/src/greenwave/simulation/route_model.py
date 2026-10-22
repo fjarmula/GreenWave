@@ -38,6 +38,7 @@ class RouteIntersection:
     route_signal_keys: frozenset[str] = frozenset()
     # Every route stop line of the intersection, ascending; empty means only first and last.
     stop_lines_m: tuple[float, ...] = ()
+    name: str | None = None  # ETL name, as in the start response; ``None`` when it has none
 
     @property
     def route_stop_lines_m(self) -> tuple[float, ...]:
@@ -86,7 +87,8 @@ def build_route_model(
             id=intersection_id,
             first_stop_line_m=min(positions[intersection_id]),
             last_stop_line_m=max(positions[intersection_id]),
-            delay_seconds=index.intersection(intersection_id).delay_seconds,
+            delay_seconds=(info := index.intersection(intersection_id)).delay_seconds,
+            name=info.name,
             approach_edge_ids=tuple(edge_ids[intersection_id]),
             stop_lines_m=tuple(sorted(set(positions[intersection_id]))),
             signals=(signals := index.signal_approaches(intersection_id)),

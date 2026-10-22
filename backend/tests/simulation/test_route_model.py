@@ -30,6 +30,17 @@ def test_route_model_groups_multiple_approaches_and_uses_first_stop_line_for_cas
     assert model.cascade_targets("INT-TWIN") == ()
 
 
+def test_route_model_carries_each_intersection_name_from_the_index() -> None:
+    """Ticks name intersections from the route model; the start response reads the same index."""
+    settings = SimulationSettings()
+    index = corridor_index()
+    route = plan_route(index, position_at(7_422_000), position_at(7_422_850.02), settings)
+
+    model = build_route_model(route, index, settings, cascade_enabled=True)
+
+    assert [item.name for item in model.intersections] == ["INT-A", "INT-TWIN", "INT-C", "INT-B"]
+
+
 def test_route_model_disables_cascade_without_changing_route_intersections() -> None:
     """A cascade toggle that drops route intersections loses required simulation telemetry."""
     settings = SimulationSettings()

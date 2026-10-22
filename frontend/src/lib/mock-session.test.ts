@@ -70,6 +70,18 @@ describe("stepMockSignals", () => {
   });
 });
 
+describe("mock vehicle id", () => {
+  it.each([
+    ["AMBULANCE", "AMB-KRA-01"],
+    ["FIRE_TRUCK", "FIRE-KRA-01"],
+    ["POLICE_CAR", "POL-KRA-01"],
+  ] as const)("names the simulated %s like the backend (%s)", (vehicleType, expected) => {
+    const session = createMockSession({ ...requestWithCascade(false), vehicle_type: vehicleType });
+
+    expect(advanceMockSession(session).tick.ambulance.id).toBe(expected);
+  });
+});
+
 describe("buildMockDispatch", () => {
   it("reports the request's vehicle type in the ITS payload", () => {
     const session = createMockSession({ ...requestWithCascade(false), vehicle_type: "FIRE_TRUCK" });
