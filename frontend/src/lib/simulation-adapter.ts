@@ -1,3 +1,4 @@
+import { observeSimulation } from "@/lib/diagnostics/observe-adapters";
 import { getFrontendConfig, type FrontendConfig } from "@/lib/config";
 import { createMockSimulationAdapter } from "@/lib/mock-simulation-adapter";
 import { createBackendSimulationAdapter } from "@/lib/transport/backend-simulation-adapter";
@@ -47,4 +48,7 @@ export function selectSimulationAdapter(config: FrontendConfig): SimulationAdapt
 }
 
 /** Module-level singleton chosen by `NEXT_PUBLIC_SIMULATION_TRANSPORT` (default: mock, D22). */
-export const simulationAdapter: SimulationAdapter = selectSimulationAdapter(getFrontendConfig());
+export const simulationAdapter: SimulationAdapter = observeSimulation(
+  selectSimulationAdapter(getFrontendConfig()),
+  getFrontendConfig().transport,
+);

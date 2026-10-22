@@ -81,15 +81,16 @@ export async function requestRunStop(
   adapter: SimulationAdapter,
   simulationId: string,
   dispatch: Dispatch,
-): Promise<void> {
+): Promise<boolean> {
   dispatch({ type: "STOP_REQUESTED", simulationId });
   try {
     await adapter.stop(simulationId);
   } catch (error) {
     dispatch({ type: "STOP_FAILED", simulationId, message: toSimulationErrorInfo(error).message });
-    return;
+    return false;
   }
   dispatch({ type: "STOP_CONFIRMED", simulationId });
+  return true;
 }
 
 /**
@@ -144,6 +145,7 @@ export function connectSimulationStream(
     }, lostAfterMilliseconds);
   };
   const stop = () => {
+    if (!active) return;
     active = false;
     clearStaleTimer();
     if (silenceTimer) clearTimeout(silenceTimer);
@@ -191,5 +193,7 @@ export function connectSimulationStream(
     },
   });
 
+  // Some adapters reject synchronously before subscribe returns its cleanup.
+  if (!active) unsubscribe();
   return stop;
 }
