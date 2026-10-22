@@ -73,6 +73,26 @@ export function requestSimulationStop(
 }
 
 /**
+ * The live view's Stop: the run stays on screen while the stop is requested, then ends as
+ * CANCELLED / STOPPED (also when the stream is down and the server's own terminal never arrives).
+ * Never rejects; a failed stop leaves the run going and reports why.
+ */
+export async function requestRunStop(
+  adapter: SimulationAdapter,
+  simulationId: string,
+  dispatch: Dispatch,
+): Promise<void> {
+  dispatch({ type: "STOP_REQUESTED", simulationId });
+  try {
+    await adapter.stop(simulationId);
+  } catch (error) {
+    dispatch({ type: "STOP_FAILED", simulationId, message: toSimulationErrorInfo(error).message });
+    return;
+  }
+  dispatch({ type: "STOP_CONFIRMED", simulationId });
+}
+
+/**
  * Effect body for a RUNNING simulation: subscribes to the adapter, forwards
  * events to the reducer and watches for a silent stream. Returns the cleanup.
  * Callbacks arriving after cleanup are ignored, so React Strict Mode's

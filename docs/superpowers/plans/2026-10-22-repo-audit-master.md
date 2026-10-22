@@ -51,7 +51,7 @@ Out of scope (known, unchanged): decorative 72 % speed bar; 320 px header trunca
 ## Ordered work
 
 - [x] **[Completed] M1 — Backend telemetry identity (B1, B2).** [Sub-plan](2026-10-22-m1-telemetry-identity.md). Dependency: none. Suggested commit: `fix: stream intersection names and vehicle ids in ticks`.
-- [ ] **[Pending] M2 — Live-run flow and Stop (D1; F2, F13).** [Sub-plan](2026-10-22-m2-live-run-flow.md). Dependency: none. Suggested commit: `feat: stop a live run from the live operations view`.
+- [x] **[Completed] M2 — Live-run flow and Stop (D1; F2, F13).** [Sub-plan](2026-10-22-m2-live-run-flow.md). Dependency: none. Suggested commit: `feat: stop a live run from the live operations view`.
 - [ ] **[Pending] M3 — Keep settings and previous result (F1, F3).** [Sub-plan](2026-10-22-m3-run-comparison-state.md). Dependency: M2 (back-to-setup path). Suggested commit: `fix: keep run settings and previous result across runs`.
 - [ ] **[Pending] M4 — Server-error terminal (D2; B5).** [Sub-plan](2026-10-22-m4-server-error-terminal.md). Dependency: M2 (summary card). **Contract change; tell the human before editing `GreenWave_ARCHITECTURE.md`.** Suggested commit: `feat: report simulation server errors to the dashboard`.
 - [ ] **[Pending] M5 — Session lifecycle hardening (B3, B4).** [Sub-plan](2026-10-22-m5-session-lifecycle.md). Dependency: M4 (same file, terminal semantics). Suggested commit: `fix: bound retained sessions and publish one terminal per run`.
@@ -85,6 +85,33 @@ Order rationale: M1–M3 are what a jury sees first in backend mode; M4–M5 clo
 - Gates: backend `ruff check`, `ruff format --check`, `mypy`, `pytest` — **917 passed**. Frontend `lint`, `typecheck`, `format:check`, `test` (**38 files, 364 tests**), `build` — all exit 0. `git diff --check` clean; no change under `contracts/` or `frontend/src/types/`.
 - Real backend (`uvicorn` on :8765): `FIRE_TRUCK` start from STN-A-0007 position to 50.0614, 19.9366 at 10× → 249 ticks, 5 route intersections, all 5 named; 0 tick/start name mismatches; vehicle ids `{FIRE-KRA-01}`. A first attempt from the ranked fire station had a signal-free route (0 intersections), so names were verified on the second route.
 - Deviations: none in scope. The plan's optional `test_route_model` `None`-name case is covered at the telemetry level instead (the corridor fixture names every intersection).
+
+## M2 verification — 2026-10-22
+
+- Branch `feat/m2-live-run-flow` (from `main` at `21d02da`), uncommitted for human review.
+- Root cause as planned: the header's Dispatch setup tab stopped and reset a live run, `RunSummary` rendered nothing while RUNNING, Live operations could be opened without a run, and the backend adapter closed the stream before `POST /stop`, so the server's STOPPED terminal was never received.
+- Fix:
+  - **State:** `stopRequested` / `stopError` fields and `STOP_REQUESTED` / `STOP_CONFIRMED` / `STOP_FAILED` actions; the second of `STOP_CONFIRMED` and the server terminal is a no-op.
+  - **Controller and hook:** `requestRunStop` and `stopRun` on the hook.
+  - **Transport:** the backend adapter's `stop` keeps the stream open.
+  - **UI:** `RunSummary` shows a "Simulation running" card with Stop, then "Simulation stopped" plus Back to dispatch setup. The header tabs are replaced by a static view label. Each view change scrolls to the top (`scrollViewToTop`).
+- TDD: 6 reducer, 2 controller, 1 adapter (rewritten from "closes the stream"), 7 RunSummary, 2 header, 6 KpiHeader and 1 scroll-helper cases observed failing, then passing. One RunSummary RED failure was a test bug (`disabled:` class matched `disabled`) and was corrected to assert the `disabled=""` attribute.
+- Snapshots: `Dashboard.setup.{mock,backend}.html` word diff only replaces the two-button `<nav aria-label="Dashboard mode">` with the static `<p>` label.
+- Gates: frontend `lint`, `typecheck`, `format:check`, `test` (**42 files, 388 tests**), `build` — all exit 0; `git diff --check` clean. No backend, schema, contract, dependency or lockfile change; `graphify update .` run.
+- Browser (`playwright-cli`, evidence and scripts in `.tmp/playwright/repo-audit/m2/`): real backend (`uvicorn` :8000, backend-transport dev server :3101) and mock production build (:3100), each at 1440 × 1000, 390 × 844 and 360 × 740. In all 6 runs:
+  - setup header has no Live operations tab; live header has no Dispatch setup;
+  - Stop is visible without scrolling (desktop card at y 310; phone KPI strip at y 258);
+  - Stop → "Simulation stopped" with Back to dispatch setup and no Stop button;
+  - `main.scrollWidth == innerWidth`;
+  - Back returns to setup with the incident kept;
+  - console 0 errors.
+
+  Stop stubbed to 503: the "Could not stop the simulation: … (HTTP 503)" alert appears, ticks keep advancing (2 → 5), Stop is re-enabled, and an unstubbed retry stops the run; the single console error is the stubbed 503. SSE check with curl: after `POST /stop` (200) the stream ends with `SIMULATION_CANCELLED` `reason: STOPPED`.
+- Deviations:
+  1. Planned fallback applied: at 390 px the card's Stop was only at y 787–827 (below the fold at 360 × 740) and the page kept setup's scroll offset (214 px). Below `lg`, Stop therefore sits in the KPI strip (the card keeps status and stop errors), and each view opens at its top.
+  2. The first browser run caught a real defect, now fixed with a regression test: the scroll effect's expression body returned a value, which React called as a cleanup ("destroy is not a function").
+  3. Click behaviour is verified in the browser rather than in unit tests, because the Vitest environment is `node` with no DOM library, and adding one needs dependency approval.
+  4. Found and deferred to M8 Task 4: after a user stop, the header phase label and KPI badge still read "Simulation cancelled" (they key on phase, not reason).
 
 ## Final closeout
 

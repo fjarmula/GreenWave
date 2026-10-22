@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SimulationAdapter, SimulationStreamSubscriber } from "@/lib/simulation-adapter";
 import {
   connectSimulationStream,
+  requestRunStop,
   requestSimulationStart,
   requestSimulationStop,
 } from "@/lib/simulation-controller";
@@ -245,6 +246,41 @@ describe("requestSimulationStop", () => {
     requestSimulationStop(adapter, "run-1", store.dispatch);
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(store.state).toEqual(initialSimulationState);
+  });
+});
+
+describe("requestRunStop", () => {
+  it("keeps the run on screen and ends it as CANCELLED / STOPPED once the stop succeeds", async () => {
+    const adapter = createFakeAdapter();
+    const store = createStore();
+    await startRunning(adapter, store, "run-1");
+
+    const stopping = requestRunStop(adapter, "run-1", store.dispatch);
+    expect(store.state.simulationState).toBe("RUNNING");
+    expect(store.state.stopRequested).toBe(true);
+    await stopping;
+
+    expect(adapter.stops).toEqual(["run-1"]);
+    expect(store.actions.map((action) => action.type)).not.toContain("RESET");
+    expect(store.state.simulationState).toBe("CANCELLED");
+    expect(store.state.cancelReason).toBe("STOPPED");
+    expect(store.state.routeData).not.toBeNull();
+  });
+
+  it("a failed stop leaves the run going with a readable error", async () => {
+    const adapter = createFakeAdapter();
+    adapter.stop = () =>
+      Promise.reject(
+        new SimulationAdapterError({ kind: "network", message: "Simulation backend unreachable" }),
+      );
+    const store = createStore();
+    await startRunning(adapter, store, "run-1");
+
+    await requestRunStop(adapter, "run-1", store.dispatch);
+
+    expect(store.state.simulationState).toBe("RUNNING");
+    expect(store.state.stopRequested).toBe(false);
+    expect(store.state.stopError).toBe("Simulation backend unreachable");
   });
 });
 

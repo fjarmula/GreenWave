@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSimulationStream } from "@/lib/useSimulationStream";
 import { useSimulationState } from "@/components/simulation-provider";
 
@@ -10,6 +10,7 @@ import { describeSimulationError } from "@/lib/simulation-copy";
 import { buildStartRequest } from "@/lib/start-request";
 import { pinnedIncident, useIncidentDispatch } from "@/lib/useIncidentDispatch";
 import { useStations } from "@/lib/useStations";
+import { scrollViewToTop } from "@/lib/view-scroll";
 import { DashboardHeader, type DashboardMode } from "@/components/dashboard/DashboardHeader";
 import { RoutePreview } from "@/components/dashboard/RoutePreview";
 import { DataQualityPanel } from "@/components/hud/DataQualityPanel";
@@ -18,7 +19,7 @@ import type { MapEndpoint } from "@/components/map/EndpointMarkers";
 import type { Position } from "@/types/telemetry";
 
 export function Dashboard() {
-  const { startSimulation, stopSimulation } = useSimulationStream();
+  const { startSimulation, stopSimulation, stopRun } = useSimulationStream();
   const { simulationState, routeData, error } = useSimulationState();
   const config = getFrontendConfig();
   const dispatch = useIncidentDispatch(dispatchAdapter);
@@ -35,6 +36,9 @@ export function Dashboard() {
       : null;
   const [mode, setMode] = useState<DashboardMode>("setup");
   const [mapFocusRequest, setMapFocusRequest] = useState(0);
+  useEffect(() => {
+    scrollViewToTop(window);
+  }, [mode]);
   const backToSetup = () => {
     stopSimulation();
     setMode("setup");
@@ -56,13 +60,7 @@ export function Dashboard() {
 
   return (
     <main className="dashboard-theme-transition flex min-h-dvh min-w-80 flex-col overflow-x-hidden bg-background text-foreground">
-      <DashboardHeader
-        mode={mode}
-        onModeChange={(nextMode) => {
-          if (nextMode === "setup") stopSimulation();
-          setMode(nextMode);
-        }}
-      />
+      <DashboardHeader mode={mode} />
 
       {mode === "setup" ? (
         <section className="grid min-h-0 flex-1 lg:grid-cols-[370px_minmax(0,1fr)]">
@@ -106,6 +104,7 @@ export function Dashboard() {
           destination={destination}
           mapFocusRequest={mapFocusRequest}
           onBackToSetup={backToSetup}
+          onStop={stopRun}
           map={mapProps}
         />
       )}

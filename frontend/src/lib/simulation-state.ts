@@ -34,6 +34,10 @@ export type SimulationState = {
   completion: SimulationCompletedEvent | null;
   cancelReason: CancelReason | null;
   error: SimulationErrorInfo | null;
+  /** The user asked to stop the running run; it keeps RUNNING until the stop is confirmed. */
+  stopRequested: boolean;
+  /** Why the last stop request failed; the run is still going. */
+  stopError: string | null;
 };
 
 export type SimulationAction =
@@ -45,6 +49,9 @@ export type SimulationAction =
   | { type: "CONNECTION"; simulationId: string; status: ConnectionStatus }
   | { type: "TERMINAL"; event: SimulationCompletedEvent | SimulationCancelledEvent }
   | { type: "ERROR"; simulationId: string; error: SimulationErrorInfo }
+  | { type: "STOP_REQUESTED"; simulationId: string }
+  | { type: "STOP_CONFIRMED"; simulationId: string }
+  | { type: "STOP_FAILED"; simulationId: string; message: string }
   | { type: "RESET" };
 
 export const initialSimulationState: SimulationState = {
@@ -58,6 +65,8 @@ export const initialSimulationState: SimulationState = {
   completion: null,
   cancelReason: null,
   error: null,
+  stopRequested: false,
+  stopError: null,
 };
 
 export function formatItsDispatch(event: ItsDispatchEvent): string {
@@ -83,6 +92,16 @@ export function isTelemetryStale({
     simulationState === "ERROR" ||
     (simulationState === "RUNNING" && (connection === "reconnecting" || connection === "lost"))
   );
+}
+
+function cancelled(state: SimulationState, reason: CancelReason): SimulationState {
+  return {
+    ...state,
+    simulationState: "CANCELLED",
+    connection: null,
+    cancelReason: reason,
+    stopRequested: false,
+  };
 }
 
 function isCurrentRun(state: SimulationState, simulationId: string): boolean {
@@ -161,8 +180,14 @@ export function simulationReducer(
         return state;
       }
       return event.event_type === "SIMULATION_COMPLETED"
-        ? { ...state, simulationState: "FINISHED", connection: null, completion: event }
-        : { ...state, simulationState: "CANCELLED", connection: null, cancelReason: event.reason };
+        ? {
+            ...state,
+            simulationState: "FINISHED",
+            connection: null,
+            completion: event,
+            stopRequested: false,
+          }
+        : cancelled(state, event.reason);
     }
     case "ERROR":
       if (
@@ -172,6 +197,22 @@ export function simulationReducer(
         return state;
       }
       return { ...state, simulationState: "ERROR", connection: "lost", error: action.error };
+    case "STOP_REQUESTED":
+      if (state.simulationState !== "RUNNING" || !isCurrentRun(state, action.simulationId)) {
+        return state;
+      }
+      return { ...state, stopRequested: true, stopError: null };
+    case "STOP_CONFIRMED":
+      // The server's own STOPPED terminal may arrive first or not at all (stream down).
+      if (state.simulationState !== "RUNNING" || !isCurrentRun(state, action.simulationId)) {
+        return state;
+      }
+      return cancelled(state, "STOPPED");
+    case "STOP_FAILED":
+      if (state.simulationState !== "RUNNING" || !isCurrentRun(state, action.simulationId)) {
+        return state;
+      }
+      return { ...state, stopRequested: false, stopError: action.message };
     case "RESET":
       return initialSimulationState;
   }

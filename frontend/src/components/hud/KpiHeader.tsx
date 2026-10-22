@@ -1,6 +1,6 @@
 "use client";
 
-import { Ambulance, TriangleAlert } from "lucide-react";
+import { Ambulance, Square, TriangleAlert } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
 import type { ConnectionStatus } from "@/lib/simulation-adapter";
 import {
@@ -24,8 +24,14 @@ const CONNECTION_STYLES: Record<ConnectionStatus, string> = {
   lost: "bg-red-500/10 text-red-700 dark:text-red-300",
 };
 
-export function KpiHeader() {
-  const { liveTelemetry, simulationState, connection, routeData } = useSimulationState();
+type KpiHeaderProps = {
+  /** Phones only (the desktop Stop is in the run panel): stops the running simulation. */
+  onStop?: () => void;
+};
+
+export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
+  const { liveTelemetry, simulationState, connection, routeData, stopRequested } =
+    useSimulationState();
   const elapsed = liveTelemetry?.kpi_metrics.total_time_elapsed_sec ?? 0;
   const speed = vehicleSpeedPresentation(simulationState, liveTelemetry);
   const elapsedLabel = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
@@ -78,6 +84,21 @@ export function KpiHeader() {
           <span className="block text-[9px] font-semibold text-muted-foreground">
             {greenWaveModeLabel(routeData.green_wave_mode)}
           </span>
+        )}
+        {onStop && simulationState === "RUNNING" && (
+          // The phone run panel sits below the map; the strip keeps Stop on screen.
+          <button
+            type="button"
+            data-testid="stop-simulation"
+            onClick={onStop}
+            disabled={stopRequested}
+            aria-busy={stopRequested}
+            aria-label="Stop simulation"
+            className="mt-1.5 ml-auto inline-flex min-h-8 items-center gap-1.5 rounded-md border border-red-500/40 bg-red-500/10 px-2.5 text-[10px] font-bold text-red-700 transition hover:bg-red-500/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 disabled:cursor-wait disabled:opacity-70 lg:hidden dark:text-red-300"
+          >
+            <Square className="size-3 fill-current" aria-hidden />
+            {stopRequested ? "Stopping…" : "Stop"}
+          </button>
         )}
       </div>
     </section>

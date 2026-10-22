@@ -34,7 +34,7 @@ Each task is RED → GREEN with its own test, then snapshot word diffs. Run the 
 
 ### Task 4: Phase-aware header status (F10)
 
-- [ ] RED: `DashboardHeader` dot colour by phase: SETUP and RUNNING emerald, STARTING amber, FINISHED muted, CANCELLED amber, ERROR red. Put the mapping beside `PHASE_LABELS`.
+- [ ] RED: `DashboardHeader` dot colour by phase: SETUP and RUNNING emerald, STARTING amber, FINISHED muted, CANCELLED amber, ERROR red. Put the mapping beside `PHASE_LABELS`. Also (found in M2): a CANCELLED run with reason STOPPED reads "Simulation stopped" / "SIMULATION STOPPED" in the header label and KPI badge, not "cancelled".
 - [ ] GREEN.
 
 ### Task 5: Vehicle-type icon and copy (F11)

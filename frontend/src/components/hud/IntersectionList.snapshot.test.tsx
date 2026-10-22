@@ -79,6 +79,8 @@ function reviewState(): SimulationState {
     completion: null,
     cancelReason: null,
     error: null,
+    stopRequested: false,
+    stopError: null,
   };
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheck, CircleSlash, Settings2, TriangleAlert } from "lucide-react";
+import { CircleCheck, CircleSlash, Radio, Settings2, Square, TriangleAlert } from "lucide-react";
 
 import { useSimulationState } from "@/components/simulation-provider";
 import { getFrontendConfig } from "@/lib/config";
@@ -13,15 +13,35 @@ import type { SimulationCompletedEvent } from "@/types/telemetry";
 
 type RunSummaryProps = {
   onBackToSetup: () => void;
+  /** Stops the live run; setup is offered only once the run has ended. */
+  onStop: () => void;
 };
 
-/** End-of-run panel: completed summary, cancellation reason, or a lost stream. */
-export function RunSummary({ onBackToSetup }: RunSummaryProps) {
-  const { simulationState, routeData, completion, cancelReason, error } = useSimulationState();
+/** Live-run panel: Stop while running, then the completed summary, cancellation or lost stream. */
+export function RunSummary({ onBackToSetup, onStop }: RunSummaryProps) {
+  const { simulationState, routeData, completion, cancelReason, error, stopRequested, stopError } =
+    useSimulationState();
+
+  if (simulationState === "RUNNING") {
+    return (
+      <RunningRunControls stopRequested={stopRequested} stopError={stopError} onStop={onStop} />
+    );
+  }
 
   if (simulationState === "FINISHED" && routeData && completion) {
     return (
       <FinishedRunSummary route={routeData} completion={completion} onBackToSetup={onBackToSetup} />
+    );
+  }
+
+  if (simulationState === "CANCELLED" && cancelReason === "STOPPED") {
+    return (
+      <SummaryCard
+        tone="neutral"
+        title="Simulation stopped"
+        detail="You stopped the simulated run; the map keeps its last simulated position."
+        onBackToSetup={onBackToSetup}
+      />
     );
   }
 
@@ -30,11 +50,7 @@ export function RunSummary({ onBackToSetup }: RunSummaryProps) {
       <SummaryCard
         tone="neutral"
         title={`Simulation cancelled · ${cancelReasonLabel(cancelReason)}`}
-        detail={
-          cancelReason === "SUPERSEDED"
-            ? "Another dispatch started a new simulation (only one runs at a time). This tab will not restart it."
-            : "The simulation was stopped."
-        }
+        detail="Another dispatch started a new simulation (only one runs at a time). This tab will not restart it."
         onBackToSetup={onBackToSetup}
       />
     );
@@ -52,6 +68,51 @@ export function RunSummary({ onBackToSetup }: RunSummaryProps) {
   }
 
   return null;
+}
+
+/** The only way out of a live run: Stop, then the ended run offers the way back to setup. */
+function RunningRunControls({
+  stopRequested,
+  stopError,
+  onStop,
+}: {
+  stopRequested: boolean;
+  stopError: string | null;
+  onStop: () => void;
+}) {
+  return (
+    <section className="rounded-xl border border-cyan-500/35 bg-card/92 p-4 text-cyan-700 shadow-2xl backdrop-blur-xl dark:text-cyan-300">
+      <div className="flex items-start gap-2.5">
+        <Radio className="mt-0.5 size-4 shrink-0" aria-hidden />
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold">Simulation running</h2>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Stop ends the simulated run; you can then return to dispatch setup.
+          </p>
+        </div>
+      </div>
+      {stopError && (
+        <p
+          role="alert"
+          className="mt-3 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/8 px-3 py-2 text-[11px] font-medium text-red-700 dark:text-red-300"
+        >
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+          Could not stop the simulation: {stopError}
+        </p>
+      )}
+      <button
+        type="button"
+        data-testid="stop-simulation"
+        onClick={onStop}
+        disabled={stopRequested}
+        aria-busy={stopRequested}
+        className="mt-4 hidden min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-500/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 disabled:cursor-wait disabled:opacity-70 lg:flex dark:text-red-300"
+      >
+        <Square className="size-3.5 fill-current" aria-hidden />
+        {stopRequested ? "Stopping…" : "Stop simulation"}
+      </button>
+    </section>
+  );
 }
 
 /** Completed run: the total travel time leads, in the mode the run used. */
