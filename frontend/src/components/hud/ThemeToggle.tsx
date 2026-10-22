@@ -31,17 +31,20 @@ export function ThemeToggle() {
   const mounted = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
 
   if (!mounted) {
-    return (
-      <div aria-hidden className="h-9 w-[108px] rounded-lg border border-border bg-muted/40" />
-    );
+    return <div aria-hidden className="theme-toggle" />;
   }
 
+  const activeIndex = themeOptions.findIndex((option) => option.value === theme);
+
   return (
-    <div
-      className="flex items-center rounded-lg border border-border bg-muted/55 p-1 shadow-sm"
-      role="group"
-      aria-label="Color theme"
-    >
+    <div className="theme-toggle" role="group" aria-label="Color theme">
+      {activeIndex >= 0 && (
+        <span
+          aria-hidden
+          className="theme-toggle-thumb"
+          style={{ transform: `translateX(${activeIndex * 100}%)` }}
+        />
+      )}
       {themeOptions.map(({ value, label, icon: Icon }) => {
         const isActive = theme === value;
 
@@ -53,11 +56,7 @@ export function ThemeToggle() {
             aria-pressed={isActive}
             title={label}
             onClick={() => switchThemeSmoothly(() => setTheme(value))}
-            className={`grid size-7 place-items-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 ${
-              isActive
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className="theme-toggle-option"
           >
             <Icon className="size-3.5" aria-hidden />
           </button>

@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Maximize2, Minimize2, PanelRight } from "lucide-react";
+import { ThemeToggle } from "@/components/hud/ThemeToggle";
 export function WorkspaceShell({
   map,
   status,
@@ -45,20 +47,24 @@ export function WorkspaceShell({
     <main className="workspace-shell" data-focus={focus} data-details={details}>
       <div className="workspace-map-slot" data-map-slot>
         {map}
+        <span className="workspace-provenance">{provenance}</span>
       </div>
       <header className="workspace-header" hidden={focus} inert={focus}>
         {header}
-        <div className="flex shrink-0 gap-2">
+        <div className="workspace-actions">
+          <ThemeToggle />
           <button
             className="workspace-button"
             aria-expanded={details}
             aria-controls="workspace-inspector"
             onClick={() => setDetails(!details)}
           >
-            Details
+            <PanelRight aria-hidden />
+            <span className="workspace-button-label">Details</span>
           </button>
           <button ref={trigger} className="workspace-button" onClick={() => changeFocus(true)}>
-            Enter Focus
+            <Maximize2 aria-hidden />
+            <span className="workspace-button-label">Enter Focus</span>
           </button>
         </div>
       </header>
@@ -79,13 +85,13 @@ export function WorkspaceShell({
       {focus && (
         <button
           ref={exit}
-          className="workspace-button workspace-exit"
+          className="workspace-button workspace-float workspace-exit"
           onClick={() => changeFocus(false)}
         >
+          <Minimize2 aria-hidden />
           Exit Focus
         </button>
       )}
-      <span className="workspace-provenance">{provenance}</span>
     </main>
   );
 }

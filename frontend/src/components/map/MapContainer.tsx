@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useTheme } from "next-themes";
+import { LocateFixed, Route } from "lucide-react";
 
 import { CascadeLinksLayer, CascadeLinksMapProvider } from "@/components/map/CascadeLinksLayer";
 import { EndpointMarkers, type MapEndpoint } from "@/components/map/EndpointMarkers";
@@ -150,10 +151,16 @@ export function MapContainer({
       </div>
       {live && routeData && (
         <div className="workspace-camera-controls absolute top-3 left-3 z-20 flex flex-wrap gap-2">
-          <button className="workspace-button" onClick={camera.showRoute}>
+          <button className="workspace-button workspace-float" onClick={camera.showRoute}>
+            <Route aria-hidden />
             Show route
           </button>
-          <button className="workspace-button" onClick={camera.resume}>
+          <button
+            className="workspace-button workspace-float"
+            data-active={camera.mode === "following" || undefined}
+            onClick={camera.resume}
+          >
+            <LocateFixed aria-hidden />
             {camera.mode === "following" ? "Following vehicle" : "Resume following"}
           </button>
         </div>

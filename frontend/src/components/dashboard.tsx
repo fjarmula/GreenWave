@@ -24,7 +24,6 @@ import { KpiHeader } from "@/components/hud/KpiHeader";
 import { RunSummary } from "@/components/hud/RunSummary";
 import { IntersectionList } from "@/components/hud/IntersectionList";
 import { ItsConsole } from "@/components/hud/ItsConsole";
-import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import type { MapEndpoint } from "@/components/map/EndpointMarkers";
 import type { GreenWaveMode, Position } from "@/types/telemetry";
@@ -103,19 +102,16 @@ export function Dashboard({
       header={
         <div className="min-w-0 flex-1">
           <WorkspaceNavigation current={driver ? "/driver" : routeForMode(selectedMode)} />
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="text-base font-semibold">
-              {driver
-                ? "Driver simulation"
-                : selectedMode === "ENABLED"
-                  ? "Green Wave"
-                  : "Standard traffic"}{" "}
-              <span className="text-muted-foreground">
-                / {mode === "live" ? "Simulation" : "Setup"}
-              </span>
-            </h1>
-            <ThemeToggle />
-          </div>
+          <h1 className="workspace-title">
+            {driver
+              ? "Driver simulation"
+              : selectedMode === "ENABLED"
+                ? "Green Wave"
+                : "Standard traffic"}{" "}
+            <span className="text-muted-foreground">
+              / {mode === "live" ? "Simulation" : "Setup"}
+            </span>
+          </h1>
         </div>
       }
       map={

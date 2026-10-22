@@ -10,7 +10,6 @@ import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation"
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import { MapContainer } from "@/components/map/MapContainer";
-import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { dispatchAdapter } from "@/lib/dispatch-adapter";
 import { buildStartRequest, type DispatchSettings } from "@/lib/start-request";
 import { createSimulationId } from "@/lib/simulation-id";
@@ -109,7 +108,7 @@ export function ComparisonWorkspace() {
         <div className="min-w-0 flex-1">
           <WorkspaceNavigation current="/compare" />
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h1 className="text-base font-semibold">
+            <h1 className="workspace-title">
               {showReplay ? "Green Wave vs standard traffic" : "Comparison setup"}
             </h1>
             <div className="flex items-center gap-2">
@@ -124,7 +123,6 @@ export function ComparisonWorkspace() {
                   Change scenario
                 </button>
               )}
-              <ThemeToggle />
             </div>
           </div>
         </div>

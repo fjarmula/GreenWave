@@ -52,7 +52,7 @@
 - [x] Theme cross-fade only during the switch (`data-theme-switching`, 250ms, set by ThemeToggle; skipped under reduced motion; map canvas excluded).
 - [x] `theme-color` meta matches the new backgrounds; shadcn `Button` drops `transition-all` and uses a scale press.
 
-### 2. Home screen (done, awaiting human commit)
+### 2. Home screen (done)
 
 Skills: emil-design-eng, animate.
 
@@ -61,14 +61,15 @@ Skills: emil-design-eng, animate.
 - [x] "Return to … simulation" as a live status pill with a pulsing dot.
 - [x] Tool links (Diagnostics, Driver) and the simulation disclaimer restyled.
 
-### 3. Workspace chrome
+### 3. Workspace chrome (done, awaiting human commit)
 
 Skills: emil-design-eng, mobile-native.
 
-- [ ] Header: segmented pill navigation, aligned theme toggle (sliding thumb), compact icon + label Details/Focus buttons (44px on coarse pointers).
-- [ ] Map overlays ("Show route", "Resume following", zoom controls) as frosted floating controls.
-- [ ] Provenance pill no longer overlaps a compact map attribution.
-- [ ] MapLibre controls follow the tokens.
+- [x] Header: segmented pill navigation, aligned theme toggle (sliding thumb), compact icon + label Details/Focus buttons (44px on coarse pointers).
+- [x] Map overlays ("Show route", "Resume following", zoom controls) as frosted floating controls.
+- [x] Provenance pill sits above the map attribution (and lifts over the expanded compact attribution on narrow maps).
+- [ ] Follow-up for milestone 5: check provenance against the comparison replay transport bar.
+- [x] MapLibre controls follow the tokens.
 
 ### 4. Inspector / HUD
 
