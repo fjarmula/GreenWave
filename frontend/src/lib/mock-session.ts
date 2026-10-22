@@ -15,6 +15,7 @@ import {
 import { estimateMockRoute, type MockRouteMetrics } from "@/lib/mock-route-metrics";
 import { SimulationAdapterError } from "@/lib/transport/errors";
 import { positionOnRoute } from "@/lib/route-position";
+import { simulatedVehicleId } from "@/lib/vehicle-ids";
 import type {
   IntersectionState,
   IntersectionTelemetry,
@@ -301,7 +302,7 @@ export function buildMockTick(session: MockSession, timestamp: string): Simulati
     tick: session.tick,
     timestamp,
     ambulance: {
-      id: "AMB-KRA-01",
+      id: simulatedVehicleId(request.vehicle_type),
       position: toPosition(coordinates),
       // Distance driven in this simulated second, including a partial arrival interval.
       speed_kmh: Number(

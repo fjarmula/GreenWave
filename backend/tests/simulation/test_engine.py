@@ -12,7 +12,7 @@ from tests.support.route_fixtures import (
 from greenwave.its import MockItsGateway
 from greenwave.routing.estimates import Estimates, estimate_times
 from greenwave.routing.planner import PlannedRoute, SnappedRouteEndpoint, plan_route
-from greenwave.schemas import Position, SimulationTickEvent
+from greenwave.schemas import Position, SimulationTickEvent, VehicleType
 from greenwave.simulation.engine import SimulationEngine
 from greenwave.simulation.route_model import RouteIntersection, RouteModel, build_route_model
 from greenwave.simulation_settings import SimulationSettings
@@ -236,3 +236,25 @@ def test_simulated_elapsed_matches_greenwave_estimate_with_calming() -> None:
     assert estimates.greenwave_seconds == pytest.approx(neutral.greenwave_seconds + 6.0)
     assert state.arrived_at_s is not None
     assert abs(state.arrived_at_s - estimates.greenwave_seconds) <= settings.tick_interval_seconds
+
+
+def test_ticks_identify_the_dispatched_vehicle_type_not_the_simulation() -> None:
+    """The dashboard shows ``ambulance.id``; a police run must not show the run's UUID."""
+    single = engine_for_single_stop()
+    engine = SimulationEngine(
+        "SIM-1",
+        single.route,
+        single.route_model,
+        single.estimates,
+        1.0,
+        SimulationSettings(),
+        MockItsGateway(),
+        VehicleType.POLICE_CAR,
+    )
+    state = engine.initial_state()
+    ids: set[str] = set()
+    for _ in range(3):
+        state, events = engine.step(state, datetime(2026, 10, 22, tzinfo=UTC))
+        ids |= {event.ambulance.id for event in events if isinstance(event, SimulationTickEvent)}
+
+    assert ids == {"POL-KRA-01"}

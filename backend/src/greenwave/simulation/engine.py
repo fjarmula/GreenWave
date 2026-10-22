@@ -136,7 +136,7 @@ class SimulationEngine:
         kpi = kpi_metrics(
             self.route, self.route_model, state, self.traffic_density_multiplier, self.settings
         )
-        ambulance = ambulance_telemetry(self.simulation_id, state, actual_speed, self._track)
+        ambulance = ambulance_telemetry(self.vehicle_type, state, actual_speed, self._track)
         intersections = intersection_telemetry(self.route_model, state)
         heads, phases = advance_signal_phases(self.route_model, state, self.settings)
         state = replace(state, signal_heads=heads)

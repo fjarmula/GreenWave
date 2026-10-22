@@ -61,7 +61,7 @@ function IntersectionCard({
         <div>
           <strong className="block font-mono text-xs">{id}</strong>
           <span className="mt-1 block text-[10px] text-muted-foreground">
-            {name ?? "Unnamed intersection"}
+            {name ?? routeDetail?.name ?? "Unnamed intersection"}
           </span>
           {routeDetail && (
             <span className="mt-1 block text-[9px] text-muted-foreground">

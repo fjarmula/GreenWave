@@ -4,11 +4,12 @@ import pytest
 from tests.support.route_fixtures import route_edges
 
 from greenwave.routing.planner import PlannedRoute, SnappedRouteEndpoint
-from greenwave.schemas import AmbulanceStatus, IntersectionState, Position
+from greenwave.schemas import AmbulanceStatus, IntersectionState, Position, VehicleType
+from greenwave.simulation.route_model import RouteIntersection, RouteModel
 from greenwave.simulation.route_track import RouteTrack
 from greenwave.simulation.state import EngineState
 from greenwave.simulation.state_machine import IntersectionRuntime
-from greenwave.simulation.telemetry import ambulance_telemetry
+from greenwave.simulation.telemetry import ambulance_telemetry, intersection_telemetry
 from greenwave.simulation_settings import SimulationSettings
 
 _ACTIVE = IntersectionRuntime(state=IntersectionState.CLEARING)
@@ -56,4 +57,35 @@ _BASE = EngineState(
 def test_status_priority_arrived_then_crossing_then_approaching(
     state: EngineState, expected: AmbulanceStatus
 ) -> None:
-    assert ambulance_telemetry("SIM-1", state, 10.0, _track()).status is expected
+    assert ambulance_telemetry(VehicleType.AMBULANCE, state, 10.0, _track()).status is expected
+
+
+@pytest.mark.parametrize(
+    ("vehicle_type", "expected"),
+    [
+        (VehicleType.AMBULANCE, "AMB-KRA-01"),
+        (VehicleType.FIRE_TRUCK, "FIRE-KRA-01"),
+        (VehicleType.POLICE_CAR, "POL-KRA-01"),
+    ],
+)
+def test_vehicle_id_names_the_simulated_vehicle_not_the_run(
+    vehicle_type: VehicleType, expected: str
+) -> None:
+    """The client's simulation id (a UUID) is not a vehicle; the dashboard shows this id."""
+    assert ambulance_telemetry(vehicle_type, _BASE, 10.0, _track()).id == expected
+
+
+def test_intersection_telemetry_carries_the_route_model_names() -> None:
+    """A null name hides the ETL name the start response already gave for the same id."""
+    model = RouteModel(
+        intersections=(
+            RouteIntersection("INT-1", 80.0, 80.0, 35.0, name="Aleja Kijowska / Juliusza Lea"),
+            RouteIntersection("INT-2", 90.0, 90.0, 35.0),
+        ),
+        _cascade_targets={},
+    )
+    state = replace(_BASE, intersection_runtimes=(IntersectionRuntime(), IntersectionRuntime()))
+
+    names = [item.name for item in intersection_telemetry(model, state)]
+
+    assert names == ["Aleja Kijowska / Juliusza Lea", None]

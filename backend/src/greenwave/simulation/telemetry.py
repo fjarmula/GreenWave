@@ -12,6 +12,7 @@ from greenwave.schemas import (
     SignalPhaseIndicator,
     SimulationCompletedEvent,
     SimulationTickEvent,
+    VehicleType,
 )
 from greenwave.simulation.corridor import ACTIVE_STATES, route_runtimes, time_to_intersection
 from greenwave.simulation.route_model import RouteModel
@@ -19,12 +20,19 @@ from greenwave.simulation.route_track import RouteTrack
 from greenwave.simulation.state import EngineState
 from greenwave.simulation_settings import SimulationSettings
 
+# Simulated vehicle ids shown by the dashboard; the mock transport uses the same ones.
+VEHICLE_IDS: dict[VehicleType, str] = {
+    VehicleType.AMBULANCE: "AMB-KRA-01",
+    VehicleType.FIRE_TRUCK: "FIRE-KRA-01",
+    VehicleType.POLICE_CAR: "POL-KRA-01",
+}
+
 
 def ambulance_telemetry(
-    simulation_id: str, state: EngineState, speed_mps: float, track: RouteTrack
+    vehicle_type: VehicleType, state: EngineState, speed_mps: float, track: RouteTrack
 ) -> AmbulanceTelemetry:
     return AmbulanceTelemetry(
-        id=simulation_id,
+        id=VEHICLE_IDS[vehicle_type],
         position=track.position_at(state.distance_travelled_m),
         speed_kmh=speed_mps * 3.6,
         status=_ambulance_status(state),
@@ -54,7 +62,7 @@ def intersection_telemetry(
     return [
         IntersectionTelemetry(
             id=item.id,
-            name=None,
+            name=item.name,
             state=runtime.state,
             is_cascade=runtime.is_cascade,
             tti_seconds=None
