@@ -5,6 +5,7 @@ import { useSimulationDispatch, useSimulationState } from "@/components/simulati
 import { simulationAdapter } from "@/lib/simulation-adapter";
 import {
   connectSimulationStream,
+  requestRunStop,
   requestSimulationStart,
   requestSimulationStop,
 } from "@/lib/simulation-controller";
@@ -32,6 +33,12 @@ export function useSimulationStream() {
     requestSimulationStop(simulationAdapter, isActive ? simulationId : null, dispatch);
   }, [dispatch, isActive, simulationId]);
 
+  /** The live view's Stop: the ended run stays on screen. */
+  const stopRun = useCallback(() => {
+    if (!isStreaming || !simulationId) return;
+    void requestRunStop(simulationAdapter, simulationId, dispatch);
+  }, [dispatch, isStreaming, simulationId]);
+
   useEffect(() => {
     if (!isStreaming || !simulationId) return;
     return connectSimulationStream(
@@ -43,5 +50,5 @@ export function useSimulationStream() {
     );
   }, [dispatch, isStreaming, simulationId]);
 
-  return { startSimulation, stopSimulation };
+  return { startSimulation, stopSimulation, stopRun };
 }

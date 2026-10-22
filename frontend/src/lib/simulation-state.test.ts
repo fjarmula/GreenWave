@@ -328,6 +328,83 @@ describe("terminal events", () => {
   });
 });
 
+describe("user stop", () => {
+  const cancelledByServer = {
+    schema_version: "1.0",
+    is_simulated: true,
+    event_type: "SIMULATION_CANCELLED",
+    simulation_id: SIMULATION_ID,
+    tick: 3,
+    timestamp: "2026-10-22T12:00:03Z",
+    reason: "STOPPED",
+  } as const;
+
+  it("STOP_REQUESTED marks the current running run as stopping", () => {
+    const stopping = reduce(running, { type: "STOP_REQUESTED", simulationId: SIMULATION_ID });
+    expect(stopping.simulationState).toBe("RUNNING");
+    expect(stopping.stopRequested).toBe(true);
+    expect(stopping.stopError).toBeNull();
+  });
+
+  it("ignores STOP_REQUESTED for another run or outside RUNNING", () => {
+    expect(reduce(running, { type: "STOP_REQUESTED", simulationId: "other" })).toBe(running);
+    const starting = reduce(initialSimulationState, { type: "START_REQUESTED", request });
+    expect(reduce(starting, { type: "STOP_REQUESTED", simulationId: SIMULATION_ID })).toBe(
+      starting,
+    );
+  });
+
+  it("STOP_CONFIRMED ends the run as CANCELLED / STOPPED, keeping the last snapshot", () => {
+    const stopped = reduce(
+      running,
+      { type: "TICK", event: tick(3) },
+      { type: "STOP_REQUESTED", simulationId: SIMULATION_ID },
+      { type: "STOP_CONFIRMED", simulationId: SIMULATION_ID },
+    );
+    expect(stopped.simulationState).toBe("CANCELLED");
+    expect(stopped.cancelReason).toBe("STOPPED");
+    expect(stopped.connection).toBeNull();
+    expect(stopped.stopRequested).toBe(false);
+    expect(stopped.liveTelemetry?.tick).toBe(3);
+    expect(stopped.routeData).toEqual(route);
+  });
+
+  it("the second of STOP_CONFIRMED and the server's STOPPED terminal is a no-op", () => {
+    const confirmedFirst = reduce(running, {
+      type: "STOP_CONFIRMED",
+      simulationId: SIMULATION_ID,
+    });
+    expect(reduce(confirmedFirst, { type: "TERMINAL", event: cancelledByServer })).toBe(
+      confirmedFirst,
+    );
+    const terminalFirst = reduce(running, { type: "TERMINAL", event: cancelledByServer });
+    expect(reduce(terminalFirst, { type: "STOP_CONFIRMED", simulationId: SIMULATION_ID })).toBe(
+      terminalFirst,
+    );
+  });
+
+  it("STOP_FAILED keeps the run going and reports the stop error", () => {
+    const failed = reduce(
+      running,
+      { type: "STOP_REQUESTED", simulationId: SIMULATION_ID },
+      { type: "STOP_FAILED", simulationId: SIMULATION_ID, message: "Stop failed" },
+    );
+    expect(failed.simulationState).toBe("RUNNING");
+    expect(failed.stopRequested).toBe(false);
+    expect(failed.stopError).toBe("Stop failed");
+  });
+
+  it("a new stop request clears the previous stop error", () => {
+    const retried = reduce(
+      running,
+      { type: "STOP_FAILED", simulationId: SIMULATION_ID, message: "Stop failed" },
+      { type: "STOP_REQUESTED", simulationId: SIMULATION_ID },
+    );
+    expect(retried.stopError).toBeNull();
+    expect(retried.stopRequested).toBe(true);
+  });
+});
+
 describe("reset", () => {
   it("returns to SETUP from any state", () => {
     const states = [

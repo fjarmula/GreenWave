@@ -18,6 +18,7 @@ export function RoutePreview({
   destination,
   mapFocusRequest,
   onBackToSetup,
+  onStop,
   map: mapProps,
 }: {
   mode: DashboardMode;
@@ -25,6 +26,8 @@ export function RoutePreview({
   destination: MapEndpoint | null;
   mapFocusRequest: number;
   onBackToSetup?: () => void;
+  /** Live only: stops the running simulation. */
+  onStop?: () => void;
   /** Station layer and map-click inputs, passed through to the map. */
   map: Pick<
     ComponentProps<typeof MapContainer>,
@@ -59,20 +62,22 @@ export function RoutePreview({
       {isLive ? (
         <>
           <div className="relative z-20 p-3 sm:p-4 lg:p-6">
-            <KpiHeader />
+            <KpiHeader onStop={onStop} />
           </div>
           <VehicleTelemetry />
           <div className="absolute top-36 right-6 bottom-28 z-20 hidden w-[440px] space-y-3 overflow-y-auto lg:block">
             <div className="ml-auto w-[330px] space-y-3">
-              {onBackToSetup && <RunSummary onBackToSetup={onBackToSetup} />}
+              {onBackToSetup && onStop && (
+                <RunSummary onBackToSetup={onBackToSetup} onStop={onStop} />
+              )}
               <IntersectionList />
             </div>
             <ItsConsole />
           </div>
           <div className="relative z-20 mt-[420px] grid gap-3 px-3 pb-3 sm:mt-[550px] sm:grid-cols-2 sm:px-4 lg:hidden">
-            {onBackToSetup && (
+            {onBackToSetup && onStop && (
               <div className="sm:col-span-2">
-                <RunSummary onBackToSetup={onBackToSetup} />
+                <RunSummary onBackToSetup={onBackToSetup} onStop={onStop} />
               </div>
             )}
             <IntersectionList />

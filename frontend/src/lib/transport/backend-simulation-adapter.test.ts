@@ -428,7 +428,7 @@ describe("subscribe", () => {
 });
 
 describe("stop", () => {
-  it("POSTs to the stop URL and closes that simulation's stream", async () => {
+  it("POSTs to the stop URL and keeps the stream open for the server's STOPPED terminal", async () => {
     fetchMock.mockResolvedValue(
       jsonResponse({
         schema_version: "1.0",
@@ -438,11 +438,18 @@ describe("stop", () => {
       }),
     );
     const backend = adapter();
-    backend.subscribe(SIMULATION_ID, recorder().subscriber);
+    const events = recorder();
+    backend.subscribe(SIMULATION_ID, events.subscriber);
+    const source = latestSource();
+    source.open();
     await backend.stop(SIMULATION_ID);
     expect(fetchMock.mock.calls[0][0]).toBe(`${BASE_URL}/api/v1/simulation/${SIMULATION_ID}/stop`);
     expect(fetchMock.mock.calls[0][1]?.method).toBe("POST");
-    expect(latestSource().closed).toBe(true);
+    expect(source.closed).toBe(false);
+
+    source.emit({ ...cancelledEventExample, reason: "STOPPED" });
+    expect(events.calls).toEqual(["terminal:SIMULATION_CANCELLED"]);
+    expect(source.closed).toBe(true);
   });
 
   it("treats 404 as already gone", async () => {

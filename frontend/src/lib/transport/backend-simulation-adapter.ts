@@ -140,8 +140,9 @@ export function createBackendSimulationAdapter(
       return close;
     },
 
+    // The stream stays open: the server answers a stop with a SIMULATION_CANCELLED/STOPPED
+    // terminal, which closes it like any other terminal.
     async stop(simulationId) {
-      streams.get(simulationId)?.();
       const { response, json } = await postJson(simulationUrl(simulationId, "stop"));
       // 404: the run is already gone, which is what the user asked for.
       if (!response.ok && response.status !== 404) throw httpError(response.status, json);
