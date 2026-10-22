@@ -55,7 +55,7 @@ Out of scope (known, unchanged): decorative 72 % speed bar; 320 px header trunca
 - [x] **[Completed] M3 — Keep settings and previous result (F1, F3).** [Sub-plan](2026-10-22-m3-run-comparison-state.md). Dependency: M2 (back-to-setup path). Suggested commit: `fix: keep run settings and previous result across runs`.
 - [x] **[Completed] M4 — Server-error terminal (D2; B5).** [Sub-plan](2026-10-22-m4-server-error-terminal.md). Dependency: M2 (summary card). **Contract change; tell the human before editing `GreenWave_ARCHITECTURE.md`.** Suggested commit: `feat: report simulation server errors to the dashboard`.
 - [x] **[Completed] M5 — Session lifecycle hardening (B3, B4).** [Sub-plan](2026-10-22-m5-session-lifecycle.md). Dependency: M4 (same file, terminal semantics). Suggested commit: `fix: bound retained sessions and publish one terminal per run`.
-- [ ] **[Pending] M6 — Map stability (F4, F6, F15).** [Sub-plan](2026-10-22-m6-map-stability.md). Dependency: M2, M3 (dashboard layout settled). Suggested commit: `fix: keep the map instance and user zoom across interactions`.
+- [x] **[Completed] M6 — Map stability (F4, F6, F15).** [Sub-plan](2026-10-22-m6-map-stability.md). Dependency: M2, M3 (dashboard layout settled). Suggested commit: `fix: keep the map instance and user zoom across interactions`.
 - [ ] **[Pending] M7 — Simulation ids outside secure contexts (F5).** [Sub-plan](2026-10-22-m7-simulation-id.md). Dependency: none. Suggested commit: `fix: generate simulation ids outside secure contexts`.
 - [ ] **[Pending] M8 — HUD accuracy and feedback (F7–F12, F14).** [Sub-plan](2026-10-22-m8-hud-feedback.md). Dependency: M1 (vehicle ids), M2 (header). Suggested commit: `fix: make live HUD state and search feedback accurate`.
 
@@ -199,6 +199,34 @@ Order rationale: M1–M3 are what a jury sees first in backend mode; M4–M5 clo
 - Deviations / rulings:
   1. The one-terminal guard sits in `_publish` rather than only making `_cancel` idempotent, so it covers every producer, including the M4 follow-up. `stop` needs no separate re-check, because a second publish is a no-op.
   2. The plan's "planner that yields" cannot force the race (planning runs in a thread). The test makes A's cancellation slow to unwind instead.
+
+## M6 verification — 2026-10-22
+
+- Branch `fix/m6-map-stability` (from `main` at `03e1a59`), uncommitted for human review.
+- Root cause as planned:
+  - Setup rendered `<section>…<RoutePreview/></section>` and live rendered a bare `<RoutePreview/>`, so React remounted the map on every mode switch.
+  - `EndpointMarkers` re-fitted on every endpoint change (`maxZoom 13.2`, `duration 0`).
+  - Nothing guarded `fitBounds` against a zero-size container.
+- Fix:
+  - **Layout:** `DashboardLayout` (exported, hook-free) always renders one `<section>`: grid classes in setup, `contents` in live (so the preview stays a flex child of `main`). The form is a conditional first child and the preview a keyed `Fragment` second child.
+  - **Fit decision:** `src/components/map/endpoint-fit.ts` (new) holds `endpointFitDecision` and `applyEndpointFit`. It fits only on a new "View station and incident" request (tracked in a ref) or when an endpoint is outside `map.getBounds()`, over 600 ms (0 under reduced motion).
+  - **Size guard:** `canFit(map)` skips `fitBounds` for a 0-width or 0-height container. `useRouteFit` now calls the extracted `applyRouteFit`, which uses the same guard.
+- TDD:
+  - **One instance:** `dashboard-map-lifecycle.test.tsx` first failed (export missing). With `DashboardLayout` extracted unchanged, the path check failed on the real bug; with the fix it passed. Setup snapshots passed in both steps.
+  - **Fit decision:** `endpoint-fit.test.ts`, 5 cases, failed (module missing), then passed.
+  - **Fit helpers:** `map-fit.test.ts` (fake map, 9 cases) failed (functions missing). With the helpers extracted without the guard, the 4 zero-size cases failed on behaviour; with `canFit` they passed.
+- Snapshots: none changed. `Dashboard.setup.{mock,backend}.html` are byte-identical: the `Fragment` renders nothing and the setup classes are unchanged.
+- Gates: frontend `lint`, `typecheck`, `format:check`, `test` (**47 files, 425 tests**), `build` — all exit 0. `git diff --check` clean. No backend, contract, dependency or lockfile change. `graphify update .` run.
+- Browser (`playwright-cli`, scripts, JSON and screenshots in `.tmp/playwright/repo-audit/m6/`): real backend (:8000, dev :3101) and mock production build (:3100), at 1440 × 1000, 390 × 844 and 320 × 720. The script reads and sets the camera through the MapLibre instance found via React's fiber (test-only; no product hook).
+  - **Click at zoom 16:** after zooming to 16 on the chosen station, clicking a nearby street keeps the camera (16 → 16, centre unchanged). The incident pin lands on the click within 1 px, and the station stays visible.
+  - **Far endpoint:** backend "Kocmyrzowska 1" and mock "pan away + click" fit to include it. The mock samples show the animation (15.34 → 13.2 over about 450 ms). The backend fit settled before sampling; its station was then also in view, so no second fit ran.
+  - **Start and back:** start → live → Stop → back keeps the same instance (`===`). There is 1 canvas, no "Loading map tiles…" overlay, and the style JSON was fetched once. In live the route layers exist; back in setup no `greenwave-*` layers and no vehicle marker remain. No horizontal overflow.
+  - **Theme:** dark → light keeps the same instance and 1 canvas.
+  - Console errors: 0 in all 6 runs.
+- Deviations / rulings:
+  1. **No DOM test for mounts:** the planned mount-count test needs a DOM (Vitest runs in `node`). It is replaced by a reconciliation-path test, since React keeps the subtree exactly when types, keys and positions match. Instance identity across modes is confirmed in the browser.
+  2. **Reduced motion:** the focus-request fit is also instant under reduced motion (the plan said "animated 600 ms" for it), to match the off-screen fit and `useRouteFit`.
+  3. **Theme switch:** a theme switch re-requests the style JSON (light → dark → light fetched positron twice). That is the existing `setStyle` swap on the same instance, not a new construction; left unchanged.
 
 ## Final closeout
 
