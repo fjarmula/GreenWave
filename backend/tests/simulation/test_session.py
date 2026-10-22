@@ -13,7 +13,7 @@ from greenwave.schemas import (
     SimulationStartResponse,
 )
 from greenwave.simulation.assembly import PlannedSimulation, SimulationPlanner
-from greenwave.simulation.session import SessionManager
+from greenwave.simulation.session import SessionManager, SimulationNotFoundError
 from greenwave.simulation_settings import SimulationSettings
 
 
@@ -305,3 +305,169 @@ async def test_every_simulated_second_is_streamed_whatever_the_playback_speed(mo
         assert sleeps
         assert all(seconds <= 1 / playback for seconds in sleeps)
         assert max(sleeps) == pytest.approx(1 / playback, abs=0.01)
+
+
+def _limited(manager: SessionManager, limit: int) -> SessionManager:
+    manager._settings = SimulationSettings(retained_session_limit=limit)
+    return manager
+
+
+@pytest.mark.asyncio
+async def test_oldest_terminal_sessions_are_evicted_beyond_the_limit(
+    manager: SessionManager,
+) -> None:
+    """Every retained engine, route and phase state otherwise lives as long as the process (B3)."""
+    _limited(manager, 2)
+    for simulation_id in ("A", "B", "C"):
+        await manager.start(_request(simulation_id))
+
+    assert [manager.exists(sid) for sid in ("A", "B", "C")] == [False, True, True]
+    with pytest.raises(SimulationNotFoundError):
+        await anext(manager.subscribe("A"))
+    with pytest.raises(SimulationNotFoundError):
+        await manager.stop("A")
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_the_active_session_is_kept_at_a_limit_of_one(manager: SessionManager) -> None:
+    _limited(manager, 1)
+    await manager.start(_request("A"))
+    assert manager.exists("A")
+
+    await manager.start(_request("B"))
+
+    assert not manager.exists("A")
+    assert manager.exists("B")
+    assert manager._active is not None
+    assert manager._active.simulation_id == "B"
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_a_retained_finished_session_replays_its_terminal(manager: SessionManager) -> None:
+    _limited(manager, 2)
+    manager._planner = _planner(_CompletingEngine)
+    await manager.start(_request("first"))
+    await asyncio.sleep(0)
+    manager._planner = _planner(_Engine)
+
+    await manager.start(_request("second"))
+
+    [event] = [event async for event in manager.subscribe("first")]
+    assert isinstance(event, SimulationCompletedEvent)
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_restarting_a_finished_id_makes_it_the_newest_session(
+    manager: SessionManager,
+) -> None:
+    _limited(manager, 2)
+    for simulation_id in ("A", "B", "A", "C"):
+        await manager.start(_request(simulation_id))
+
+    assert [manager.exists(sid) for sid in ("A", "B", "C")] == [True, False, True]
+    await manager.shutdown()
+
+
+async def _slow_to_unwind(_: float) -> None:
+    """A tick sleep whose cancellation takes a moment, so concurrent cancellers overlap."""
+    try:
+        await asyncio.Event().wait()
+    except asyncio.CancelledError:
+        await asyncio.sleep(0.01)
+        raise
+
+
+async def _terminals_of_a_raced_run(manager: SessionManager, stop_first: bool) -> list[object]:
+    manager._sleep = _slow_to_unwind
+    await manager.start(_request("A"))
+    await asyncio.sleep(0)
+    stream = manager.subscribe("A")
+    first = asyncio.create_task(anext(stream))
+    await asyncio.sleep(0)
+
+    racers = [manager.stop("A"), manager.start(_request("B"))]
+    await asyncio.gather(*(racers if stop_first else reversed(racers)))
+
+    events = [await first, *[event async for event in stream]]
+    await manager.shutdown()
+    return events
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("stop_first", [True, False])
+async def test_racing_stop_and_supersede_publish_one_terminal(
+    manager: SessionManager, stop_first: bool
+) -> None:
+    """Both callers can pass ``terminal is None`` before either publishes (B4)."""
+    events = await asyncio.wait_for(_terminals_of_a_raced_run(manager, stop_first), timeout=1)
+
+    [terminal] = events
+    assert isinstance(terminal, SimulationCancelledEvent)
+    assert terminal.reason in {CancelReason.STOPPED, CancelReason.SUPERSEDED}
+    assert manager._sessions["A"].terminal is terminal
+
+
+@pytest.mark.asyncio
+async def test_racing_stop_and_supersede_publish_one_terminal_to_late_listeners(
+    manager: SessionManager,
+) -> None:
+    manager._sleep = _slow_to_unwind
+    await manager.start(_request("A"))
+    await asyncio.sleep(0)
+    listener = asyncio.Queue[object](maxsize=8)
+    manager._sessions["A"].subscribers.add(listener)  # type: ignore[arg-type]
+
+    await asyncio.gather(manager.stop("A"), manager.start(_request("B")))
+
+    received = [listener.get_nowait() for _ in range(listener.qsize())]
+    assert len(received) == 1, received
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_stop_after_natural_completion_publishes_nothing(manager: SessionManager) -> None:
+    manager._planner = _planner(_CompletingEngine)
+    await manager.start(_request("first"))
+    await asyncio.sleep(0)
+    listener = asyncio.Queue[object](maxsize=8)
+    manager._sessions["first"].subscribers.add(listener)  # type: ignore[arg-type]
+
+    await manager.stop("first")
+
+    assert listener.empty()
+    assert isinstance(manager._sessions["first"].terminal, SimulationCompletedEvent)
+    await manager.shutdown()
+
+
+class _TerminalThenFailEngine(_CompletingEngine):
+    """An engine bug: emits its terminal without marking the state completed, then raises."""
+
+    def step(
+        self, state: SimpleNamespace, timestamp: datetime
+    ) -> tuple[SimpleNamespace, list[object]]:
+        if state.tick == 1:
+            raise RuntimeError("engine bug after the terminal")
+        _, events = super().step(state, timestamp)
+        return SimpleNamespace(tick=1, completed=False), events
+
+
+@pytest.mark.asyncio
+async def test_a_failure_after_the_terminal_publishes_no_second_terminal(
+    manager: SessionManager,
+) -> None:
+    manager._planner = _planner(_TerminalThenFailEngine)
+    manager._sleep = _yield
+    await manager.start(_request("first"))
+    listener = asyncio.Queue[object](maxsize=8)
+    manager._sessions["first"].subscribers.add(listener)  # type: ignore[arg-type]
+    task = manager._sessions["first"].task
+    assert task is not None
+
+    await asyncio.wait_for(task, timeout=1)
+
+    received = [listener.get_nowait() for _ in range(listener.qsize())]
+    assert [type(event) for event in received] == [SimulationCompletedEvent]
+    await manager.shutdown()

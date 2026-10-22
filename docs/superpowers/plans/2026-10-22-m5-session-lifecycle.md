@@ -25,21 +25,21 @@
 
 ### Task 1: Retention bound
 
-- [ ] RED:
+- [x] RED:
   - with `retained_session_limit=2`, start runs A, B and C in turn (each superseding the last): `exists("A")` is false, B and C exist, and `stream`/`stop` for A raise `SimulationNotFoundError`;
   - with limit 1, the active run is kept even when it is the only session;
   - a finished-but-latest session stays streamable (its terminal is replayed).
-- [ ] GREEN.
+- [x] GREEN.
 
 ### Task 2: One terminal under a race
 
-- [ ] RED: with a planner that yields (`asyncio.sleep(0)`), call `asyncio.gather(manager.stop("A"), manager.start(request_B))` while A is live, then collect every event A's subscriber gets: exactly one `SIMULATION_CANCELLED` (`STOPPED` or `SUPERSEDED`, whichever won) and then the end of the stream. Repeat with the order swapped. Also: a stop that arrives just after natural completion publishes nothing. Also (found in M4): the `_run` `except` branch publishes `SERVER_ERROR` without checking `session.terminal`, so an exception raised after a terminal was already published in the same step would add a second terminal. Cover it with the same one-terminal guard.
-- [ ] GREEN: idempotent `_cancel`.
-- [ ] Backend gate.
+- [x] RED: with a planner that yields (`asyncio.sleep(0)`), call `asyncio.gather(manager.stop("A"), manager.start(request_B))` while A is live, then collect every event A's subscriber gets: exactly one `SIMULATION_CANCELLED` (`STOPPED` or `SUPERSEDED`, whichever won) and then the end of the stream. Repeat with the order swapped. Also: a stop that arrives just after natural completion publishes nothing. Also (found in M4): the `_run` `except` branch publishes `SERVER_ERROR` without checking `session.terminal`, so an exception raised after a terminal was already published in the same step would add a second terminal. Cover it with the same one-terminal guard.
+- [x] GREEN: idempotent `_cancel`.
+- [x] Backend gate.
 
 ### Task 3: Docs and check
 
-- [ ] Tell the human, then update the §4 sentence. Check memory by hand: start 10 runs against the real backend and confirm `len(app.state.session_manager._sessions)` stays ≤ 4. Use a short test-only script under the scratchpad, not committed.
+- [x] Tell the human, then update the §4 sentence. Check memory by hand: start 10 runs against the real backend and confirm `len(app.state.session_manager._sessions)` stays ≤ 4. Use a short test-only script under the scratchpad, not committed.
 
 ## Acceptance
 

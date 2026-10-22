@@ -54,7 +54,7 @@ Out of scope (known, unchanged): decorative 72 % speed bar; 320 px header trunca
 - [x] **[Completed] M2 — Live-run flow and Stop (D1; F2, F13).** [Sub-plan](2026-10-22-m2-live-run-flow.md). Dependency: none. Suggested commit: `feat: stop a live run from the live operations view`.
 - [x] **[Completed] M3 — Keep settings and previous result (F1, F3).** [Sub-plan](2026-10-22-m3-run-comparison-state.md). Dependency: M2 (back-to-setup path). Suggested commit: `fix: keep run settings and previous result across runs`.
 - [x] **[Completed] M4 — Server-error terminal (D2; B5).** [Sub-plan](2026-10-22-m4-server-error-terminal.md). Dependency: M2 (summary card). **Contract change; tell the human before editing `GreenWave_ARCHITECTURE.md`.** Suggested commit: `feat: report simulation server errors to the dashboard`.
-- [ ] **[Pending] M5 — Session lifecycle hardening (B3, B4).** [Sub-plan](2026-10-22-m5-session-lifecycle.md). Dependency: M4 (same file, terminal semantics). Suggested commit: `fix: bound retained sessions and publish one terminal per run`.
+- [x] **[Completed] M5 — Session lifecycle hardening (B3, B4).** [Sub-plan](2026-10-22-m5-session-lifecycle.md). Dependency: M4 (same file, terminal semantics). Suggested commit: `fix: bound retained sessions and publish one terminal per run`.
 - [ ] **[Pending] M6 — Map stability (F4, F6, F15).** [Sub-plan](2026-10-22-m6-map-stability.md). Dependency: M2, M3 (dashboard layout settled). Suggested commit: `fix: keep the map instance and user zoom across interactions`.
 - [ ] **[Pending] M7 — Simulation ids outside secure contexts (F5).** [Sub-plan](2026-10-22-m7-simulation-id.md). Dependency: none. Suggested commit: `fix: generate simulation ids outside secure contexts`.
 - [ ] **[Pending] M8 — HUD accuracy and feedback (F7–F12, F14).** [Sub-plan](2026-10-22-m8-hud-feedback.md). Dependency: M1 (vehicle ids), M2 (header). Suggested commit: `fix: make live HUD state and search feedback accurate`.
@@ -175,6 +175,30 @@ Order rationale: M1–M3 are what a jury sees first in backend mode; M4–M5 clo
      - The header label and KPI badge read "Simulation cancelled" for SERVER_ERROR; they key on phase.
      - At 360 × 740 every terminal summary card starts below the fold (y ≈ 697). This is pre-existing M2 placement, not introduced here.
   4. Follow-up added to M5 Task 2: the `except` branch does not check `session.terminal`, so an exception after a terminal in the same step would publish a second one. This belongs with M5's one-terminal guard.
+
+## M5 verification — 2026-10-22
+
+- Branch `fix/m5-session-lifecycle` (from `main` at `0410f92`), uncommitted for human review.
+- Root cause as planned: `start` added every session to `_sessions` and nothing removed them (B3). `stop` and a superseding `start` could both pass `terminal is None`, await the same task, and each publish a `SIMULATION_CANCELLED` (B4). The M4 follow-up was the same defect: a loop failure after the engine's own terminal published a second one.
+- Fix:
+  - **Retention:** `SimulationSettings.retained_session_limit` (default 4, `ge=1`). After each start, `_evict_retained()` drops the oldest ended sessions beyond the limit; the active run is never evicted. A reused id is re-inserted, so it counts as the newest session.
+  - **One terminal:** `_publish` returns once `session.terminal` is set. That single guard covers the stop/supersede race, the `except` branch and an engine that emits after its terminal.
+- TDD:
+  - **Retention:** the cases (evict beyond the limit, with stream and stop raising `SimulationNotFoundError`; keep the active run at limit 1; re-used id is newest) first failed on the missing setting, then on behaviour (`[True, True, True] == [False, True, True]`), then passed. The "retained finished run replays its terminal" case passed before the fix; it guards against over-eviction.
+  - **One terminal:** the race in both `gather` orders, the late-listener count (`2 == 1`) and failure-after-terminal (`[Cancelled]` after `Completed`) failed, then passed. A tick sleep that takes 10 ms to unwind after cancellation makes the race deterministic. "Stop after natural completion publishes nothing" passed before the fix (guard).
+  - The session file passed 6 repeated runs: 18 passed each time.
+- Gates: backend `ruff check`, `ruff format --check`, `mypy`, `pytest` — **930 passed**. `git diff --check` clean. No contract, frontend, dependency or lockfile change.
+- Memory check (throwaway script in the session scratchpad, not committed): 10 real starts in-process against the processed dataset (ambulance → 50.0614, 19.9366, every third stopped).
+  - Session count after each start: `[1, 2, 3, 4, 4, 4, 4, 4, 4, 4]`.
+  - Retained: `M5-CHECK-6…9`; active: `M5-CHECK-9`.
+  - The evicted `M5-CHECK-0` answers 404 for both stream and stop.
+- Real backend (:8000):
+  - Wire check with `curl`: a stopped run's stream has exactly 1 `SIMULATION_CANCELLED` (`STOPPED`), and the superseded run replays `SUPERSEDED`.
+  - `playwright-cli` smoke with the backend-transport dev server (:3101), M2 flow at 1440 × 1000 and 390 × 844: Stop → stopped → back works, there is no horizontal overflow, and console errors are 0. Evidence is in `.tmp/playwright/repo-audit/m5/`.
+- Docs: in `GreenWave_ARCHITECTURE.md` §4, "A finished session stays readable until superseded." was replaced with the human-approved retention and one-terminal wording.
+- Deviations / rulings:
+  1. The one-terminal guard sits in `_publish` rather than only making `_cancel` idempotent, so it covers every producer, including the M4 follow-up. `stop` needs no separate re-check, because a second publish is a no-op.
+  2. The plan's "planner that yields" cannot force the race (planning runs in a thread). The test makes A's cancellation slow to unwind instead.
 
 ## Final closeout
 

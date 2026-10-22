@@ -406,8 +406,11 @@ A subscriber first receives the latest snapshot, then live events; a
 reconnect resumes at "now" without replay. The run is server-authoritative:
 it starts on `POST /start` and ticks whether or not anyone listens. After
 `ARRIVED` the engine keeps ticking until every intersection is `NORMAL`
-(at most 15 s), then emits `SIMULATION_COMPLETED`. A finished session stays
-readable until superseded. `POST /stop` returns `StopResponse`
+(at most 15 s), then emits `SIMULATION_COMPLETED`. An ended session stays
+readable while it is among the most recent sessions (engine setting
+`retained_session_limit`, default 4, which always keeps the active run); an
+older id answers 404 `SIMULATION_NOT_FOUND`. Each run emits exactly one
+terminal event. `POST /stop` returns `StopResponse`
 (`{"schema_version": "1.0", "is_simulated": true, "simulation_id": ..., "status": "STOPPED"}`).
 
 **`SIMULATION_TICK`:**

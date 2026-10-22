@@ -28,6 +28,8 @@ class SimulationSettings(BaseSettings):
     # Stations given the full green-wave estimate after the reversed-Dijkstra shortlist.
     dispatch_shortlist_size: int = Field(default=5, ge=1)
     subscriber_queue_size: int = Field(default=32, ge=1)
+    # Sessions kept for streaming and stop: the active run plus the most recent ended ones (D3).
+    retained_session_limit: int = Field(default=4, ge=1)
     # Road-attribute time factors (routing/edge_times.py; ADR 0005). Neutral is 1.0 / 0.0.
     # APPROVED 2026-10-19 (human): one lane per direction cannot pass stopped/turning vehicles.
     normal_single_lane_factor: float = Field(default=1.15, ge=1.0)
