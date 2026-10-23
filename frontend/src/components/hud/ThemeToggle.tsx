@@ -2,7 +2,10 @@
 
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, type CSSProperties } from "react";
+import { flushSync } from "react-dom";
+
+import { transitionTheme, type ResolvedTheme } from "@/lib/theme-transition";
 
 const themeOptions = [
   { value: "light", label: "Light theme", icon: Sun },
@@ -10,16 +13,16 @@ const themeOptions = [
   { value: "dark", label: "Dark theme", icon: Moon },
 ] as const;
 
-let switchTimer: number | undefined;
+type ThemeChoice = (typeof themeOptions)[number]["value"];
 
-/** Cross-fades every surface for one switch only, so normal hovers stay instant. */
-function switchThemeSmoothly(apply: () => void) {
-  const root = document.documentElement;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return apply();
-  root.dataset.themeSwitching = "";
-  apply();
-  window.clearTimeout(switchTimer);
-  switchTimer = window.setTimeout(() => delete root.dataset.themeSwitching, 300);
+export function resolveThemeChoice(choice: ThemeChoice, prefersDark: boolean): ResolvedTheme {
+  if (choice === "system") return prefersDark ? "dark" : "light";
+  return choice;
+}
+
+/** The thumb has its own view-transition name, so it slides while the page cross-fades. */
+export function themeThumbStyle(index: number): CSSProperties {
+  return { viewTransitionName: "theme-thumb", transform: `translateX(${index * 100}%)` };
 }
 
 const subscribe = () => () => undefined;
@@ -39,11 +42,7 @@ export function ThemeToggle() {
   return (
     <div className="theme-toggle" role="group" aria-label="Color theme">
       {activeIndex >= 0 && (
-        <span
-          aria-hidden
-          className="theme-toggle-thumb"
-          style={{ transform: `translateX(${activeIndex * 100}%)` }}
-        />
+        <span aria-hidden className="theme-toggle-thumb" style={themeThumbStyle(activeIndex)} />
       )}
       {themeOptions.map(({ value, label, icon: Icon }) => {
         const isActive = theme === value;
@@ -55,7 +54,13 @@ export function ThemeToggle() {
             aria-label={label}
             aria-pressed={isActive}
             title={label}
-            onClick={() => switchThemeSmoothly(() => setTheme(value))}
+            onClick={() => {
+              const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+              void transitionTheme(
+                () => flushSync(() => setTheme(value)),
+                resolveThemeChoice(value, prefersDark),
+              );
+            }}
             className="theme-toggle-option"
           >
             <Icon className="size-3.5" aria-hidden />
