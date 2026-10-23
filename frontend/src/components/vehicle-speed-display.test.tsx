@@ -1,7 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { VehicleTelemetry } from "@/components/dashboard/VehicleTelemetry";
 import { KpiHeader } from "@/components/hud/KpiHeader";
 import {
   initialSimulationState,
@@ -42,10 +41,7 @@ function withRun(phase: SimulationPhase, telemetry: SimulationTickEvent | null) 
   };
 }
 
-const DISPLAYS = [
-  ["KPI strip", () => renderToStaticMarkup(<KpiHeader />)],
-  ["vehicle card", () => renderToStaticMarkup(<VehicleTelemetry />)],
-] as const;
+const DISPLAYS = [["KPI strip", () => renderToStaticMarkup(<KpiHeader />)]] as const;
 
 describe.each(DISPLAYS)("%s speed", (_name, render) => {
   beforeEach(() => {

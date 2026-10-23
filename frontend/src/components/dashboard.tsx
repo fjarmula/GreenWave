@@ -17,7 +17,7 @@ import { captureRunLabels, settingsForMode } from "@/lib/scenario-state";
 import { buildStartRequest } from "@/lib/start-request";
 import { createSimulationId } from "@/lib/simulation-id";
 import { pinnedIncident } from "@/lib/useIncidentDispatch";
-import { type DashboardMode } from "@/components/dashboard/DashboardHeader";
+import type { DashboardMode } from "@/components/dashboard/dashboard-mode";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import { MapContainer } from "@/components/map/MapContainer";
 import { KpiHeader } from "@/components/hud/KpiHeader";
