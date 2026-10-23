@@ -11,3 +11,12 @@ it.each([
   expect(p.top + p.bottom).toBeLessThanOrEqual(h / 2);
   expect(Object.values(p).every((v) => Number.isFinite(v) && v >= 0)).toBe(true);
 });
+it("leaves room for the floating desktop inspector when details are open", () => {
+  expect(mapPadding(1440, 900, true).right).toBeGreaterThanOrEqual(380 + 12);
+  expect(mapPadding(1440, 900, false).right).toBeLessThan(380);
+});
+it("leaves room for the docked phone inspector when details are open", () => {
+  const p = mapPadding(390, 844, true);
+  expect(p.bottom).toBeGreaterThanOrEqual(0.45 * 844);
+  expect(p.top + p.bottom).toBeLessThan(844);
+});

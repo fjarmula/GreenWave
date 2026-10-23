@@ -15,9 +15,13 @@ export function applyRouteFit(
   if (!canFit(map)) return;
   const bounds = new maplibregl.LngLatBounds(routeCoordinates[0], routeCoordinates[0]);
   routeCoordinates.forEach((coordinate) => bounds.extend(coordinate));
-  const { clientWidth, clientHeight } = map.getContainer();
+  const container = map.getContainer();
+  // The workspace shell marks whether its floating inspector currently covers part of the map.
+  const detailsOpen =
+    container.closest<HTMLElement>("[data-details]")?.dataset.details === "true" &&
+    container.closest<HTMLElement>("[data-focus]")?.dataset.focus !== "true";
   map.fitBounds(bounds, {
-    padding: mapPadding(clientWidth, clientHeight),
+    padding: mapPadding(container.clientWidth, container.clientHeight, detailsOpen),
     maxZoom: 16,
     duration: reduceMotion ? 0 : 200,
   });

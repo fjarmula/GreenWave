@@ -21,7 +21,7 @@ vi.mock("maplibre-gl", () => ({
 function fakeMap(width: number, height: number) {
   const fitBounds = vi.fn();
   const map = {
-    getContainer: () => ({ clientWidth: width, clientHeight: height }),
+    getContainer: () => ({ clientWidth: width, clientHeight: height, closest: () => null }),
     getBounds: () => ({
       getWest: () => 19.9,
       getSouth: () => 50.0,

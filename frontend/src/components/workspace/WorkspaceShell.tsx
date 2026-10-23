@@ -44,7 +44,12 @@ export function WorkspaceShell({
     return () => window.removeEventListener("keydown", escape);
   }, [focus]);
   return (
-    <main className="workspace-shell" data-focus={focus} data-details={details}>
+    <main
+      className="workspace-shell"
+      data-layout="map-first"
+      data-focus={focus}
+      data-details={details}
+    >
       <div className="workspace-map-slot" data-map-slot>
         {map}
         <span className="workspace-provenance">{provenance}</span>
@@ -71,7 +76,7 @@ export function WorkspaceShell({
       <aside
         id="workspace-inspector"
         aria-label="Simulation details"
-        className="workspace-inspector"
+        className="workspace-inspector surface-glass"
         hidden={focus || !details}
         inert={focus || !details}
       >
