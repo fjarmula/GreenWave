@@ -34,7 +34,7 @@ function createIncidentPin(label: string) {
 
   const labelElement = document.createElement("span");
   labelElement.className =
-    "absolute top-1/2 left-full ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-border surface-float px-2 py-1";
+    "absolute top-1/2 left-full ml-2 -translate-y-1/2 whitespace-nowrap surface-glass rounded-full! px-2.5 py-1";
   labelElement.textContent = `Incident · ${label}`;
 
   const pin = document.createElement("span");

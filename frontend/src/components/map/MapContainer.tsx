@@ -96,7 +96,7 @@ export function MapContainer({
       >
         {!map && (
           <div className="absolute inset-0 grid place-items-center bg-[var(--map-surface)]">
-            <span className="rounded-full border border-border surface-float px-3 py-1.5 font-mono text-[10px] text-muted-foreground">
+            <span className="surface-glass rounded-full! px-3 py-1.5 font-mono text-[10px] text-muted-foreground">
               Loading map tiles…
             </span>
           </div>

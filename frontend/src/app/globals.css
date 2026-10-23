@@ -216,11 +216,24 @@
   }
 }
 
-/* The one material for controls floating over the map. */
-@utility surface-float {
-  background-color: color-mix(in srgb, var(--surface-2) 84%, transparent);
-  box-shadow: var(--shadow-float);
-  backdrop-filter: blur(12px) saturate(1.4);
+/* Soft glass: the one material for everything floating over the map. Without backdrop-filter it
+   falls back to the opaque surface, never translucent text over the map. */
+@utility surface-glass {
+  border-radius: var(--radius-sheet);
+  background-color: var(--glass-bg);
+  box-shadow: var(--glass-highlight), var(--glass-ring), var(--glass-shadow);
+  backdrop-filter: blur(20px) saturate(1.6);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .surface-glass {
+    background-color: var(--surface-2);
+  }
+}
+
+/* Opaque content tile inside glass. */
+@utility tile {
+  border-radius: var(--radius-card);
+  background-color: var(--tile);
 }
 
 /* Press feedback for anything clickable: instant scale-down, quick release. */
@@ -413,7 +426,6 @@
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
-  border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--track);
   font-size: 0.8125rem;
@@ -482,7 +494,9 @@
 }
 /* Controls floating over the map. */
 .workspace-float {
-  @apply surface-float;
+  @apply surface-glass;
+  border: 0;
+  border-radius: var(--radius-control);
 }
 .workspace-float[data-active] {
   background: color-mix(in srgb, var(--accent) 88%, transparent);
@@ -501,7 +515,6 @@
   width: calc(3 * var(--theme-option) + 8px);
   height: calc(var(--theme-option) + 8px);
   padding: 3px;
-  border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: var(--track);
 }
@@ -565,9 +578,9 @@
   max-width: calc(100% - 1.25rem);
   padding: 0.1875rem 0.625rem;
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 0;
+  @apply surface-glass;
   border-radius: 999px;
-  @apply surface-float;
   font-size: 0.6875rem;
   font-weight: 500;
   white-space: nowrap;
@@ -795,9 +808,7 @@ button,
   right: 1rem;
   width: min(26rem, calc(100% - 2rem));
   padding: 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  @apply surface-float;
+  @apply surface-glass;
 }
 .comparison-stage {
   display: grid;
@@ -928,15 +939,13 @@ button,
   }
 }
 .json-dialog {
-  box-shadow: var(--shadow-float);
+  @apply surface-glass;
   margin: auto;
   width: min(64rem, calc(100vw - 2rem));
   max-width: none;
   max-height: calc(100dvh - 2rem);
   padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  background: var(--popover);
+  border: 0;
   color: var(--foreground);
   overflow: auto;
   overscroll-behavior: contain;
@@ -964,7 +973,8 @@ button,
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--popover);
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(1.6);
   display: flex;
   align-items: start;
   justify-content: space-between;
@@ -993,9 +1003,9 @@ button,
   max-height: 55dvh;
   overflow: auto;
   overscroll-behavior: contain;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-card);
-  background: color-mix(in oklch, var(--background) 70%, var(--muted));
+  background: var(--tile);
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.8125rem;
   line-height: 1.6;
@@ -1390,7 +1400,6 @@ button,
     grid-auto-flow: column;
     gap: 2px;
     padding: 3px;
-    border: 1px solid var(--border);
     border-radius: var(--radius-control);
     background: var(--track);
   }
@@ -1420,21 +1429,18 @@ button,
     width: 100%;
     min-height: 2.75rem;
     padding: 0 2.5rem 0 0.75rem;
-    border: 1px solid var(--input);
+    border: 0;
     border-radius: var(--radius-control);
     outline: none;
-    background: var(--surface-1);
+    background: var(--tile);
     font-size: 0.875rem;
-    transition:
-      border-color var(--dur-hover) ease,
-      box-shadow var(--dur-hover) ease;
+    transition: box-shadow var(--dur-hover) ease;
   }
   .hud-input::placeholder {
     color: var(--fg-muted);
   }
   .hud-input:focus {
-    border-color: var(--ring);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 20%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 25%, transparent);
   }
   .hud-input:disabled {
     cursor: not-allowed;
@@ -1526,20 +1532,18 @@ button,
   .hud-primary {
     display: flex;
     width: 100%;
-    min-height: 2.5rem;
+    min-height: 2.75rem;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     padding: 0 1rem;
-    border-radius: var(--radius-control);
+    border-radius: var(--radius-card);
     background: var(--primary);
-    box-shadow: var(--highlight);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     color: var(--primary-foreground);
   }
   .hud-primary:disabled {
-    box-shadow: none;
     opacity: 0.5;
   }
   .hud-secondary,
@@ -1551,9 +1555,9 @@ button,
     justify-content: center;
     gap: 0.5rem;
     padding: 0 0.875rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-control);
-    background: var(--card);
+    border: 0;
+    border-radius: var(--radius-card);
+    background: var(--tile);
     font-size: 0.8125rem;
     font-weight: 600;
   }
@@ -1567,8 +1571,7 @@ button,
     opacity: 0.5;
   }
   .hud-danger {
-    border-color: color-mix(in srgb, var(--emergency) 40%, transparent);
-    background: color-mix(in srgb, var(--emergency) 10%, transparent);
+    background: color-mix(in srgb, var(--emergency) 12%, transparent);
     color: var(--emergency);
   }
   .hud-danger:disabled {
@@ -1580,9 +1583,8 @@ button,
     align-items: flex-start;
     gap: 0.5rem;
     padding: 0.625rem 0.75rem;
-    border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
     border-radius: var(--radius-control);
-    background: color-mix(in srgb, var(--tone) 8%, transparent);
+    background: color-mix(in srgb, var(--tone) 10%, transparent);
     font-size: 0.75rem;
     font-weight: 500;
     color: var(--tone);
@@ -1598,7 +1600,7 @@ button,
     max-width: 100%;
     align-items: center;
     gap: 0.3125rem;
-    padding: 0.1875rem 0.5rem;
+    padding: 0.25rem 0.625rem;
     border-radius: 999px;
     background: color-mix(in srgb, var(--tone, var(--muted-foreground)) 12%, transparent);
     font-size: 0.6875rem;
@@ -1623,10 +1625,10 @@ button,
     font-weight: 500;
     color: var(--muted-foreground);
   }
+  /* Numbers: tabular sans, tight tracking. Mono is only for IDs and raw telemetry. */
   .hud-value {
-    font-family: var(--font-geist-mono), monospace;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
   }
   @media (hover: hover) and (pointer: fine) {
     .hud-segment:hover {
@@ -1636,10 +1638,10 @@ button,
       background: color-mix(in oklch, var(--primary), white 10%);
     }
     .hud-secondary:not(:disabled):hover {
-      background: var(--muted);
+      background: color-mix(in oklch, var(--tile), var(--fg) 5%);
     }
     .hud-danger:not(:disabled):hover {
-      background: color-mix(in srgb, var(--emergency) 16%, transparent);
+      background: color-mix(in srgb, var(--emergency) 18%, transparent);
     }
   }
   @media (pointer: coarse) {

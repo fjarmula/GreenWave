@@ -153,6 +153,16 @@ describe("surface system", () => {
     expect(literal).toEqual([]);
   });
 
+  it("glass has an opaque fallback", () => {
+    const start = css.indexOf("@supports not (backdrop-filter");
+    expect(start).toBeGreaterThan(-1);
+    expect(css.slice(start, css.indexOf("}", start))).toContain(
+      "background-color: var(--surface-2)",
+    );
+    expect(rule("@utility surface-glass")).toContain("backdrop-filter: blur(20px) saturate(1.6)");
+    expect(css).not.toContain("surface-float");
+  });
+
   it("has no in-flow panel shadow", () => {
     expect(css).not.toContain("--shadow-panel");
   });
@@ -227,14 +237,30 @@ describe("inspector", () => {
     expect(css).not.toMatch(/hud-range[^{]*\{[^}]*var\(--beacon\)/);
   });
 
-  it("keeps the primary action a 40px control without a glow", () => {
+  it("keeps the primary action a 44px card-radius control without a glow", () => {
     const primary = rule("  .hud-primary");
-    expect(primary).toContain("min-height: 2.5rem");
-    expect(primary).toContain("border-radius: var(--radius-control)");
+    expect(primary).toContain("min-height: 2.75rem");
+    expect(primary).toContain("border-radius: var(--radius-card)");
+    expect(primary).not.toContain("box-shadow");
+  });
+
+  it("makes the danger action a soft red tile", () => {
+    const start = css.lastIndexOf("\n  .hud-danger {");
+    const danger = css.slice(start, css.indexOf("}", start));
+    expect(danger).toContain("color-mix(in srgb, var(--emergency) 12%, transparent)");
+    expect(danger).toContain("color: var(--emergency)");
   });
 
   it("breathes status dots instead of pulsing them", () => {
     expect(css).toMatch(/@keyframes status-breathe/);
+  });
+});
+
+describe("numerals", () => {
+  it("sets values in tabular sans, not mono", () => {
+    const value = rule("  .hud-value");
+    expect(value).toContain("font-variant-numeric: tabular-nums");
+    expect(value).not.toContain("monospace");
   });
 });
 
@@ -245,8 +271,9 @@ describe("dialog and fields", () => {
     expect(backdrop).toContain("oklch(0 0 0 / 50%)");
   });
 
-  it("sits inputs on a raised surface with a readable placeholder", () => {
-    expect(rule("  .hud-input")).toContain("background: var(--surface-1)");
+  it("sits inputs on a borderless tile with a readable placeholder", () => {
+    expect(rule("  .hud-input")).toContain("background: var(--tile)");
+    expect(rule("  .hud-input")).toContain("border: 0");
     expect(rule("  .hud-input::placeholder")).toContain("color: var(--fg-muted)");
   });
 });

@@ -94,7 +94,7 @@ function StationPin({ feature }: { feature: StationFeature }) {
         <VehicleIcon type={vehicle_type} className={role === "chosen" ? "size-4" : "size-3.5"} />
       </span>
       {role === "chosen" && (
-        <span className="absolute top-1/2 left-full ml-2 -translate-y-1/2 rounded-md border border-border surface-float px-2 py-1 whitespace-nowrap">
+        <span className="absolute top-1/2 left-full ml-2 -translate-y-1/2 surface-glass rounded-full! px-2.5 py-1 whitespace-nowrap">
           {name}
         </span>
       )}
