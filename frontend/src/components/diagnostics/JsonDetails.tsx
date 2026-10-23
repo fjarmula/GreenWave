@@ -111,8 +111,20 @@ function OpenJsonViewer({
               {snapshot.status !== undefined && `HTTP ${snapshot.status}`}
               {snapshot.eventType && ` · ${snapshot.eventType}`}
               {snapshot.validation &&
-                ` · ${snapshot.validation === "accepted" ? "Accepted by validation" : "Rejected by validation"}`}
+                ` · ${snapshot.validation === "accepted" ? "Payload format valid" : "Payload format invalid"}`}
             </p>
+            {snapshot.eventType === "ITS_DISPATCH" && snapshot.validation !== "rejected" && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Priority request submitted; awaiting controller feedback at this event’s simulated
+                time.
+              </p>
+            )}
+            {snapshot.eventType === "ITS_FEEDBACK" && snapshot.validation !== "rejected" && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                The request outcome is in the status field. Signal colours are reported separately
+                in SIMULATION_TICK.
+              </p>
+            )}
             <p className="mt-3 text-sm text-muted-foreground">{description}</p>
             <div className="json-dialog-actions">
               <div className="flex gap-2" role="group" aria-label="Payload direction">

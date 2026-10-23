@@ -256,7 +256,7 @@ function openStream(
             ? "completed"
             : eventType === "SIMULATION_CANCELLED"
               ? "cancelled"
-              : "success",
+              : "received",
       ...(event ? { tick: event.tick } : {}),
       capture: {
         method: "GET",

@@ -1,3 +1,4 @@
+import { diagnosticOutcomeLabel, diagnosticTickLabel } from "@/lib/diagnostics/presentation";
 import { operations, type DiagnosticEntry, type Operation } from "@/lib/diagnostics/store";
 const names: Record<Operation, string> = {
   stations: "Stations",
@@ -49,7 +50,8 @@ export function DataFlowView({ entries }: { entries: ReadonlyArray<DiagnosticEnt
         <p className="mt-2 text-sm text-muted-foreground">
           Browser durations only. Repeated ticks are coalesced; counts show sampled activity. Bodies
           and endpoint queries are retained temporarily for JSON inspection in this browser only.
-          Clear history removes them.
+          Clear history removes them. Each tick is one simulated second, independent of playback
+          speed. Several events can share a tick; tick numbers do not count messages.
         </p>
         <dl className="mt-5 grid gap-3 sm:grid-cols-2">
           {operations.map((op) => {
@@ -59,7 +61,7 @@ export function DataFlowView({ entries }: { entries: ReadonlyArray<DiagnosticEnt
                 <dt className="font-medium">{names[op]}</dt>
                 <dd className="mt-1 text-sm text-muted-foreground">
                   {entry
-                    ? `${entry.transport === "mock" ? "Synthetic (mock)" : "Backend simulation"} · ${entry.outcome}${entry.tick === undefined ? "" : ` · tick ${entry.tick}`}${entry.durationMs === undefined ? "" : ` · browser ${entry.durationMs.toFixed(1)} ms`}${(entry.count ?? 0) > 1 ? ` · ${entry.count} sampled ticks` : ""}`
+                    ? `${entry.transport === "mock" ? "Synthetic (mock)" : "Backend simulation"} · ${diagnosticOutcomeLabel(entry)}${diagnosticTickLabel(entry.tick)}${entry.durationMs === undefined ? "" : ` · browser ${entry.durationMs.toFixed(1)} ms`}${(entry.count ?? 0) > 1 ? ` · ${entry.count} sampled ticks` : ""}`
                     : "Not observed"}
                 </dd>
               </div>

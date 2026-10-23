@@ -29,3 +29,15 @@ it("explains temporary payload retention for JSON inspection", () => {
   expect(html).toContain("JSON inspection");
   expect(html).not.toContain("No addresses, coordinates, bodies or raw errors are retained");
 });
+
+it("distinguishes event receipt and explains the simulated tick clock", () => {
+  const html = renderToStaticMarkup(
+    <DataFlowView
+      entries={[{ operation: "its", transport: "backend", outcome: "success", tick: 14 }]}
+    />,
+  );
+  expect(html).toContain("event received");
+  expect(html).not.toContain("success");
+  expect(html).toContain("tick 14 (14 s simulated)");
+  expect(html).toContain("Several events can share a tick");
+});

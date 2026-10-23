@@ -534,3 +534,32 @@ it("ignores unknown high feedback sequence before accepting legitimate same-tick
   source.emit(feedback);
   expect(feedbacks).toEqual([feedback]);
 });
+
+it("records valid ITS events as received even when feedback rejects priority", async () => {
+  const { diagnosticStore } = await import("@/lib/diagnostics/store");
+  diagnosticStore.clear();
+  const off = adapter().subscribe(SIMULATION_ID, recorder().subscriber);
+  const source = latestSource();
+  source.emit(itsDispatchEventExample);
+  source.emit({
+    schema_version: "1.0",
+    is_simulated: true,
+    event_type: "ITS_FEEDBACK",
+    simulation_id: SIMULATION_ID,
+    tick: 31,
+    timestamp: itsDispatchEventExample.timestamp,
+    request_message_id: itsDispatchEventExample.message_id,
+    feedback_sequence: 1,
+    status: "REJECTED",
+    intersections_group: itsDispatchEventExample.payload.intersections_group,
+    observed_at_simulated_sec: 31,
+    reason: "CONTROLLER_REJECTED",
+  });
+  expect(
+    diagnosticStore
+      .getSnapshot()
+      .filter((e) => e.operation === "its" || e.operation === "its-feedback")
+      .map((e) => e.outcome),
+  ).toEqual(["received", "received"]);
+  off();
+});

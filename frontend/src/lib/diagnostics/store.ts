@@ -13,6 +13,7 @@ export type Operation = (typeof operations)[number];
 const outcomes = [
   "pending",
   "success",
+  "received",
   "failure",
   "tick",
   "completed",
