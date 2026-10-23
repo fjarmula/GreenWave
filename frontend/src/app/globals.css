@@ -68,12 +68,11 @@
 
 :root {
   color-scheme: light;
-  --map-surface: #dce8ed;
-  --map-grid: rgb(48 104 119 / 12%);
-  --map-road: rgb(44 91 104 / 24%);
-  --map-label: #42616d;
-  --map-vignette: rgb(235 244 246 / 10%);
-  --route-shadow: rgb(221 234 238 / 90%);
+  /* The soft glass basemap palette (components/map/map-palette.ts), for CSS-drawn maps. */
+  --map-surface: #eef1f5;
+  --map-street: #ffffff;
+  --map-street-casing: #dde2ea;
+  --map-building: #e4e8ee;
   /* Neutral scale: near-neutral cool greys. Elevation is a lightness step plus a hairline. */
   --bg: oklch(0.965 0.005 255);
   --surface-1: oklch(1 0 0);
@@ -150,12 +149,10 @@
 
 .dark {
   color-scheme: dark;
-  --map-surface: #07131f;
-  --map-grid: rgb(75 132 148 / 11%);
-  --map-road: rgb(104 151 162 / 28%);
-  --map-label: #547583;
-  --map-vignette: rgb(2 8 14 / 72%);
-  --route-shadow: #031019;
+  --map-surface: #1b1d21;
+  --map-street: #2c2f35;
+  --map-street-casing: #24272c;
+  --map-building: #23262b;
   --bg: oklch(0.17 0.004 260);
   --surface-1: oklch(0.185 0.008 260);
   --surface-2: oklch(0.215 0.009 260);
@@ -265,19 +262,6 @@
 
   .dashboard-map {
     background-color: var(--map-surface);
-    background-image:
-      linear-gradient(var(--map-grid) 1px, transparent 1px),
-      linear-gradient(90deg, var(--map-grid) 1px, transparent 1px);
-    background-size: 72px 72px;
-  }
-
-  .dashboard-map::after {
-    position: absolute;
-    z-index: 1;
-    inset: 0;
-    background: radial-gradient(ellipse at center, transparent 25%, var(--map-vignette) 100%);
-    content: "";
-    pointer-events: none;
   }
 
   .dashboard-signal-pulse {
@@ -1205,16 +1189,17 @@ button,
   margin-top: 3.5rem;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  background: var(--card);
+  border-radius: var(--radius-sheet);
+  background: var(--map-surface);
 }
 .home-art-caption {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 0.5rem 1rem;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1.25rem;
   border-top: 1px solid var(--border);
+  background: var(--surface-1);
   font-size: 0.75rem;
   color: var(--muted-foreground);
 }
@@ -1233,8 +1218,8 @@ button,
   flex-direction: column;
   padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  background: var(--card);
+  border-radius: var(--radius-sheet);
+  background: var(--surface-1);
 }
 .home-card-icon {
   display: grid;
@@ -1298,19 +1283,20 @@ button,
   width: 100%;
   height: auto;
 }
+/* The basemap's own palette: building blocks, white streets with a faint casing. */
 .corridor-block {
-  fill: color-mix(in srgb, var(--muted-foreground) 8%, transparent);
+  fill: var(--map-building);
 }
 .corridor-cross {
-  stroke: color-mix(in srgb, var(--muted-foreground) 13%, transparent);
+  stroke: var(--map-street);
   stroke-width: 12;
 }
 .corridor-road {
-  stroke: color-mix(in srgb, var(--muted-foreground) 20%, transparent);
+  stroke: var(--map-street);
   stroke-width: 22;
 }
 .corridor-lane {
-  stroke: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
+  stroke: var(--map-street-casing);
   stroke-width: 1.5;
   stroke-dasharray: 10 12;
 }
@@ -1337,9 +1323,10 @@ button,
 .corridor-vehicle {
   animation: corridor-drive 8s linear infinite;
 }
+/* The map's vehicle: a red dot in a white ring. */
 .corridor-vehicle-dot {
-  fill: #fff;
-  stroke: var(--emergency);
+  fill: var(--emergency);
+  stroke: #fff;
   stroke-width: 3.5;
 }
 .corridor-vehicle-pulse {
