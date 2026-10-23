@@ -6,6 +6,7 @@ import { VEHICLE_ICON_COLORS } from "@/components/map/vehicle-icons";
 import { RUN_OUTCOME_TEXT } from "@/components/hud/run-status-tone";
 import { useSimulationState } from "@/components/simulation-provider";
 import type { ConnectionStatus } from "@/lib/simulation-adapter";
+import { isTelemetryStale } from "@/lib/simulation-state";
 import { VEHICLE_NAMES } from "@/lib/station-copy";
 import {
   connectionLabel,
@@ -84,6 +85,7 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
   const elapsed = liveTelemetry?.kpi_metrics.total_time_elapsed_sec ?? 0;
   const saved = liveTelemetry?.kpi_metrics.current_time_saved_sec ?? 0;
   const speed = vehicleSpeedPresentation(simulationState, liveTelemetry);
+  const stale = isTelemetryStale({ simulationState, connection });
   const elapsedLabel = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
   return (
     <section aria-label="Simulation telemetry" className="kpi-panel hud-panel">
@@ -102,9 +104,6 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
           >
             {liveTelemetry?.ambulance.id ?? "Awaiting telemetry"}
           </strong>
-          <span className="hud-value block text-xs text-muted-foreground" title={speed.label}>
-            {speed.value} km/h<span className="sr-only">, {speed.label}</span>
-          </span>
         </div>
         <div className="kpi-statuses">
           <span className={`hud-chip ${OUTCOME_TONES[status] ?? "tone-beacon"}`}>
@@ -133,6 +132,15 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
             )}
           </span>
         </div>
+      </div>
+
+      <div className="kpi-speed">
+        <span className="hud-stat-label">{stale ? "Last received speed" : "Speed"}</span>
+        <strong className="kpi-value hud-value mt-0.5 text-3xl font-semibold" title={speed.label}>
+          {speed.value}
+          <span className="kpi-unit"> km/h</span>
+        </strong>
+        <span className="sr-only">{speed.label}</span>
       </div>
 
       <div className="kpi-saved">

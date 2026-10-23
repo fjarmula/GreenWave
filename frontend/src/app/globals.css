@@ -1159,7 +1159,7 @@ button,
 .kpi-panel {
   container-type: inline-size;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
   gap: 1rem;
 }
@@ -1179,9 +1179,16 @@ button,
   min-width: 0;
   overflow-wrap: anywhere;
 }
+.kpi-speed,
 .kpi-saved,
 .kpi-elapsed {
   min-width: 0;
+}
+.kpi-unit {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--muted-foreground);
 }
 .kpi-elapsed {
   text-align: right;
@@ -1191,6 +1198,15 @@ button,
   display: block;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+/* Narrow cards put speed on its own row above the saved/elapsed pair. */
+@container (max-width: 22rem) {
+  .kpi-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .kpi-speed {
+    grid-column: 1 / -1;
+  }
 }
 @container (max-width: 16rem) {
   .kpi-saved,

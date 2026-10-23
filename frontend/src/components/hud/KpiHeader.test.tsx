@@ -144,3 +144,47 @@ describe("KpiHeader vehicle type", () => {
     expect(markup).toContain("Ambulance");
   });
 });
+
+describe("KpiHeader speed headline", () => {
+  const running = (connection: SimulationState["connection"]): SimulationState => ({
+    ...initialSimulationState,
+    simulationState: "RUNNING",
+    connection,
+    liveTelemetry: {
+      schema_version: "1.0",
+      is_simulated: true,
+      event_type: "SIMULATION_TICK",
+      simulation_id: "SIM-kpi",
+      tick: 30,
+      timestamp: "2026-10-22T12:00:00Z",
+      ambulance: {
+        id: "AMB-KRA-01",
+        position: { lat: 50.06, lng: 19.94 },
+        speed_kmh: 47.3,
+        status: "EN_ROUTE",
+      },
+      kpi_metrics: { current_time_saved_sec: 12, total_time_elapsed_sec: 30 },
+      intersections: [],
+      signal_phases: [],
+    },
+  });
+
+  it("shows speed as a headline figure beside time saved and elapsed", () => {
+    state = running("open");
+    const markup = renderToStaticMarkup(<KpiHeader />);
+    const speed = markup.match(/<div class="kpi-speed">(.*?)<\/div>/)?.[1];
+    expect(speed).toContain(">Speed<");
+    expect(speed).toMatch(/<strong class="kpi-value[^>]*>47\.3/);
+    expect(speed).toContain("km/h");
+    // Shown once, as the headline, not also as the small line under the vehicle id.
+    expect(markup.match(/47\.3/g)).toHaveLength(1);
+  });
+
+  it("labels a stale speed as the last received one", () => {
+    state = running("reconnecting");
+    const speed = renderToStaticMarkup(<KpiHeader />).match(
+      /<div class="kpi-speed">(.*?)<\/div>/,
+    )?.[1];
+    expect(speed).toContain("Last received speed");
+  });
+});
