@@ -68,3 +68,42 @@ it("budgets the serialized wrappers and array separators as well as frames", () 
   const run = r.finish(completed(2));
   expect(new TextEncoder().encode(JSON.stringify(run)).byteLength).toBeLessThanOrEqual(run.bytes);
 });
+
+it("counts and deduplicates feedback bytes and refuses a failed request snapshot", () => {
+  const recorder = createRecording(request, route());
+  const feedback: import("@/types/telemetry").ItsFeedbackEvent = {
+    schema_version: "1.0",
+    is_simulated: true,
+    event_type: "ITS_FEEDBACK",
+    simulation_id: "pair",
+    tick: 1,
+    timestamp: "2026-10-23T00:00:00Z",
+    request_message_id: "MSG-ITS-1",
+    feedback_sequence: 1,
+    status: "REJECTED",
+    intersections_group: ["INT-0001"],
+    observed_at_simulated_sec: 1,
+    reason: "CONTROLLER_REJECTED",
+  };
+  const before = recorder.bytes;
+  recorder.feedback(feedback);
+  const after = recorder.bytes;
+  expect(after).toBeGreaterThan(before);
+  recorder.feedback(feedback);
+  expect(recorder.bytes).toBe(after);
+  const event = tick(1);
+  event.its_requests = [
+    {
+      message_id: "MSG-ITS-1",
+      status: "REJECTED",
+      intersections_group: ["INT-0001"],
+      submitted_at_simulated_sec: 0,
+      last_updated_at_simulated_sec: 1,
+      last_feedback_sequence: 1,
+      reason: "CONTROLLER_REJECTED",
+      acknowledged_at_simulated_sec: null,
+    },
+  ];
+  recorder.tick(event);
+  expect(() => recorder.finish(completed(1))).toThrow(/failed/i);
+});

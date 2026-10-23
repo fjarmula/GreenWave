@@ -16,6 +16,7 @@ function reviewState(): SimulationState {
     startRequest: null,
     routeData: {
       green_wave_mode: "ENABLED",
+      its_scenario: "NOMINAL" as const,
       schema_version: "1.0",
       is_simulated: true,
       simulation_id: "detail",
@@ -49,6 +50,8 @@ function reviewState(): SimulationState {
     },
     liveTelemetry: {
       signal_phases: [],
+      its_requests: [],
+      its_observed_at_simulated_sec: null,
       schema_version: "1.0",
       is_simulated: true,
       event_type: "SIMULATION_TICK",
@@ -76,6 +79,8 @@ function reviewState(): SimulationState {
     lastTick: 1,
     connection: "open",
     itsLog: [],
+    itsRequests: [],
+    lastFeedbackSequence: 0,
     completion: null,
     cancelReason: null,
     error: null,

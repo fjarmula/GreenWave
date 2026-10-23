@@ -67,7 +67,7 @@ class SessionManager:
         self,
         index: RoutingIndex,
         settings: SimulationSettings,
-        gateway: ItsGateway,
+        gateway: ItsGateway | None = None,
         clock: Clock | None = None,
         sleep: Sleep = asyncio.sleep,
         planner: SimulationPlanner = plan_simulation,
@@ -196,6 +196,7 @@ class SessionManager:
             )
             self._publish(session, self._cancelled_event(session, CancelReason.SERVER_ERROR))
         finally:
+            session.engine.close()
             if self._active is session and session.terminal is not None:
                 self._active = None
 
@@ -204,6 +205,7 @@ class SessionManager:
             session.task.cancel()
             with suppress(asyncio.CancelledError):
                 await session.task
+        session.engine.close()
         self._publish(session, self._cancelled_event(session, reason))
         if self._active is session:
             self._active = None

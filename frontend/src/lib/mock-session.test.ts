@@ -28,6 +28,7 @@ import type {
 function requestWithCascade(enableCascadeMode: boolean): SimulationStartRequest {
   return {
     green_wave_mode: "ENABLED",
+    its_scenario: "NOMINAL" as const,
     simulation_id: "cascade",
     origin: { lat: 0, lng: 0 },
     destination: { lat: (5400 / 6_371_000) * (180 / Math.PI), lng: 0 },
@@ -44,18 +45,19 @@ const ELAPSED_WITH_FIRST_SIGNAL_CLEARING = 65;
 
 describe("stepMockSignals", () => {
   it.each([
-    [true, "CLEARING", true],
+    [true, "NORMAL", true],
     [false, "NORMAL", false],
   ] as const)(
     "enters cascade targets within 250 m only when cascade is enabled (cascade %s)",
     (enableCascadeMode, nextState, nextIsCascade) => {
       const session = createMockSession(requestWithCascade(enableCascadeMode));
       session.elapsedSeconds = ELAPSED_WITH_FIRST_SIGNAL_CLEARING;
+      session.driveSeconds = ELAPSED_WITH_FIRST_SIGNAL_CLEARING;
       const enteredClearing = new Set<number>();
 
       stepMockSignals(session, enteredClearing);
 
-      expect(session.signals[0]).toMatchObject({ state: "CLEARING", isCascade: false });
+      expect(session.signals[0]).toMatchObject({ state: "NORMAL", isCascade: false });
       expect(session.signals[1]).toMatchObject({ state: nextState, isCascade: nextIsCascade });
       expect([...enteredClearing]).toEqual(enableCascadeMode ? [0, 1] : [0]);
     },
@@ -216,6 +218,7 @@ describe("mock signal phases", () => {
     const session = createMockSession(modeRequest("DISABLED"));
     const at = (seconds: number) => {
       session.elapsedSeconds = seconds;
+      session.controller.advance(seconds, [100, 100], [false, false], "2026-10-21T00:00:00Z");
       return colors(buildMockTick(session, "2026-10-21T00:00:00Z"), "INT-9002");
     };
 
@@ -231,8 +234,9 @@ describe("mock signal phases", () => {
   it("holds conflicts red and the route approach green during priority", () => {
     const session = createMockSession(modeRequest("ENABLED"));
     session.elapsedSeconds = 90; // first intersection TTI ~14 s: PRIORITY_GREEN
-    stepMockSignals(session, new Set());
-    session.signals[0].state = "PRIORITY_GREEN";
+    const dispatch = buildMockDispatch(session, new Set([0]), "2026-10-21T00:00:00Z", 0)!;
+    session.controller.submit(dispatch, 89);
+    session.controller.advance(90, [14, 30], [false, false], "2026-10-21T00:00:00Z");
 
     expect(colors(buildMockTick(session, "2026-10-21T00:00:00Z"), "INT-9001")).toEqual({
       "INT-9001-S1/VEHICLE": "GREEN",

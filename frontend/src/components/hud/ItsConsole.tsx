@@ -1,5 +1,6 @@
 "use client";
 
+import { ItsFeedbackStatus } from "./ItsFeedbackStatus";
 import { Activity } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
 import { getFrontendConfig } from "@/lib/config";
@@ -14,7 +15,7 @@ const PHASE_CHIPS: Partial<Record<SimulationPhase, string>> = {
 };
 
 export function ItsConsole() {
-  const { itsLog, simulationState } = useSimulationState();
+  const { itsLog, simulationState, itsRequests, liveTelemetry } = useSimulationState();
   const logEntries = itsLog.slice(-5);
   return (
     <section className="overflow-hidden rounded-xl border border-border/80 bg-card/92 shadow-2xl backdrop-blur-xl">
@@ -31,6 +32,21 @@ export function ItsConsole() {
         </span>
       </div>
       <div className="space-y-2 bg-slate-950/[0.04] px-3 py-3 dark:bg-slate-950/55">
+        {itsRequests.map((request) => (
+          <ItsFeedbackStatus
+            key={request.message_id}
+            request={request}
+            state={
+              liveTelemetry?.intersections.find((i) => request.intersections_group.includes(i.id))
+                ?.state
+            }
+            observedAt={liveTelemetry?.its_observed_at_simulated_sec}
+            ended={simulationState !== "RUNNING"}
+          />
+        ))}
+        {liveTelemetry?.its_observed_at_simulated_sec == null && (
+          <p className="text-xs text-muted-foreground">ITS feedback unavailable</p>
+        )}
         {!logEntries.length && (
           <p className="text-xs text-muted-foreground">
             {simulationState === "SETUP"

@@ -3,6 +3,7 @@ import { isTelemetryStale } from "@/lib/simulation-state";
 import { VEHICLE_NAMES } from "@/lib/station-copy";
 import {
   connectionLabel,
+  cancelReasonLabel,
   runStatusKey,
   RUN_STATUS_LABELS,
   vehicleSpeedPresentation,
@@ -48,6 +49,12 @@ export function DriverStatus({ state, onStop }: { state: SimulationState; onStop
             ? connectionLabel(state.connection)
             : "Simulated run ended"}
       </p>
+      {state.simulationState !== "RUNNING" && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Last simulated controller report ·{" "}
+          {state.cancelReason ? cancelReasonLabel(state.cancelReason) : "Run ended"}
+        </p>
+      )}
       {state.stopError && (
         <p role="alert" className="mt-2 text-sm text-red-700 dark:text-red-300">
           Could not stop: {state.stopError}

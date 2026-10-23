@@ -1,3 +1,5 @@
+import { itsDispatchEventExample } from "@/lib/transport/__fixtures__/architecture-examples";
+
 import { expect, it, vi } from "vitest";
 import { observeSimulation, observeDispatch } from "./observe-adapters";
 import { createDiagnosticStore } from "./store";
@@ -28,6 +30,7 @@ it("preserves values, error identity, callback order and unsubscribe exactly onc
   const order: number[] = [];
   const off = adapter.subscribe("pair", {
     onTick: (e) => order.push(e.tick),
+    onItsFeedback: () => {},
     onItsDispatch: () => {},
     onTerminal: () => {},
     onConnectionChange: () => {},
@@ -80,6 +83,7 @@ it("diagnostic listener errors cannot interrupt stream delivery", async () => {
   const seen: number[] = [];
   adapter.subscribe("pair", {
     onTick: (e) => seen.push(e.tick),
+    onItsFeedback: () => {},
     onItsDispatch: () => {},
     onTerminal: () => {},
     onConnectionChange: () => {},
@@ -102,5 +106,35 @@ it("labels mock request and response values as synthetic captures", async () => 
   expect(store.getSnapshot().at(-1)).toMatchObject({
     transport: "mock",
     capture: { requestBody: JSON.stringify(request), responseBody: JSON.stringify(route()) },
+  });
+});
+
+it("captures synthetic ITS events as received with explicit event types", () => {
+  const store = createDiagnosticStore();
+  let subscriber!: SimulationStreamSubscriber;
+  const adapter = observeSimulation(
+    {
+      start: async () => route(),
+      stop: async () => {},
+      subscribe: (_, s) => {
+        subscriber = s;
+        return () => {};
+      },
+    },
+    "mock",
+    store,
+  );
+  adapter.subscribe("pair", {
+    onTick: () => {},
+    onItsDispatch: () => {},
+    onItsFeedback: () => {},
+    onTerminal: () => {},
+    onConnectionChange: () => {},
+    onError: () => {},
+  });
+  subscriber.onItsDispatch(itsDispatchEventExample);
+  expect(store.getSnapshot()[0]).toMatchObject({
+    outcome: "received",
+    capture: { eventType: "ITS_DISPATCH" },
   });
 });

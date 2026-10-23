@@ -69,6 +69,11 @@ __all__ = [
     "IntersectionTelemetry",
     "ItsDispatchEvent",
     "ItsDispatchPayload",
+    "ItsFeedbackEvent",
+    "ItsFeedbackReason",
+    "ItsRequestSnapshot",
+    "ItsRequestStatus",
+    "ItsScenario",
     "KpiMetrics",
     "Position",
     "QualityCheck",
@@ -93,3 +98,11 @@ __all__ = [
     "StopResponse",
     "VehicleType",
 ]
+
+from greenwave.schemas.its import (
+    ItsFeedbackEvent,
+    ItsFeedbackReason,
+    ItsRequestSnapshot,
+    ItsRequestStatus,
+    ItsScenario,
+)

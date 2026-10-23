@@ -57,6 +57,9 @@ const CANCEL_REASONS: Record<CancelReason, true> = {
   STOPPED: true,
   SUPERSEDED: true,
   SERVER_ERROR: true,
+  ITS_REJECTED: true,
+  ITS_TIMEOUT: true,
+  ITS_HOLD_EXPIRED: true,
 };
 const ERROR_CODES: Record<ErrorCode, true> = {
   ORIGIN_OFF_NETWORK: true,
@@ -83,6 +86,7 @@ const STATION_ID = /^STN-[AFP]-\d{4}$/;
 const STREAM_EVENT_TYPES: Record<SimulationStreamEvent["event_type"], true> = {
   SIMULATION_TICK: true,
   ITS_DISPATCH: true,
+  ITS_FEEDBACK: true,
   SIMULATION_COMPLETED: true,
   SIMULATION_CANCELLED: true,
 };
@@ -212,7 +216,41 @@ export function parseStartResponse(value: unknown): SimulationStartResponse {
   snappedEndpoint(body.origin_snapped, "origin_snapped");
   snappedEndpoint(body.destination_snapped, "destination_snapped");
   member(GREEN_WAVE_MODES, body.green_wave_mode, "green_wave_mode");
-  return body as SimulationStartResponse;
+  member(
+    { NOMINAL: true, DELAYED: true, REJECTED: true, NO_FEEDBACK: true },
+    body.its_scenario ?? "NOMINAL",
+    "its_scenario",
+  );
+  return { ...body, its_scenario: body.its_scenario ?? "NOMINAL" } as SimulationStartResponse;
+}
+
+function checkItsStatus(event: UnknownRecord, snapshot: boolean): void {
+  const status = member(
+    {
+      REQUESTED: true,
+      ACCEPTED: true,
+      RELEASED: true,
+      REJECTED: true,
+      TIMED_OUT: true,
+      EXPIRED: true,
+    },
+    event.status,
+    "status",
+  );
+  if (!snapshot && status === "REQUESTED") fail("status", "feedback status");
+  const expected =
+    status === "REJECTED"
+      ? "CONTROLLER_REJECTED"
+      : status === "TIMED_OUT"
+        ? "ACK_TIMEOUT"
+        : status === "EXPIRED"
+          ? "HOLD_EXPIRED"
+          : null;
+  if ((event.reason ?? null) !== expected) fail("reason", "reason matching status");
+  const targets = list(event.intersections_group, "intersections_group");
+  if (!targets.length || new Set(targets).size !== targets.length)
+    fail("intersections_group", "unique nonempty targets");
+  targets.forEach((id) => text(id, "target"));
 }
 
 function checkStreamEvent(
@@ -239,6 +277,38 @@ function checkStreamEvent(
           finite(intersection.tti_seconds, `${path}.tti_seconds`);
         }
       });
+      if (event.its_observed_at_simulated_sec != null)
+        nonNegative(event.its_observed_at_simulated_sec, "its_observed_at_simulated_sec");
+      const known = new Set(
+        list(event.intersections, "intersections").map((i) => record(i, "intersection").id),
+      );
+      list(event.its_requests ?? [], "its_requests").forEach((value) => {
+        const r = record(value, "its_request");
+        checkItsStatus(r, true);
+        text(r.message_id, "message_id");
+        nonNegative(r.submitted_at_simulated_sec, "submitted_at_simulated_sec");
+        nonNegative(r.last_updated_at_simulated_sec, "last_updated_at_simulated_sec");
+        const seq = finite(r.last_feedback_sequence, "last_feedback_sequence");
+        if (
+          !Number.isInteger(seq) ||
+          seq < 0 ||
+          (r.status !== "REQUESTED" && seq === 0) ||
+          (r.status === "REQUESTED" && seq !== 0)
+        )
+          fail("last_feedback_sequence", "lifecycle sequence");
+        if (r.acknowledged_at_simulated_sec != null)
+          nonNegative(r.acknowledged_at_simulated_sec, "acknowledged_at_simulated_sec");
+        if (r.status === "ACCEPTED" && r.acknowledged_at_simulated_sec == null)
+          fail("acknowledged_at_simulated_sec", "acceptance time");
+        if (
+          finite(r.last_updated_at_simulated_sec, "update") <
+          finite(r.submitted_at_simulated_sec, "submitted")
+        )
+          fail("last_updated_at_simulated_sec", "time after submission");
+        list(r.intersections_group, "targets").forEach((id) => {
+          if (!known.has(id)) fail("targets", "known route targets");
+        });
+      });
       // The map keys each marker by (intersection, signal, kind); a duplicate would be ambiguous.
       const identities = new Set<string>();
       list(event.signal_phases, "signal_phases").forEach((item, index) => {
@@ -254,6 +324,13 @@ function checkStreamEvent(
         if (identities.has(identity)) fail(path, "a unique intersection, signal and kind");
         identities.add(identity);
       });
+      return;
+    }
+    case "ITS_FEEDBACK": {
+      checkItsStatus(event, false);
+      positiveInteger(event.feedback_sequence, "feedback_sequence");
+      text(event.request_message_id, "request_message_id");
+      nonNegative(event.observed_at_simulated_sec, "observed_at_simulated_sec");
       return;
     }
     case "ITS_DISPATCH": {
@@ -307,7 +384,15 @@ export function parseStreamEvent(
     warnDropped(`dropped ${eventType}: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
-  return value as SimulationStreamEvent;
+  return (
+    eventType === "SIMULATION_TICK"
+      ? {
+          ...value,
+          its_requests: value.its_requests ?? [],
+          its_observed_at_simulated_sec: value.its_observed_at_simulated_sec ?? null,
+        }
+      : value
+  ) as SimulationStreamEvent;
 }
 
 /** Returns null for anything that is not a contract `ErrorResponse` (e.g. FastAPI's 422 body). */

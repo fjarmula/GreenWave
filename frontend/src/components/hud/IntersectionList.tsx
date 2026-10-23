@@ -1,5 +1,6 @@
 "use client";
 
+import { ItsFeedbackStatus } from "./ItsFeedbackStatus";
 import { useState } from "react";
 import {
   JsonInspectButton,
@@ -19,34 +20,42 @@ const KIND_LABELS: Record<RouteIntersection["kind"], string> = {
 
 export function IntersectionList() {
   const [selection, setSelection] = useState<JsonInspection | null>(null);
-  const { liveTelemetry, routeData } = useSimulationState();
+  const { liveTelemetry, routeData, itsRequests, simulationState } = useSimulationState();
   const intersections = liveTelemetry?.intersections ?? [];
   const routeIntersections = new Map(
     (routeData?.route_intersections ?? []).map((intersection) => [intersection.id, intersection]),
   );
   const { upcoming, passed } = splitByPassage(intersections, routeIntersections);
   const card = (intersection: IntersectionTelemetry) => (
-    <IntersectionCard
-      key={intersection.id}
-      telemetry={intersection}
-      onInspect={
-        liveTelemetry
-          ? () =>
-              setSelection({
-                title: intersection.id,
-                description: `Full validated simulation tick ${liveTelemetry.tick} containing ${intersection.id}. This is received telemetry, not an outgoing controller command.`,
-                capture: {
-                  method: "GET",
-                  path: "/api/v1/simulation/" + liveTelemetry.simulation_id + "/stream",
-                  eventType: "SIMULATION_TICK",
-                  validation: "accepted",
-                  responseBody: JSON.stringify(liveTelemetry),
-                },
-              })
-          : undefined
-      }
-      detail={routeIntersections.get(intersection.id)}
-    />
+    <div key={intersection.id}>
+      <ItsFeedbackStatus
+        request={itsRequests?.find((r) => r.intersections_group.includes(intersection.id))}
+        state={intersection.state}
+        observedAt={liveTelemetry?.its_observed_at_simulated_sec}
+        ended={simulationState !== "RUNNING"}
+      />
+      <IntersectionCard
+        key={intersection.id}
+        telemetry={intersection}
+        onInspect={
+          liveTelemetry
+            ? () =>
+                setSelection({
+                  title: intersection.id,
+                  description: `Full validated simulation tick ${liveTelemetry.tick} containing ${intersection.id}. This is received telemetry, not an outgoing controller command.`,
+                  capture: {
+                    method: "GET",
+                    path: "/api/v1/simulation/" + liveTelemetry.simulation_id + "/stream",
+                    eventType: "SIMULATION_TICK",
+                    validation: "accepted",
+                    responseBody: JSON.stringify(liveTelemetry),
+                  },
+                })
+            : undefined
+        }
+        detail={routeIntersections.get(intersection.id)}
+      />
+    </div>
   );
   return (
     <section className="rounded-xl border border-border/80 bg-card/92 p-4 shadow-2xl backdrop-blur-xl">
@@ -114,7 +123,7 @@ function IntersectionCard({
 }) {
   const { id, name, state, tti_seconds: ttiSeconds, is_active_corridor: active } = intersection;
   const isCascade = isCascadeClearing(intersection);
-  const detail = active ? "SIMULATED CORRIDOR ACTIVE" : "NO PRIORITY REQUEST";
+  const detail = active ? "SIMULATED CORRIDOR ACTIVE" : "ORDINARY TRAFFIC REPORT";
 
   return (
     <article className="rounded-lg border border-border/70 bg-background/65 p-3">

@@ -51,6 +51,7 @@ it("mock stream matches the recorded event sequence", async () => {
     const adapter = createMockSimulationAdapter();
     const request: SimulationStartRequest = {
       green_wave_mode: scenario.mode ?? "ENABLED",
+      its_scenario: "NOMINAL" as const,
       simulation_id: `SIM-golden-${index}`,
       origin: { lng: originLng, lat: originLat },
       destination: { lng: destinationLng, lat: destinationLat },
@@ -65,6 +66,7 @@ it("mock stream matches the recorded event sequence", async () => {
     };
     const subscriber: SimulationStreamSubscriber = {
       onTick: record("onTick"),
+      onItsFeedback: record("onItsFeedback"),
       onItsDispatch: record("onItsDispatch"),
       onTerminal: (event) => {
         terminal = true;

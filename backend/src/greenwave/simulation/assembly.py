@@ -5,10 +5,16 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from greenwave.its import ItsGateway
+from greenwave.its.controller import ItsControllerFactory, SimulatedItsController
 from greenwave.routing.estimates import estimate_times
 from greenwave.routing.network_index import RoutingIndex
 from greenwave.routing.planner import plan_route
-from greenwave.schemas import GreenWaveMode, SimulationStartRequest, SimulationStartResponse
+from greenwave.schemas import (
+    GreenWaveMode,
+    ItsScenario,
+    SimulationStartRequest,
+    SimulationStartResponse,
+)
 from greenwave.simulation.cascade_check import find_cascade_mismatches
 from greenwave.simulation.engine import SimulationEngine
 from greenwave.simulation.route_model import build_route_model, to_start_response
@@ -24,7 +30,7 @@ class PlannedSimulation:
 
 
 SimulationPlanner = Callable[
-    [RoutingIndex, SimulationStartRequest, SimulationSettings, ItsGateway], PlannedSimulation
+    [RoutingIndex, SimulationStartRequest, SimulationSettings, ItsGateway | None], PlannedSimulation
 ]
 
 
@@ -32,7 +38,8 @@ def plan_simulation(
     index: RoutingIndex,
     request: SimulationStartRequest,
     settings: SimulationSettings,
-    gateway: ItsGateway,
+    gateway: ItsGateway | None = None,
+    controller_factory: ItsControllerFactory = SimulatedItsController,
 ) -> PlannedSimulation:
     """Route, model, estimate and configure; raises the routing errors of :func:`plan_route`."""
     route = plan_route(index, request.origin, request.destination, settings)
@@ -53,6 +60,7 @@ def plan_simulation(
         )
     density = request.traffic_density_multiplier
     estimates = estimate_times(route, route_model, density, settings)
+    scenario = request.its_scenario if mode is GreenWaveMode.ENABLED else ItsScenario.NOMINAL
     engine = SimulationEngine(
         request.simulation_id,
         route,
@@ -63,8 +71,11 @@ def plan_simulation(
         gateway,
         request.vehicle_type,
         mode,
+        controller_factory(route_model, settings, scenario),
+        scenario,
     )
     response = to_start_response(
         request.simulation_id, route, route_model, estimates, index, green_wave_mode=mode
     )
+    response.its_scenario = scenario
     return PlannedSimulation(engine, response)

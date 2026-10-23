@@ -1,5 +1,6 @@
 import type {
   ItsDispatchEvent,
+  ItsFeedbackEvent,
   SimulationCompletedEvent,
   SimulationStartRequest,
   SimulationStartResponse,
@@ -10,6 +11,7 @@ export type RecordedRun = {
   route: SimulationStartResponse;
   ticks: SimulationTickEvent[];
   dispatches: ItsDispatchEvent[];
+  feedbacks: ItsFeedbackEvent[];
   completion: SimulationCompletedEvent;
   bytes: number;
 };
@@ -34,6 +36,7 @@ export function createRecording(
   if (route.green_wave_mode !== request.green_wave_mode) throw new Error("Recording mode mismatch");
   const ticks: SimulationTickEvent[] = [],
     dispatches: ItsDispatchEvent[] = [];
+  const feedbacks: ItsFeedbackEvent[] = [];
   // Conservative allowance covers run/pair keys, array brackets and bytes metadata.
   let bytes = 256;
   const count = (value: unknown) => {
@@ -64,12 +67,27 @@ export function createRecording(
       count(event);
       dispatches.push(event);
     },
+    feedback(event: ItsFeedbackEvent) {
+      checkId(event.simulation_id);
+      if (feedbacks.some((f) => f.feedback_sequence === event.feedback_sequence)) return;
+      count(event);
+      feedbacks.push(event);
+    },
     finish(event: SimulationCompletedEvent): RecordedRun {
       checkId(event.simulation_id);
       if (!ticks.length || event.tick !== ticks.length)
         throw new Error("Incomplete terminal coverage");
+      if (
+        ticks.some((t) =>
+          (t.its_requests ?? []).some((r) =>
+            ["REJECTED", "TIMED_OUT", "EXPIRED"].includes(r.status),
+          ),
+        ) ||
+        feedbacks.some((f) => ["REJECTED", "TIMED_OUT", "EXPIRED"].includes(f.status))
+      )
+        throw new Error("Recording contains failed ITS requests");
       count(event);
-      return { request, route, ticks, dispatches, completion: event, bytes };
+      return { request, route, ticks, dispatches, feedbacks, completion: event, bytes };
     },
     get bytes() {
       return bytes;

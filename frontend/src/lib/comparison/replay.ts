@@ -39,6 +39,7 @@ export function selectReplayFrame(run: RecordedRun, elapsed: number): Simulation
     connection: null,
     completion: ended ? run.completion : null,
     lastTick: whole,
+    itsRequests: whole === 0 ? [] : (current.its_requests ?? []),
     liveTelemetry: {
       ...current,
       tick: whole,

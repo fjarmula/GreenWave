@@ -73,6 +73,7 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
     simulationState === "CANCELLED" ||
     simulationState === "ERROR";
   const elapsed = liveTelemetry?.kpi_metrics.total_time_elapsed_sec ?? 0;
+  const failedIts = simulationState === "CANCELLED" && cancelReason?.startsWith("ITS_");
   const saved = liveTelemetry?.kpi_metrics.current_time_saved_sec ?? 0;
   const speed = vehicleSpeedPresentation(simulationState, liveTelemetry);
   const elapsedLabel = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
@@ -123,11 +124,13 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
       </div>
 
       <div className="kpi-saved">
-        <span className="dashboard-eyebrow block">Time saved</span>
+        <span className="dashboard-eyebrow block">
+          {failedIts ? "No completed savings" : "Time saved"}
+        </span>
         <strong
-          className={`kpi-value font-mono text-2xl ${TIME_SAVED_STYLES[timeSavedTone(saved)]}`}
+          className={`kpi-value font-mono text-2xl ${TIME_SAVED_STYLES[failedIts ? "neutral" : timeSavedTone(saved)]}`}
         >
-          {formatSignedSeconds(saved)}
+          {failedIts ? "—" : formatSignedSeconds(saved)}
         </strong>
       </div>
 
