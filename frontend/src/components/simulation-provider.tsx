@@ -12,8 +12,15 @@ import {
 const SimulationStateContext = createContext<SimulationState | null>(null);
 const SimulationDispatchContext = createContext<Dispatch<SimulationAction> | null>(null);
 
-export function SimulationProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(simulationReducer, initialSimulationState);
+export function SimulationProvider({
+  children,
+  initialState = initialSimulationState,
+}: {
+  children: ReactNode;
+  /** Only static-render tests start elsewhere than setup. */
+  initialState?: SimulationState;
+}) {
+  const [state, dispatch] = useReducer(simulationReducer, initialState);
 
   return (
     <SimulationStateContext value={state}>

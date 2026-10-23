@@ -2,12 +2,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vitest";
 import { DriverStatus } from "./DriverStatus";
 import { initialSimulationState } from "@/lib/simulation-state";
-import { request, tick } from "@/lib/comparison/fixtures.test-support";
+import { request, route, tick } from "@/lib/comparison/fixtures.test-support";
 it("shows vehicle-specific simulated status, stale feedback and recoverable Stop", () => {
   const state = {
     ...initialSimulationState,
     simulationState: "RUNNING" as const,
     startRequest: { ...request, vehicle_type: "FIRE_TRUCK" as const },
+    routeData: route(),
     liveTelemetry: tick(2),
     connection: "reconnecting" as const,
     stopError: "Offline",
@@ -19,7 +20,8 @@ it("shows vehicle-specific simulated status, stale feedback and recoverable Stop
     "Last received",
     "Offline",
     "Retry Stop",
-    "Elapsed",
+    "ETA",
+    "145 s faster · simulated",
   ])
     expect(html).toContain(text);
 });

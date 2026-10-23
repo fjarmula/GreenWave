@@ -68,77 +68,100 @@ export function BottomSheet({
     const slot = collapsedSlot.current;
     if (!element || !slot) return;
     const inset = parseFloat(getComputedStyle(element).paddingBottom) || 0;
-    setTravel(sheetTravel(element.offsetHeight, slot.offsetTop + slot.offsetHeight + inset));
+    const visible = slot.offsetTop + slot.offsetHeight + inset;
+    setTravel(sheetTravel(element.offsetHeight, visible));
+    // Map controls and attribution stay above the collapsed sheet (CSS reads this).
+    if (element.offsetParent instanceof HTMLElement)
+      element.offsetParent.style.setProperty("--sheet-visible", `${visible}px`);
   }, []);
 
   // The container rotates or resizes and slot content changes height: both move the snaps.
   useLayoutEffect(() => {
     measure();
     const observer = new ResizeObserver(measure);
-    for (const element of [sheet.current, collapsedSlot.current, sheet.current?.parentElement])
+    // The containing block (not the DOM parent) is what the 85% cap and the snaps follow.
+    const container = sheet.current?.offsetParent ?? null;
+    for (const element of [sheet.current, collapsedSlot.current, container])
       if (element) observer.observe(element);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (container instanceof HTMLElement) container.style.removeProperty("--sheet-visible");
+    };
   }, [measure]);
 
   const translateFor = (target: SheetSnap) => (target === "collapsed" ? (travel ?? 0) : 0);
 
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
-    if (drag.current || travel === null) return; // ignore extra touch points
+    const element = sheet.current;
+    if (drag.current || travel === null || !element) return; // ignore extra touch points
     if (event.pointerType === "mouse" && event.button !== 0) return;
     const target = event.target as HTMLElement;
     if (target.closest("input, textarea, select, [contenteditable='true']")) return;
-    drag.current = {
+    const state: Drag = {
       pointerId: event.pointerId,
       startY: event.clientY,
-      startTranslate: currentTranslate(event.currentTarget),
+      startTranslate: currentTranslate(element),
       fromContent: details.current?.contains(target) ?? false,
       active: false,
       samples: [{ y: event.clientY, t: event.timeStamp }],
     };
-  };
+    drag.current = state;
+    const travelPx = travel;
 
-  const onPointerMove = (event: PointerEvent<HTMLElement>) => {
-    const state = drag.current;
-    const element = sheet.current;
-    if (!state || !element || event.pointerId !== state.pointerId || travel === null) return;
-    const delta = event.clientY - state.startY;
-    if (!state.active) {
-      if (Math.abs(delta) < DRAG_SLOP_PX) return;
-      if (!shouldDragSheet(details.current?.scrollTop ?? 0, delta, state.fromContent)) {
-        drag.current = null;
-        return;
+    // Until the slop is passed the pointer is not captured and may leave the sheet, so the
+    // gesture is followed on the window, not on the sheet.
+    const move = (moveEvent: globalThis.PointerEvent) => {
+      if (moveEvent.pointerId !== state.pointerId) return;
+      const delta = moveEvent.clientY - state.startY;
+      if (!state.active) {
+        if (Math.abs(delta) < DRAG_SLOP_PX) return;
+        if (!shouldDragSheet(details.current?.scrollTop ?? 0, delta, state.fromContent)) {
+          finish();
+          return;
+        }
+        state.active = true;
+        element.setPointerCapture(state.pointerId);
+        element.dataset.dragging = "true";
       }
-      state.active = true;
-      element.setPointerCapture(event.pointerId);
-      element.dataset.dragging = "true";
-    }
-    state.samples.push({ y: event.clientY, t: event.timeStamp });
-    while (state.samples.length > 2 && event.timeStamp - state.samples[0].t > VELOCITY_WINDOW_MS)
-      state.samples.shift();
-    const offset = dampedOffset(delta, -state.startTranslate, travel - state.startTranslate);
-    element.style.transform = `translate3d(0, ${state.startTranslate + offset}px, 0)`;
-  };
-
-  const endDrag = (event: PointerEvent<HTMLElement>, cancelled: boolean) => {
-    const state = drag.current;
-    const element = sheet.current;
-    if (!state || event.pointerId !== state.pointerId) return;
-    drag.current = null;
-    if (!state.active || !element || travel === null) return;
-    suppressClick.current = true;
-    setTimeout(() => (suppressClick.current = false), 0);
-    delete element.dataset.dragging;
-    if (element.hasPointerCapture(event.pointerId)) element.releasePointerCapture(event.pointerId);
-    const first = state.samples[0];
-    const elapsed = event.timeStamp - first.t;
-    const velocity = cancelled || elapsed <= 0 ? 0 : (event.clientY - first.y) / elapsed;
-    const startSnap: SheetSnap = state.startTranslate > travel / 2 ? "collapsed" : "expanded";
-    const target = cancelled
-      ? snap
-      : nextSnap(startSnap, event.clientY - state.startY, velocity, travel);
-    // React may not re-render when the snap is unchanged; settle the element ourselves.
-    element.style.transform = `translate3d(0, ${translateFor(target)}px, 0)`;
-    if (target !== snap) onSnapChange(target);
+      state.samples.push({ y: moveEvent.clientY, t: moveEvent.timeStamp });
+      while (
+        state.samples.length > 2 &&
+        moveEvent.timeStamp - state.samples[0].t > VELOCITY_WINDOW_MS
+      )
+        state.samples.shift();
+      const offset = dampedOffset(delta, -state.startTranslate, travelPx - state.startTranslate);
+      element.style.transform = `translate3d(0, ${state.startTranslate + offset}px, 0)`;
+    };
+    const release = (endEvent: globalThis.PointerEvent) => {
+      if (endEvent.pointerId !== state.pointerId) return;
+      finish();
+      if (!state.active) return;
+      suppressClick.current = true;
+      setTimeout(() => (suppressClick.current = false), 0);
+      const cancelled = endEvent.type === "pointercancel";
+      const first = state.samples[0];
+      const elapsed = endEvent.timeStamp - first.t;
+      const velocity = cancelled || elapsed <= 0 ? 0 : (endEvent.clientY - first.y) / elapsed;
+      const startSnap: SheetSnap = state.startTranslate > travelPx / 2 ? "collapsed" : "expanded";
+      const settled = cancelled
+        ? snap
+        : nextSnap(startSnap, endEvent.clientY - state.startY, velocity, travelPx);
+      // React may not re-render when the snap is unchanged; settle the element ourselves.
+      element.style.transform = `translate3d(0, ${settled === "collapsed" ? travelPx : 0}px, 0)`;
+      if (settled !== snap) onSnapChange(settled);
+    };
+    const finish = () => {
+      drag.current = null;
+      delete element.dataset.dragging;
+      if (element.hasPointerCapture(state.pointerId))
+        element.releasePointerCapture(state.pointerId);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", release);
+      window.removeEventListener("pointercancel", release);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", release);
+    window.addEventListener("pointercancel", release);
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
@@ -157,9 +180,6 @@ export function BottomSheet({
       data-measured={travel !== null}
       style={{ transform: `translate3d(0, ${translateFor(snap)}px, 0)` }}
       onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={(event) => endDrag(event, false)}
-      onPointerCancel={(event) => endDrag(event, true)}
       onClickCapture={(event) => {
         if (!suppressClick.current) return;
         suppressClick.current = false;
