@@ -5,6 +5,7 @@ from tests.support.processed import Layout
 
 PATHS = {
     "/api/v1/simulation/start": "post",
+    "/api/v1/simulation/compare/start": "post",
     "/api/v1/simulation/{simulation_id}/stream": "get",
     "/api/v1/simulation/{simulation_id}/stop": "post",
 }
@@ -16,6 +17,8 @@ MODELS = {
     "SnappedEndpoint",
     "RouteIntersection",
     "SimulationStartResponse",
+    "ComparisonStartRequest",
+    "ComparisonStartResponse",
     "IntersectionState",
     "AmbulanceStatus",
     "AmbulanceTelemetry",

@@ -152,8 +152,12 @@ A later stop line replaces an active crossing with its own decision (a fresh cro
 ## 4. Data Flow and JSON Protocols
 
 The system uses explicit JSON schemas as the API contract between the
-engine and the dispatcher dashboard. Only one active simulation runs at
-a time in the PoC (starting a new simulation cancels any previous run).
+engine and the dispatcher dashboard. Only one active operation runs at a
+time in the PoC: a single run, or a comparison pair started together by
+`POST /api/v1/simulation/compare/start` and advanced in lockstep (ADR
+`docs/adr/0008-live-comparison-pair.md`). Starting anything cancels the
+whole previous operation (`SUPERSEDED`), and stopping either pair member
+stops both.
 All outputs are simulated inputs and include `"is_simulated": true`.
 Every response and stream event also carries `"schema_version": "1.0"`.
 The contract is frozen as `contract-v1` (see `docs/adr/0003-simulation-contract-v1.md`).
@@ -369,6 +373,16 @@ baseline, also in a disabled run.
 FastAPI's default `422` body is kept for request-schema violations
 (multiplier outside `[1.0, 3.0]`, bad `simulation_id` pattern,
 `playback_speed` outside `1..10`).
+
+**Comparison pair:** `POST /api/v1/simulation/compare/start` (ADR 0008,
+additive to contract v1) takes the same fields minus `green_wave_mode`, plus
+`enabled_simulation_id` and `disabled_simulation_id` (must differ), and returns
+`{"schema_version", "is_simulated", "enabled", "disabled"}` with the two start
+responses above. Both runs plan the same route; one shared loop steps every
+unfinished member once per interval, so both share each simulated second. Each
+run keeps its own stream and stop endpoint; stopping either stops both (a
+member that already completed keeps its completed terminal). Errors are the
+same as for `/start`, and a failed plan starts neither run.
 
 ### Phase 2: Real-Time Telemetry Stream & Control (Backend ↔ Frontend)
 
@@ -639,7 +653,7 @@ All previously open questions have been resolved and approved:
 
 1. **State machine:** Intersection `state` is strictly `NORMAL | CLEARING | PRIORITY_GREEN | RECOVERY`, with `is_cascade: bool` as a separate field. Transitions occur at $\mathrm{TTI} \le 40\text{ s}$ (`CLEARING`), $\mathrm{TTI} \le 25\text{ s}$ (`PRIORITY_GREEN`), $d_i \le 0\text{ m}$ once the vehicle has left the last stop line and the tick carrying it across has been shown (`RECOVERY`, section 4, rule 3), and $+15\text{ s}$ (`NORMAL`). Cascade is one hop only (section 4, rule 1). `CLEARING_CASCADE` is not a state. `hold_duration_sec = max(40, ceil(TTI at dispatch) + its_hold_buffer_seconds)` with `its_hold_buffer_seconds = 5` (section 4, Phase 3).
 2. **Identifiers:** All endpoints, telemetry ticks, and mock ITS payloads use the ETL's `INT-0001`..`INT-0534` IDs (`intersection_ids.json`). No `MSIP-SIG-*` IDs are used.
-3. **Contract completeness:** `simulation_id`, `schema_version: "1.0"`, and `is_simulated: true` are included in all responses and ticks; streaming uses SSE (`GET /api/v1/simulation/{simulation_id}/stream`) with a cancel endpoint (`POST /api/v1/simulation/{simulation_id}/stop`); one active simulation is supported at a time; ambulance `status` is `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`; `traffic_density_multiplier` is bounded to `[1.0, 3.0]`.
+3. **Contract completeness:** `simulation_id`, `schema_version: "1.0"`, and `is_simulated: true` are included in all responses and ticks; streaming uses SSE (`GET /api/v1/simulation/{simulation_id}/stream`) with a cancel endpoint (`POST /api/v1/simulation/{simulation_id}/stop`); one active operation (a run or a lockstep comparison pair, ADR 0008) is supported at a time; ambulance `status` is `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`; `traffic_density_multiplier` is bounded to `[1.0, 3.0]`.
 4. **ITS dispatch (Phase 3):** Implemented as an internal Python `ItsGateway` interface with a mock implementation (no self-HTTP calls).
 5. **Model inputs:** $V_{\mathrm{ambulance}}(e) = \min(\max(1.3 \cdot V_e \cdot b(e), 30.0), 90.0)\text{ km/h}$ with the road-attribute factors of section 3 (ADR 0005); $v_{\mathrm{avg}}$ uses an EMA ($\alpha = 0.25$, floored at $5.0\text{ m/s}$); all distance work is in `EPSG:2178` metres.
 6. **Data sources:** Pinned BBBike OSM extract (`planet_19_792_50_012_71450a13_osm.geojson`) for road network and signals, paired with Kraków Open Data (`Ulice.geojson`, used for street names and cross-checks), tracked with hashes, licences and attribution in `backend/data/raw/MANIFEST.json`. No separate MSIP traffic-signal layer is used. The bus-lane CSV (`Buspasy_*.csv`, no geometry) is a cross-check only: its rows are matched by street name against OSM bus-lane edges (`bus_lane_crosscheck.csv`) and never change the network; bus lanes, tram tracks, lanes, surface and traffic calming come from OSM. The KMK lines CSV is recorded in the manifest but parked (no streets or geometry). Licence and attribution wording is settled (see "Data sources and attribution").

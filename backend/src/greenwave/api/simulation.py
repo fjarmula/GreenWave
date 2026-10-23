@@ -1,6 +1,6 @@
 """Thin HTTP and SSE adapter for the simulation session manager."""
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Path, Request
@@ -9,6 +9,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from greenwave.api.sse import event_frame, retry_frame
 from greenwave.routing.errors import DestinationOffNetwork, NoRoute, OriginOffNetwork
 from greenwave.schemas import (
+    ComparisonStartRequest,
+    ComparisonStartResponse,
     ErrorCode,
     ErrorResponse,
     SimulationStartRequest,
@@ -41,25 +43,22 @@ def error_response(status_code: int, code: ErrorCode, message: str) -> JSONRespo
     )
 
 
-@router.post(
-    "/start",
-    response_model=SimulationStartResponse,
-    responses={
-        409: {"model": ErrorResponse, "description": "SIMULATION_ID_IN_USE"},
-        422: {
-            "model": ErrorResponse,
-            "description": (
-                "ORIGIN_OFF_NETWORK, DESTINATION_OFF_NETWORK or NO_ROUTE (ErrorResponse); "
-                "request-schema violations return FastAPI's default validation body."
-            ),
-        },
+_START_ERRORS: dict[int | str, dict[str, object]] = {
+    409: {"model": ErrorResponse, "description": "SIMULATION_ID_IN_USE"},
+    422: {
+        "model": ErrorResponse,
+        "description": (
+            "ORIGIN_OFF_NETWORK, DESTINATION_OFF_NETWORK or NO_ROUTE (ErrorResponse); "
+            "request-schema violations return FastAPI's default validation body."
+        ),
     },
-)
-async def start_simulation(
-    request: SimulationStartRequest, http_request: Request
-) -> SimulationStartResponse | JSONResponse:
+}
+
+
+async def _started[T](start: Awaitable[T]) -> T | JSONResponse:
+    """Map the session manager's start failures to their contract error responses."""
     try:
-        return await _manager(http_request).start(request)
+        return await start
     except SimulationIdInUseError:
         return error_response(
             409, ErrorCode.SIMULATION_ID_IN_USE, "simulation id is already active"
@@ -76,6 +75,25 @@ async def start_simulation(
         return error_response(
             422, ErrorCode.NO_ROUTE, "no route exists between the snapped endpoints"
         )
+
+
+@router.post("/start", response_model=SimulationStartResponse, responses=_START_ERRORS)
+async def start_simulation(
+    request: SimulationStartRequest, http_request: Request
+) -> SimulationStartResponse | JSONResponse:
+    return await _started(_manager(http_request).start(request))
+
+
+@router.post("/compare/start", response_model=ComparisonStartResponse, responses=_START_ERRORS)
+async def start_comparison(
+    request: ComparisonStartRequest, http_request: Request
+) -> ComparisonStartResponse | JSONResponse:
+    """Start the ER Green Wave and standard-traffic runs of one scenario in lockstep (ADR 0008).
+
+    Supersedes the active run or pair; each run streams and stops under its own id, and stopping
+    either stops both.
+    """
+    return await _started(_manager(http_request).start_comparison(request))
 
 
 @router.get(
