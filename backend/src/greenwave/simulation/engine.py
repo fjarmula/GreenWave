@@ -1,7 +1,7 @@
-"""Deterministic one-second simulation engine.
+"""One-second motion and request engine consuming separate simulated ITS reports.
 
-State transitions depend only on the supplied state and clock; the one side effect is handing each
-ITS dispatch payload to the injected (simulated) gateway.
+The per-run controller owns decisions and signal phases. Submitting a request never
+changes confirmed traffic state; the legacy gateway is an optional diagnostic sink.
 """
 
 from dataclasses import replace
@@ -115,14 +115,8 @@ class SimulationEngine:
     def step(
         self, state: EngineState, wall_clock_utc: datetime
     ) -> tuple[EngineState, list[EngineEvent]]:
-        """One simulated second: move, advance signals, dispatch, then report.
-
-        Motion and the reported phases read the same simulated programme
-        (:func:`route_movement_color_at` mid-tick, :func:`advance_signal_phases` at tick end).
-        Every step is streamed as its own tick, and the map animates the marker across it under
-        that tick's lights, so priority is released only for intersections passed before it.
-        """
-        if state.completed:
+        """Move under the previous report, observe, apply feedback, submit, then publish."""
+        if state.completed or self._closed:
             return state, []
         before = state
         released_before_m = state.distance_travelled_m

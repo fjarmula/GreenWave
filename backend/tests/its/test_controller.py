@@ -150,3 +150,25 @@ def test_ack_settings_reject_invalid_order(changes):
 
     with pytest.raises(ValidationError):
         SimulationSettings(**changes)
+
+
+def test_controller_can_be_imported_before_engine() -> None:
+    """A fresh interpreter must not need the application to seed module imports."""
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [sys.executable, "-c", "from greenwave.its.controller import SimulatedItsController"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_late_ack_cannot_activate_an_already_expired_hold() -> None:
+    controller, model = setup(ItsScenario.DELAYED)
+    controller.settings = SimulationSettings(its_delayed_ack_seconds=45, its_ack_timeout_seconds=50)
+    controller.submit(request())
+    update = observe(controller, model, 55)
+    assert [f.status for f in update.feedback] == ["ACCEPTED", "EXPIRED"]
+    assert all(r.state == "NORMAL" for r in update.intersection_runtimes)

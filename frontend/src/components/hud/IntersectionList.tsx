@@ -123,7 +123,7 @@ function IntersectionCard({
 }) {
   const { id, name, state, tti_seconds: ttiSeconds, is_active_corridor: active } = intersection;
   const isCascade = isCascadeClearing(intersection);
-  const detail = active ? "SIMULATED CORRIDOR ACTIVE" : "NO PRIORITY REQUEST";
+  const detail = active ? "SIMULATED CORRIDOR ACTIVE" : "ORDINARY TRAFFIC REPORT";
 
   return (
     <article className="rounded-lg border border-border/70 bg-background/65 p-3">

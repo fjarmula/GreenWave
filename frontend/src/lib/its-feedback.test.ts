@@ -74,3 +74,41 @@ it("snapshot reconciliation defeats delayed feedback and same-tick feedback upda
   });
   expect(state).toBe(previous);
 });
+
+it("unknown high sequence cannot starve genuine feedback", () => {
+  let state = simulationReducer(initialSimulationState, {
+    type: "START_REQUESTED",
+    request: { ...request, simulation_id: "s" },
+  });
+  state = simulationReducer(state, {
+    type: "START_SUCCEEDED",
+    simulationId: "s",
+    response: { ...route("s"), intersections_on_route: ["I"] },
+  });
+  const pending = {
+    message_id: "MSG-ITS-1",
+    intersections_group: ["I"],
+    status: "REQUESTED" as const,
+    submitted_at_simulated_sec: 3,
+    acknowledged_at_simulated_sec: null,
+    last_updated_at_simulated_sec: 3,
+    last_feedback_sequence: 0,
+    reason: null,
+  };
+  state = simulationReducer(state, {
+    type: "TICK",
+    event: { ...tick(4, "s"), its_requests: [pending] },
+  });
+  const valid = parseStreamEvent(feedback, "s");
+  if (!valid || valid.event_type !== "ITS_FEEDBACK") throw new Error("fixture");
+  const before = state;
+  expect(
+    simulationReducer(state, {
+      type: "ITS_FEEDBACK",
+      event: { ...valid, request_message_id: "MSG-ITS-99", feedback_sequence: 99 },
+    }),
+  ).toBe(before);
+  expect(
+    simulationReducer(state, { type: "ITS_FEEDBACK", event: valid }).itsRequests[0].status,
+  ).toBe("ACCEPTED");
+});

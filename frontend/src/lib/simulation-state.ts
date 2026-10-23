@@ -1,3 +1,4 @@
+import { applyItsFeedback } from "./its-feedback-state";
 import type { ConnectionStatus } from "@/lib/simulation-adapter";
 import type { SimulationErrorInfo } from "@/lib/transport/errors";
 import type {
@@ -172,42 +173,8 @@ export function simulationReducer(
         )
       )
         return state;
-      const previous = state.itsRequests.find((r) => r.message_id === event.request_message_id);
-      if (
-        previous &&
-        (event.feedback_sequence <= previous.last_feedback_sequence ||
-          !["REQUESTED", "ACCEPTED"].includes(previous.status))
-      )
-        return state;
-      const allowed =
-        previous?.status === "REQUESTED"
-          ? ["ACCEPTED", "REJECTED", "TIMED_OUT", "RELEASED"]
-          : previous?.status === "ACCEPTED"
-            ? ["RELEASED", "EXPIRED"]
-            : [];
-      if (
-        previous &&
-        (!allowed.includes(event.status) ||
-          JSON.stringify(previous.intersections_group) !==
-            JSON.stringify(event.intersections_group) ||
-          event.observed_at_simulated_sec < previous.last_updated_at_simulated_sec)
-      )
-        return state;
-      const itsRequests = state.itsRequests.map((r) =>
-        r.message_id === event.request_message_id
-          ? {
-              ...r,
-              status: event.status,
-              reason: event.reason,
-              last_feedback_sequence: event.feedback_sequence,
-              last_updated_at_simulated_sec: event.observed_at_simulated_sec,
-              acknowledged_at_simulated_sec:
-                event.status === "ACCEPTED"
-                  ? event.observed_at_simulated_sec
-                  : r.acknowledged_at_simulated_sec,
-            }
-          : r,
-      );
+      const itsRequests = applyItsFeedback(state.itsRequests, event, state.lastFeedbackSequence);
+      if (!itsRequests) return state;
       return {
         ...state,
         itsRequests,

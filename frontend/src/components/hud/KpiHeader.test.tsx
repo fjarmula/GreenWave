@@ -1,3 +1,5 @@
+import { tickEventExample } from "@/lib/transport/__fixtures__/architecture-examples";
+
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -147,3 +149,21 @@ describe("KpiHeader vehicle type", () => {
     expect(markup).toContain("Ambulance");
   });
 });
+
+it.each(["ITS_REJECTED", "ITS_TIMEOUT", "ITS_HOLD_EXPIRED"] as const)(
+  "does not present successful savings after %s",
+  (reason) => {
+    state = {
+      ...initialSimulationState,
+      simulationState: "CANCELLED",
+      cancelReason: reason,
+      liveTelemetry: {
+        ...tickEventExample,
+        kpi_metrics: { total_time_elapsed_sec: 25, current_time_saved_sec: 29 },
+      },
+    };
+    const html = renderToStaticMarkup(<KpiHeader />);
+    expect(html).not.toContain("+29s");
+    expect(html).toContain("No completed savings");
+  },
+);

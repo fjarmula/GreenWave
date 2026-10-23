@@ -501,3 +501,36 @@ it("retains raw named SSE data and validation rejection without delivering rejec
   off();
   vi.unstubAllGlobals();
 });
+
+it("ignores unknown high feedback sequence before accepting legitimate same-tick feedback", () => {
+  const adapter = createBackendSimulationAdapter(BASE_URL, {
+    startTimeoutMilliseconds: 1000,
+    reconnectAttemptLimit: 2,
+  });
+  const feedbacks: unknown[] = [];
+  const events = recorder();
+  adapter.subscribe(SIMULATION_ID, {
+    ...events.subscriber,
+    onItsFeedback: (e) => feedbacks.push(e),
+  });
+  const source = latestSource();
+  source.emit(itsDispatchEventExample);
+  const feedback = {
+    schema_version: "1.0",
+    is_simulated: true,
+    event_type: "ITS_FEEDBACK",
+    simulation_id: SIMULATION_ID,
+    tick: itsDispatchEventExample.tick,
+    timestamp: itsDispatchEventExample.timestamp,
+    request_message_id: itsDispatchEventExample.message_id,
+    feedback_sequence: 1,
+    status: "ACCEPTED",
+    intersections_group: itsDispatchEventExample.payload.intersections_group,
+    observed_at_simulated_sec: itsDispatchEventExample.tick + 1,
+    reason: null,
+  };
+  source.emit({ ...feedback, request_message_id: "MSG-ITS-99", feedback_sequence: 99 });
+  source.emit(feedback);
+  source.emit(feedback);
+  expect(feedbacks).toEqual([feedback]);
+});

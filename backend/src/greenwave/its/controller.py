@@ -128,6 +128,26 @@ class SimulatedItsController:
                         reason,
                     )
                 )
+        # A configured acknowledgement may arrive after a fixed hold deadline. Keep the
+        # lifecycle explicit while never activating an already-expired target.
+        for key, request in self._requests.items():
+            if (
+                self._statuses[key] is ItsRequestStatus.ACCEPTED
+                and now >= request.submitted_at_simulated_sec + request.payload.hold_duration_sec
+            ):
+                self._statuses[key] = ItsRequestStatus.EXPIRED
+                self._sequence += 1
+                feedback.append(
+                    ItsDecision(
+                        request.simulation_id,
+                        request.message_id,
+                        self._sequence,
+                        ItsRequestStatus.EXPIRED,
+                        tuple(request.payload.intersections_group),
+                        now,
+                        ItsFeedbackReason.HOLD_EXPIRED,
+                    )
+                )
         accepted = {
             target: cascade
             for key, request in self._requests.items()

@@ -136,3 +136,11 @@ def test_scripted_controller_holds_red_until_its_report_changes():
     assert tick.intersections[0].state == "PRIORITY_GREEN"
     state, _ = engine.step(state, NOW)
     assert state.distance_travelled_m > 100
+
+
+def test_closed_engine_cannot_emit_or_submit_more_work() -> None:
+    engine = engine_for_single_stop()
+    state, _ = engine.step(engine.initial_state(), NOW)
+    engine.close()
+    engine.close()
+    assert engine.step(state, NOW) == (state, [])
