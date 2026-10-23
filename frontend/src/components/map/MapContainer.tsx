@@ -134,9 +134,7 @@ export function MapContainer({
           stale={telemetryStale}
           ended={simulationState !== "RUNNING"}
           onDisplayedPosition={displayVehicle}
-          animationMilliseconds={
-            snapshot ? 0 : tickIntervalMilliseconds(startRequest?.playback_speed ?? 1)
-          }
+          animationMilliseconds={tickIntervalMilliseconds(startRequest?.playback_speed ?? 1)}
         />
         <EndpointMarkers
           map={map}

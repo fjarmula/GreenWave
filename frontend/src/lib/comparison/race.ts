@@ -14,6 +14,8 @@ export type RaceStanding = {
   arrived: ComparisonMode | null;
   /** Share of the route driven, 0–1. */
   positions: Record<ComparisonMode, number>;
+  /** Both runs completed; the result card takes over. */
+  bothArrived: boolean;
 };
 
 /** Closer than this, the race reads as level. */
@@ -50,6 +52,7 @@ export function raceStanding(route: SimulationStartResponse, runs: ComparisonRun
     leader: Math.abs(leadM) < LEVEL_WITHIN_M ? "LEVEL" : leadM > 0 ? "ENABLED" : "DISABLED",
     leadM,
     arrived,
+    bothArrived: !!enabledDone && !!disabledDone,
     positions: {
       ENABLED: total > 0 ? enabled / total : 0,
       DISABLED: total > 0 ? disabled / total : 0,
@@ -58,6 +61,7 @@ export function raceStanding(route: SimulationStartResponse, runs: ComparisonRun
 }
 
 export function raceReadout(standing: RaceStanding): string {
+  if (standing.bothArrived) return "Both arrived";
   const gap = formatSignalDistance(Math.abs(standing.leadM));
   if (standing.arrived === "ENABLED") return `Green Wave arrived · standard traffic ${gap} behind`;
   if (standing.arrived === "DISABLED") return `Standard traffic arrived · Green Wave ${gap} behind`;

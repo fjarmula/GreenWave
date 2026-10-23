@@ -66,6 +66,11 @@ describe("raceStanding", () => {
       "Standard traffic arrived · Green Wave 700 m behind",
     );
   });
+  it("reads both arrived once the race is over", () => {
+    expect(raceReadout(standing(arrived("ENABLED", 300), arrived("DISABLED", 345)))).toBe(
+      "Both arrived",
+    );
+  });
   it("reads the lead with the signal-distance rules", () => {
     expect(raceReadout(standing(at(1500, "ENABLED"), at(800, "DISABLED")))).toBe(
       "Green Wave ahead by 700 m",

@@ -64,6 +64,7 @@ export function WorkspaceShell({
     window.addEventListener("keydown", escape);
     return () => window.removeEventListener("keydown", escape);
   }, [focus]);
+  const hasPanel = !!sheet || inspector !== undefined;
   const panelHidden = focus || !details;
   const desktopSheet = sheet && !sheet.phoneOnly ? sheet : undefined;
   return (
@@ -82,15 +83,17 @@ export function WorkspaceShell({
         {header}
         <div className="workspace-actions">
           <ThemeToggle />
-          <button
-            className="workspace-button"
-            aria-expanded={details}
-            aria-controls="workspace-inspector"
-            onClick={() => setDetails(!details)}
-          >
-            <PanelRight aria-hidden />
-            <span className="workspace-button-label">Details</span>
-          </button>
+          {hasPanel && (
+            <button
+              className="workspace-button"
+              aria-expanded={details}
+              aria-controls="workspace-inspector"
+              onClick={() => setDetails(!details)}
+            >
+              <PanelRight aria-hidden />
+              <span className="workspace-button-label">Details</span>
+            </button>
+          )}
           <button ref={trigger} className="workspace-button" onClick={() => changeFocus(true)}>
             <Maximize2 aria-hidden />
             <span className="workspace-button-label">Enter Focus</span>
@@ -107,7 +110,7 @@ export function WorkspaceShell({
             expanded={sheet.expanded}
           />
         </div>
-      ) : (
+      ) : !hasPanel ? null : (
         <aside
           id="workspace-inspector"
           aria-label="Simulation details"

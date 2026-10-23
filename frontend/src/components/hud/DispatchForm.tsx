@@ -153,15 +153,14 @@ export function DispatchForm({
         disabled={intent !== "comparison" && greenWaveMode === "DISABLED"}
       />
       <PlaybackSpeedSelector
-        label={intent === "comparison" ? "Replay speed" : undefined}
         value={playbackSpeed}
         onChange={(speed) => update({ playbackSpeed: speed })}
       />
 
       {intent === "comparison" && (
         <p className="mt-4 text-sm text-muted-foreground">
-          Both modes are recorded sequentially at 10×, then played together at the selected replay
-          speed. Every displayed signal state is simulated.
+          Both modes run at once on one simulated clock, side by side. Every displayed signal state
+          is simulated.
         </p>
       )}
       {previousRun && <PreviousRunCard run={previousRun} />}

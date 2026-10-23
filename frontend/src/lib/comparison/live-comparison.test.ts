@@ -161,3 +161,26 @@ describe("live comparison controller", () => {
     expect(listener).toHaveBeenCalled();
   });
 });
+
+describe("live comparison stop", () => {
+  it("marks the pair as stopping until the stop is answered", async () => {
+    const { controller, cancel } = await running();
+    const pending = controller.stop();
+    expect(controller.getState().stopping).toBe(true);
+    await pending;
+    cancel("pair-e", "STOPPED", 1);
+    cancel("pair-d", "STOPPED", 1);
+    expect(controller.getState()).toMatchObject({ status: "finished", stopping: false });
+  });
+
+  it("reports a failed stop and keeps running", async () => {
+    const { controller, adapter } = await running();
+    vi.mocked(adapter.stop).mockRejectedValueOnce(new Error("offline"));
+    await controller.stop();
+    expect(controller.getState()).toMatchObject({
+      status: "running",
+      stopping: false,
+      reason: "Could not stop: offline",
+    });
+  });
+});

@@ -18,6 +18,8 @@ export type LiveComparisonState = {
   /** Route intersections that reached PRIORITY_GREEN in the Green Wave run. */
   priorityIds: string[];
   reason: string | null;
+  /** Stop was requested and not yet answered. */
+  stopping: boolean;
 };
 
 export const REPLACED_REASON = "Comparison replaced by another simulation";
@@ -29,6 +31,7 @@ const idle: LiveComparisonState = {
   runs: { ENABLED: initialSimulationState, DISABLED: initialSimulationState },
   priorityIds: [],
   reason: null,
+  stopping: false,
 };
 
 /** The single-run request of one pair member; both share every scenario field. */
@@ -77,7 +80,7 @@ export function createLiveComparisonController(
   const finish = (status: LiveComparisonState["status"], reason: string | null) => {
     closeStreams();
     slot.release("comparison");
-    publish({ ...state, status, reason });
+    publish({ ...state, status, reason, stopping: false });
   };
 
   const settle = () => {
@@ -177,12 +180,15 @@ export function createLiveComparisonController(
     },
     /** Stops the pair: either id stops every live member (ADR 0008). */
     async stop() {
-      if (state.status !== "running" || !request) return;
+      if (state.status !== "running" || state.stopping || !request) return;
+      publish({ ...state, stopping: true, reason: null });
       try {
         await adapter.stop(request.enabled_simulation_id);
       } catch (error) {
+        if (state.status !== "running") return;
         publish({
           ...state,
+          stopping: false,
           reason: `Could not stop: ${error instanceof Error ? error.message : "unknown error"}`,
         });
       }
