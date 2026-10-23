@@ -756,6 +756,74 @@
     bottom: calc(45% + 0.5rem);
   }
 }
+/* Phone bottom sheet: two snaps, moved only by transform; the drawer curve settles it. */
+.bottom-sheet {
+  position: absolute;
+  z-index: 6;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 85%;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  transition: transform 350ms var(--ease-drawer);
+  will-change: transform;
+}
+.bottom-sheet[data-dragging="true"],
+.bottom-sheet[data-measured="false"] {
+  transition: none;
+}
+/* Until measured, show only the collapsed slot so the first paint is already collapsed. */
+.bottom-sheet[data-measured="false"] .bottom-sheet-expanded {
+  display: none;
+}
+.bottom-sheet-grabber {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 1.75rem;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+.bottom-sheet-grabber span {
+  width: 2.25rem;
+  height: 0.3125rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted-foreground) 45%, transparent);
+}
+.bottom-sheet-grabber:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -4px;
+  border-radius: var(--radius-control);
+}
+.bottom-sheet-collapsed {
+  flex: none;
+  padding: 0 1rem 0.75rem;
+  touch-action: none;
+}
+.bottom-sheet-expanded {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 1rem 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+@media (pointer: coarse) {
+  .bottom-sheet-grabber {
+    height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bottom-sheet {
+    transition: none;
+  }
+}
 @media (pointer: coarse) {
   input,
   textarea,
