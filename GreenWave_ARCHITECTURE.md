@@ -132,9 +132,9 @@ $$T_{\mathrm{greenwave}} = \sum_{e \in \mathrm{Edges}} \left( \frac{L_e}{V_{\mat
 
 Where $V_{\mathrm{ambulance}}(e) = \min(\max(1.3 \cdot V_e \cdot b(e),\; 30\text{ km/h}),\; 90\text{ km/h})$, $b(e)$ is the **largest** applicable boost (not the product; 1 when none applies): 1.05 on a `bus_lane` edge, 1.05 on a `tram_track` edge; $s_{\mathrm{ambulance}} = 2\text{ s}$ per calming feature; and $D_{\min} = 3\text{ s}$ is applied once per unique intersection (`INT-xxxx`) whose controlled approach the route passes, by the same rule as $D_u$.
 
-One edge-time function (`backend/src/greenwave/routing/edge_times.py`) drives route choice (minimum ambulance edge time), both estimates and simulated motion: on each edge the simulated ambulance moves at the effective speed $L_e / t_a(e)$ with $t_a(e) = L_e / V_{\mathrm{ambulance}}(e) + n_e \cdot s_{\mathrm{ambulance}}$, so calming seconds are spread over the edge and the simulated trip matches $T_{\mathrm{greenwave}}$ (except that a route ending exactly on a stop line arrives before that last $D_{\min}$). All factors are `GREENWAVE_SIM_*` settings; 1.0 / 0 s makes an attribute neutral.
+One edge-time function (`backend/src/greenwave/routing/edge_times.py`) drives route choice (minimum ambulance edge time), both estimates and simulated motion: on each edge the simulated ambulance moves at the effective speed $L_e / t_a(e)$ with $t_a(e) = L_e / V_{\mathrm{ambulance}}(e) + n_e \cdot s_{\mathrm{ambulance}}$, so calming seconds are spread over the edge and the simulated trip matches $T_{\mathrm{greenwave}}$, including a route ending exactly on a stop line. All factors are `GREENWAVE_SIM_*` settings; 1.0 / 0 s makes an attribute neutral.
 
-In the simulation the ambulance dwells $D_{\min}$ at each intersection's first controlled stop line and then leaves only once every route vehicle light at that line was last **shown** green (section 4, signal phases). Priority normally turns green long before, so this hold changes nothing; it only matters when priority is requested too late (for example a route that starts just before a junction), where the ambulance waits at the line instead of driving through red.
+In the simulation the ambulance never stops for $D_{\min}$: it spends it as a rolling slowdown over the last `greenwave_approach_distance_m` (60 m) before each intersection's first controlled stop line (never starting before the previous intersection's first stop line), at a constant reduced share of its own speed that adds exactly $D_{\min}$, never below `greenwave_min_rolling_speed_kmh` (15 km/h). When that window is too short to absorb $D_{\min}$ at or above the floor (close junctions, a route starting near a line), the slowdown continues past the line at the floor speed until $D_{\min}$ is spent. The trip therefore still takes $T_{\mathrm{greenwave}}$. Separately, the ambulance leaves a first stop line only once every route vehicle light at that line was last **shown** green (section 4, signal phases). Priority normally turns green long before, so this hold changes nothing; it only matters when priority is requested too late (for example a route that starts just before a junction), where the ambulance waits at the line instead of driving through red. That hold is the only time an enabled run shows 0 km/h before arrival.
 
 #### 3. Standard-traffic crossing (ER Green Wave disabled)
 
@@ -189,7 +189,7 @@ the transition was triggered early by an upstream intersection within
 3. **`PRIORITY_GREEN -> RECOVERY`:** Triggered when the ambulance has
    passed the intersection's last controlled approach stop line
    ($d_i \le 0\text{ m}$), but never while it is still stopped on that
-   line (dwelling $D_{\min}$ or held for green, also for another
+   line (held for green, also for another
    intersection sharing the line) and never in the tick that carries it
    across the line: the dashboard animates the vehicle across each tick
    under that tick's lights, so priority is released on the following
@@ -384,8 +384,9 @@ never leaves the marker behind the lights. The offline mock transport
 follows the same one-tick-per-simulated-second rule and intervals.
 Ambulance `status` is an enum of
 `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`;
-`CROSSING_INTERSECTION` covers a dwell or hold at a stop line and, in a
-disabled run, the whole controlled crossing. `speed_kmh` is the distance
+`CROSSING_INTERSECTION` covers, in an enabled run, the $D_{\min}$ slowdown
+and any hold at a stop line and, in a disabled run, the whole controlled
+crossing. `speed_kmh` is the distance
 actually driven in that simulated second, including the arrival tick.
 
 The stream carries a discriminated union on `event_type`:
