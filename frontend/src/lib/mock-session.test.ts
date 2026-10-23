@@ -1,4 +1,4 @@
-import { haversineMeters } from "@/lib/mock-route-metrics";
+import { estimateMockRoute, haversineMeters } from "@/lib/mock-route-metrics";
 import { describe, expect, it } from "vitest";
 import {
   advanceMockSession,
@@ -157,6 +157,22 @@ describe("ER Green Wave mode in the mock", () => {
       expect(leg?.crossing).toBe(true);
       expect(leg?.speedMps).toBeLessThan(AMBULANCE_MPS);
       expect(leg?.speedMps).toBeGreaterThanOrEqual(MOCK_MIN_ROLLING_SPEED_MPS);
+    }
+  });
+
+  it("spends every D_min before arriving, whatever the route length", () => {
+    // Near the rolling floor the slowdown would outrun the destination; it is cut there.
+    for (let meters = 20; meters <= 3000; meters += 5) {
+      const request = modeRequest("ENABLED", {
+        ...DENSITY,
+        destination: { lat: 0, lng: meters / 111_320 },
+      });
+      const expected = estimateMockRoute(
+        request.origin,
+        request.destination,
+        request.traffic_density_multiplier,
+      ).greenwaveSeconds;
+      expect(createMockSession(request).timeline.tripSeconds).toBeCloseTo(expected, 6);
     }
   });
 

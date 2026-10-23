@@ -219,6 +219,17 @@ def test_arrival_inside_a_slowdown_clears_the_crossing() -> None:
     assert final.cautious_time_remaining_s == 0.0
 
 
+def test_slowdown_near_the_destination_still_spends_every_d_min() -> None:
+    # The second slowdown would run past the destination; it is cut there, so the
+    # trip still takes T_greenwave (free time plus D_min per intersection).
+    states, _ = _run(_engine(GreenWaveMode.ENABLED, stop_lines=(190.0, 199.5)))
+    final = states[-1]
+    assert final.arrived
+    assert final.arrived_at_s == pytest.approx(200 / 13 + 2 * 3)
+    assert final.cautious_crossing_remaining_m == 0.0
+    assert final.cautious_time_remaining_s == 0.0
+
+
 def test_greenwave_slowdown_length() -> None:
     settings = SimulationSettings()
     assert greenwave_slowdown(90.0, 30.0, 13.0, settings) == pytest.approx(60.0)
