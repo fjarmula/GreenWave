@@ -89,12 +89,12 @@ function StationPin({ feature }: { feature: StationFeature }) {
       role="img"
     >
       <span
-        className={`grid place-items-center rounded-full border-2 border-background shadow-md ${size} ${ring} ${VEHICLE_ICON_COLORS[vehicle_type]}`}
+        className={`grid place-items-center rounded-full border-2 border-background shadow-marker ${size} ${ring} ${VEHICLE_ICON_COLORS[vehicle_type]}`}
       >
         <VehicleIcon type={vehicle_type} className={role === "chosen" ? "size-4" : "size-3.5"} />
       </span>
       {role === "chosen" && (
-        <span className="absolute top-1/2 left-full ml-2 -translate-y-1/2 rounded-md border border-border/80 bg-card/95 px-2 py-1 whitespace-nowrap shadow-lg backdrop-blur">
+        <span className="absolute top-1/2 left-full ml-2 -translate-y-1/2 rounded-md border border-border surface-float px-2 py-1 whitespace-nowrap">
           {name}
         </span>
       )}

@@ -1,5 +1,7 @@
 "use client";
 
+import { mapPalette, type MapPalette } from "@/components/map/map-palette";
+import type { ResolvedTheme } from "@/lib/theme-transition";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Marker, type Map } from "maplibre-gl";
 import {
@@ -15,23 +17,14 @@ import {
 } from "@/lib/signal-phase-layer";
 import { isCascadeClearing } from "@/lib/signal-visuals";
 import type {
-  IntersectionState,
   IntersectionTelemetry,
   RouteIntersection,
   SignalPhaseIndicator,
 } from "@/types/telemetry";
 
-const SIGNAL_COLORS: Record<IntersectionState, string> = {
-  NORMAL: "#ef4444",
-  CLEARING: "#10b981",
-  PRIORITY_GREEN: "#22c55e",
-  RECOVERY: "#f59e0b",
-};
 // Cascaded CLEARING keeps the purple cascade visual (`is_cascade` flag, not a state).
-const CASCADE_COLOR = "#8b5cf6";
-
-function signalColor(intersection: IntersectionTelemetry): string {
-  return isCascadeClearing(intersection) ? CASCADE_COLOR : SIGNAL_COLORS[intersection.state];
+function signalColor(intersection: IntersectionTelemetry, palette: MapPalette): string {
+  return isCascadeClearing(intersection) ? palette.cascade : palette.signal[intersection.state];
 }
 
 /** A DOM marker for one simulated phase, offset by the grouped layout so neighbours never overlap. */
@@ -39,7 +32,7 @@ function createPhaseMarker(map: Map, item: PhaseMarkerLayout): PhaseMarkerHandle
   const element = document.createElement("div");
   element.setAttribute("role", "img");
   element.className =
-    "box-border flex items-center justify-center gap-1 whitespace-nowrap rounded-md border border-dashed border-border bg-card/95 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-foreground shadow-lg";
+    "box-border flex items-center justify-center gap-1 whitespace-nowrap rounded-md border border-dashed border-border bg-card px-1.5 py-0.5 font-mono text-[9px] font-semibold text-foreground shadow-marker";
   element.style.width = `${PHASE_MARKER_WIDTH_PX}px`;
   element.style.height = `${PHASE_MARKER_HEIGHT_PX}px`;
   const light = document.createElement("span");
@@ -75,6 +68,7 @@ type SignalMarkersProps = {
    * their intersections; an intersection without phases keeps its dot, labelled detail unavailable.
    */
   phases: SignalPhaseIndicator[];
+  theme: ResolvedTheme;
 };
 
 export function SignalMarkers({
@@ -83,6 +77,7 @@ export function SignalMarkers({
   routeIntersections,
   intersections,
   phases,
+  theme,
 }: SignalMarkersProps) {
   const markers = useRef(new globalThis.Map<string, Marker>());
   const phaseLayer = useRef<SignalPhaseLayer | null>(null);
@@ -143,7 +138,7 @@ export function SignalMarkers({
         const element = document.createElement("div");
         element.className = "relative size-4";
         const dot = document.createElement("span");
-        dot.className = "block size-4 rounded-full border-2 border-background shadow-lg";
+        dot.className = "block size-4 rounded-full border-2 border-background shadow-marker";
         const label = document.createElement("span");
         label.className =
           "absolute top-1/2 left-full ml-2 -translate-y-1/2 whitespace-nowrap rounded border border-border bg-card/95 px-2 py-1 font-mono text-[9px] text-foreground";
@@ -156,12 +151,12 @@ export function SignalMarkers({
       const element = marker.getElement();
       element.setAttribute("aria-label", labels.ariaLabel);
       const dot = element.firstElementChild as HTMLElement;
-      dot.style.backgroundColor = signalColor(intersection);
+      dot.style.backgroundColor = signalColor(intersection, mapPalette(theme));
       dot.classList.toggle("dashboard-signal-pulse", intersection.is_active_corridor);
       const label = element.lastElementChild as HTMLElement;
       label.textContent = labels.text;
     });
-  }, [map, visible, dotIds, detailed, routeIntersections, intersections]);
+  }, [map, visible, dotIds, detailed, routeIntersections, intersections, theme]);
 
   return null;
 }

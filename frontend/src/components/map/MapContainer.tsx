@@ -96,7 +96,7 @@ export function MapContainer({
       >
         {!map && (
           <div className="absolute inset-0 grid place-items-center bg-[var(--map-surface)]">
-            <span className="rounded-full border border-border/80 bg-card/80 px-3 py-1.5 font-mono text-[10px] text-muted-foreground shadow-lg backdrop-blur">
+            <span className="rounded-full border border-border surface-float px-3 py-1.5 font-mono text-[10px] text-muted-foreground">
               Loading map tiles…
             </span>
           </div>
@@ -132,13 +132,15 @@ export function MapContainer({
           startRequest={startRequest}
           routeData={routeData}
           styleRevision={styleRevision}
+          theme={theme}
         />
         <RouteLayer
           map={map}
           routeGeometry={routeData?.route_geometry ?? null}
           styleRevision={styleRevision}
+          theme={theme}
         />
-        <CascadeLinksMapProvider map={map} styleRevision={styleRevision}>
+        <CascadeLinksMapProvider map={map} styleRevision={styleRevision} theme={theme}>
           <CascadeLinksLayer route={routeData} />
         </CascadeLinksMapProvider>
         <SignalMarkers
@@ -147,6 +149,7 @@ export function MapContainer({
           routeIntersections={routeData?.route_intersections ?? NO_ROUTE_INTERSECTIONS}
           intersections={liveTelemetry?.intersections ?? NO_INTERSECTIONS}
           phases={liveTelemetry?.signal_phases ?? NO_SIGNAL_PHASES}
+          theme={theme}
         />
       </div>
       {live && routeData && (

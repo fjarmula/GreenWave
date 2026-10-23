@@ -3,7 +3,9 @@
 import { createContext, useContext, useEffect, type ReactNode } from "react";
 import type { Map } from "maplibre-gl";
 
+import { mapPalette } from "@/components/map/map-palette";
 import { cascadeLinkFeatures } from "@/lib/cascade-links";
+import type { ResolvedTheme } from "@/lib/theme-transition";
 import type { SimulationStartResponse } from "@/types/telemetry";
 
 type CascadeLinksLayerProps = {
@@ -13,25 +15,34 @@ type CascadeLinksLayerProps = {
 type CascadeLinksMapProviderProps = {
   map: Map | null;
   styleRevision: number;
+  theme: ResolvedTheme;
   children: ReactNode;
 };
 
-const CascadeLinksMapContext = createContext<{ map: Map | null; styleRevision: number } | null>(
-  null,
-);
+const CascadeLinksMapContext = createContext<{
+  map: Map | null;
+  styleRevision: number;
+  theme: ResolvedTheme;
+} | null>(null);
 
 export function CascadeLinksMapProvider({
   map,
   styleRevision,
+  theme,
   children,
 }: CascadeLinksMapProviderProps) {
-  return <CascadeLinksMapContext value={{ map, styleRevision }}>{children}</CascadeLinksMapContext>;
+  return (
+    <CascadeLinksMapContext value={{ map, styleRevision, theme }}>
+      {children}
+    </CascadeLinksMapContext>
+  );
 }
 
 export function CascadeLinksLayer({ route }: CascadeLinksLayerProps) {
   const context = useContext(CascadeLinksMapContext);
   const map = context?.map ?? null;
   const styleRevision = context?.styleRevision ?? 0;
+  const theme = context?.theme ?? "light";
   useEffect(() => {
     if (!map || !route) return;
     const features = cascadeLinkFeatures(route);
@@ -45,7 +56,7 @@ export function CascadeLinksLayer({ route }: CascadeLinksLayerProps) {
       type: "line",
       source: sourceId,
       paint: {
-        "line-color": "#8b5cf6",
+        "line-color": mapPalette(theme).cascade,
         "line-width": 4,
         "line-dasharray": [1.5, 1.5],
         "line-opacity": 0.9,
@@ -57,7 +68,7 @@ export function CascadeLinksLayer({ route }: CascadeLinksLayerProps) {
       if (map.getLayer(layerId)) map.removeLayer(layerId);
       if (map.getSource(sourceId)) map.removeSource(sourceId);
     };
-  }, [map, route, styleRevision]);
+  }, [map, route, styleRevision, theme]);
 
   return null;
 }

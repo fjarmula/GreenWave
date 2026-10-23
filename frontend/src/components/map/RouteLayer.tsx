@@ -2,17 +2,22 @@
 
 import { useEffect } from "react";
 import type { Map } from "maplibre-gl";
+
+import { mapPalette } from "@/components/map/map-palette";
+import type { ResolvedTheme } from "@/lib/theme-transition";
 import type { RouteGeometry } from "@/types/telemetry";
 
 type RouteLayerProps = {
   map: Map | null;
   routeGeometry: RouteGeometry | null;
   styleRevision: number;
+  theme: ResolvedTheme;
 };
 
-export function RouteLayer({ map, routeGeometry, styleRevision }: RouteLayerProps) {
+export function RouteLayer({ map, routeGeometry, styleRevision, theme }: RouteLayerProps) {
   useEffect(() => {
     if (!map || !routeGeometry || routeGeometry.coordinates.length < 2) return;
+    const palette = mapPalette(theme);
 
     const sourceId = "greenwave-route";
     const lineLayerId = "greenwave-route-line";
@@ -25,7 +30,7 @@ export function RouteLayer({ map, routeGeometry, styleRevision }: RouteLayerProp
       id: casingId,
       type: "line",
       source: sourceId,
-      paint: { "line-color": "#064e3b", "line-width": 9, "line-opacity": 0.85 },
+      paint: { "line-color": palette.routeCasing, "line-width": 9, "line-opacity": 0.85 },
       layout: { "line-cap": "round", "line-join": "round" },
     });
     map.addLayer({
@@ -33,7 +38,7 @@ export function RouteLayer({ map, routeGeometry, styleRevision }: RouteLayerProp
       type: "line",
       source: sourceId,
       paint: {
-        "line-color": "#10b981",
+        "line-color": palette.routeLive,
         "line-width": 5,
         "line-opacity": 0.9,
       },
@@ -45,7 +50,7 @@ export function RouteLayer({ map, routeGeometry, styleRevision }: RouteLayerProp
       if (map.getLayer(casingId)) map.removeLayer(casingId);
       if (map.getSource(sourceId)) map.removeSource(sourceId);
     };
-  }, [map, routeGeometry, styleRevision]);
+  }, [map, routeGeometry, styleRevision, theme]);
 
   return null;
 }

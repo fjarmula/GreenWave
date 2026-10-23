@@ -4,7 +4,9 @@ import { useEffect, useRef } from "react";
 import type { Map } from "maplibre-gl";
 
 import { applyEndpointFit } from "@/components/map/endpoint-fit";
+import { mapPalette } from "@/components/map/map-palette";
 import { snapConnectorFeatures, SNAP_CONNECTOR_MIN_METERS } from "@/components/map/snap-connectors";
+import type { ResolvedTheme } from "@/lib/theme-transition";
 import type { Position, SimulationStartRequest, SimulationStartResponse } from "@/types/telemetry";
 
 /** A labelled map point: the dispatching station (origin) or the incident (destination). */
@@ -21,6 +23,7 @@ type EndpointMarkersProps = {
   startRequest: SimulationStartRequest | null;
   routeData: SimulationStartResponse | null;
   styleRevision: number;
+  theme: ResolvedTheme;
 };
 
 /**
@@ -39,6 +42,7 @@ export function EndpointMarkers({
   startRequest,
   routeData,
   styleRevision,
+  theme,
 }: EndpointMarkersProps) {
   // Primitive dependencies: the dashboard builds new endpoint objects on every render.
   const originLng = origin?.position.lng ?? null;
@@ -86,7 +90,7 @@ export function EndpointMarkers({
       type: "line",
       source: sourceId,
       paint: {
-        "line-color": "#64748b",
+        "line-color": mapPalette(theme).endpointLine,
         "line-width": 2,
         "line-dasharray": [2, 2],
         "line-opacity": 0.9,
@@ -97,7 +101,7 @@ export function EndpointMarkers({
       if (map.getLayer(layerId)) map.removeLayer(layerId);
       if (map.getSource(sourceId)) map.removeSource(sourceId);
     };
-  }, [map, routeData, startRequest, styleRevision]);
+  }, [map, routeData, startRequest, styleRevision, theme]);
 
   return null;
 }
