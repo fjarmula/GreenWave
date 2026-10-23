@@ -498,3 +498,49 @@ it("retains raw named SSE data and validation rejection without delivering rejec
   off();
   vi.unstubAllGlobals();
 });
+
+describe("startComparison", () => {
+  const comparison = {
+    enabled_simulation_id: "pair-e",
+    disabled_simulation_id: "pair-d",
+    origin: request.origin,
+    destination: request.destination,
+    traffic_density_multiplier: 1.5,
+    enable_cascade_mode: true,
+    playback_speed: 10,
+    vehicle_type: "AMBULANCE" as const,
+  };
+  const pair = {
+    schema_version: "1.0",
+    is_simulated: true,
+    enabled: { ...startResponseExample, simulation_id: "pair-e", green_wave_mode: "ENABLED" },
+    disabled: { ...startResponseExample, simulation_id: "pair-d", green_wave_mode: "DISABLED" },
+  };
+
+  it("POSTs the scenario to the compare endpoint and returns both validated routes", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(pair));
+    await expect(adapter().startComparison(comparison)).resolves.toEqual(pair);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`${BASE_URL}/api/v1/simulation/compare/start`);
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(String(init?.body))).toEqual(comparison);
+  });
+
+  it("maps an error response like start does", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(errorResponseExample, 422));
+    await expect(adapter().startComparison(comparison)).rejects.toMatchObject({
+      kind: "http",
+      status: 422,
+      code: errorResponseExample.error_code,
+    });
+  });
+
+  it("rejects a response whose runs do not carry the requested ids", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ ...pair, enabled: { ...pair.enabled, simulation_id: "other" } }),
+    );
+    await expect(adapter().startComparison(comparison)).rejects.toBeInstanceOf(
+      SimulationAdapterError,
+    );
+  });
+});

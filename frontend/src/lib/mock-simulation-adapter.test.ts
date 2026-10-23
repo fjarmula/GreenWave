@@ -268,3 +268,117 @@ it("keeps public estimate seconds integral without stalling a subsecond trip", a
   expect(events.ticks[0].ambulance.speed_kmh).toBe(3.6);
   expect(events.completions[0].kpi_metrics.total_time_elapsed_sec).toBe(0);
 });
+
+describe("mock comparison pair", () => {
+  const comparison = {
+    enabled_simulation_id: "pair-e",
+    disabled_simulation_id: "pair-d",
+    origin: request.origin,
+    destination: request.destination,
+    traffic_density_multiplier: 1.5,
+    enable_cascade_mode: true,
+    playback_speed: 10,
+    vehicle_type: "AMBULANCE" as const,
+  };
+
+  it("returns both runs of one route, one per mode", async () => {
+    const adapter = createMockSimulationAdapter();
+    const pair = await adapter.startComparison(comparison);
+    expect(pair.enabled).toMatchObject({ simulation_id: "pair-e", green_wave_mode: "ENABLED" });
+    expect(pair.disabled).toMatchObject({ simulation_id: "pair-d", green_wave_mode: "DISABLED" });
+    expect(pair.disabled.route_geometry).toEqual(pair.enabled.route_geometry);
+  });
+
+  it("streams both comparison runs on one clock", async () => {
+    vi.useFakeTimers();
+    const adapter = createMockSimulationAdapter();
+    await adapter.startComparison(comparison);
+    const order: string[] = [];
+    const enabled = collect();
+    const disabled = collect();
+    adapter.subscribe("pair-e", {
+      ...enabled.subscriber,
+      onTick: (event) => order.push(`e:${event.tick}`),
+    });
+    adapter.subscribe("pair-d", {
+      ...disabled.subscriber,
+      onTick: (event) => order.push(`d:${event.tick}`),
+    });
+    vi.advanceTimersByTime(1_000); // ten ticks at 10x
+    const position = (entry: string) => order.indexOf(entry);
+    for (let tick = 1; tick < 10; tick += 1) {
+      const latest = Math.max(position(`e:${tick}`), position(`d:${tick}`));
+      expect(latest).toBeGreaterThanOrEqual(0);
+      expect(latest).toBeLessThan(position(`e:${tick + 1}`));
+      expect(latest).toBeLessThan(position(`d:${tick + 1}`));
+    }
+  });
+
+  it("keeps streaming the slower run after the first arrives", async () => {
+    vi.useFakeTimers();
+    const adapter = createMockSimulationAdapter();
+    await adapter.startComparison(comparison);
+    const enabled = collect();
+    const disabled = collect();
+    adapter.subscribe("pair-e", enabled.subscriber);
+    adapter.subscribe("pair-d", disabled.subscriber);
+    vi.advanceTimersByTime(600_000);
+    expect(enabled.completions).toHaveLength(1);
+    expect(disabled.completions).toHaveLength(1);
+    expect(disabled.ticks.length).toBeGreaterThan(enabled.ticks.length);
+  });
+
+  it("supersedes a running pair on a plain start", async () => {
+    const adapter = createMockSimulationAdapter();
+    await adapter.startComparison(comparison);
+    const enabled = collect();
+    const disabled = collect();
+    adapter.subscribe("pair-e", enabled.subscriber);
+    adapter.subscribe("pair-d", disabled.subscriber);
+    await adapter.start(request);
+    expect(enabled.cancellations).toEqual([expect.objectContaining({ reason: "SUPERSEDED" })]);
+    expect(disabled.cancellations).toEqual([expect.objectContaining({ reason: "SUPERSEDED" })]);
+  });
+
+  it("a new pair supersedes a running single run", async () => {
+    const adapter = createMockSimulationAdapter();
+    await adapter.start(request);
+    const single = collect();
+    adapter.subscribe("test", single.subscriber);
+    await adapter.startComparison(comparison);
+    expect(single.cancellations).toEqual([expect.objectContaining({ reason: "SUPERSEDED" })]);
+  });
+
+  it("stopping one comparison run stops both", async () => {
+    const adapter = createMockSimulationAdapter();
+    await adapter.startComparison(comparison);
+    const enabled = collect();
+    const disabled = collect();
+    adapter.subscribe("pair-e", enabled.subscriber);
+    adapter.subscribe("pair-d", disabled.subscriber);
+    await adapter.stop("pair-d");
+    expect(enabled.cancellations).toEqual([expect.objectContaining({ reason: "STOPPED" })]);
+    expect(disabled.cancellations).toEqual([expect.objectContaining({ reason: "STOPPED" })]);
+  });
+
+  it("stopping after one arrival cancels only the live run", async () => {
+    vi.useFakeTimers();
+    const adapter = createMockSimulationAdapter();
+    await adapter.startComparison(comparison);
+    const enabled = collect();
+    const disabled = collect();
+    adapter.subscribe("pair-e", enabled.subscriber);
+    adapter.subscribe("pair-d", disabled.subscriber);
+    while (enabled.completions.length === 0) vi.advanceTimersByTime(100);
+    await adapter.stop("pair-e");
+    expect(enabled.cancellations).toHaveLength(0);
+    expect(disabled.cancellations).toEqual([expect.objectContaining({ reason: "STOPPED" })]);
+  });
+
+  it("rejects equal ids", async () => {
+    const adapter = createMockSimulationAdapter();
+    await expect(
+      adapter.startComparison({ ...comparison, disabled_simulation_id: "pair-e" }),
+    ).rejects.toMatchObject({ kind: "http", status: 422 });
+  });
+});

@@ -3,6 +3,7 @@ export const operations = [
   "geocode",
   "ranking",
   "start",
+  "compare-start",
   "sse",
   "stop",
   "quality",

@@ -27,7 +27,12 @@ import type {
   SimulationStreamSubscriber,
 } from "@/lib/simulation-adapter";
 import { SimulationAdapterError, type SimulationErrorInfo } from "@/lib/transport/errors";
-import { parseErrorResponse, parseStartResponse, parseStreamEvent } from "@/lib/transport/validate";
+import {
+  parseComparisonStartResponse,
+  parseErrorResponse,
+  parseStartResponse,
+  parseStreamEvent,
+} from "@/lib/transport/validate";
 import type { SimulationStreamEvent } from "@/types/telemetry";
 
 export type BackendAdapterOptions = {
@@ -71,7 +76,12 @@ export function createBackendSimulationAdapter(
       });
     };
     const requestBody = body === undefined ? undefined : JSON.stringify(body);
-    const capture = beginHttpCapture(url.endsWith("/start") ? "start" : "stop", {
+    const operation = url.endsWith("/compare/start")
+      ? "compare-start"
+      : url.endsWith("/start")
+        ? "start"
+        : "stop";
+    const capture = beginHttpCapture(operation, {
       method: "POST",
       path: new URL(url).pathname,
       ...(requestBody === undefined ? {} : { requestBody }),
@@ -143,6 +153,45 @@ export function createBackendSimulationAdapter(
           kind: "http",
           status: response.status,
           message: `Simulation backend sent an invalid start response (${error instanceof Error ? error.message : "unknown field"})`,
+        });
+      }
+    },
+
+    async startComparison(request) {
+      // As for start: a pair routed after we gave up must not keep running. Stopping either
+      // member stops the pair (ADR 0008).
+      const stopAbandonedPair = () => {
+        postJson(simulationUrl(request.enabled_simulation_id, "stop"))
+          .then(({ response, capture }) =>
+            response.ok || response.status === 404 ? capture.accepted(false) : capture.failed(),
+          )
+          .catch(() => undefined);
+      };
+      const { response, json, capture } = await postJson(
+        `${baseUrl}/api/v1/simulation/compare/start`,
+        request,
+        stopAbandonedPair,
+      );
+      if (!response.ok) {
+        capture.failed();
+        throw httpError(response.status, json);
+      }
+      try {
+        const result = parseComparisonStartResponse(json);
+        if (result.enabled.simulation_id !== request.enabled_simulation_id)
+          throw new TypeError(`enabled.simulation_id: expected "${request.enabled_simulation_id}"`);
+        if (result.disabled.simulation_id !== request.disabled_simulation_id)
+          throw new TypeError(
+            `disabled.simulation_id: expected "${request.disabled_simulation_id}"`,
+          );
+        capture.accepted();
+        return result;
+      } catch (error) {
+        capture.rejected();
+        throw new SimulationAdapterError({
+          kind: "http",
+          status: response.status,
+          message: `Simulation backend sent an invalid comparison start response (${error instanceof Error ? error.message : "unknown field"})`,
         });
       }
     },

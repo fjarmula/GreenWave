@@ -4,6 +4,8 @@ import { createMockSimulationAdapter } from "@/lib/mock-simulation-adapter";
 import { createBackendSimulationAdapter } from "@/lib/transport/backend-simulation-adapter";
 import type { SimulationErrorInfo } from "@/lib/transport/errors";
 import type {
+  ComparisonStartRequest,
+  ComparisonStartResponse,
   ItsDispatchEvent,
   SimulationCancelledEvent,
   SimulationCompletedEvent,
@@ -32,6 +34,11 @@ export type SimulationStreamSubscriber = {
 export type SimulationAdapter = {
   /** Rejects with `SimulationAdapterError`. */
   start: (request: SimulationStartRequest) => Promise<SimulationStartResponse>;
+  /**
+   * Starts the Green Wave and standard-traffic runs of one scenario as one operation,
+   * advanced in lockstep (ADR 0008). Rejects with `SimulationAdapterError`.
+   */
+  startComparison: (request: ComparisonStartRequest) => Promise<ComparisonStartResponse>;
   /** Returns an unsubscribe function that closes the stream. */
   subscribe: (simulationId: string, subscriber: SimulationStreamSubscriber) => () => void;
   stop: (simulationId: string) => Promise<void>;

@@ -8,6 +8,7 @@
 import type {
   AmbulanceStatus,
   CancelReason,
+  ComparisonStartResponse,
   DatasetQualityResponse,
   DispatchRankResponse,
   ErrorCode,
@@ -213,6 +214,24 @@ export function parseStartResponse(value: unknown): SimulationStartResponse {
   snappedEndpoint(body.destination_snapped, "destination_snapped");
   member(GREEN_WAVE_MODES, body.green_wave_mode, "green_wave_mode");
   return body as SimulationStartResponse;
+}
+
+/** Both runs of a comparison pair (ADR 0008); errors name the member (`enabled.…`). */
+export function parseComparisonStartResponse(value: unknown): ComparisonStartResponse {
+  const body = record(value, "response");
+  if (body.schema_version !== "1.0") fail("schema_version", '"1.0"');
+  if (body.is_simulated !== true) fail("is_simulated", "true");
+  (["enabled", "disabled"] as const).forEach((key) => {
+    let run: SimulationStartResponse;
+    try {
+      run = parseStartResponse(body[key]);
+    } catch (error) {
+      throw new TypeError(`${key}.${error instanceof Error ? error.message : "invalid"}`);
+    }
+    const mode = key === "enabled" ? "ENABLED" : "DISABLED";
+    if (run.green_wave_mode !== mode) fail(`${key}.green_wave_mode`, `"${mode}"`);
+  });
+  return body as ComparisonStartResponse;
 }
 
 function checkStreamEvent(

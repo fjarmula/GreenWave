@@ -3,10 +3,14 @@ import { createComparisonController } from "./comparison-controller";
 import { createOperationSlot } from "@/lib/operation-slot";
 import type { SimulationAdapter, SimulationStreamSubscriber } from "@/lib/simulation-adapter";
 import { request, route, tick, completed } from "./fixtures.test-support";
+const unusedComparison = async (): Promise<never> => {
+  throw new Error("comparison start is not used here");
+};
 it("records sequentially with frozen settings and blocks a competing operation", async () => {
   let subscriber: SimulationStreamSubscriber;
   const starts: (typeof request)[] = [];
   const adapter: SimulationAdapter = {
+    startComparison: unusedComparison,
     start: async (r) => {
       starts.push(r);
       return route(r.simulation_id, r.green_wave_mode);
@@ -42,7 +46,7 @@ it("cancel during a pending start stops late success and never starts mode two",
       }),
   );
   const c = createComparisonController(
-    { start, stop, subscribe: () => () => {} },
+    { start, startComparison: unusedComparison, stop, subscribe: () => () => {} },
     createOperationSlot(),
     () => "late",
   );
@@ -61,6 +65,7 @@ it("rejects a gapped recording and releases the operation only after stop succee
   const stop = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValue(undefined);
   const c = createComparisonController(
     {
+      startComparison: unusedComparison,
       start: async (r) => route(r.simulation_id, r.green_wave_mode),
       subscribe: (_, s) => {
         subscriber = s;

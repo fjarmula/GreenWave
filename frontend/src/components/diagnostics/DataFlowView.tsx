@@ -5,6 +5,7 @@ const names: Record<Operation, string> = {
   geocode: "Geocode",
   ranking: "Ranking",
   start: "Start",
+  "compare-start": "Comparison start",
   sse: "SSE",
   stop: "Stop",
   quality: "Dataset quality",

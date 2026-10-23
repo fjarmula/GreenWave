@@ -12,6 +12,7 @@ import {
 import { createMockSession } from "@/lib/mock-session";
 import { datasetQualityExample } from "@/lib/transport/__fixtures__/dataset-quality";
 import {
+  parseComparisonStartResponse,
   parseErrorResponse,
   parseStartResponse,
   parseStreamEvent,
@@ -290,5 +291,35 @@ describe("ER Green Wave mode and signal phases", () => {
     ["a missing label", (p: Record<string, unknown>) => delete p.accessible_label],
   ])("rejects a phase indicator with %s", (_label, mutate) => {
     expect(parseStreamEvent(withPhase(mutate), SIMULATION_ID)).toBeNull();
+  });
+});
+
+describe("parseComparisonStartResponse", () => {
+  const pair = {
+    schema_version: "1.0",
+    is_simulated: true,
+    enabled: { ...startResponseExample, simulation_id: "pair-e", green_wave_mode: "ENABLED" },
+    disabled: { ...startResponseExample, simulation_id: "pair-d", green_wave_mode: "DISABLED" },
+  };
+  it("accepts both runs of the pair", () => {
+    expect(parseComparisonStartResponse(wire(pair))).toEqual(pair);
+  });
+  it("rejects a member in the wrong mode", () => {
+    expect(() =>
+      parseComparisonStartResponse(
+        wire(pair, (copy) => {
+          record(copy.disabled).green_wave_mode = "ENABLED";
+        }),
+      ),
+    ).toThrow(/disabled/);
+  });
+  it("rejects an invalid member route", () => {
+    expect(() =>
+      parseComparisonStartResponse(
+        wire(pair, (copy) => {
+          record(copy.enabled).route_geometry = null;
+        }),
+      ),
+    ).toThrow(/enabled/);
   });
 });
