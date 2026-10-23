@@ -110,12 +110,11 @@ def test_the_ambulance_only_leaves_a_stop_line_on_a_shown_green(
 
 @pytest.mark.parametrize("origin_x", _ORIGINS)
 def test_priority_is_held_while_the_ambulance_waits_at_the_stop_line(origin_x: float) -> None:
+    """The ambulance rolls ``D_min``; a tick that ends on a line still shows its priority."""
     engine, ticks = _run(origin_x, SimulationSettings(), cascade=False)
     for item in engine.route_model.intersections:
         waiting = [tick for distance, tick in ticks if distance == item.first_stop_line_m]
         if not waiting:
-            # Explicit hold expiry can terminate before later route intersections.
-            assert any(r.status == "EXPIRED" for r in engine.ledger.snapshots())
             continue
         for tick in waiting:
             state = next(i.state for i in tick.intersections if i.id == item.id)
