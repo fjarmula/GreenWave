@@ -7,6 +7,7 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from greenwave.schemas import (
+    ComparisonStartRequest,
     ErrorResponse,
     GreenWaveMode,
     ItsDispatchEvent,
@@ -358,3 +359,34 @@ def test_a_tick_carries_valid_phase_indicators() -> None:
 def test_a_tick_rejects_an_invalid_phase_indicator(override: dict[str, object]) -> None:
     with pytest.raises(ValidationError):
         SimulationTickEvent.model_validate({**tick(), "signal_phases": [_phase(**override)]})
+
+
+def _comparison(**patch: object) -> dict[str, object]:
+    return {
+        "enabled_simulation_id": "SIM-on",
+        "disabled_simulation_id": "SIM-off",
+        "origin": {"lat": 50.06, "lng": 19.94},
+        "destination": {"lat": 50.07, "lng": 19.95},
+        "traffic_density_multiplier": 1.5,
+        "enable_cascade_mode": True,
+        "playback_speed": 10,
+        **patch,
+    }
+
+
+def test_comparison_request_rejects_equal_ids() -> None:
+    with pytest.raises(ValidationError):
+        ComparisonStartRequest.model_validate(_comparison(disabled_simulation_id="SIM-on"))
+
+
+def test_comparison_member_carries_mode_and_id() -> None:
+    request = ComparisonStartRequest.model_validate(_comparison(vehicle_type="FIRE_TRUCK"))
+    enabled = request.member(GreenWaveMode.ENABLED)
+    disabled = request.member(GreenWaveMode.DISABLED)
+    assert (enabled.simulation_id, enabled.green_wave_mode) == ("SIM-on", GreenWaveMode.ENABLED)
+    assert (disabled.simulation_id, disabled.green_wave_mode) == ("SIM-off", GreenWaveMode.DISABLED)
+    shared = {"simulation_id", "green_wave_mode"}
+    assert enabled.model_dump(exclude=shared) == disabled.model_dump(exclude=shared)
+    assert enabled.model_dump(exclude=shared) == request.model_dump(
+        exclude={"enabled_simulation_id", "disabled_simulation_id"}
+    )

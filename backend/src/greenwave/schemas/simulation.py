@@ -6,9 +6,9 @@ Canonical definition of the payloads in ``GreenWave_ARCHITECTURE.md`` section 4 
 """
 
 from enum import StrEnum
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import AwareDatetime, BaseModel, Field, RootModel
+from pydantic import AwareDatetime, BaseModel, Field, RootModel, model_validator
 
 SchemaVersion = Literal["1.0"]
 SIMULATION_ID_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"
@@ -144,6 +144,50 @@ class SimulationStartResponse(BaseModel):
     green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED  # the mode this run uses
 
 
+class ComparisonStartRequest(BaseModel):
+    """One scenario run twice at once, ER Green Wave enabled and disabled, in lockstep (ADR 0008).
+
+    The fields are those of :class:`SimulationStartRequest` minus ``green_wave_mode``; each run
+    keeps its own client-chosen id and is streamed and stopped like a single run.
+    """
+
+    enabled_simulation_id: SimulationId
+    disabled_simulation_id: SimulationId
+    origin: Position
+    destination: Position
+    traffic_density_multiplier: Annotated[float, Field(ge=1.0, le=3.0)]
+    enable_cascade_mode: bool
+    playback_speed: Annotated[int, Field(ge=1, le=10)] = 1
+    vehicle_type: VehicleType = VehicleType.AMBULANCE
+
+    @model_validator(mode="after")
+    def distinct_ids(self) -> Self:
+        if self.enabled_simulation_id == self.disabled_simulation_id:
+            raise ValueError("enabled_simulation_id and disabled_simulation_id must differ")
+        return self
+
+    def member(self, mode: GreenWaveMode) -> SimulationStartRequest:
+        """The single-run request of the pair member that uses ``mode``."""
+        enabled = mode is GreenWaveMode.ENABLED
+        return SimulationStartRequest(
+            simulation_id=self.enabled_simulation_id if enabled else self.disabled_simulation_id,
+            origin=self.origin,
+            destination=self.destination,
+            traffic_density_multiplier=self.traffic_density_multiplier,
+            enable_cascade_mode=self.enable_cascade_mode,
+            playback_speed=self.playback_speed,
+            vehicle_type=self.vehicle_type,
+            green_wave_mode=mode,
+        )
+
+
+class ComparisonStartResponse(BaseModel):
+    schema_version: SchemaVersion
+    is_simulated: Literal[True]
+    enabled: SimulationStartResponse
+    disabled: SimulationStartResponse
+
+
 class AmbulanceTelemetry(BaseModel):
     id: str
     position: Position
@@ -268,6 +312,8 @@ __all__ = [
     "AmbulanceStatus",
     "AmbulanceTelemetry",
     "CancelReason",
+    "ComparisonStartRequest",
+    "ComparisonStartResponse",
     "ErrorCode",
     "ErrorResponse",
     "GreenWaveMode",
