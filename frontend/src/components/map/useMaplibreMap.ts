@@ -3,6 +3,7 @@ import * as maplibregl from "maplibre-gl";
 import type { Map } from "maplibre-gl";
 
 import { collapseCompactAttribution } from "@/components/map/attribution";
+import { createBasemapLoader, groundOnlyStyle } from "@/components/map/basemap-style";
 import { createMapThemeSwap } from "@/components/map/map-theme-swap";
 import { registerThemeBarrier, type ResolvedTheme } from "@/lib/theme-transition";
 
@@ -43,7 +44,8 @@ export function useMaplibreMap(theme: ResolvedTheme) {
     maplibregl.setWorkerUrl(MAPLIBRE_WORKER_URL);
     const instance = new maplibregl.Map({
       container: mapElement.current,
-      style: MAP_STYLES[initialTheme.current],
+      // The plain ground until the recoloured basemap arrives (below).
+      style: groundOnlyStyle(initialTheme.current),
       center: KRAKOW_CENTER,
       zoom: 12.4,
       minZoom: 10,
@@ -59,9 +61,10 @@ export function useMaplibreMap(theme: ResolvedTheme) {
     );
 
     instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    const setStyle = createBasemapLoader(instance);
     const swap = createMapThemeSwap(
       {
-        setStyle: (url) => instance.setStyle(url),
+        setStyle,
         onceStyleLoad: (callback) => instance.once("style.load", callback),
         tilesReady: () => instance.areTilesLoaded(),
         paint: () => instance.redraw(),
@@ -70,6 +73,8 @@ export function useMaplibreMap(theme: ResolvedTheme) {
       initialTheme.current,
     );
     swapRef.current = swap;
+    // Every basemap, the first one included, goes through the same recolouring path.
+    setStyle(MAP_STYLES[initialTheme.current], initialTheme.current);
     const unregisterBarrier = registerThemeBarrier((next) => swap.to(next));
     const container = mapElement.current;
     let prefetched = false;

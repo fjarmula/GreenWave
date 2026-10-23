@@ -2,7 +2,8 @@ import type { ResolvedTheme } from "@/lib/theme-transition";
 
 /** The slice of a MapLibre map a theme swap needs. */
 export type MapStyleTarget = {
-  setStyle(url: string): void;
+  /** Loads the basemap at `url`, recoloured for `theme`. */
+  setStyle(url: string, theme: ResolvedTheme): void;
   onceStyleLoad(callback: () => void): void;
   tilesReady(): boolean;
   /** Draws a frame now; rAF-driven repaints do not run while a view transition holds rendering. */
@@ -47,7 +48,7 @@ export function createMapThemeSwap(
         poll();
       });
     });
-    target.setStyle(styles[next]);
+    target.setStyle(styles[next], next);
     return pending;
   }
 

@@ -42,7 +42,7 @@ describe("createMapThemeSwap", () => {
     const map = fakeMap();
     const swap = createMapThemeSwap(map.target, STYLES, "light");
     const pending = swap.to("dark");
-    expect(map.target.setStyle).toHaveBeenCalledWith("dark.json");
+    expect(map.target.setStyle).toHaveBeenCalledWith("dark.json", "dark");
     expect(await settled(pending)).toBe(false);
     map.loadStyle();
     expect(await settled(pending)).toBe(false);
