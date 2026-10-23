@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vitest";
 import { EndpointActivity } from "./EndpointActivity";
 import { JsonViewer } from "./JsonDetails";
-import type { DiagnosticEntry } from "@/lib/diagnostics/store";
+import type { DiagnosticCapture, DiagnosticEntry } from "@/lib/diagnostics/store";
 it("offers JSON inspection only for captured payloads", () => {
   const html = renderToStaticMarkup(
     <EndpointActivity
@@ -28,7 +28,7 @@ it("offers JSON inspection only for captured payloads", () => {
 });
 
 it("shows only the response body, with no request/response switch", () => {
-  const capture = {
+  const capture: DiagnosticCapture = {
     method: "POST",
     path: "/api/v1/simulation/start",
     requestBody: '{"x":1}',
