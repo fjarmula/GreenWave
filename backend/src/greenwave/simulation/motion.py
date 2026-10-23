@@ -154,7 +154,9 @@ def move_one_second(
                         dwell, dwelling = settings.min_intersection_delay_seconds, stop.id
                         continue
                     # A slowdown still running past the previous line keeps its own extra time.
-                    crossing += added
+                    # It never runs past the destination, so every D_min is spent before
+                    # arrival and the trip still takes T_greenwave.
+                    crossing = min(crossing + added, track.total_distance_m - distance)
                     cautious += settings.min_intersection_delay_seconds
         else:
             line = next_stop_line(route_model, state, distance)
