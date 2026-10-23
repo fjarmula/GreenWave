@@ -49,7 +49,7 @@ export function HomeMenu() {
           Emergency corridor simulation
         </p>
         <h1
-          className="home-reveal mt-5 max-w-2xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl"
+          className="home-reveal mt-5 max-w-2xl text-4xl font-semibold tracking-[-0.035em] text-balance sm:text-6xl"
           style={reveal(1)}
         >
           A clearer path to the incident.
@@ -107,7 +107,9 @@ export function HomeMenu() {
                 <span className={`home-card-icon ${tone}`}>
                   <Icon className="size-4" aria-hidden />
                 </span>
-                <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
+                <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                  0{i + 1}
+                </span>
               </span>
               <h2 className="mt-8 flex items-center gap-1.5 text-lg font-semibold tracking-tight">
                 {d.label}

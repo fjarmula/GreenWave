@@ -27,7 +27,7 @@ export function TrafficDensityControl({ value, onChange }: TrafficDensityControl
         className="hud-range mt-3"
         style={{ "--fill": `${((value - 1) / 2) * 100}%` } as CSSProperties}
       />
-      <div className="hud-value mt-1 flex justify-between text-[10px] text-muted-foreground">
+      <div className="mt-1 flex justify-between text-2xs text-muted-foreground tabular-nums">
         <span>1.0x normal</span>
         <span>3.0x peak</span>
       </div>

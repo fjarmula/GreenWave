@@ -18,17 +18,15 @@ export function ItsConsole() {
   const logEntries = itsLog.slice(-5);
   return (
     <section className="hud-panel overflow-hidden p-0">
-      <div className="flex items-center justify-between gap-4 border-b border-border px-3.5 py-2.5 text-[11px] font-medium text-muted-foreground">
+      <div className="flex items-center justify-between gap-4 border-b border-border px-3.5 py-2.5 text-2xs font-medium text-muted-foreground">
         <span className="flex items-center gap-2">
           <Activity className="size-3.5 text-beacon" aria-hidden />
           {getFrontendConfig().transport === "mock" ? "Mock" : "Simulated"} ITS gateway audit log
         </span>
         <span
-          className={`hud-chip hud-value text-[10px] ${simulationState === "RUNNING" ? "tone-emergency" : ""}`}
+          className={`hud-chip hud-value text-2xs ${simulationState === "RUNNING" ? "tone-emergency" : ""}`}
         >
-          <i
-            className={`hud-dot ${simulationState === "RUNNING" ? "motion-safe:animate-pulse" : ""}`}
-          />
+          <i className={`hud-dot ${simulationState === "RUNNING" ? "status-breathe" : ""}`} />
           {PHASE_CHIPS[simulationState] ?? "IDLE"}
         </span>
       </div>
@@ -46,7 +44,7 @@ export function ItsConsole() {
             <p
               key={entry.messageId}
               aria-current={newest || undefined}
-              className={`hud-value flex gap-2 text-[10px] leading-relaxed ${
+              className={`hud-value flex gap-2 text-2xs leading-relaxed ${
                 newest ? "text-go" : "text-muted-foreground"
               }`}
             >

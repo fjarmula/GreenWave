@@ -131,18 +131,18 @@ function IntersectionCard({
             {name ?? routeDetail?.name ?? "Unnamed intersection"}
           </span>
           {routeDetail && (
-            <span className="mt-0.5 block text-[11px] text-muted-foreground">
+            <span className="mt-0.5 block text-2xs text-muted-foreground">
               {KIND_LABELS[routeDetail.kind]} · {routeDetail.signal_count} signals
             </span>
           )}
           {routeDetail?.needs_review && (
-            <span className="mt-1 block text-[11px] font-semibold text-caution">
+            <span className="mt-1 block text-2xs font-semibold text-caution">
               Source data flagged for review
             </span>
           )}
         </div>
         <span
-          className={`hud-chip hud-value shrink-0 text-[10px] ${
+          className={`hud-chip hud-value shrink-0 text-2xs ${
             isCascade ? "tone-cascade" : active ? "tone-go" : ""
           }`}
         >
@@ -158,7 +158,7 @@ function IntersectionCard({
             {ttiSeconds === null ? "Passed" : `${ttiSeconds}s`}
           </span>
         </strong>
-        <span className="text-[10px] text-muted-foreground">{detail}</span>
+        <span className="text-2xs text-muted-foreground">{detail}</span>
       </div>
       <div className="intersection-tti">
         <span

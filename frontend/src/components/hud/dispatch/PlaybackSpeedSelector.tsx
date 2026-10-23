@@ -17,7 +17,7 @@ export function PlaybackSpeedSelector({
         <span id="playback-speed-label" className="dashboard-label">
           {label}
         </span>
-        <span className="font-mono text-[10px] text-muted-foreground">simulated s per real s</span>
+        <span className="text-2xs text-muted-foreground">simulated s per real s</span>
       </div>
       <div role="radiogroup" aria-labelledby="playback-speed-label" className="hud-segmented mt-2">
         {PLAYBACK_SPEEDS.map((speed) => (

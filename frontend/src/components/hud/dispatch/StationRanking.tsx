@@ -47,7 +47,7 @@ export function StationRanking({
   return (
     <div className="mt-4 space-y-2" aria-live="polite">
       {ranking.station_at_incident && (
-        <p className="hud-alert tone-caution text-[11px]">
+        <p className="hud-alert tone-caution text-2xs">
           <Info aria-hidden />A station of this type is at this location; dispatching from the next
           fastest.
         </p>
@@ -56,7 +56,7 @@ export function StationRanking({
         <div className="flex items-center justify-between gap-2">
           <p className="dashboard-eyebrow">Dispatching from</p>
           {!roadTimeRanking && (
-            <span className="hud-chip tone-caution text-[10px]">Approximate (mock)</span>
+            <span className="hud-chip tone-caution text-2xs">Approximate (mock)</span>
           )}
         </div>
         <CandidateRow candidate={winner} roadTimeRanking={roadTimeRanking} emphasis />
@@ -93,9 +93,7 @@ function CandidateRow({
         >
           {station.name}
         </p>
-        <p className="text-[10px] text-muted-foreground">
-          {SOURCE_KIND_LABELS[station.source_kind]}
-        </p>
+        <p className="text-2xs text-muted-foreground">{SOURCE_KIND_LABELS[station.source_kind]}</p>
       </div>
       <span
         className={`shrink-0 font-mono ${

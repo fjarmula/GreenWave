@@ -203,7 +203,7 @@ export function DispatchForm({
         incident={incident?.position ?? null}
       />
 
-      <p className="mt-5 flex items-center gap-2 text-[11px] leading-relaxed text-muted-foreground">
+      <p className="mt-5 flex items-center gap-2 text-2xs leading-relaxed text-muted-foreground">
         <ShieldCheck className="size-4 shrink-0 text-go" aria-hidden />
         {isMockTransport
           ? "Demo uses synthetic route estimates and sample signal telemetry."

@@ -131,9 +131,9 @@ export function IncidentInput({
         )}
       </div>
       <SearchFeedback feedback={geocodeEnabled ? searchFeedback(searchState, query) : null} />
-      <p className="mt-1.5 text-[11px] text-muted-foreground">or click the map</p>
+      <p className="mt-1.5 text-2xs text-muted-foreground">or click the map</p>
       {!geocodeEnabled && (
-        <p className="mt-1 text-[11px] text-muted-foreground">Address search needs the backend</p>
+        <p className="mt-1 text-2xs text-muted-foreground">Address search needs the backend</p>
       )}
     </div>
   );
@@ -145,7 +145,7 @@ export function SearchFeedback({ feedback }: { feedback: Feedback }) {
     return (
       <p
         role="alert"
-        className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-emergency"
+        className="mt-1.5 flex items-center gap-1.5 text-2xs font-medium text-emergency"
       >
         <TriangleAlert className="size-3.5 shrink-0" aria-hidden />
         Address search unavailable — click the map instead
@@ -156,7 +156,7 @@ export function SearchFeedback({ feedback }: { feedback: Feedback }) {
     return (
       <p
         role="status"
-        className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-caution"
+        className="mt-1.5 flex items-center gap-1.5 text-2xs font-medium text-caution"
       >
         <SearchX className="size-3.5 shrink-0" aria-hidden />
         No matching address

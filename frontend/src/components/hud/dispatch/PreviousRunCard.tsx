@@ -30,19 +30,19 @@ export function PreviousRunCard({ run }: PreviousRunCardProps) {
       <p className={`hud-chip mt-2 ${enabled ? "tone-go" : "tone-caution"}`}>
         {greenWaveModeLabel(run.greenWaveMode)}
       </p>
-      <p className="mt-2 text-[11px] break-words text-muted-foreground">
+      <p className="mt-2 text-2xs break-words text-muted-foreground">
         {run.stationName} → {run.incidentLabel} · {run.trafficDensity.toFixed(1)}x traffic
       </p>
       <dl className="mt-3 grid grid-cols-2 gap-3">
         {/* Values share a baseline even when one label wraps onto two lines. */}
         <div className="flex flex-col justify-between">
-          <dt className="text-[10px] text-muted-foreground">Total travel time</dt>
+          <dt className="text-2xs text-muted-foreground">Total travel time</dt>
           <dd className="hud-value mt-1 text-lg font-semibold">
             {formatDuration(run.totalSeconds)}
           </dd>
         </div>
         <div className="flex flex-col justify-between">
-          <dt className="text-[10px] text-muted-foreground">{SAVED_LABEL}</dt>
+          <dt className="text-2xs text-muted-foreground">{SAVED_LABEL}</dt>
           <dd
             className={`hud-value mt-1 text-lg font-semibold ${SAVED_VALUE_TONES[timeSavedTone(run.savedSeconds)]}`}
           >

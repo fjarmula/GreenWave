@@ -173,7 +173,7 @@ function QualitySummary({ data }: { data: DatasetQualityResponse }) {
 
       <section aria-label="Data sources" className="space-y-2">
         <p className="dashboard-eyebrow">Sources</p>
-        <ul className="space-y-2 text-[11px] leading-relaxed text-muted-foreground">
+        <ul className="space-y-2 text-2xs leading-relaxed text-muted-foreground">
           {data.sources.map((source) => (
             <li key={source.path}>
               <span className="hud-value block break-all text-foreground">{source.path}</span>
@@ -185,14 +185,14 @@ function QualitySummary({ data }: { data: DatasetQualityResponse }) {
           ))}
         </ul>
         {data.msip_export_timestamp && (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-2xs text-muted-foreground">
             MSIP export timestamp:{" "}
             <span className="hud-value text-foreground">{data.msip_export_timestamp}</span>
           </p>
         )}
       </section>
 
-      <p className="text-[10px] leading-relaxed text-muted-foreground">{DATA_QUALITY_FOOTER}</p>
+      <p className="text-2xs leading-relaxed text-muted-foreground">{DATA_QUALITY_FOOTER}</p>
     </div>
   );
 }
@@ -204,17 +204,17 @@ function QualityCheckItem({ check }: { check: QualityCheck }) {
     <li className="rounded-lg border border-border bg-muted/40 p-3">
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-xs font-semibold">{check.title}</h3>
-        <span className={`hud-chip shrink-0 text-[10px] uppercase ${className}`}>
+        <span className={`hud-chip shrink-0 text-2xs uppercase ${className}`}>
           <Icon aria-hidden />
           {label}
         </span>
       </div>
-      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{check.headline}</p>
+      <p className="mt-1 text-2xs leading-relaxed text-muted-foreground">{check.headline}</p>
       {metrics.length > 0 && (
         <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
           {metrics.map(([name, value]) => (
             <div key={name}>
-              <dt className="text-[10px] text-muted-foreground">{metricLabel(name)}</dt>
+              <dt className="text-2xs text-muted-foreground">{metricLabel(name)}</dt>
               <dd className="hud-value text-xs font-semibold">{metricValue(name, value)}</dd>
             </div>
           ))}
@@ -222,10 +222,10 @@ function QualityCheckItem({ check }: { check: QualityCheck }) {
       )}
       {check.samples.length > 0 && (
         <details className="mt-2">
-          <summary className="cursor-pointer text-[10px] font-semibold text-muted-foreground">
+          <summary className="cursor-pointer text-2xs font-semibold text-muted-foreground">
             Examples ({check.samples.length})
           </summary>
-          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[10px] text-muted-foreground">
+          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-2xs text-muted-foreground">
             {check.samples.map((sample, index) => (
               <li key={index}>{sample}</li>
             ))}

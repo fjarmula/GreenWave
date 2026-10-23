@@ -28,26 +28,26 @@ export function PreflightEstimate({
 
   return (
     <div className="mt-5 rounded-xl border border-border bg-muted/40 p-4">
-      <div className="flex items-center gap-2 text-[11px] font-medium">
+      <div className="flex items-center gap-2 text-2xs font-medium">
         <TimerReset className="size-4 text-beacon" aria-hidden />
         <span>{isMockTransport ? "Mock pre-flight estimation" : "Pre-flight estimation"}</span>
-        <span className="hud-value ml-auto text-[10px] font-semibold text-muted-foreground">
+        <span className="hud-value ml-auto text-2xs font-semibold text-muted-foreground">
           {isMockTransport ? (hasEstimate ? "READY" : "SELECT INCIDENT") : "AFTER START"}
         </span>
       </div>
       {/* Backend estimates exist only once the route is planned; never show mock numbers as real. */}
       {!isMockTransport ? (
-        <p className="mt-3 text-[11px] text-muted-foreground">
+        <p className="mt-3 text-2xs text-muted-foreground">
           Standard and GreenWave travel times are computed by the simulation backend when the route
           is initialized.
         </p>
       ) : !hasEstimate ? (
-        <p className="mt-3 text-[11px] text-muted-foreground">
+        <p className="mt-3 text-2xs text-muted-foreground">
           Select an incident and wait for a station selection to see approximate mock estimates.
         </p>
       ) : (
         <>
-          <p className="mt-3 text-[11px] text-muted-foreground">
+          <p className="mt-3 text-2xs text-muted-foreground">
             Approximate (mock) · straight line, not a drivable route or a real response-time
             prediction.
           </p>
@@ -67,7 +67,7 @@ export function PreflightEstimate({
             <strong className="text-xs font-semibold">
               {Math.round((savedSeconds / normalSeconds) * 100)}% TIME SAVED
             </strong>
-            <span className="hud-value ml-auto text-[11px] text-muted-foreground">
+            <span className="hud-value ml-auto text-2xs text-muted-foreground">
               −{formatMinutesSeconds(Math.round(savedSeconds))}
             </span>
           </div>
@@ -88,7 +88,7 @@ function Estimate({
 }) {
   return (
     <div>
-      <span className="block text-[10px] text-muted-foreground">{label}</span>
+      <span className="block text-2xs text-muted-foreground">{label}</span>
       <strong
         className={`hud-value mt-1 block text-base font-semibold ${highlighted ? "text-go" : ""}`}
       >

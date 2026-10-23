@@ -44,15 +44,16 @@
   --color-emergency: var(--emergency);
   --color-cascade: var(--cascade);
   --color-beacon: var(--beacon);
-  --shadow-panel: var(--shadow-panel);
   --shadow-float: var(--shadow-float);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --shadow-marker: var(--shadow-marker);
+  /* Three radii only: inner (inside a control), control, surface. */
+  --radius-sm: var(--radius-inner);
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius-control);
+  --radius-xl: var(--radius-surface);
+  --radius-2xl: var(--radius-surface);
+  --radius-3xl: var(--radius-surface);
+  --radius-4xl: var(--radius-surface);
 }
 
 /* Motion: strong custom curves (Tailwind's ease-out / ease-in-out utilities pick these up). */
@@ -60,6 +61,9 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Smallest text step; nothing in the UI chrome goes below it. */
+  --text-2xs: 11px;
+  --text-2xs--line-height: 1rem;
 }
 
 :root {
@@ -70,46 +74,69 @@
   --map-label: #42616d;
   --map-vignette: rgb(235 244 246 / 10%);
   --route-shadow: rgb(221 234 238 / 90%);
-  /* Night Corridor: cool-tinted neutrals; signal colours carry meaning only. */
-  --background: oklch(0.985 0.004 250);
-  --foreground: oklch(0.2 0.025 258);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.025 258);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.025 258);
-  --primary: oklch(0.52 0.13 158);
-  --primary-foreground: oklch(0.99 0.01 160);
-  --secondary: oklch(0.955 0.008 250);
-  --secondary-foreground: oklch(0.25 0.025 258);
-  --muted: oklch(0.955 0.008 250);
-  --muted-foreground: oklch(0.5 0.025 258);
-  --accent: oklch(0.945 0.012 250);
-  --accent-foreground: oklch(0.25 0.025 258);
-  --destructive: oklch(0.55 0.21 25);
-  --border: oklch(0.9 0.012 250);
-  --input: oklch(0.88 0.014 250);
-  --ring: oklch(0.6 0.14 160);
+  /* Neutral scale: near-neutral cool greys. Elevation is a lightness step plus a hairline. */
+  --bg: oklch(0.985 0.002 260);
+  --surface-1: oklch(1 0 0);
+  --surface-2: oklch(1 0 0);
+  --surface-3: oklch(0.955 0.003 260);
+  --fg: oklch(0.2 0.01 260);
+  --fg-muted: oklch(0.46 0.012 260);
+  --fg-subtle: oklch(0.6 0.01 260);
+  --border: oklch(0 0 0 / 8%);
+  --border-strong: oklch(0 0 0 / 12%);
+  --highlight: 0 0 #0000;
+  /* Segmented controls: one recessed track, one raised thumb. */
+  --track: var(--surface-3);
+  --thumb: var(--surface-2);
+  --thumb-shadow: 0 1px 2px oklch(0 0 0 / 8%), 0 0 0 1px var(--border);
+  /* Motion: press feedback, hover colour, enter, exit. */
+  --dur-press: 120ms;
+  --dur-hover: 150ms;
+  --dur-enter: 200ms;
+  --dur-exit: 150ms;
+  /* Signal colours carry meaning; `go` doubles as the one UI accent. */
   --go: oklch(0.52 0.13 158);
   --caution: oklch(0.55 0.13 65);
   --emergency: oklch(0.55 0.21 25);
   --cascade: oklch(0.52 0.2 295);
   --beacon: oklch(0.52 0.11 225);
+  --primary: var(--go);
+  --primary-foreground: oklch(0.99 0.01 160);
+  --ring: oklch(0.6 0.14 160);
+  --destructive: var(--emergency);
+  /* shadcn names alias the scale. */
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--surface-1);
+  --card-foreground: var(--fg);
+  --popover: var(--surface-2);
+  --popover-foreground: var(--fg);
+  --secondary: var(--surface-3);
+  --secondary-foreground: var(--fg);
+  --muted: var(--surface-3);
+  --muted-foreground: var(--fg-muted);
+  --accent: var(--surface-3);
+  --accent-foreground: var(--fg);
+  --input: var(--border-strong);
   --chart-1: var(--go);
   --chart-2: var(--beacon);
   --chart-3: var(--cascade);
   --chart-4: var(--caution);
   --chart-5: var(--emergency);
-  --radius: 0.625rem;
-  --shadow-panel: 0 1px 2px oklch(0.2 0.025 258 / 6%), 0 8px 24px -12px oklch(0.2 0.025 258 / 18%);
-  --shadow-float: 0 1px 2px oklch(0.2 0.025 258 / 8%), 0 16px 40px -16px oklch(0.2 0.025 258 / 30%);
-  --sidebar: oklch(0.975 0.006 250);
-  --sidebar-foreground: oklch(0.2 0.025 258);
-  --sidebar-primary: oklch(0.52 0.13 158);
-  --sidebar-primary-foreground: oklch(0.99 0.01 160);
-  --sidebar-accent: oklch(0.945 0.012 250);
-  --sidebar-accent-foreground: oklch(0.25 0.025 258);
-  --sidebar-border: oklch(0.9 0.012 250);
-  --sidebar-ring: oklch(0.6 0.14 160);
+  --radius: 0.5rem;
+  --radius-inner: 6px;
+  --radius-control: 8px;
+  --radius-surface: 12px;
+  --shadow-float: 0 1px 2px oklch(0 0 0 / 6%), 0 8px 24px -8px oklch(0 0 0 / 12%);
+  --shadow-marker: 0 0 0 1px oklch(0 0 0 / 12%), 0 1px 2px oklch(0 0 0 / 20%);
+  --sidebar: var(--bg);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--surface-3);
+  --sidebar-accent-foreground: var(--fg);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
 .dark {
@@ -120,39 +147,28 @@
   --map-label: #547583;
   --map-vignette: rgb(2 8 14 / 72%);
   --route-shadow: #031019;
-  --background: oklch(0.165 0.018 255);
-  --foreground: oklch(0.965 0.006 255);
-  --card: oklch(0.205 0.02 255);
-  --card-foreground: oklch(0.965 0.006 255);
-  --popover: oklch(0.225 0.022 255);
-  --popover-foreground: oklch(0.965 0.006 255);
-  --primary: oklch(0.79 0.17 158);
-  --primary-foreground: oklch(0.22 0.05 160);
-  --secondary: oklch(0.26 0.022 255);
-  --secondary-foreground: oklch(0.965 0.006 255);
-  --muted: oklch(0.26 0.022 255);
-  --muted-foreground: oklch(0.715 0.022 255);
-  --accent: oklch(0.28 0.026 255);
-  --accent-foreground: oklch(0.965 0.006 255);
-  --destructive: oklch(0.7 0.19 25);
-  --border: oklch(0.85 0.04 255 / 10%);
-  --input: oklch(0.85 0.04 255 / 15%);
-  --ring: oklch(0.74 0.15 160);
+  --bg: oklch(0.155 0.008 260);
+  --surface-1: oklch(0.185 0.008 260);
+  --surface-2: oklch(0.215 0.009 260);
+  --surface-3: oklch(0.25 0.01 260);
+  --fg: oklch(0.96 0.003 260);
+  --fg-muted: oklch(0.72 0.01 260);
+  --fg-subtle: oklch(0.56 0.01 260);
+  --border: oklch(1 0 0 / 7%);
+  --border-strong: oklch(1 0 0 / 11%);
+  --highlight: inset 0 1px 0 oklch(1 0 0 / 5%);
+  --track: var(--surface-1);
+  --thumb: var(--surface-3);
+  --thumb-shadow: var(--highlight), 0 0 0 1px var(--border);
   --go: oklch(0.79 0.17 158);
   --caution: oklch(0.82 0.15 80);
   --emergency: oklch(0.7 0.19 25);
   --cascade: oklch(0.74 0.15 295);
   --beacon: oklch(0.79 0.12 215);
-  --shadow-panel: 0 1px 0 oklch(1 0 0 / 4%) inset, 0 8px 24px -12px oklch(0 0 0 / 60%);
-  --shadow-float: 0 1px 0 oklch(1 0 0 / 6%) inset, 0 16px 40px -12px oklch(0 0 0 / 70%);
-  --sidebar: oklch(0.205 0.02 255);
-  --sidebar-foreground: oklch(0.965 0.006 255);
-  --sidebar-primary: oklch(0.79 0.17 158);
-  --sidebar-primary-foreground: oklch(0.22 0.05 160);
-  --sidebar-accent: oklch(0.28 0.026 255);
-  --sidebar-accent-foreground: oklch(0.965 0.006 255);
-  --sidebar-border: oklch(0.85 0.04 255 / 10%);
-  --sidebar-ring: oklch(0.74 0.15 160);
+  --primary-foreground: oklch(0.22 0.05 160);
+  --ring: oklch(0.74 0.15 160);
+  --shadow-float: 0 0 0 1px oklch(1 0 0 / 6%), 0 12px 32px -8px oklch(0 0 0 / 60%);
+  --shadow-marker: 0 0 0 1px oklch(0 0 0 / 40%), 0 1px 2px oklch(0 0 0 / 50%);
 }
 
 @layer base {
@@ -164,6 +180,14 @@
   }
   html {
     @apply font-sans;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
   }
   :focus-visible {
     outline: 2px solid var(--ring);
@@ -178,14 +202,21 @@
   }
 }
 
+/* The one material for controls floating over the map. */
+@utility surface-float {
+  background-color: color-mix(in srgb, var(--surface-2) 84%, transparent);
+  box-shadow: var(--shadow-float);
+  backdrop-filter: blur(12px) saturate(1.4);
+}
+
 /* Press feedback for anything clickable: instant scale-down, quick release. */
 @utility pressable {
   transition:
-    transform 160ms var(--ease-out),
-    background-color 150ms ease,
-    border-color 150ms ease,
-    color 150ms ease,
-    box-shadow 150ms ease;
+    transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-hover) ease,
+    border-color var(--dur-hover) ease,
+    color var(--dur-hover) ease,
+    box-shadow var(--dur-hover) ease;
   &:active:not(:disabled, [aria-disabled="true"]) {
     transform: scale(0.97);
   }
@@ -209,12 +240,8 @@
     background-color: var(--map-surface);
     background-image:
       linear-gradient(var(--map-grid) 1px, transparent 1px),
-      linear-gradient(90deg, var(--map-grid) 1px, transparent 1px),
-      radial-gradient(circle at 70% 15%, rgb(6 182 212 / 10%), transparent 35%);
-    background-size:
-      72px 72px,
-      72px 72px,
-      auto;
+      linear-gradient(90deg, var(--map-grid) 1px, transparent 1px);
+    background-size: 72px 72px;
   }
 
   .dashboard-map::after {
@@ -226,57 +253,6 @@
     pointer-events: none;
   }
 
-  .dashboard-road {
-    position: absolute;
-    z-index: 1;
-    height: 9px;
-    border-top: 2px solid var(--map-road);
-    border-bottom: 1px solid color-mix(in srgb, var(--map-road), transparent 45%);
-  }
-
-  .dashboard-map-label {
-    position: absolute;
-    z-index: 1;
-    color: var(--map-label);
-    font-family: var(--font-geist-mono), monospace;
-    font-size: 9px;
-    letter-spacing: 0.12em;
-  }
-
-  .dashboard-route-planned {
-    stroke: #0891b2;
-    stroke-dasharray: 10 12;
-    filter: drop-shadow(0 0 7px rgb(6 182 212 / 65%));
-    animation: route-flow 12s linear infinite;
-  }
-
-  .dashboard-route-live {
-    stroke: #10b981;
-    filter: drop-shadow(0 0 8px rgb(16 185 129 / 75%));
-  }
-
-  .dashboard-vehicle {
-    position: absolute;
-    z-index: 10;
-    display: grid;
-    width: 42px;
-    height: 42px;
-    place-items: center;
-    border: 2px solid #f8fafc;
-    border-radius: 999px;
-    color: #f8fafc;
-    background: #0a2935;
-    animation: ambulance-flash 0.9s steps(1, end) infinite;
-  }
-
-  .dashboard-wave {
-    position: absolute;
-    inset: -12px;
-    border: 1px solid rgb(37 99 235 / 65%);
-    border-radius: 999px;
-    animation: signal-wave 2.2s infinite;
-  }
-
   .dashboard-signal-pulse {
     animation: signal-pulse 1.4s ease-in-out infinite;
   }
@@ -286,8 +262,8 @@
 .dashboard-map .maplibregl-ctrl-group {
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 0.625rem;
-  background-color: color-mix(in srgb, var(--card) 82%, transparent);
+  border-radius: var(--radius-control);
+  background-color: color-mix(in srgb, var(--surface-2) 84%, transparent);
   color: var(--foreground);
   backdrop-filter: blur(12px) saturate(1.4);
 }
@@ -336,40 +312,42 @@
   filter: invert(1);
 }
 
-/* Theme switches cross-fade every surface; ThemeToggle sets the attribute only for the switch. */
-:root[data-theme-switching],
-:root[data-theme-switching] *:not(.dashboard-map-canvas) {
-  transition-property: background-color, border-color, color, fill, stroke, box-shadow !important;
-  transition-duration: 250ms !important;
-  transition-timing-function: ease !important;
+/* Theme switches are one compositor cross-fade of two page snapshots (see lib/theme-transition). */
+/* Nothing inside the live new snapshot may tween on its own clock. */
+:root:active-view-transition,
+:root:active-view-transition * {
+  transition: none !important;
+}
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: var(--ease-out);
+}
+::view-transition-group(theme-thumb) {
+  animation-duration: 200ms;
+  animation-timing-function: var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .dashboard-map-canvas {
-    opacity: 1;
-    transition: opacity 220ms ease;
-    will-change: opacity;
-  }
-
-  .dashboard-map-canvas--switching {
-    opacity: 0.28;
+/* Live status dots: a slow opacity breathe, never a size pulse. */
+.status-breathe {
+  animation: status-breathe 2s var(--ease-in-out) infinite;
+}
+@keyframes status-breathe {
+  50% {
+    opacity: 0.45;
   }
 }
-
-@keyframes route-flow {
-  to {
-    stroke-dashoffset: -220;
-  }
-}
-
-@keyframes signal-wave {
-  from {
-    transform: scale(0.5);
-    opacity: 0.8;
-  }
-  to {
-    transform: scale(1.5);
-    opacity: 0;
+@media (prefers-reduced-motion: reduce) {
+  .status-breathe {
+    animation: none;
   }
 }
 
@@ -380,33 +358,7 @@
   }
 }
 
-@keyframes ambulance-flash {
-  0%,
-  49% {
-    border-color: #ef4444;
-    box-shadow:
-      0 0 0 8px rgb(239 68 68 / 13%),
-      0 0 26px rgb(239 68 68 / 65%);
-  }
-  50%,
-  100% {
-    border-color: #2563eb;
-    box-shadow:
-      0 0 0 8px rgb(37 99 235 / 13%),
-      0 0 26px rgb(37 99 235 / 65%);
-  }
-}
-
-@media (max-width: 639px) {
-  .dashboard-map-label {
-    display: none;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .dashboard-route-planned,
-  .dashboard-vehicle,
-  .dashboard-wave,
   .dashboard-signal-pulse {
     animation: none;
   }
@@ -449,7 +401,7 @@
   scrollbar-width: none;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--muted) 60%, transparent);
+  background: var(--track);
   font-size: 0.8125rem;
   white-space: nowrap;
   color: var(--muted-foreground);
@@ -457,16 +409,12 @@
 .workspace-navigation a {
   padding: 0.3125rem 0.75rem;
   border-radius: 999px;
-  transition:
-    color 150ms ease,
-    background-color 150ms ease;
+  transition: color var(--dur-hover) ease;
 }
 .workspace-navigation [aria-current="page"] {
   color: var(--foreground);
-  background: var(--card);
-  box-shadow:
-    0 1px 2px oklch(0 0 0 / 12%),
-    0 0 0 1px var(--border);
+  background: var(--thumb);
+  box-shadow: var(--thumb-shadow);
 }
 .workspace-actions {
   display: flex;
@@ -499,9 +447,8 @@
   min-height: 2.375rem;
   padding: 0 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 0.625rem;
-  background: var(--card);
-  box-shadow: 0 1px 2px oklch(0 0 0 / 6%);
+  border-radius: var(--radius-control);
+  background: var(--surface-1);
   font-size: 0.8125rem;
   font-weight: 500;
   white-space: nowrap;
@@ -521,9 +468,7 @@
 }
 /* Controls floating over the map. */
 .workspace-float {
-  background: color-mix(in srgb, var(--card) 82%, transparent);
-  box-shadow: var(--shadow-float);
-  backdrop-filter: blur(12px) saturate(1.4);
+  @apply surface-float;
 }
 .workspace-float[data-active] {
   background: color-mix(in srgb, var(--accent) 88%, transparent);
@@ -543,8 +488,8 @@
   height: calc(var(--theme-option) + 8px);
   padding: 3px;
   border: 1px solid var(--border);
-  border-radius: 0.625rem;
-  background: color-mix(in srgb, var(--muted) 60%, transparent);
+  border-radius: var(--radius-control);
+  background: var(--track);
 }
 .theme-toggle-thumb {
   position: absolute;
@@ -552,11 +497,9 @@
   left: 3px;
   width: var(--theme-option);
   height: var(--theme-option);
-  border-radius: 0.4375rem;
-  background: var(--card);
-  box-shadow:
-    0 1px 2px oklch(0 0 0 / 12%),
-    0 0 0 1px var(--border);
+  border-radius: var(--radius-inner);
+  background: var(--thumb);
+  box-shadow: var(--thumb-shadow);
   transition: transform 200ms var(--ease-out);
 }
 .theme-toggle-option {
@@ -566,9 +509,9 @@
   width: var(--theme-option);
   height: var(--theme-option);
   place-items: center;
-  border-radius: 0.4375rem;
+  border-radius: var(--radius-inner);
   color: var(--muted-foreground);
-  transition: color 150ms ease;
+  transition: color var(--dur-hover) ease;
 }
 .theme-toggle-option[aria-pressed="true"] {
   color: var(--foreground);
@@ -584,8 +527,8 @@
 }
 .workspace-button {
   transition:
-    transform 160ms var(--ease-out),
-    background-color 150ms ease;
+    transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-hover) ease;
 }
 .workspace-button:active {
   transform: scale(0.97);
@@ -610,9 +553,7 @@
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--card) 82%, transparent);
-  box-shadow: var(--shadow-float);
-  backdrop-filter: blur(12px) saturate(1.4);
+  @apply surface-float;
   font-size: 0.6875rem;
   font-weight: 500;
   white-space: nowrap;
@@ -841,10 +782,8 @@ button,
   width: min(26rem, calc(100% - 2rem));
   padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--card) 86%, transparent);
-  box-shadow: var(--shadow-float);
-  backdrop-filter: blur(14px) saturate(1.4);
+  border-radius: var(--radius-surface);
+  @apply surface-float;
 }
 .comparison-stage {
   display: grid;
@@ -952,15 +891,15 @@ button,
   min-height: 44px;
   padding: 0.35rem 0.65rem;
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-control);
   font-size: 0.75rem;
   font-weight: 600;
   background: var(--background);
 }
 .json-inspect-button {
   transition:
-    transform 160ms var(--ease-out),
-    background-color 150ms ease;
+    transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-hover) ease;
 }
 .json-inspect-button:active {
   transform: scale(0.97);
@@ -982,15 +921,14 @@ button,
   max-height: calc(100dvh - 2rem);
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 1rem;
+  border-radius: var(--radius-surface);
   background: var(--popover);
   color: var(--foreground);
   overflow: auto;
   overscroll-behavior: contain;
 }
 .json-dialog::backdrop {
-  background: oklch(0.1 0.02 255 / 60%);
-  backdrop-filter: blur(2px);
+  background: oklch(0 0 0 / 50%);
 }
 /* Modal: centred, fades and scales up once on open (exit stays instant). */
 .json-dialog[open] {
@@ -1042,7 +980,7 @@ button,
   overflow: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--border);
-  border-radius: 0.75rem;
+  border-radius: var(--radius-surface);
   background: color-mix(in oklch, var(--background) 70%, var(--muted));
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.8125rem;
@@ -1080,19 +1018,6 @@ button,
 .home-main {
   position: relative;
   isolation: isolate;
-}
-.home-main::before {
-  position: absolute;
-  z-index: -1;
-  inset: 0 0 auto;
-  height: 32rem;
-  background: radial-gradient(
-    45% 60% at 50% 0%,
-    color-mix(in srgb, var(--go) 11%, transparent),
-    transparent
-  );
-  content: "";
-  pointer-events: none;
 }
 .home-mark {
   width: 0.625rem;
@@ -1150,9 +1075,8 @@ button,
   margin-top: 3.5rem;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 1.25rem;
+  border-radius: var(--radius-surface);
   background: var(--card);
-  box-shadow: var(--shadow-panel);
 }
 .home-art-caption {
   display: flex;
@@ -1179,16 +1103,15 @@ button,
   flex-direction: column;
   padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: 1.25rem;
+  border-radius: var(--radius-surface);
   background: var(--card);
-  box-shadow: var(--shadow-panel);
 }
 .home-card-icon {
   display: grid;
   width: 2.25rem;
   height: 2.25rem;
   place-items: center;
-  border-radius: 0.625rem;
+  border-radius: var(--radius-control);
   color: var(--tone);
   background: color-mix(in srgb, var(--tone) 13%, transparent);
 }
@@ -1221,7 +1144,7 @@ button,
 }
 @media (hover: hover) and (pointer: fine) {
   .home-card:hover {
-    border-color: color-mix(in oklch, var(--go) 40%, var(--border));
+    border-color: var(--border-strong);
   }
   .home-card-arrow {
     opacity: 0;
@@ -1403,9 +1326,18 @@ button,
   .hud-panel {
     padding: 1rem;
     border: 1px solid var(--border);
-    border-radius: 0.875rem;
+    border-radius: var(--radius-surface);
     background: var(--card);
-    box-shadow: var(--shadow-panel);
+  }
+  /* The inspector is one surface: sections split by hairlines, never cards inside a panel. */
+  .workspace-inspector .hud-panel {
+    padding: 1.25rem 0 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .workspace-inspector .hud-panel + .hud-panel {
+    border-top: 1px solid var(--border);
   }
   .hud-head {
     display: flex;
@@ -1425,7 +1357,7 @@ button,
     width: 2rem;
     height: 2rem;
     place-items: center;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-control);
     color: var(--tone, var(--muted-foreground));
     background: color-mix(in srgb, var(--tone, var(--muted-foreground)) 13%, transparent);
   }
@@ -1445,8 +1377,8 @@ button,
     gap: 2px;
     padding: 3px;
     border: 1px solid var(--border);
-    border-radius: 0.625rem;
-    background: color-mix(in srgb, var(--muted) 60%, transparent);
+    border-radius: var(--radius-control);
+    background: var(--track);
   }
   .hud-segment {
     display: flex;
@@ -1454,7 +1386,7 @@ button,
     align-items: center;
     justify-content: center;
     gap: 0.375rem;
-    border-radius: 0.4375rem;
+    border-radius: var(--radius-inner);
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--muted-foreground);
@@ -1467,30 +1399,28 @@ button,
   .hud-segment[aria-pressed="true"],
   .hud-segment[aria-checked="true"] {
     color: var(--tone, var(--foreground));
-    background: var(--card);
-    box-shadow:
-      0 1px 2px oklch(0 0 0 / 12%),
-      0 0 0 1px var(--border);
+    background: var(--thumb);
+    box-shadow: var(--thumb-shadow);
   }
   .hud-input {
     width: 100%;
     min-height: 2.75rem;
     padding: 0 2.5rem 0 0.75rem;
     border: 1px solid var(--input);
-    border-radius: 0.625rem;
+    border-radius: var(--radius-control);
     outline: none;
-    background: var(--background);
+    background: var(--surface-1);
     font-size: 0.875rem;
     transition:
-      border-color 150ms ease,
-      box-shadow 150ms ease;
+      border-color var(--dur-hover) ease,
+      box-shadow var(--dur-hover) ease;
   }
   .hud-input::placeholder {
-    color: color-mix(in srgb, var(--muted-foreground) 80%, transparent);
+    color: var(--fg-muted);
   }
   .hud-input:focus {
     border-color: var(--ring);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 22%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 20%, transparent);
   }
   .hud-input:disabled {
     cursor: not-allowed;
@@ -1509,8 +1439,8 @@ button,
     border-radius: 999px;
     background: linear-gradient(
       to right,
-      var(--beacon) var(--fill, 0%),
-      color-mix(in srgb, var(--muted-foreground) 22%, transparent) var(--fill, 0%)
+      var(--primary) var(--fill, 0%),
+      var(--border-strong) var(--fill, 0%)
     );
   }
   .hud-range::-moz-range-track {
@@ -1518,8 +1448,8 @@ button,
     border-radius: 999px;
     background: linear-gradient(
       to right,
-      var(--beacon) var(--fill, 0%),
-      color-mix(in srgb, var(--muted-foreground) 22%, transparent) var(--fill, 0%)
+      var(--primary) var(--fill, 0%),
+      var(--border-strong) var(--fill, 0%)
     );
   }
   .hud-range::-webkit-slider-thumb {
@@ -1527,7 +1457,7 @@ button,
     height: 18px;
     margin-top: -6px;
     appearance: none;
-    border: 2px solid var(--beacon);
+    border: 2px solid var(--primary);
     border-radius: 999px;
     background: #fff;
     box-shadow: 0 1px 3px oklch(0 0 0 / 30%);
@@ -1535,7 +1465,7 @@ button,
   .hud-range::-moz-range-thumb {
     width: 14px;
     height: 14px;
-    border: 2px solid var(--beacon);
+    border: 2px solid var(--primary);
     border-radius: 999px;
     background: #fff;
     box-shadow: 0 1px 3px oklch(0 0 0 / 30%);
@@ -1559,7 +1489,7 @@ button,
     transition: background-color 150ms ease;
   }
   .hud-switch[aria-checked="true"] {
-    background: var(--tone, var(--go));
+    background: var(--primary);
   }
   .hud-switch > span {
     position: absolute;
@@ -1582,16 +1512,14 @@ button,
   .hud-primary {
     display: flex;
     width: 100%;
-    min-height: 3rem;
+    min-height: 2.5rem;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     padding: 0 1rem;
-    border-radius: 0.75rem;
+    border-radius: var(--radius-control);
     background: var(--primary);
-    box-shadow:
-      0 1px 0 oklch(1 0 0 / 20%) inset,
-      0 10px 24px -12px color-mix(in srgb, var(--go) 80%, transparent);
+    box-shadow: var(--highlight);
     font-size: 0.875rem;
     font-weight: 600;
     color: var(--primary-foreground);
@@ -1610,7 +1538,7 @@ button,
     gap: 0.5rem;
     padding: 0 0.875rem;
     border: 1px solid var(--border);
-    border-radius: 0.625rem;
+    border-radius: var(--radius-control);
     background: var(--card);
     font-size: 0.8125rem;
     font-weight: 600;
@@ -1639,7 +1567,7 @@ button,
     gap: 0.5rem;
     padding: 0.625rem 0.75rem;
     border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
-    border-radius: 0.625rem;
+    border-radius: var(--radius-control);
     background: color-mix(in srgb, var(--tone) 8%, transparent);
     font-size: 0.75rem;
     font-weight: 500;
@@ -1701,7 +1629,8 @@ button,
     }
   }
   @media (pointer: coarse) {
-    .hud-segment {
+    .hud-segment,
+    .hud-primary {
       min-height: 44px;
     }
   }
@@ -1716,7 +1645,7 @@ button,
   .intersection-card {
     padding: 0.75rem;
     border: 1px solid var(--border);
-    border-radius: 0.75rem;
+    border-radius: var(--radius-surface);
     background: color-mix(in srgb, var(--background) 55%, transparent);
   }
   /* TTI bar: scaleX glides linearly for exactly one tick (--tick), so it never jumps. */
@@ -1835,7 +1764,7 @@ button,
 .comparison-delta {
   padding: 1rem;
   border: 1px solid color-mix(in srgb, var(--tone, var(--muted-foreground)) 30%, transparent);
-  border-radius: 0.875rem;
+  border-radius: var(--radius-surface);
   background: color-mix(in srgb, var(--tone, var(--muted-foreground)) 9%, transparent);
 }
 .comparison-delta .hud-value {
@@ -1856,9 +1785,8 @@ button,
   align-items: center;
   padding: 1rem;
   border: 1px solid var(--border);
-  border-radius: 0.875rem;
+  border-radius: var(--radius-surface);
   background: var(--card);
-  box-shadow: var(--shadow-panel);
 }
 .flow-step > :not(.flow-step-index, .sr-only) {
   grid-column: 2;
@@ -1895,7 +1823,7 @@ button,
   overflow: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--border);
-  border-radius: 0.875rem;
+  border-radius: var(--radius-surface);
   background: color-mix(in srgb, var(--muted) 45%, transparent);
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.75rem;

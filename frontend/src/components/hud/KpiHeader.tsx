@@ -53,9 +53,9 @@ const OUTCOME_TONES: Partial<Record<RunStatusKey, string>> = {
   ERROR: "tone-emergency",
 };
 
-// Only a real saving gets the success glow.
+// Only a real saving gets the success colour.
 const TIME_SAVED_STYLES: Record<TimeSavedTone, string> = {
-  positive: "text-go [text-shadow:0_0_18px_color-mix(in_srgb,var(--go)_40%,transparent)]",
+  positive: "text-go",
   neutral: "text-muted-foreground",
   negative: "text-caution",
 };
@@ -90,7 +90,7 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
       <div className="kpi-vehicle">
         <span
           title={VEHICLE_NAMES[vehicleType]}
-          className={`grid size-9 shrink-0 place-items-center rounded-lg shadow-sm ${VEHICLE_ICON_COLORS[vehicleType]}`}
+          className={`grid size-9 shrink-0 place-items-center rounded-lg ${VEHICLE_ICON_COLORS[vehicleType]}`}
         >
           <VehicleIcon type={vehicleType} className="size-[1.125rem]" />
         </span>
@@ -125,7 +125,7 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
               <span className={`hud-chip ${CONNECTION_STYLES[connection]}`}>
                 <i
                   aria-hidden
-                  className={`hud-dot ${connection === "open" ? "motion-safe:animate-pulse" : ""}`}
+                  className={`hud-dot ${connection === "open" ? "status-breathe" : ""}`}
                 />
                 <span className="sr-only">Simulation stream: </span>
                 {connectionLabel(connection)}
