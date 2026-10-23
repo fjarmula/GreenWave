@@ -8,6 +8,7 @@ at 100 m. Disabled red/yellow crossings roll; they never stop at the stop line.
 
 from dataclasses import replace
 from datetime import UTC, datetime
+from itertools import pairwise
 
 import pytest
 from pydantic import ValidationError
@@ -16,7 +17,7 @@ from tests.support.route_fixtures import route_edges
 from greenwave.its import MockItsGateway
 from greenwave.routing.estimates import Estimates
 from greenwave.routing.network_index import SignalApproachRef
-from greenwave.routing.planner import PlannedRoute, SnappedRouteEndpoint
+from greenwave.routing.planner import PlannedRoute, SnappedRouteEndpoint, StopLineEvent
 from greenwave.schemas import (
     AmbulanceStatus,
     GreenWaveMode,
@@ -26,7 +27,7 @@ from greenwave.schemas import (
     SimulationTickEvent,
 )
 from greenwave.simulation.engine import SimulationEngine
-from greenwave.simulation.motion import cautious_speed_mps, move_one_second
+from greenwave.simulation.motion import cautious_speed_mps, greenwave_slowdown, move_one_second
 from greenwave.simulation.route_model import RouteIntersection, RouteModel
 from greenwave.simulation.route_track import RouteTrack
 from greenwave.simulation.state import EngineState
@@ -61,6 +62,7 @@ def _engine(
     stop_lines: tuple[float, ...] = (_STOP_M,),
     speeds_kmh: tuple[float, float] = (36.0, 36.0),
     phase: SignalPhaseColor | None = None,
+    settings: dict[str, float] | None = None,
 ) -> SimulationEngine:
     """``phase`` None gives INT-1 no signal geometry (an unknown route movement)."""
     route = PlannedRoute(
@@ -72,7 +74,10 @@ def _engine(
         polyline_wgs84=[(19.0, 50.0), (19.1, 50.0)],
         origin_snap=SnappedRouteEndpoint("origin", Position(lat=50.0, lng=19.0), 0),
         destination_snap=SnappedRouteEndpoint("destination", Position(lat=50.0, lng=19.1), 0),
-        stop_lines=(),
+        stop_lines=tuple(
+            StopLineEvent(f"INT-{i}", "first", stop_m)
+            for i, stop_m in enumerate(stop_lines, start=1)
+        ),
     )
     overrides, with_cross = _PROGRAMMES[phase] if phase is not None else ({}, False)
     signals = _signals(with_cross) if phase is not None else ()
@@ -97,7 +102,9 @@ def _engine(
         model,
         Estimates(normal_seconds=60.0, greenwave_seconds=200 / 13 + 3),
         _DENSITY,
-        SimulationSettings(standard_crossing_distance_m=crossing_m, **overrides),
+        SimulationSettings(
+            standard_crossing_distance_m=crossing_m, **{**overrides, **(settings or {})}
+        ),
         MockItsGateway(),
         green_wave_mode=mode,
     )
@@ -133,7 +140,7 @@ def test_open_road_motion_is_identical_before_the_stop_line() -> None:
     """A mode-dependent open-road speed would fake the Green Wave advantage."""
     enabled, _ = _run(_engine(GreenWaveMode.ENABLED))
     disabled, _ = _run(_engine(GreenWaveMode.DISABLED))
-    for seconds in range(1, 7):  # 6 s x 13 m/s = 78 m, still before the 90 m stop line
+    for seconds in range(1, 3):  # 2 s x 13 m/s = 26 m, before the 30 m Green Wave approach
         assert _at(enabled, seconds).distance_travelled_m == pytest.approx(13.0 * seconds)
         assert (
             _at(disabled, seconds).distance_travelled_m
@@ -142,7 +149,7 @@ def test_open_road_motion_is_identical_before_the_stop_line() -> None:
 
 
 @pytest.mark.parametrize("phase", [None, GREEN, YELLOW, RED])
-def test_enabled_mode_keeps_the_minimum_dwell_whatever_the_phase(
+def test_enabled_mode_keeps_d_min_in_trip_time_whatever_the_phase(
     phase: SignalPhaseColor | None,
 ) -> None:
     states, _ = _run(_engine(GreenWaveMode.ENABLED, phase=phase))
@@ -150,6 +157,89 @@ def test_enabled_mode_keeps_the_minimum_dwell_whatever_the_phase(
     assert final.arrived_at_s == pytest.approx(200 / 13 + 3)
     assert final.cautious_crossing_remaining_m == 0.0
     assert final.cautious_time_remaining_s == 0.0
+
+
+def _moved_each_second(states: list[EngineState]) -> list[float]:
+    """Distance driven in each whole second before arrival (index 0 is the first second)."""
+    distances = [0.0] + [state.distance_travelled_m for state in states]
+    arrival = next(i for i, state in enumerate(states) if state.arrived)
+    return [distances[i + 1] - distances[i] for i in range(arrival)]
+
+
+_FLOOR_MPS = 15 / 3.6
+
+
+def test_enabled_vehicle_never_stops_at_a_cleared_light() -> None:
+    states, _ = _run(_engine(GreenWaveMode.ENABLED, phase=GREEN))
+    assert all(moved > 0 for moved in _moved_each_second(states))
+
+
+def test_enabled_slowdown_respects_the_floor() -> None:
+    states, ticks = _run(_engine(GreenWaveMode.ENABLED, phase=GREEN))
+    assert all(moved >= _FLOOR_MPS - 1e-6 for moved in _moved_each_second(states))
+    assert any(tick.ambulance.status is AmbulanceStatus.CROSSING_INTERSECTION for tick in ticks)
+
+
+def test_close_junctions_share_the_gap_and_keep_trip_time() -> None:
+    states, _ = _run(_engine(GreenWaveMode.ENABLED, stop_lines=(90.0, 110.0), phase=GREEN))
+    assert states[-1].arrived_at_s == pytest.approx(200 / 13 + 6)
+    assert all(moved >= _FLOOR_MPS - 1e-6 for moved in _moved_each_second(states))
+
+
+def test_zero_window_spends_d_min_past_the_line() -> None:
+    states, _ = _run(_engine(GreenWaveMode.ENABLED, stop_lines=(0.5,)))
+    assert all(moved >= _FLOOR_MPS - 1e-6 for moved in _moved_each_second(states))
+    assert states[-1].arrived_at_s == pytest.approx(200 / 13 + 3)
+
+
+def test_safety_hold_still_waits_for_green() -> None:
+    engine = _engine(
+        GreenWaveMode.ENABLED,
+        phase=RED,
+        settings={"clearing_tti_seconds": 0, "priority_green_tti_seconds": 0},
+    )
+    states, _ = _run(engine)
+    distances = [state.distance_travelled_m for state in states]
+    assert any(before == after == pytest.approx(_STOP_M) for before, after in pairwise(distances))
+
+
+def test_slow_edge_below_floor_uses_window_only() -> None:
+    engine = _engine(GreenWaveMode.ENABLED, speeds_kmh=(10.0, 10.0))
+    speed = RouteTrack.from_route(engine.route, engine.settings).speed_mps(0)
+    states, _ = _run(engine)
+    assert states[-1].arrived_at_s == pytest.approx(200 / speed + 3)
+
+
+def test_arrival_inside_a_slowdown_clears_the_crossing() -> None:
+    states, _ = _run(_engine(GreenWaveMode.ENABLED, stop_lines=(195.0,)))
+    final = states[-1]
+    assert final.arrived
+    assert final.arrived_at_s == pytest.approx(200 / 13 + 3)
+    assert final.cautious_crossing_remaining_m == 0.0
+    assert final.cautious_time_remaining_s == 0.0
+
+
+def test_greenwave_slowdown_length() -> None:
+    settings = SimulationSettings()
+    assert greenwave_slowdown(90.0, 30.0, 13.0, settings) == pytest.approx(60.0)
+    assert greenwave_slowdown(90.0, 85.0, 13.0, settings) == pytest.approx(
+        3 / (1 / _FLOOR_MPS - 1 / 13)
+    )
+    assert greenwave_slowdown(90.0, 85.0, 3.0, settings) == pytest.approx(5.0)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("greenwave_approach_distance_m", 0),
+        ("greenwave_min_rolling_speed_kmh", 0),
+        ("greenwave_approach_distance_m", float("inf")),
+        ("greenwave_min_rolling_speed_kmh", float("nan")),
+    ],
+)
+def test_greenwave_slowdown_settings_reject_invalid_values(field: str, value: float) -> None:
+    with pytest.raises(ValidationError):
+        SimulationSettings(**{field: value})
 
 
 @pytest.mark.parametrize("phase", [None, YELLOW, RED])
