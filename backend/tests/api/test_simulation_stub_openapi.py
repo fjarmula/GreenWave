@@ -57,6 +57,7 @@ def test_stream_route_registers_the_event_union_under_event_stream(layout: Layou
     assert refs == {
         "SimulationTickEvent",
         "ItsDispatchEvent",
+        "ItsFeedbackEvent",
         "SimulationCompletedEvent",
         "SimulationCancelledEvent",
     }

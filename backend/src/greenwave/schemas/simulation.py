@@ -10,6 +10,8 @@ from typing import Annotated, Literal
 
 from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
+from greenwave.schemas.its import ItsFeedbackEvent, ItsRequestSnapshot, ItsScenario
+
 SchemaVersion = Literal["1.0"]
 SIMULATION_ID_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"
 SimulationId = Annotated[str, Field(pattern=SIMULATION_ID_PATTERN)]
@@ -81,6 +83,9 @@ class ErrorCode(StrEnum):
 
 
 class CancelReason(StrEnum):
+    ITS_REJECTED = "ITS_REJECTED"
+    ITS_TIMEOUT = "ITS_TIMEOUT"
+    ITS_HOLD_EXPIRED = "ITS_HOLD_EXPIRED"
     STOPPED = "STOPPED"
     SUPERSEDED = "SUPERSEDED"
     # Additive in contract v1 (D2): the simulation loop failed on the server.
@@ -108,6 +113,7 @@ class SimulationStartRequest(BaseModel):
     # Optional so clients from before dispatch (ADR 0006) still start ambulance runs.
     vehicle_type: VehicleType = VehicleType.AMBULANCE
     # Optional so clients from before the mode choice keep the existing priority behaviour.
+    its_scenario: ItsScenario = ItsScenario.NOMINAL
     green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED
 
 
@@ -141,6 +147,7 @@ class SimulationStartResponse(BaseModel):
     route_intersections: list[RouteIntersection]  # route order; same ids as intersections_on_route
     origin_snapped: SnappedEndpoint
     destination_snapped: SnappedEndpoint
+    its_scenario: ItsScenario = ItsScenario.NOMINAL
     green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED  # the mode this run uses
 
 
@@ -187,6 +194,8 @@ class SimulationTickEvent(BaseModel):
     kpi_metrics: KpiMetrics
     intersections: list[IntersectionTelemetry]  # every route intersection, in route order
     # Only intersections with known signal positions; additive, so it defaults to empty.
+    its_requests: list[ItsRequestSnapshot] = []
+    its_observed_at_simulated_sec: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     signal_phases: list[SignalPhaseIndicator] = []  # Pydantic copies the default per instance
 
 
@@ -237,6 +246,7 @@ class SimulationStreamEvent(
     RootModel[
         Annotated[
             SimulationTickEvent
+            | ItsFeedbackEvent
             | ItsDispatchEvent
             | SimulationCompletedEvent
             | SimulationCancelledEvent,

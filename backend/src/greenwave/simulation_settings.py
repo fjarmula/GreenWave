@@ -20,6 +20,9 @@ class SimulationSettings(BaseSettings):
     ambulance_max_speed_kmh: float = Field(default=90, gt=0)
     speed_ema_alpha: float = Field(default=0.25, gt=0, le=1)
     speed_floor_meters_per_second: float = Field(default=5, ge=0)
+    its_ack_delay_seconds: int = Field(default=1, ge=1)
+    its_delayed_ack_seconds: int = Field(default=5, ge=1)
+    its_ack_timeout_seconds: int = Field(default=8, ge=2)
     its_min_hold_seconds: int = Field(default=40, ge=0)
     its_hold_buffer_seconds: int = Field(default=5, ge=0)
     tick_interval_seconds: float = Field(default=1, gt=0)
@@ -61,6 +64,12 @@ class SimulationSettings(BaseSettings):
     @model_validator(mode="after")
     def priority_precedes_clearing(self) -> Self:
         """The priority threshold must be reached within the clearing window."""
+        if (
+            not self.its_ack_delay_seconds
+            <= self.its_delayed_ack_seconds
+            < self.its_ack_timeout_seconds
+        ):
+            raise ValueError("ITS acknowledgement delays must be ordered and precede timeout")
         if self.priority_green_tti_seconds > self.clearing_tti_seconds:
             raise ValueError("priority_green_tti_seconds must not exceed clearing_tti_seconds")
         if self.ambulance_min_speed_kmh > self.ambulance_max_speed_kmh:
