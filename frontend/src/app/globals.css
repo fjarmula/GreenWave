@@ -46,14 +46,14 @@
   --color-beacon: var(--beacon);
   --shadow-float: var(--shadow-float);
   --shadow-marker: var(--shadow-marker);
-  /* Three radii only: inner (inside a control), control, surface. */
-  --radius-sm: var(--radius-inner);
-  --radius-md: var(--radius-control);
-  --radius-lg: var(--radius-control);
-  --radius-xl: var(--radius-surface);
-  --radius-2xl: var(--radius-surface);
-  --radius-3xl: var(--radius-surface);
-  --radius-4xl: var(--radius-surface);
+  /* Soft glass radii: control, card (inner tile), sheet (floating glass); pills are full. */
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius-card);
+  --radius-lg: var(--radius-card);
+  --radius-xl: var(--radius-sheet);
+  --radius-2xl: var(--radius-sheet);
+  --radius-3xl: var(--radius-sheet);
+  --radius-4xl: var(--radius-sheet);
 }
 
 /* Motion: strong custom curves (Tailwind's ease-out / ease-in-out utilities pick these up). */
@@ -75,7 +75,7 @@
   --map-vignette: rgb(235 244 246 / 10%);
   --route-shadow: rgb(221 234 238 / 90%);
   /* Neutral scale: near-neutral cool greys. Elevation is a lightness step plus a hairline. */
-  --bg: oklch(0.985 0.002 260);
+  --bg: oklch(0.965 0.005 255);
   --surface-1: oklch(1 0 0);
   --surface-2: oklch(1 0 0);
   --surface-3: oklch(0.955 0.003 260);
@@ -85,6 +85,13 @@
   --border: oklch(0 0 0 / 8%);
   --border-strong: oklch(0 0 0 / 12%);
   --highlight: 0 0 #0000;
+  /* Soft glass: one frosted material for everything that floats over the map, and an opaque
+     tile for content inside it. */
+  --tile: oklch(0.97 0.004 260);
+  --glass-bg: oklch(1 0 0 / 82%);
+  --glass-ring: 0 0 0 1px oklch(0 0 0 / 5%);
+  --glass-highlight: inset 0 1px 0 oklch(1 0 0 / 90%);
+  --glass-shadow: 0 20px 40px -20px oklch(0 0 0 / 22%);
   /* Segmented controls: one recessed track, one raised thumb. */
   --track: var(--surface-3);
   --thumb: var(--surface-2);
@@ -123,10 +130,12 @@
   --chart-3: var(--cascade);
   --chart-4: var(--caution);
   --chart-5: var(--emergency);
-  --radius: 0.5rem;
-  --radius-inner: 6px;
-  --radius-control: 8px;
-  --radius-surface: 12px;
+  --radius: 0.75rem;
+  --radius-control: 12px;
+  /* A thumb inside a control's 3px track padding. */
+  --radius-thumb: 9px;
+  --radius-card: 14px;
+  --radius-sheet: 22px;
   --shadow-float: 0 1px 2px oklch(0 0 0 / 6%), 0 8px 24px -8px oklch(0 0 0 / 12%);
   --shadow-marker: 0 0 0 1px oklch(0 0 0 / 12%), 0 1px 2px oklch(0 0 0 / 20%);
   --sidebar: var(--bg);
@@ -147,7 +156,7 @@
   --map-label: #547583;
   --map-vignette: rgb(2 8 14 / 72%);
   --route-shadow: #031019;
-  --bg: oklch(0.155 0.008 260);
+  --bg: oklch(0.17 0.004 260);
   --surface-1: oklch(0.185 0.008 260);
   --surface-2: oklch(0.215 0.009 260);
   --surface-3: oklch(0.25 0.01 260);
@@ -157,6 +166,11 @@
   --border: oklch(1 0 0 / 7%);
   --border-strong: oklch(1 0 0 / 11%);
   --highlight: inset 0 1px 0 oklch(1 0 0 / 5%);
+  --tile: oklch(0.26 0.008 260);
+  --glass-bg: oklch(0.215 0.009 260 / 72%);
+  --glass-ring: 0 0 0 1px oklch(1 0 0 / 8%);
+  --glass-highlight: inset 0 1px 0 oklch(1 0 0 / 6%);
+  --glass-shadow: 0 20px 40px -16px oklch(0 0 0 / 55%);
   --track: var(--surface-1);
   --thumb: var(--surface-3);
   --thumb-shadow: var(--highlight), 0 0 0 1px var(--border);
@@ -497,7 +511,7 @@
   left: 3px;
   width: var(--theme-option);
   height: var(--theme-option);
-  border-radius: var(--radius-inner);
+  border-radius: var(--radius-thumb);
   background: var(--thumb);
   box-shadow: var(--thumb-shadow);
   transition: transform 200ms var(--ease-out);
@@ -509,7 +523,7 @@
   width: var(--theme-option);
   height: var(--theme-option);
   place-items: center;
-  border-radius: var(--radius-inner);
+  border-radius: var(--radius-thumb);
   color: var(--muted-foreground);
   transition: color var(--dur-hover) ease;
 }
@@ -782,7 +796,7 @@ button,
   width: min(26rem, calc(100% - 2rem));
   padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-surface);
+  border-radius: var(--radius-card);
   @apply surface-float;
 }
 .comparison-stage {
@@ -921,7 +935,7 @@ button,
   max-height: calc(100dvh - 2rem);
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: var(--radius-surface);
+  border-radius: var(--radius-card);
   background: var(--popover);
   color: var(--foreground);
   overflow: auto;
@@ -980,7 +994,7 @@ button,
   overflow: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--border);
-  border-radius: var(--radius-surface);
+  border-radius: var(--radius-card);
   background: color-mix(in oklch, var(--background) 70%, var(--muted));
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.8125rem;
@@ -1075,7 +1089,7 @@ button,
   margin-top: 3.5rem;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: var(--radius-surface);
+  border-radius: var(--radius-card);
   background: var(--card);
 }
 .home-art-caption {
@@ -1103,7 +1117,7 @@ button,
   flex-direction: column;
   padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-surface);
+  border-radius: var(--radius-card);
   background: var(--card);
 }
 .home-card-icon {
@@ -1326,7 +1340,7 @@ button,
   .hud-panel {
     padding: 1rem;
     border: 1px solid var(--border);
-    border-radius: var(--radius-surface);
+    border-radius: var(--radius-card);
     background: var(--card);
   }
   /* The inspector is one surface: sections split by hairlines, never cards inside a panel. */
@@ -1386,7 +1400,7 @@ button,
     align-items: center;
     justify-content: center;
     gap: 0.375rem;
-    border-radius: var(--radius-inner);
+    border-radius: var(--radius-thumb);
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--muted-foreground);
@@ -1645,7 +1659,7 @@ button,
   .intersection-card {
     padding: 0.75rem;
     border: 1px solid var(--border);
-    border-radius: var(--radius-surface);
+    border-radius: var(--radius-card);
     background: color-mix(in srgb, var(--background) 55%, transparent);
   }
   /* TTI bar: scaleX glides linearly for exactly one tick (--tick), so it never jumps. */
@@ -1764,7 +1778,7 @@ button,
 .comparison-delta {
   padding: 1rem;
   border: 1px solid color-mix(in srgb, var(--tone, var(--muted-foreground)) 30%, transparent);
-  border-radius: var(--radius-surface);
+  border-radius: var(--radius-card);
   background: color-mix(in srgb, var(--tone, var(--muted-foreground)) 9%, transparent);
 }
 .comparison-delta .hud-value {
@@ -1785,7 +1799,7 @@ button,
   align-items: center;
   padding: 1rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-surface);
+  border-radius: var(--radius-card);
   background: var(--card);
 }
 .flow-step > :not(.flow-step-index, .sr-only) {
@@ -1823,7 +1837,7 @@ button,
   overflow: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--border);
-  border-radius: var(--radius-surface);
+  border-radius: var(--radius-card);
   background: color-mix(in srgb, var(--muted) 45%, transparent);
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.75rem;

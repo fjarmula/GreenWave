@@ -69,7 +69,23 @@ function contrast(tokens: Record<string, string>, text: string, surface: string)
   return (hi + 0.05) / (lo + 0.05);
 }
 
-const SURFACES = ["--bg", "--surface-1", "--surface-2"];
+function hex(value: string): Rgba {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(value.slice(i, i + 2), 16) / 255);
+  return { r, g, b, a: 1 };
+}
+
+/** Text on the glass material composited over what the map shows beneath it. */
+function glassContrast(tokens: Record<string, string>, text: string, beneath: string): number {
+  const bg = over(oklch(resolve(tokens, "--glass-bg")), hex(beneath));
+  const fg = over(oklch(resolve(tokens, text)), bg);
+  const [hi, lo] = [luminance(fg), luminance(bg)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+// Worst case beneath the glass: a white street in light, the dark map ground in dark.
+const MAP_BENEATH = { light: "#ffffff", dark: "#1b1d21" };
+
+const SURFACES = ["--bg", "--surface-1", "--surface-2", "--tile"];
 const TEXT_PAIRS: Array<[string, string]> = [
   ...SURFACES.map((surface): [string, string] => ["--fg", surface]),
   ...SURFACES.map((surface): [string, string] => ["--fg-muted", surface]),
@@ -80,9 +96,14 @@ const TEXT_PAIRS: Array<[string, string]> = [
   ),
 ];
 
-describe.each(Object.entries(themes))("%s theme tokens", (_, tokens) => {
+describe.each(Object.entries(themes))("%s theme tokens", (name, tokens) => {
   it.each(TEXT_PAIRS)("%s on %s meets 4.5:1", (text, surface) => {
     expect(contrast(tokens, text, surface)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(["--fg", "--fg-muted"])("%s on glass over the map meets 4.5:1", (text) => {
+    const beneath = MAP_BENEATH[name as keyof typeof MAP_BENEATH];
+    expect(glassContrast(tokens, text, beneath)).toBeGreaterThanOrEqual(4.5);
   });
 
   it("keeps neutrals near-neutral (chroma ≤ 0.012)", () => {
@@ -120,6 +141,13 @@ describe("dark hairlines", () => {
 });
 
 describe("surface system", () => {
+  it("radii follow the soft glass scale", () => {
+    expect(light["--radius-control"]).toBe("12px");
+    expect(light["--radius-card"]).toBe("14px");
+    expect(light["--radius-sheet"]).toBe("22px");
+    expect(css).not.toMatch(/--radius-(inner|surface)\b/);
+  });
+
   it("rounds only with the radius tokens", () => {
     const literal = [...css.matchAll(/border(?:-[a-z]+)?-radius:\s*([\d.]+rem)/g)].map((m) => m[0]);
     expect(literal).toEqual([]);
