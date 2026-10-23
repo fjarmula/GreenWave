@@ -389,8 +389,8 @@ disabled run, the whole controlled crossing. `speed_kmh` is the distance
 actually driven in that simulated second, including the arrival tick.
 
 The stream carries a discriminated union on `event_type`:
-`SIMULATION_TICK`, `ITS_DISPATCH`, `SIMULATION_COMPLETED`,
-`SIMULATION_CANCELLED` (`reason: STOPPED | SUPERSEDED | SERVER_ERROR`). Every event has
+`SIMULATION_TICK`, `ITS_DISPATCH`, `ITS_FEEDBACK`, `SIMULATION_COMPLETED`,
+`SIMULATION_CANCELLED` (`reason: STOPPED | SUPERSEDED | SERVER_ERROR | ITS_REJECTED | ITS_TIMEOUT | ITS_HOLD_EXPIRED`). Every event has
 `schema_version`, `is_simulated`, `simulation_id`, `tick` and `timestamp`
 (wall-clock UTC at emission; simulated time is
 `kpi_metrics.total_time_elapsed_sec`).
@@ -558,26 +558,56 @@ technology), instead of disappearing.
 }
 ```
 
-### Phase 3: Simulated ITS Dispatch (Internal `ItsGateway` Interface)
+### Phase 3: Simulated ITS request and feedback
 
-Triggered internally via a Python `ItsGateway` interface (with a mock
-implementation that logs and records the dispatch event, rather than an
-HTTP loop to itself) when an intersection transitions to `CLEARING`
-($\mathrm{TTI}_i \le 40\text{ s}$ or via cascade). Only runs with
-`green_wave_mode: "ENABLED"` dispatch. Uses the ETL-generated
-`INT-xxxx` identifiers. One dispatch is made per tick and contains every
-intersection that entered `CLEARING` in that tick (the TTI-triggered ones
-and their cascade group); `message_id` is `MSG-ITS-<n>`, numbered per
-simulation. The dispatch is also streamed as an `ITS_DISPATCH` event
-(the fields below plus `event_type`, `tick`, `timestamp`).
+A fresh in-process `SimulatedItsController` is constructed for every planned run.
+The engine selects requests at TTI <= 40 s with the existing one-hop cascade and
+submits one grouped dispatch per tick, once per route target. Submission records
+`REQUESTED`; it does not change reported intersection or signal state. The optional
+legacy gateway is only a diagnostic sink and is not installed by the application.
+No controller network connection or physical signal actuation exists.
 
-`hold_duration_sec = max(40, ceil(TTI at dispatch) + 5)`, where for a group
-the TTI is the **largest** in the group and 5 s is `its_hold_buffer_seconds`
-(engine configuration, not a contract field). The hold covers the window
-from `CLEARING` through `PRIORITY_GREEN` until the vehicle clears the stop
-line; a fixed 40 s expired before the vehicle reached cascaded
-intersections. `expected_arrival_utc` is the emission time plus the
-**smallest** TTI in the group.
+`its_scenario` selects `NOMINAL` (accept after 1 simulated second), `DELAYED`
+(5 seconds), `REJECTED` (reject after 1 second), or `NO_FEEDBACK` (timeout at
+8 seconds). Settings validate both acknowledgement delays before timeout. Disabled
+runs normalize the scenario to NOMINAL and submit no priority requests; comparisons
+pin both recordings to NOMINAL. Wall-clock timestamps never decide acknowledgements.
+
+The controller owns the single phase programme and its shown-head transitions.
+Acceptance starts CLEARING. At current TTI <= 25 s it targets route green, but
+reports PRIORITY_GREEN only after all supported route vehicle indications actually
+show green. Yellow/conflict constraints remain active. Without supported movements,
+the report remains CLEARING until passage and phase detail remains unavailable.
+Enabled motion uses the previous confirmed report; disabled motion queries the
+ordinary programme at the exact fractional stop-line arrival time.
+
+Correlation is `(simulation_id, message_id)`, with `MSG-ITS-<n>` numbered per run.
+Feedback sequence is positive and monotonic per run. Lifecycle is REQUESTED ->
+ACCEPTED -> RELEASED, or REQUESTED -> REJECTED/TIMED_OUT; active holds can EXPIRE.
+Each target releases independently on passage; grouped RELEASED waits for every
+target. Passage before acknowledgement prevents late activation, and passage at
+expiry wins. Recovery lasts 15 simulated seconds. Duplicates are idempotent;
+conflicting duplicate submissions are rejected and invalid feedback cannot refresh
+the deadline or regress the ledger.
+
+`hold_duration_sec = max(40, ceil(largest first-stop TTI at submission) + 5)`
+is enforced from submission, without renewal. Long multi-stop-line crossings or
+controller waits can exceed that estimate. Rejection, acknowledgement timeout and
+active expiry emit a final diagnostic tick then exactly one cancellation:
+ITS_REJECTED, ITS_TIMEOUT or ITS_HOLD_EXPIRED. They never emit successful completion.
+Stop, supersession, server error and completion close the controller idempotently.
+The terminal dashboard/driver retains the last report and requires an explicit new run.
+
+Within a tick the stream emits ordered ITS_FEEDBACK, new ITS_DISPATCH, SIMULATION_TICK,
+then an optional terminal. SSE ids remain ticks, not unique feedback identities.
+Every new tick carries complete `its_requests`, `its_observed_at_simulated_sec`,
+intersection states and signal phases. Legacy []/null means feedback unavailable.
+Reconnect provides the latest snapshot, without event replay. Browser feedback
+sequence deduplication is independent of telemetry ticks and dispatch IDs; snapshot
+sequences defeat late older feedback. Recordings count feedback bytes and reject
+failed runs while keeping the existing 10,000-tick/32 MiB pair bounds.
+
+The payload remains an illustrative internal contract, not a city ITS protocol:
 
 ```json
 {
@@ -639,7 +669,7 @@ All previously open questions have been resolved and approved:
 1. **State machine:** Intersection `state` is strictly `NORMAL | CLEARING | PRIORITY_GREEN | RECOVERY`, with `is_cascade: bool` as a separate field. Transitions occur at $\mathrm{TTI} \le 40\text{ s}$ (`CLEARING`), $\mathrm{TTI} \le 25\text{ s}$ (`PRIORITY_GREEN`), $d_i \le 0\text{ m}$ once the vehicle has left the last stop line and the tick carrying it across has been shown (`RECOVERY`, section 4, rule 3), and $+15\text{ s}$ (`NORMAL`). Cascade is one hop only (section 4, rule 1). `CLEARING_CASCADE` is not a state. `hold_duration_sec = max(40, ceil(TTI at dispatch) + its_hold_buffer_seconds)` with `its_hold_buffer_seconds = 5` (section 4, Phase 3).
 2. **Identifiers:** All endpoints, telemetry ticks, and mock ITS payloads use the ETL's `INT-0001`..`INT-0534` IDs (`intersection_ids.json`). No `MSIP-SIG-*` IDs are used.
 3. **Contract completeness:** `simulation_id`, `schema_version: "1.0"`, and `is_simulated: true` are included in all responses and ticks; streaming uses SSE (`GET /api/v1/simulation/{simulation_id}/stream`) with a cancel endpoint (`POST /api/v1/simulation/{simulation_id}/stop`); one active simulation is supported at a time; ambulance `status` is `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`; `traffic_density_multiplier` is bounded to `[1.0, 3.0]`.
-4. **ITS dispatch (Phase 3):** Implemented as an internal Python `ItsGateway` interface with a mock implementation (no self-HTTP calls).
+4. **ITS feedback (Phase 3):** A per-run deterministic simulated controller owns decisions and reported phases. Dispatch alone never confirms green (proposed ADR 0008).
 5. **Model inputs:** $V_{\mathrm{ambulance}}(e) = \min(\max(1.3 \cdot V_e \cdot b(e), 30.0), 90.0)\text{ km/h}$ with the road-attribute factors of section 3 (ADR 0005); $v_{\mathrm{avg}}$ uses an EMA ($\alpha = 0.25$, floored at $5.0\text{ m/s}$); all distance work is in `EPSG:2178` metres.
 6. **Data sources:** Pinned BBBike OSM extract (`planet_19_792_50_012_71450a13_osm.geojson`) for road network and signals, paired with Kraków Open Data (`Ulice.geojson`, used for street names and cross-checks), tracked with hashes, licences and attribution in `backend/data/raw/MANIFEST.json`. No separate MSIP traffic-signal layer is used. The bus-lane CSV (`Buspasy_*.csv`, no geometry) is a cross-check only: its rows are matched by street name against OSM bus-lane edges (`bus_lane_crosscheck.csv`) and never change the network; bus lanes, tram tracks, lanes, surface and traffic calming come from OSM. The KMK lines CSV is recorded in the manifest but parked (no streets or geometry). Licence and attribution wording is settled (see "Data sources and attribution").
 7. **Terminology:** `STeR_KRAKOW_ITS` is retained as the mocked target name.
@@ -649,3 +679,5 @@ All previously open questions have been resolved and approved:
 11. **Contract v1:** the stream event union, SSE framing, error codes, `playback_speed` and the remaining simulation semantics are recorded in `docs/adr/0003-simulation-contract-v1.md`. Its D9 (1 Hz wall-clock tick advancing `playback_speed` seconds) is superseded: every simulated second is streamed as its own tick and playback only shortens the wall-clock interval (section 4, Phase 1). The wire schema is unchanged.
 12. **ER Green Wave mode (additive to contract v1, `schema_version` stays `"1.0"`):** the start request and response carry `green_wave_mode: ENABLED | DISABLED` (closed enum, no boolean form; default `ENABLED`), and ticks carry `signal_phases` (default `[]`). Disabled runs use the standard-traffic crossing (section 3, model 3), stay `NORMAL`, never cascade or dispatch, and keep route choice and open-road motion identical to enabled runs. Signal phases are a simulated explanation drawn only at high zoom (section 4, Phase 2). The frontend has six destinations: home (`/`), enabled simulation (`/simulation/green-wave`), disabled simulation (`/simulation/standard`), recorded comparison (`/compare`), diagnostics (`/diagnostics`) and driver presentation (`/driver`). A root runtime owns one subscription and shared in-memory scenario across navigation. Comparison captures enabled then disabled sequentially through the same exclusive operation slot, then replays complete recordings on a common simulated clock; it never runs concurrent backend sessions. The completed-run summary leads with total travel time and names the mode. Design: `docs/superpowers/specs/2026-10-20-er-green-wave-mode-design.md`, amended by `docs/superpowers/specs/2026-10-21-er-green-wave-corrections-design.md` (rolling disabled crossing, supported signal movements, phase-detail fallback).
 13. **Server-side run failure (additive to contract v1, `schema_version` stays `"1.0"`):** if the simulation loop fails, the server logs it and ends the run with `SIMULATION_CANCELLED` (`reason: SERVER_ERROR`, the last completed tick) like any other terminal, so clients learn at once instead of after their silence timeout. The dashboard shows "Simulation server error. Retry the green corridor initialization.", which is also shown when a start fails with HTTP 5xx. Retry is manual from dispatch setup; the mock never emits it. Decision: `docs/adr/0007-server-error-cancel-reason.md`.
+
+14. **Simulated ITS feedback:** The approved 2026-10-23 feature specification supersedes direct TTI-to-confirmed-green statements above and ADR 0003 D16/D18: selection is separate from acceptance and reported phase confirmation. Timing thresholds remain eligibility rules, not confirmation. See Phase 3 and `docs/adr/0008-simulated-its-feedback.md` (Proposed).
