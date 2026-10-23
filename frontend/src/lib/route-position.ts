@@ -84,6 +84,30 @@ export function pointAtDistance(route: RouteGeometry, meters: number): LngLat | 
   return [last[0], last[1]];
 }
 
+/** The stretch of route between two distances along it, bends included; null without a route. */
+export function routeSlice(
+  route: RouteGeometry,
+  fromMeters: number,
+  toMeters: number,
+): LngLat[] | null {
+  const coordinates = route.coordinates;
+  if (coordinates.length < 2) return null;
+  const { toMeters: project } = projector(route);
+  const [from, to] = [Math.max(0, fromMeters), Math.max(0, toMeters)];
+  const start = pointAtDistance(route, from);
+  if (!start) return null;
+  const slice: LngLat[] = [start];
+  let travelled = 0;
+  for (let index = 0; index < coordinates.length - 1; index += 1) {
+    const [a, b] = [project(coordinates[index]), project(coordinates[index + 1])];
+    travelled += Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (travelled > from && travelled < to) slice.push([...coordinates[index + 1]] as LngLat);
+  }
+  const end = pointAtDistance(route, to);
+  if (end) slice.push(end);
+  return slice;
+}
+
 /**
  * Position between two consecutive vehicle positions, moving along the route
  * polyline so the marker follows bends instead of cutting corners (visible at

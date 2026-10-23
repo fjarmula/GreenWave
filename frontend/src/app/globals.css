@@ -285,6 +285,76 @@
   }
 }
 
+/* Corridor markers in the home animation's language: solid dots in a ring of the map ground. */
+.map-dot {
+  display: block;
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 3px solid var(--surface-1);
+  border-radius: 999px;
+  box-shadow: var(--shadow-marker);
+}
+.map-dot--incident {
+  background: var(--emergency);
+}
+.map-dot--station {
+  color: #fff;
+  background: var(--beacon);
+}
+.map-lamp {
+  display: block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 3px solid var(--surface-1);
+  border-radius: 999px;
+  box-sizing: content-box;
+  transform: translate(-3px, -3px);
+  box-shadow: var(--shadow-marker);
+  transition: box-shadow var(--dur-hover) ease;
+}
+/* A priority green carries the only lamp halo. */
+.map-lamp[data-halo] {
+  box-shadow:
+    var(--shadow-marker),
+    0 0 0 4px color-mix(in srgb, var(--go) 25%, transparent);
+}
+.map-vehicle-dot {
+  position: relative;
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  box-sizing: content-box;
+  background: var(--emergency);
+  box-shadow: var(--shadow-marker);
+}
+.map-vehicle-dot::after {
+  position: absolute;
+  inset: -3px;
+  border: 2px solid var(--emergency);
+  border-radius: 999px;
+  animation: vehicle-pulse 1.2s var(--ease-out) infinite;
+  content: "";
+}
+@keyframes vehicle-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-vehicle-dot::after {
+    animation: none;
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+}
+
 /* MapLibre controls use the dashboard theme rather than vendor white surfaces. */
 .dashboard-map .maplibregl-ctrl-group {
   overflow: hidden;

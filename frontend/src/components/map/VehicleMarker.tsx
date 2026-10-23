@@ -4,8 +4,6 @@ import { useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Marker, type Map } from "maplibre-gl";
 
-import { VehicleIcon } from "@/components/map/VehicleIcon";
-import { VEHICLE_ICON_COLORS } from "@/components/map/vehicle-icons";
 import { createMarkerSlide, type MarkerSlide } from "@/lib/marker-slide";
 import { interpolateAlongRoute } from "@/lib/route-position";
 import type { RouteGeometry, VehicleType } from "@/types/telemetry";
@@ -117,12 +115,6 @@ export function VehicleMarker({
   }, [map, element, longitude, latitude, stale, ended]);
 
   if (!element) return null;
-  return createPortal(
-    <span
-      className={`grid size-9 place-items-center rounded-full border-2 border-white shadow-[0_0_22px_rgba(6,182,212,0.7)] ${VEHICLE_ICON_COLORS[vehicleType]}`}
-    >
-      <VehicleIcon type={vehicleType} className="size-5" />
-    </span>,
-    element,
-  );
+  // The home animation's vehicle: a red dot in a white ring with a pulse ring around it.
+  return createPortal(<span className="map-vehicle-dot" />, element);
 }

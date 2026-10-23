@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { LocateFixed, Route } from "lucide-react";
 
@@ -12,6 +12,7 @@ import { SignalMarkers } from "@/components/map/SignalMarkers";
 import { StationLayer } from "@/components/map/StationLayer";
 import { useMaplibreMap } from "@/components/map/useMaplibreMap";
 import { useMapCamera } from "@/components/map/useMapCamera";
+import { useVehicleWake } from "@/components/map/useVehicleWake";
 import { VehicleMarker } from "@/components/map/VehicleMarker";
 import { tickIntervalMilliseconds } from "@/lib/playback-speed";
 import { useSimulationState } from "@/components/simulation-provider";
@@ -73,6 +74,21 @@ export function MapContainer({
     live ? routeData : null,
     live && simulationState === "RUNNING" && !telemetryStale,
   );
+  const showWake = useVehicleWake(
+    map,
+    routeData?.route_geometry ?? null,
+    live && routeData?.green_wave_mode !== "DISABLED",
+    styleRevision,
+    theme,
+  );
+  const { display } = camera;
+  const displayVehicle = useCallback(
+    (position: [number, number]) => {
+      display(position);
+      showWake(position);
+    },
+    [display, showWake],
+  );
 
   useEffect(() => {
     if (!map || live) return;
@@ -117,7 +133,7 @@ export function MapContainer({
           routeGeometry={routeData?.route_geometry ?? null}
           stale={telemetryStale}
           ended={simulationState !== "RUNNING"}
-          onDisplayedPosition={camera.display}
+          onDisplayedPosition={displayVehicle}
           animationMilliseconds={
             snapshot ? 0 : tickIntervalMilliseconds(startRequest?.playback_speed ?? 1)
           }
@@ -139,6 +155,7 @@ export function MapContainer({
           routeGeometry={routeData?.route_geometry ?? null}
           styleRevision={styleRevision}
           theme={theme}
+          mode={routeData?.green_wave_mode ?? "ENABLED"}
         />
         <CascadeLinksMapProvider map={map} styleRevision={styleRevision} theme={theme}>
           <CascadeLinksLayer route={routeData} />

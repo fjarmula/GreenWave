@@ -18,6 +18,10 @@ export type MapPalette = {
   basemap: BasemapPalette;
   routeCasing: string;
   routeLive: string;
+  /** Standard-traffic runs: a neutral line, no green corridor. */
+  routeStandard: string;
+  /** The green wake trailing the vehicle in Green Wave runs. */
+  wake: string;
   cascade: string;
   endpointLine: string;
   signal: Record<IntersectionState, string>;
@@ -39,6 +43,8 @@ const PALETTES: Record<ResolvedTheme, MapPalette> = {
     },
     routeCasing: "#ffffff",
     routeLive: "#007e4b", // --go
+    routeStandard: "#8a919c",
+    wake: "#007e4b", // --go
     cascade: "#7544cd", // --cascade
     endpointLine: "#54585f", // --fg-muted
     signal: {
@@ -60,8 +66,10 @@ const PALETTES: Record<ResolvedTheme, MapPalette> = {
       label: "#9aa0ab",
       labelHalo: "#1b1d21",
     },
-    routeCasing: "#0a0c10", // --bg
+    routeCasing: "#0f1114",
     routeLive: "#36da90", // --go
+    routeStandard: "#6b717c",
+    wake: "#36da90", // --go
     cascade: "#b296ff", // --cascade
     endpointLine: "#a1a5ab", // --fg-muted
     signal: {

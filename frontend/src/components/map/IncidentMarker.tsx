@@ -28,7 +28,7 @@ export function IncidentMarker({ map, incident }: IncidentMarkerProps) {
 
 function createIncidentPin(label: string) {
   const element = document.createElement("div");
-  element.className = "relative size-7 font-mono text-[10px] font-bold text-foreground";
+  element.className = "relative size-5 text-[11px] font-semibold text-foreground";
   element.setAttribute("aria-label", `Incident: ${label}`);
   element.style.zIndex = "2";
 
@@ -38,9 +38,7 @@ function createIncidentPin(label: string) {
   labelElement.textContent = `Incident · ${label}`;
 
   const pin = document.createElement("span");
-  pin.className =
-    "grid size-7 place-items-center rounded-full border-2 border-background bg-emergency shadow-marker";
-  pin.innerHTML = `<span class="size-2 rounded-full bg-white"></span>`;
+  pin.className = "map-dot map-dot--incident";
 
   element.append(pin, labelElement);
   return element;

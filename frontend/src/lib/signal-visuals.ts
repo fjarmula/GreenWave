@@ -11,3 +11,14 @@ export function isCascadeClearing({
 }: Pick<IntersectionTelemetry, "state" | "is_cascade">): boolean {
   return state === "CLEARING" && isCascade;
 }
+
+/** How a route signal lamp is drawn: the cascade colour, and the soft halo of a priority green. */
+export function signalVisual(intersection: Pick<IntersectionTelemetry, "state" | "is_cascade">): {
+  cascade: boolean;
+  halo: boolean;
+} {
+  return {
+    cascade: isCascadeClearing(intersection),
+    halo: intersection.state === "PRIORITY_GREEN",
+  };
+}

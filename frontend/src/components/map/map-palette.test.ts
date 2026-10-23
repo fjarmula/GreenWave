@@ -39,6 +39,8 @@ describe("mapPalette", () => {
     const values = [
       palette.routeCasing,
       palette.routeLive,
+      palette.routeStandard,
+      palette.wake,
       palette.cascade,
       palette.endpointLine,
       ...Object.values(palette.signal),

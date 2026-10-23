@@ -15,7 +15,7 @@ import {
   type PhaseMarkerLayout,
   type SignalPhaseLayer,
 } from "@/lib/signal-phase-layer";
-import { isCascadeClearing } from "@/lib/signal-visuals";
+import { isCascadeClearing, signalVisual } from "@/lib/signal-visuals";
 import type {
   IntersectionTelemetry,
   RouteIntersection,
@@ -136,12 +136,12 @@ export function SignalMarkers({
       let marker = currentMarkers.get(intersection.id);
       if (!marker) {
         const element = document.createElement("div");
-        element.className = "relative size-4";
+        element.className = "relative size-3";
         const dot = document.createElement("span");
-        dot.className = "block size-4 rounded-full border-2 border-background shadow-marker";
+        dot.className = "map-lamp";
         const label = document.createElement("span");
         label.className =
-          "absolute top-1/2 left-full ml-2 -translate-y-1/2 whitespace-nowrap rounded border border-border bg-card/95 px-2 py-1 font-mono text-[9px] text-foreground";
+          "absolute top-1/2 left-full ml-2 -translate-y-1/2 whitespace-nowrap surface-glass rounded-full! px-2 py-0.5 font-mono text-[10px] text-foreground";
         element.append(dot, label);
         marker = new Marker({ element, anchor: "center" }).setLngLat(coordinates).addTo(map);
         currentMarkers.set(intersection.id, marker);
@@ -152,7 +152,7 @@ export function SignalMarkers({
       element.setAttribute("aria-label", labels.ariaLabel);
       const dot = element.firstElementChild as HTMLElement;
       dot.style.backgroundColor = signalColor(intersection, mapPalette(theme));
-      dot.classList.toggle("dashboard-signal-pulse", intersection.is_active_corridor);
+      dot.toggleAttribute("data-halo", signalVisual(intersection).halo);
       const label = element.lastElementChild as HTMLElement;
       label.textContent = labels.text;
     });
