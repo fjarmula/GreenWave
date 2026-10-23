@@ -25,6 +25,7 @@ export function createMockSimulationAdapter(): SimulationAdapter {
 
   const endSession = (terminal: SimulationCompletedEvent | SimulationCancelledEvent) => {
     stopTimer();
+    session?.controller.close();
     session = null;
     const current = [...subscribers];
     subscribers.clear();
@@ -38,9 +39,14 @@ export function createMockSimulationAdapter(): SimulationAdapter {
 
   const emitNextTick = () => {
     if (!session) return;
-    const { tick, dispatch, completed } = advanceMockSession(session);
+    const { tick, dispatch, completed, feedbacks, failure } = advanceMockSession(session);
+    feedbacks.forEach((f) => subscribers.forEach((s) => s.onItsFeedback(f)));
     if (dispatch) subscribers.forEach((subscriber) => subscriber.onItsDispatch(dispatch));
     subscribers.forEach((subscriber) => subscriber.onTick(tick));
+    if (failure) {
+      cancel(failure);
+      return;
+    }
     if (completed) {
       endSession(completedEvent(tick));
     }

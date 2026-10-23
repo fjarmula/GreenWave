@@ -39,6 +39,7 @@ export type BackendAdapterOptions = {
 const STREAM_EVENT_TYPES = [
   "SIMULATION_TICK",
   "ITS_DISPATCH",
+  "ITS_FEEDBACK",
   "SIMULATION_COMPLETED",
   "SIMULATION_CANCELLED",
 ] as const satisfies readonly SimulationStreamEvent["event_type"][];
@@ -232,11 +233,17 @@ function openStream(
     report("reconnecting");
   });
 
+  let lastFeedbackSequence = 0;
   const handle = (eventType: SimulationStreamEvent["event_type"], message: MessageEvent) => {
     if (closed) return;
     const event = decodeStreamFrame(eventType, message, simulationId);
     diagnosticStore.record({
-      operation: eventType === "ITS_DISPATCH" ? "its" : "sse",
+      operation:
+        eventType === "ITS_DISPATCH"
+          ? "its"
+          : eventType === "ITS_FEEDBACK"
+            ? "its-feedback"
+            : "sse",
       transport: "backend",
       outcome: !event
         ? "failure"
@@ -270,6 +277,11 @@ function openStream(
         if (event.tick <= lastTick) return;
         lastTick = event.tick;
         subscriber.onTick(event);
+        return;
+      case "ITS_FEEDBACK":
+        if (event.feedback_sequence <= lastFeedbackSequence) return;
+        lastFeedbackSequence = event.feedback_sequence;
+        subscriber.onItsFeedback(event);
         return;
       case "ITS_DISPATCH":
         if (event.tick <= lastTick || seenMessageIds.has(event.message_id)) return;

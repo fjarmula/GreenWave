@@ -151,6 +151,8 @@ function sample(speedKmh: number, status: AmbulanceStatus): SimulationTickEvent 
     kpi_metrics: { current_time_saved_sec: 12, total_time_elapsed_sec: 42 },
     intersections: [],
     signal_phases: [],
+    its_requests: [],
+    its_observed_at_simulated_sec: null,
   };
 }
 

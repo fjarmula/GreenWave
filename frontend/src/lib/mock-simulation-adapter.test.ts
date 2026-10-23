@@ -13,6 +13,7 @@ import type {
 
 const request: SimulationStartRequest = {
   green_wave_mode: "ENABLED",
+  its_scenario: "NOMINAL" as const,
   simulation_id: "test",
   origin: { lat: 0, lng: 0 },
   destination: { lat: (5400 / 6_371_000) * (180 / Math.PI), lng: 0 },
@@ -33,6 +34,7 @@ function collect() {
   const errors: SimulationErrorInfo[] = [];
   const subscriber: SimulationStreamSubscriber = {
     onTick: (event) => ticks.push(event),
+    onItsFeedback: () => {},
     onItsDispatch: (event) => dispatches.push(event),
     onTerminal: (event) =>
       event.event_type === "SIMULATION_COMPLETED"
@@ -102,9 +104,9 @@ describe("mock simulation stream", () => {
     expect(dispatch.message_id).toBe("MSG-ITS-1");
     const tickOfDispatch = events.ticks.find((tick) => tick.tick === dispatch.tick);
     const cascaded = tickOfDispatch?.intersections.find((i) => i.id === "INT-9002");
-    expect(cascaded).toMatchObject({ state: "CLEARING", is_cascade: true });
+    expect(cascaded).toMatchObject({ state: "NORMAL", is_cascade: true });
     expect(tickOfDispatch?.intersections[0]).toMatchObject({
-      state: "CLEARING",
+      state: "NORMAL",
       is_cascade: false,
     });
   });

@@ -28,6 +28,7 @@ it("preserves values, error identity, callback order and unsubscribe exactly onc
   const order: number[] = [];
   const off = adapter.subscribe("pair", {
     onTick: (e) => order.push(e.tick),
+    onItsFeedback: () => {},
     onItsDispatch: () => {},
     onTerminal: () => {},
     onConnectionChange: () => {},
@@ -80,6 +81,7 @@ it("diagnostic listener errors cannot interrupt stream delivery", async () => {
   const seen: number[] = [];
   adapter.subscribe("pair", {
     onTick: (e) => seen.push(e.tick),
+    onItsFeedback: () => {},
     onItsDispatch: () => {},
     onTerminal: () => {},
     onConnectionChange: () => {},

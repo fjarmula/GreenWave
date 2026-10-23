@@ -17,7 +17,7 @@ it("separates architecture from unobserved endpoints and synthetic activity", ()
     "Map",
     "Stop",
     "Dataset quality",
-    "internal simulated",
+    "in-process simulated",
     "Not observed",
     "Synthetic",
   ])

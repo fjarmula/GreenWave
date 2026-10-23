@@ -3,6 +3,8 @@ import type { SimulationErrorInfo } from "@/lib/transport/errors";
 import type {
   CancelReason,
   ItsDispatchEvent,
+  ItsFeedbackEvent,
+  ItsRequestSnapshot,
   SimulationCancelledEvent,
   SimulationCompletedEvent,
   SimulationStartRequest,
@@ -31,6 +33,8 @@ export type SimulationState = {
   /** Stream health while RUNNING (and `lost` after a stream error); otherwise null. */
   connection: ConnectionStatus | null;
   itsLog: ItsLogEntry[];
+  itsRequests: ItsRequestSnapshot[];
+  lastFeedbackSequence: number;
   completion: SimulationCompletedEvent | null;
   cancelReason: CancelReason | null;
   error: SimulationErrorInfo | null;
@@ -45,6 +49,7 @@ export type SimulationAction =
   | { type: "START_SUCCEEDED"; simulationId: string; response: SimulationStartResponse }
   | { type: "START_FAILED"; simulationId: string; error: SimulationErrorInfo }
   | { type: "TICK"; event: SimulationTickEvent }
+  | { type: "ITS_FEEDBACK"; event: ItsFeedbackEvent }
   | { type: "ITS_DISPATCH"; event: ItsDispatchEvent }
   | { type: "CONNECTION"; simulationId: string; status: ConnectionStatus }
   | { type: "TERMINAL"; event: SimulationCompletedEvent | SimulationCancelledEvent }
@@ -62,6 +67,8 @@ export const initialSimulationState: SimulationState = {
   lastTick: 0,
   connection: null,
   itsLog: [],
+  itsRequests: [],
+  lastFeedbackSequence: 0,
   completion: null,
   cancelReason: null,
   error: null,
@@ -143,7 +150,76 @@ export function simulationReducer(
       ) {
         return state;
       }
-      return { ...state, liveTelemetry: event, lastTick: event.tick };
+      return {
+        ...state,
+        liveTelemetry: event,
+        lastTick: event.tick,
+        itsRequests: event.its_requests ?? [],
+        lastFeedbackSequence: Math.max(
+          state.lastFeedbackSequence,
+          ...(event.its_requests ?? []).map((r) => r.last_feedback_sequence),
+        ),
+      };
+    }
+    case "ITS_FEEDBACK": {
+      const { event } = action;
+      if (
+        state.simulationState !== "RUNNING" ||
+        !isCurrentRun(state, event.simulation_id) ||
+        event.feedback_sequence <= state.lastFeedbackSequence ||
+        !event.intersections_group.every((id) =>
+          state.routeData?.intersections_on_route.includes(id),
+        )
+      )
+        return state;
+      const previous = state.itsRequests.find((r) => r.message_id === event.request_message_id);
+      if (
+        previous &&
+        (event.feedback_sequence <= previous.last_feedback_sequence ||
+          !["REQUESTED", "ACCEPTED"].includes(previous.status))
+      )
+        return state;
+      const allowed =
+        previous?.status === "REQUESTED"
+          ? ["ACCEPTED", "REJECTED", "TIMED_OUT", "RELEASED"]
+          : previous?.status === "ACCEPTED"
+            ? ["RELEASED", "EXPIRED"]
+            : [];
+      if (
+        previous &&
+        (!allowed.includes(event.status) ||
+          JSON.stringify(previous.intersections_group) !==
+            JSON.stringify(event.intersections_group) ||
+          event.observed_at_simulated_sec < previous.last_updated_at_simulated_sec)
+      )
+        return state;
+      const itsRequests = state.itsRequests.map((r) =>
+        r.message_id === event.request_message_id
+          ? {
+              ...r,
+              status: event.status,
+              reason: event.reason,
+              last_feedback_sequence: event.feedback_sequence,
+              last_updated_at_simulated_sec: event.observed_at_simulated_sec,
+              acknowledged_at_simulated_sec:
+                event.status === "ACCEPTED"
+                  ? event.observed_at_simulated_sec
+                  : r.acknowledged_at_simulated_sec,
+            }
+          : r,
+      );
+      return {
+        ...state,
+        itsRequests,
+        lastFeedbackSequence: event.feedback_sequence,
+        itsLog: [
+          ...state.itsLog,
+          {
+            messageId: `feedback-${event.feedback_sequence}`,
+            text: `Simulated ITS ${event.status} · ${event.request_message_id} · ${event.intersections_group.join(", ")} · ${event.observed_at_simulated_sec} s`,
+          },
+        ].slice(-ITS_LOG_LIMIT),
+      };
     }
     case "ITS_DISPATCH": {
       const { event } = action;

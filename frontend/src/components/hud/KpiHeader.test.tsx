@@ -65,6 +65,8 @@ describe("KpiHeader time saved", () => {
         kpi_metrics: { current_time_saved_sec: saved, total_time_elapsed_sec: 30 },
         intersections: [],
         signal_phases: [],
+        its_requests: [],
+        its_observed_at_simulated_sec: null,
       },
     };
     const markup = renderToStaticMarkup(<KpiHeader />);
@@ -127,6 +129,7 @@ describe("KpiHeader vehicle type", () => {
         playback_speed: 1,
         vehicle_type: type,
         green_wave_mode: "ENABLED",
+        its_scenario: "NOMINAL" as const,
       },
     };
     const markup = renderToStaticMarkup(<KpiHeader />);

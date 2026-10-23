@@ -18,6 +18,7 @@ function running(vehicleType: VehicleType): SimulationState {
     playback_speed: 1,
     vehicle_type: vehicleType,
     green_wave_mode: "ENABLED",
+    its_scenario: "NOMINAL" as const,
   };
   return { ...initialSimulationState, simulationState: "RUNNING", startRequest };
 }

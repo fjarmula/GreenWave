@@ -80,6 +80,7 @@ function latestSource(): FakeEventSource {
 
 const request: SimulationStartRequest = {
   green_wave_mode: "ENABLED",
+  its_scenario: "NOMINAL" as const,
   simulation_id: SIMULATION_ID,
   origin: { lat: 50.0612, lng: 19.9571 },
   destination: { lat: 50.0134, lng: 19.9982 },
@@ -102,6 +103,7 @@ function recorder() {
   const errors: SimulationErrorInfo[] = [];
   const subscriber: SimulationStreamSubscriber = {
     onTick: (event) => calls.push(`tick:${event.tick}`),
+    onItsFeedback: () => {},
     onItsDispatch: (event) => calls.push(`its:${event.message_id}`),
     onTerminal: (event) => calls.push(`terminal:${event.event_type}`),
     onConnectionChange: (status) => connection.push(status),
@@ -479,6 +481,7 @@ it("retains raw named SSE data and validation rejection without delivering rejec
   });
   const off = adapter.subscribe(SIMULATION_ID, {
     onTick: seen,
+    onItsFeedback: () => {},
     onItsDispatch: () => {},
     onTerminal: () => {},
     onConnectionChange: () => {},

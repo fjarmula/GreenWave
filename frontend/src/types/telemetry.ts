@@ -45,3 +45,7 @@ export type GeocodeResponse = Schemas["GeocodeResponse"];
 export type DispatchRankRequest = Schemas["DispatchRankRequest"];
 export type DispatchRankResponse = Schemas["DispatchRankResponse"];
 export type RankedCandidate = Schemas["RankedCandidate"];
+
+export type ItsFeedbackEvent = Schemas["ItsFeedbackEvent"];
+export type ItsRequestSnapshot = Schemas["ItsRequestSnapshot"];
+export type ItsScenario = Schemas["ItsScenario"];

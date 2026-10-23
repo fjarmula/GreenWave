@@ -7,7 +7,8 @@ const names: Record<Operation, string> = {
   sse: "SSE",
   stop: "Stop",
   quality: "Dataset quality",
-  its: "ITS · internal simulated gateway",
+  its: "ITS · outgoing simulated request",
+  "its-feedback": "ITS · incoming controller feedback",
 };
 export function DataFlowView({ entries }: { entries: ReadonlyArray<DiagnosticEntry> }) {
   return (
@@ -24,6 +25,8 @@ export function DataFlowView({ entries }: { entries: ReadonlyArray<DiagnosticEnt
             "Stations / Geocode → incident",
             "Ranking → chosen station",
             "Start → route initialization",
+            "Request → in-process simulated ITS controller",
+            "Controller decision / reported state → SSE",
             "SSE → validated telemetry",
             "Validation / state → Map and HUD",
             "Stop → terminal summary",
@@ -35,8 +38,8 @@ export function DataFlowView({ entries }: { entries: ReadonlyArray<DiagnosticEnt
           ))}
         </ol>
         <p className="mt-4 text-sm text-muted-foreground">
-          ITS dispatch is an internal simulated gateway event, never an outbound signal-controller
-          request. Dataset quality describes the source dataset.
+          ITS requests and feedback run inside the simulation process. They are not HTTP controller
+          calls. Dataset quality describes the source dataset.
         </p>
       </section>
       <section className="mt-10" aria-labelledby="observations-title">

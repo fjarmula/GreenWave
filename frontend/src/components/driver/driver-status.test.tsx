@@ -36,3 +36,15 @@ it("never presents a disabled run as enabled driver telemetry", () => {
   expect(html).toContain("Enabled simulation required");
   expect(html).not.toContain("km/h");
 });
+
+it("shows ITS failure and identifies retained controller state", () => {
+  const state = {
+    ...initialSimulationState,
+    startRequest: request,
+    simulationState: "CANCELLED" as const,
+    cancelReason: "ITS_TIMEOUT" as const,
+  };
+  const html = renderToStaticMarkup(<DriverStatus state={state} onStop={() => {}} />);
+  expect(html).toContain("acknowledgement timed out");
+  expect(html).toContain("Last simulated controller report");
+});

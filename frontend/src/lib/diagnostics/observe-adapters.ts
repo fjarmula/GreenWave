@@ -144,6 +144,10 @@ export function observeSimulation(
           record("sse", "tick", e.tick, e);
           subscriber.onTick(e);
         },
+        onItsFeedback: (e) => {
+          record("its-feedback", "success", e.tick, e);
+          subscriber.onItsFeedback(e);
+        },
         onItsDispatch: (e) => {
           record("its", "success", e.tick, e);
           subscriber.onItsDispatch(e);

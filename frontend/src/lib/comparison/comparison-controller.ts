@@ -75,6 +75,7 @@ export function createComparisonController(
               recorder.tick(action.event);
               publish({ tick: recorder.frames, bytes: previousBytes + recorder.bytes });
             }
+            if (action.type === "ITS_FEEDBACK") recorder.feedback(action.event);
             if (action.type === "ITS_DISPATCH") recorder.dispatch(action.event);
             if (action.type === "TERMINAL") {
               if (action.event.event_type !== "SIMULATION_COMPLETED")
@@ -115,7 +116,12 @@ export function createComparisonController(
       publish({ ...empty, status: "recording", mode: "ENABLED" });
       try {
         const enabled = await capture(
-          { ...frozen, simulation_id: createId(), green_wave_mode: "ENABLED" },
+          {
+            ...frozen,
+            simulation_id: createId(),
+            green_wave_mode: "ENABLED",
+            its_scenario: "NOMINAL",
+          },
           token,
           0,
         );
@@ -123,7 +129,12 @@ export function createComparisonController(
         if (token !== generation) throw new Error("Recording cancelled");
         publish({ mode: "DISABLED", tick: 0 });
         const disabled = await capture(
-          { ...frozen, simulation_id: createId(), green_wave_mode: "DISABLED" },
+          {
+            ...frozen,
+            simulation_id: createId(),
+            green_wave_mode: "DISABLED",
+            its_scenario: "NOMINAL",
+          },
           token,
           enabled.bytes,
         );

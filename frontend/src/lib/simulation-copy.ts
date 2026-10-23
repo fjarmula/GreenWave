@@ -53,6 +53,9 @@ const CANCEL_REASON_LABELS: Record<CancelReason, string> = {
   STOPPED: "Stopped",
   SUPERSEDED: "Superseded by another dispatch",
   SERVER_ERROR: "Server error",
+  ITS_REJECTED: "Simulated ITS controller rejected priority",
+  ITS_TIMEOUT: "Simulated ITS acknowledgement timed out",
+  ITS_HOLD_EXPIRED: "Simulated ITS priority hold expired",
 };
 
 /** A phase, refined by why a cancelled run ended: a user stop and a server failure read differently. */
