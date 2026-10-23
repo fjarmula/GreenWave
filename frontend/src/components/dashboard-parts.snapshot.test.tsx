@@ -94,3 +94,20 @@ describe("Green Wave workspace sheet", () => {
     expect(html).toContain("Initialize green corridor");
   });
 });
+
+describe("while a comparison owns the simulation", () => {
+  it("points back to the live comparison, not a recording", async () => {
+    const { simulationOperationSlot } = await import("@/lib/operation-slot");
+    transport.current = "mock";
+    phone.current = false;
+    simulationOperationSlot.acquire("comparison");
+    try {
+      const html = renderDashboard(initialSimulationState);
+      expect(html).toContain("A comparison owns the simulation.");
+      expect(html).toContain("Return to the comparison");
+      expect(html).not.toContain("recording");
+    } finally {
+      simulationOperationSlot.release("comparison");
+    }
+  });
+});

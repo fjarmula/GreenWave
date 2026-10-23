@@ -44,7 +44,7 @@ export function Dashboard({
   const operationOwner = useSyncExternalStore(
     simulationOperationSlot.subscribe,
     simulationOperationSlot.getOwner,
-    () => null,
+    simulationOperationSlot.getOwner,
   );
   const { simulationState, routeData, error } = simulation;
   const config = getFrontendConfig();
@@ -141,7 +141,7 @@ export function Dashboard({
         <p role="status" className="hud-alert tone-beacon m-4 block text-sm">
           A comparison owns the simulation.{" "}
           <Link className="underline" href="/compare">
-            Return to recording or cancel it
+            Return to the comparison
           </Link>
           .
         </p>
