@@ -11,7 +11,6 @@ from greenwave.api.dataset import router as dataset_router
 from greenwave.api.dispatch import router as dispatch_router
 from greenwave.api.simulation import router as simulation_router
 from greenwave.dataset import DatasetSettings, ProcessedDataset, load_dataset
-from greenwave.its import MockItsGateway
 from greenwave.places.address_index import AddressIndex
 from greenwave.routing.network_index import build_routing_index
 from greenwave.routing.station_ranking import build_station_nodes
@@ -64,9 +63,7 @@ def create_app(
         app.state.station_nodes = build_station_nodes(
             app.state.dataset.stations, app.state.routing_index
         )
-        app.state.session_manager = SessionManager(
-            app.state.routing_index, simulation_settings, MockItsGateway()
-        )
+        app.state.session_manager = SessionManager(app.state.routing_index, simulation_settings)
         try:
             yield
         finally:

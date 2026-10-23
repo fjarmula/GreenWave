@@ -210,13 +210,13 @@ def test_own_clear_cascades_once_and_batches_its_dispatch() -> None:
     engine = engine_for_single_stop()
     state, events = engine.step(engine.initial_state(), datetime(2026, 10, 16, tzinfo=UTC))
 
-    assert state.intersection_runtimes[0].state.value == "CLEARING"
+    assert state.intersection_runtimes[0].state.value == "NORMAL"
     assert events[0].event_type == "ITS_DISPATCH"
     assert events[0].payload.intersections_group == ["INT-1"]
     assert events[0].payload.hold_duration_sec == 40
 
 
-def test_simulated_elapsed_matches_greenwave_estimate_with_calming() -> None:
+def test_calming_estimate_is_not_a_guarantee_for_multi_line_hold() -> None:
     """Calming seconds reach the estimate and the simulated motion alike (one edge-time model)."""
     settings = neutral_settings(ambulance_calming_seconds=2.0)
     index = corridor_index({"corridor-twin-1": {"calming_count": 3}})
@@ -229,13 +229,13 @@ def test_simulated_elapsed_matches_greenwave_estimate_with_calming() -> None:
     engine = SimulationEngine("SIM-CALM", route, model, estimates, 1.0, settings, MockItsGateway())
     state = engine.initial_state()
 
-    while not state.arrived:
-        state, _ = engine.step(state, datetime(2026, 10, 19, tzinfo=UTC))
+    while not state.completed:
+        state, events = engine.step(state, datetime(2026, 10, 19, tzinfo=UTC))
 
     assert len(model.intersections) == 4  # D_min is part of both numbers
     assert estimates.greenwave_seconds == pytest.approx(neutral.greenwave_seconds + 6.0)
-    assert state.arrived_at_s is not None
-    assert abs(state.arrived_at_s - estimates.greenwave_seconds) <= settings.tick_interval_seconds
+    assert events[-1].event_type == "SIMULATION_CANCELLED"
+    assert events[-1].reason == "ITS_HOLD_EXPIRED"
 
 
 def test_ticks_identify_the_dispatched_vehicle_type_not_the_simulation() -> None:

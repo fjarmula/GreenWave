@@ -26,6 +26,9 @@ class _Engine:
     def __init__(self, *_: object) -> None:
         pass
 
+    def close(self) -> None:
+        pass
+
     def initial_state(self) -> SimpleNamespace:
         return SimpleNamespace(tick=0, completed=False)
 
