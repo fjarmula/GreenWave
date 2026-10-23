@@ -166,8 +166,62 @@ export function Dashboard({
     driver && routeData && simulationState === "RUNNING"
       ? nextSignal(routeData, simulation.liveTelemetry, isTelemetryStale(simulation))
       : null;
-  const driverSheet: WorkspaceSheet | undefined = !driver
-    ? undefined
+  const setupLabel =
+    selectedMode === "ENABLED" ? "Initialize green corridor" : "Start standard-traffic run";
+  // Green Wave and Standard use the sheet on phones only; desktop keeps the full inspector.
+  const workspaceSheet: WorkspaceSheet | undefined = !driver
+    ? mode === "setup"
+      ? {
+          snap,
+          onSnapChange: setSnap,
+          phoneOnly: true,
+          collapsed: (
+            <DriverSetupCard
+              dispatch={dispatch}
+              capabilities={dispatchAdapter.capabilities}
+              geocode={dispatchAdapter.geocode}
+              settings={settingsForMode(settings, selectedMode)}
+              detailsOpen={snap === "expanded"}
+              onToggleDetails={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
+              notices={notices}
+              pending={pending}
+              replacement={policy.requiresReplacement}
+              errorMessage={startErrorMessage}
+              onInitialize={() => initialize(settingsForMode(settings, selectedMode))}
+              startLabel={setupLabel}
+            />
+          ),
+          expanded: (
+            <DriverSetupDetails
+              dispatch={dispatch}
+              capabilities={dispatchAdapter.capabilities}
+              settings={settingsForMode(settings, selectedMode)}
+              onSettingsChange={setSettings}
+              stationsError={stationsError}
+              onFocusMap={() => setMapFocusRequest((request) => request + 1)}
+              previousRun={previousRun}
+            />
+          ),
+        }
+      : {
+          snap,
+          onSnapChange: setSnap,
+          phoneOnly: true,
+          // Running: telemetry and the one Stop. Ended: the outcome and the way back to setup.
+          collapsed:
+            simulationState === "RUNNING" ? (
+              <KpiHeader onStop={stopRun} />
+            ) : (
+              <RunSummary onBackToSetup={backToSetup} onStop={stopRun} showStop={false} />
+            ),
+          expanded: (
+            <div className="space-y-4 pt-1">
+              {simulationState !== "RUNNING" && <KpiHeader />}
+              <IntersectionList />
+              <ItsConsole />
+            </div>
+          ),
+        }
     : mode === "setup"
       ? {
           snap,
@@ -215,7 +269,7 @@ export function Dashboard({
 
   return (
     <WorkspaceShell
-      sheet={driverSheet}
+      sheet={workspaceSheet}
       status={
         driver && mode === "live" && simulationState === "RUNNING" ? (
           <div className="driver-overlay">

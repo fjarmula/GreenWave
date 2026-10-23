@@ -19,14 +19,17 @@ type RunSummaryProps = {
   onBackToSetup: () => void;
   /** Stops the live run; setup is offered only once the run has ended. */
   onStop: () => void;
+  /** False where another control (the phone sheet's telemetry strip) owns Stop. */
+  showStop?: boolean;
 };
 
 /** Live-run panel: Stop while running, then the completed summary, cancellation or lost stream. */
-export function RunSummary({ onBackToSetup, onStop }: RunSummaryProps) {
+export function RunSummary({ onBackToSetup, onStop, showStop = true }: RunSummaryProps) {
   const { simulationState, routeData, completion, cancelReason, error, stopRequested, stopError } =
     useSimulationState();
 
   if (simulationState === "RUNNING") {
+    if (!showStop) return null;
     return (
       <RunningRunControls stopRequested={stopRequested} stopError={stopError} onStop={onStop} />
     );

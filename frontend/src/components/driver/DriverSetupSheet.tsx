@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { CascadeToggle } from "@/components/hud/dispatch/CascadeToggle";
 import { IncidentInput } from "@/components/hud/dispatch/IncidentInput";
 import { PlaybackSpeedSelector } from "@/components/hud/dispatch/PlaybackSpeedSelector";
+import { PreviousRunCard } from "@/components/hud/dispatch/PreviousRunCard";
 import { PreflightEstimate } from "@/components/hud/dispatch/PreflightEstimate";
 import { StationRanking } from "@/components/hud/dispatch/StationRanking";
 import { TrafficDensityControl } from "@/components/hud/dispatch/TrafficDensityControl";
@@ -12,6 +13,7 @@ import { VehicleTypeControl } from "@/components/hud/dispatch/VehicleTypeControl
 import { getFrontendConfig } from "@/lib/config";
 import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import { settingsSummary } from "@/lib/driver-presentation";
+import type { PreviousRun } from "@/lib/previous-run";
 import type { DispatchSettings } from "@/lib/start-request";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
 
@@ -32,6 +34,7 @@ export function DriverSetupCard({
   replacement,
   errorMessage,
   onInitialize,
+  startLabel = "Initialize green corridor",
 }: {
   dispatch: IncidentDispatch;
   capabilities: DispatchAdapter["capabilities"];
@@ -45,6 +48,7 @@ export function DriverSetupCard({
   replacement: boolean;
   errorMessage: string | null;
   onInitialize: () => void;
+  startLabel?: string;
 }) {
   const { incident } = dispatch;
   const incidentKey = incident
@@ -84,11 +88,7 @@ export function DriverSetupCard({
         className={`hud-primary pressable mt-3 ${pending ? "disabled:cursor-wait" : "disabled:cursor-not-allowed"}`}
       >
         <Zap className="size-4" aria-hidden />
-        {pending
-          ? "Computing route…"
-          : replacement
-            ? "Replace active simulation"
-            : "Initialize green corridor"}
+        {pending ? "Computing route…" : replacement ? "Replace active simulation" : startLabel}
         <ArrowUpRight className="ml-auto size-4" aria-hidden />
       </button>
       {errorMessage && (
@@ -109,6 +109,7 @@ export function DriverSetupDetails({
   onSettingsChange,
   stationsError,
   onFocusMap,
+  previousRun = null,
 }: {
   dispatch: IncidentDispatch;
   capabilities: DispatchAdapter["capabilities"];
@@ -116,6 +117,7 @@ export function DriverSetupDetails({
   onSettingsChange: (settings: DispatchSettings) => void;
   stationsError: string | null;
   onFocusMap: () => void;
+  previousRun?: PreviousRun | null;
 }) {
   const update = (patch: Partial<DispatchSettings>) => onSettingsChange({ ...settings, ...patch });
   const isMockTransport = getFrontendConfig().transport === "mock";
@@ -151,11 +153,13 @@ export function DriverSetupDetails({
       <CascadeToggle
         enabled={settings.cascadeEnabled}
         onToggle={() => update({ cascadeEnabled: !settings.cascadeEnabled })}
+        disabled={settings.greenWaveMode === "DISABLED"}
       />
       <PlaybackSpeedSelector
         value={settings.playbackSpeed}
         onChange={(speed) => update({ playbackSpeed: speed })}
       />
+      {previousRun && <PreviousRunCard run={previousRun} />}
       <PreflightEstimate
         isMockTransport={isMockTransport}
         trafficDensity={settings.trafficDensity}

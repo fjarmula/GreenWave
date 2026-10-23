@@ -1213,7 +1213,7 @@ button,
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-@container (max-width: 20rem) {
+@container (max-width: 16rem) {
   .kpi-saved,
   .kpi-elapsed {
     grid-column: 1 / -1;

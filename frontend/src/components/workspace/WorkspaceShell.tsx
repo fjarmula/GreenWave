@@ -1,10 +1,10 @@
 "use client";
-import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, Maximize2, Minimize2, PanelRight } from "lucide-react";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { BottomSheet } from "@/components/workspace/BottomSheet";
 import type { SheetSnap } from "@/lib/sheet-physics";
-import { DESKTOP_MIN_WIDTH } from "@/lib/workspace-layout";
+import { useIsPhone } from "@/lib/useIsPhone";
 
 export type WorkspaceSheet = {
   snap: SheetSnap;
@@ -13,22 +13,9 @@ export type WorkspaceSheet = {
   expanded: ReactNode;
   /** Desktop disclosure label for the expanded content; omitted when the card toggles it. */
   detailsLabel?: string;
+  /** Desktop keeps the full `inspector` instead of the compact card. */
+  phoneOnly?: boolean;
 };
-
-const PHONE_QUERY = `(max-width: ${DESKTOP_MIN_WIDTH - 1}px)`;
-const subscribePhone = (onChange: () => void) => {
-  const query = window.matchMedia(PHONE_QUERY);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-};
-/** Phone layout by capability of the viewport; the server renders the desktop panel. */
-function useIsPhone() {
-  return useSyncExternalStore(
-    subscribePhone,
-    () => window.matchMedia(PHONE_QUERY).matches,
-    () => false,
-  );
-}
 
 export function WorkspaceShell({
   map,
@@ -42,7 +29,7 @@ export function WorkspaceShell({
 }: {
   map: ReactNode;
   status?: ReactNode;
-  /** Shown when there is no `sheet`. */
+  /** Shown when there is no `sheet` (or it is phone-only, on desktop). */
   inspector?: ReactNode;
   /** Phone: a draggable bottom sheet. Desktop: a compact floating card that expands. */
   sheet?: WorkspaceSheet;
@@ -78,13 +65,14 @@ export function WorkspaceShell({
     return () => window.removeEventListener("keydown", escape);
   }, [focus]);
   const panelHidden = focus || !details;
+  const desktopSheet = sheet && !sheet.phoneOnly ? sheet : undefined;
   return (
     <main
       className="workspace-shell"
       data-layout="map-first"
       data-focus={focus}
       data-details={details}
-      data-sheet={sheet ? sheet.snap : undefined}
+      data-sheet={sheet && (phone || !sheet.phoneOnly) ? sheet.snap : undefined}
     >
       <div className="workspace-map-slot" data-map-slot>
         {map}
@@ -124,35 +112,37 @@ export function WorkspaceShell({
           id="workspace-inspector"
           aria-label="Simulation details"
           className="workspace-inspector surface-glass"
-          data-compact={sheet ? true : undefined}
+          data-compact={desktopSheet ? true : undefined}
           hidden={panelHidden}
           inert={panelHidden}
           onKeyDown={(event) => {
-            if (!sheet || event.key !== "Escape" || sheet.snap !== "expanded") return;
+            if (!desktopSheet || event.key !== "Escape" || desktopSheet.snap !== "expanded") return;
             event.preventDefault();
             event.stopPropagation();
-            sheet.onSnapChange("collapsed");
+            desktopSheet.onSnapChange("collapsed");
           }}
         >
-          {sheet ? (
+          {desktopSheet ? (
             <>
-              {sheet.collapsed}
-              {sheet.detailsLabel && (
+              {desktopSheet.collapsed}
+              {desktopSheet.detailsLabel && (
                 <button
                   type="button"
                   className="sheet-disclosure"
-                  aria-expanded={sheet.snap === "expanded"}
+                  aria-expanded={desktopSheet.snap === "expanded"}
                   aria-controls={sheetDetailsId}
                   onClick={() =>
-                    sheet.onSnapChange(sheet.snap === "expanded" ? "collapsed" : "expanded")
+                    desktopSheet.onSnapChange(
+                      desktopSheet.snap === "expanded" ? "collapsed" : "expanded",
+                    )
                   }
                 >
-                  {sheet.detailsLabel}
+                  {desktopSheet.detailsLabel}
                   <ChevronDown aria-hidden />
                 </button>
               )}
-              <div id={sheetDetailsId} hidden={sheet.snap !== "expanded"}>
-                {sheet.snap === "expanded" && sheet.expanded}
+              <div id={sheetDetailsId} hidden={desktopSheet.snap !== "expanded"}>
+                {desktopSheet.snap === "expanded" && desktopSheet.expanded}
               </div>
             </>
           ) : (
