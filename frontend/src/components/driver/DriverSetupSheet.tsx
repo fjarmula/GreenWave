@@ -129,6 +129,8 @@ export function DriverSetupDetails({
         rankStatus={dispatch.rankStatus}
         rankError={dispatch.rankError}
         roadTimeRanking={capabilities.roadTimeRanking}
+        selectedStationId={dispatch.selectedStationId}
+        onSelect={dispatch.selectStation}
       />
       {stationsError && (
         <p role="alert" className="hud-alert tone-emergency mt-3">

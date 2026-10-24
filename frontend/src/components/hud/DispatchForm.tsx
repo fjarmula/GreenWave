@@ -97,6 +97,8 @@ export function DispatchForm({
         rankStatus={rankStatus}
         rankError={dispatch.rankError}
         roadTimeRanking={capabilities.roadTimeRanking}
+        selectedStationId={dispatch.selectedStationId}
+        onSelect={dispatch.selectStation}
       />
 
       {stationsError && (

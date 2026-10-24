@@ -1966,6 +1966,47 @@ button,
       min-height: 44px;
     }
   }
+  /* Station choice: native radios inside full-row labels. */
+  .station-choice {
+    display: grid;
+    min-width: 0;
+    gap: 0.25rem;
+  }
+  .station-choice-row {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-control);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease;
+  }
+  .station-choice-row[data-checked] {
+    border-color: color-mix(in srgb, var(--go) 30%, transparent);
+    background: color-mix(in srgb, var(--go) 8%, transparent);
+  }
+  .station-choice-row:has(:focus-visible) {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .station-choice-row:not([data-checked]):hover {
+      background: var(--tile);
+    }
+  }
+  @media (pointer: coarse) {
+    .station-choice-row {
+      min-height: 44px;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     .hud-switch > span {
       transition: none;
