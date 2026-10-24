@@ -1,11 +1,18 @@
 import networkx as nx
 import pytest
+from tests.support.route_fixtures import PARK_CENTRE, corridor_index, park_index, position_at
 
-from greenwave.routing.access import AccessNode, access_nodes, best_access, seeded_lengths
+from greenwave.routing.access import (
+    AccessNode,
+    EdgeWeight,
+    access_nodes,
+    best_access,
+    seeded_lengths,
+)
 from greenwave.routing.errors import DestinationOffNetwork
+from greenwave.routing.network_index import RoutingIndex
 from greenwave.routing.planner import edge_weight
 from greenwave.simulation_settings import SimulationSettings
-from tests.support.route_fixtures import PARK_CENTRE, corridor_index, park_index, position_at
 
 SETTINGS = SimulationSettings()
 
@@ -26,12 +33,12 @@ def test_limit_is_inclusive() -> None:
     assert [n.node_key for n in accepted] == ["s-mid"]
     with pytest.raises(
         DestinationOffNetwork,
-        match="^Incident is farther than 800 m on foot from any vehicle access point$",
+        match=r"^Incident is farther than 800 m on foot from any vehicle access point$",
     ):
         access_nodes(park_index(), position_at(x, y - reach - 0.01), SETTINGS)
 
 
-def _weight(index):  # noqa: ANN001, ANN202 - the networkx callback shape
+def _weight(index: RoutingIndex) -> EdgeWeight:
     return lambda _source, _target, data: edge_weight(index, data, SETTINGS)
 
 
