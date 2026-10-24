@@ -4,6 +4,9 @@ A reversed Dijkstra from the incident gives every station's motion time with the
 ``plan_route`` minimises; the best ``dispatch_shortlist_size`` then get the real pipeline
 (``plan_route``, route model, ``estimate_times``), so the displayed time is the preflight one.
 The shortlist is a speed cut: per-intersection delay can reorder stations beyond it.
+
+An incident off the network seeds that Dijkstra at every access node with its walking time, so
+the shortlist already orders by drive + walk; candidates are sorted by the same total.
 """
 
 import logging
@@ -11,13 +14,24 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-import networkx as nx
 import polars as pl
 
-from greenwave.routing.errors import NoRoute, NoStationReachable, OriginOffNetwork
+from greenwave.routing.access import AccessNode, access_nodes, seeded_lengths
+from greenwave.routing.errors import (
+    DestinationOffNetwork,
+    NoRoute,
+    NoStationReachable,
+    OriginOffNetwork,
+)
 from greenwave.routing.estimates import estimate_times
 from greenwave.routing.network_index import RoutingIndex
-from greenwave.routing.planner import SnappedRouteEndpoint, edge_weight, plan_route, snap_endpoint
+from greenwave.routing.planner import (
+    PlannedRoute,
+    SnappedRouteEndpoint,
+    edge_weight,
+    plan_route,
+    snap_endpoint,
+)
 from greenwave.schemas import Position, Station, VehicleType
 from greenwave.simulation.route_model import build_route_model
 from greenwave.simulation_settings import SimulationSettings
@@ -38,6 +52,12 @@ class RankedStation:
     station: Station
     greenwave_seconds: float
     distance_m: float
+    on_foot: AccessNode | None = None
+
+    @property
+    def total_seconds(self) -> float:
+        """Drive estimate plus the walk from the access node; the ranking order."""
+        return self.greenwave_seconds + (self.on_foot.on_foot_seconds if self.on_foot else 0.0)
 
 
 @dataclass(frozen=True)
@@ -80,23 +100,31 @@ def rank_stations(
     settings: SimulationSettings,
 ) -> StationRanking:
     """Raises ``DestinationOffNetwork`` or ``NoStationReachable``."""
-    incident_snap = snap_endpoint(index, incident, origin=False)
+    incident_snap: SnappedRouteEndpoint | None
+    try:
+        incident_snap = snap_endpoint(index, incident, origin=False)
+        seeds = {incident_snap.node_key: 0.0}
+    except DestinationOffNetwork:
+        # Off the network: every access node within walking reach starts at its walking time.
+        incident_snap = None
+        seeds = {n.node_key: n.on_foot_seconds for n in access_nodes(index, incident, settings)}
+    incident_node = incident_snap.node_key if incident_snap else None
     of_type = [s for s in stations if s.station.vehicle_type == vehicle_type]
     at_incident = sorted(
-        (s.station for s in of_type if s.node_key == incident_snap.node_key),
+        (s.station for s in of_type if s.node_key == incident_node),
         key=lambda station: station.station_id,
     )
-    motion = nx.single_source_dijkstra_path_length(
+    motion = seeded_lengths(
         index.graph.reverse(copy=False),
-        incident_snap.node_key,
-        weight=lambda _source, _target, data: edge_weight(index, data, settings),
+        seeds,
+        lambda _source, _target, data: edge_weight(index, data, settings),
     )
     shortlist = sorted(
-        (s for s in of_type if s.node_key != incident_snap.node_key and s.node_key in motion),
+        (s for s in of_type if s.node_key != incident_node and s.node_key in motion),
         key=lambda s: (motion[s.node_key], s.station.station_id),
     )[: settings.dispatch_shortlist_size]
 
-    ranked: list[RankedStation] = []
+    ranked: list[tuple[RankedStation, PlannedRoute]] = []
     for node in shortlist:
         try:
             route = plan_route(index, node.station.position, incident, settings)
@@ -104,14 +132,16 @@ def rank_stations(
             continue
         model = build_route_model(route, index, settings, False)
         estimates = estimate_times(route, model, 1.0, settings)
-        ranked.append(
-            RankedStation(node.station, estimates.greenwave_seconds, route.total_distance_m)
+        candidate = RankedStation(
+            node.station, estimates.greenwave_seconds, route.total_distance_m, route.on_foot
         )
+        ranked.append((candidate, route))
     if not ranked:
         raise NoStationReachable(f"no {vehicle_type.value} station can reach the incident")
-    ranked.sort(key=lambda r: (r.greenwave_seconds, r.station.station_id))
+    ranked.sort(key=lambda item: (item[0].total_seconds, item[0].station.station_id))
     return StationRanking(
-        incident_snap=incident_snap,
-        candidates=tuple(ranked[:MAX_CANDIDATES]),
+        # Off the network, the incident "snaps" to the fastest candidate's access node.
+        incident_snap=incident_snap or ranked[0][1].destination_snap,
+        candidates=tuple(candidate for candidate, _ in ranked[:MAX_CANDIDATES]),
         station_at_incident=at_incident[0] if at_incident else None,
     )

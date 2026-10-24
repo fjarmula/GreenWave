@@ -2,9 +2,12 @@ import logging
 
 import pytest
 from tests.support.route_fixtures import (
+    PARK_CENTRE,
     branch_index,
     corridor_index,
     corridor_stations,
+    park_index,
+    park_stations,
     position_at,
     stations_frame,
 )
@@ -13,7 +16,7 @@ from greenwave.its import MockItsGateway
 from greenwave.routing.errors import DestinationOffNetwork, NoRoute, NoStationReachable
 from greenwave.routing.estimates import estimate_times
 from greenwave.routing.network_index import RoutingIndex
-from greenwave.routing.planner import plan_route
+from greenwave.routing.planner import PlannedRoute, plan_route
 from greenwave.routing.station_ranking import StationNode, build_station_nodes, rank_stations
 from greenwave.schemas import Position, SimulationStartRequest, VehicleType
 from greenwave.simulation.assembly import plan_simulation
@@ -178,3 +181,56 @@ def test_unsnappable_station_skipped_with_warning(caplog: pytest.LogCaptureFixtu
 
     assert [n.station.station_id for n in nodes] == ["STN-A-0001"]
     assert "STN-A-0002" in caplog.text
+
+
+# --- Off-road incidents: drive + walk ---------------------------------------------------------
+
+PARK = position_at(*PARK_CENTRE)
+
+
+def _total(route: PlannedRoute) -> float:
+    assert route.on_foot is not None
+    model = build_route_model(route, park_index(), SETTINGS, False)
+    return (
+        estimate_times(route, model, 1.0, SETTINGS).greenwave_seconds
+        + route.on_foot.on_foot_seconds
+    )
+
+
+def test_off_road_orders_by_total() -> None:
+    index = park_index()
+    ranking = rank_stations(
+        index, build_station_nodes(park_stations(), index), PARK, VehicleType.AMBULANCE, SETTINGS
+    )
+    assert [c.station.station_id for c in ranking.candidates] == ["STN-A-0002", "STN-A-0001"]
+    assert [c.on_foot.node_key for c in ranking.candidates if c.on_foot] == ["s-mid", "n-mid"]
+    assert ranking.incident_snap.node_key == "s-mid"
+    assert ranking.station_at_incident is None
+    totals = [
+        c.greenwave_seconds + c.on_foot.on_foot_seconds for c in ranking.candidates if c.on_foot
+    ]
+    assert totals == sorted(totals)
+
+
+def test_off_road_matches_brute_force() -> None:
+    index = park_index()
+    nodes = build_station_nodes(park_stations(), index)
+    ranking = rank_stations(index, nodes, PARK, VehicleType.AMBULANCE, SETTINGS)
+    brute = min(
+        nodes,
+        key=lambda n: _total(plan_route(index, n.station.position, PARK, SETTINGS)),
+    )
+    assert ranking.candidates[0].station == brute.station
+
+
+def test_unreachable_access_nodes_skip_the_station() -> None:
+    index = park_index(trap=True)
+    trapped = stations_frame(("STN-A-0003", "AMBULANCE", _X + 500, _Y - 900))
+    stations = build_station_nodes(park_stations().vstack(trapped), index)
+    ranking = rank_stations(index, stations, PARK, VehicleType.AMBULANCE, SETTINGS)
+    assert "STN-A-0003" not in [c.station.station_id for c in ranking.candidates]
+    assert len(ranking.candidates) == 2
+    with pytest.raises(NoStationReachable):
+        rank_stations(
+            index, build_station_nodes(trapped, index), PARK, VehicleType.AMBULANCE, SETTINGS
+        )
