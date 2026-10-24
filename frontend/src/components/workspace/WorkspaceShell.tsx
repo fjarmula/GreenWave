@@ -77,9 +77,11 @@ export function WorkspaceShell({
     >
       <div className="workspace-map-slot" data-map-slot>
         {map}
-        <span className="workspace-provenance">{provenance}</span>
+        <span className="workspace-provenance" data-map-occluder>
+          {provenance}
+        </span>
       </div>
-      <header className="workspace-header" hidden={focus} inert={focus}>
+      <header className="workspace-header" data-map-occluder hidden={focus} inert={focus}>
         {header}
         <div className="workspace-actions">
           <ThemeToggle />
@@ -115,6 +117,7 @@ export function WorkspaceShell({
           id="workspace-inspector"
           aria-label="Simulation details"
           className="workspace-inspector surface-glass"
+          data-map-occluder
           data-compact={desktopSheet ? true : undefined}
           hidden={panelHidden}
           inert={panelHidden}
@@ -154,7 +157,7 @@ export function WorkspaceShell({
         </aside>
       )}
       {status && (
-        <div className="workspace-driver-status" hidden={focus} inert={focus}>
+        <div className="workspace-driver-status" data-map-occluder hidden={focus} inert={focus}>
           {status}
         </div>
       )}
@@ -162,6 +165,7 @@ export function WorkspaceShell({
         <button
           ref={exit}
           className="workspace-button workspace-float workspace-exit"
+          data-map-occluder
           onClick={() => changeFocus(false)}
         >
           <Minimize2 aria-hidden />

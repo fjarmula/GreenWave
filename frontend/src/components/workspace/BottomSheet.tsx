@@ -176,6 +176,7 @@ export function BottomSheet({
       ref={sheet}
       aria-label={label}
       className="bottom-sheet surface-glass"
+      data-map-occluder
       data-snap={snap}
       data-measured={travel !== null}
       style={{ transform: `translate3d(0, ${translateFor(snap)}px, 0)` }}

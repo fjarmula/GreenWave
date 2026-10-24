@@ -141,7 +141,6 @@ export function MapContainer({
           origin={origin}
           destination={destination}
           focusRequest={focusRequest}
-          live={live}
           fitToEndpoints={!(live && routeData)}
           startRequest={startRequest}
           routeData={routeData}
@@ -168,7 +167,10 @@ export function MapContainer({
         />
       </div>
       {live && routeData && (
-        <div className="workspace-camera-controls absolute top-3 left-3 z-20 flex flex-wrap gap-2">
+        <div
+          className="workspace-camera-controls absolute top-3 left-3 z-20 flex flex-wrap gap-2"
+          data-map-occluder
+        >
           <button className="workspace-button workspace-float" onClick={camera.showRoute}>
             <Route aria-hidden />
             Show route

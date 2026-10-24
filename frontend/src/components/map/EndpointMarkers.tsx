@@ -17,7 +17,6 @@ type EndpointMarkersProps = {
   origin: MapEndpoint | null;
   destination: MapEndpoint | null;
   focusRequest: number;
-  live: boolean;
   /** False once a route is shown: the map then fits the route instead of the endpoints. */
   fitToEndpoints: boolean;
   startRequest: SimulationStartRequest | null;
@@ -37,7 +36,6 @@ export function EndpointMarkers({
   origin,
   destination,
   focusRequest,
-  live,
   fitToEndpoints,
   startRequest,
   routeData,
@@ -63,20 +61,10 @@ export function EndpointMarkers({
     appliedFocusRequest.current = focusRequest;
     applyEndpointFit(map, {
       points,
-      live,
       focusRequested,
       reduceMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     });
-  }, [
-    destinationLat,
-    destinationLng,
-    fitToEndpoints,
-    focusRequest,
-    live,
-    map,
-    originLat,
-    originLng,
-  ]);
+  }, [destinationLat, destinationLng, fitToEndpoints, focusRequest, map, originLat, originLng]);
 
   useEffect(() => {
     if (!map || !startRequest) return;
