@@ -67,10 +67,8 @@ async def _started[T](start: Awaitable[T]) -> T | JSONResponse:
         return error_response(
             422, ErrorCode.ORIGIN_OFF_NETWORK, "origin is outside the routable network"
         )
-    except DestinationOffNetwork:
-        return error_response(
-            422, ErrorCode.DESTINATION_OFF_NETWORK, "destination is outside the routable network"
-        )
+    except DestinationOffNetwork as error:
+        return error_response(422, ErrorCode.DESTINATION_OFF_NETWORK, str(error))
     except NoRoute:
         return error_response(
             422, ErrorCode.NO_ROUTE, "no route exists between the snapped endpoints"

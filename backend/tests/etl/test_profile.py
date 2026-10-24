@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 import shapely
 
+from greenwave.etl.config import EMERGENCY_ACCESS_VALUES
 from greenwave.etl.manifest import (
     MANIFEST_FILENAME,
     InputIntegrityError,
@@ -13,7 +14,7 @@ from greenwave.etl.manifest import (
     verify_raw_inputs,
     write_manifest,
 )
-from greenwave.etl.profile_osm import scan_osm
+from greenwave.etl.profile_osm import is_access_way, scan_osm
 from greenwave.etl.profile_roads import analyse_roads, tag_present
 from greenwave.etl.profile_signals import analyse_signals
 from tests.support.osm_fixtures import line, point, write_osm
@@ -230,3 +231,81 @@ def test_scan_collects_tram_lines(tmp_path: Path) -> None:
     )
     scan = scan_osm(path)
     assert scan.tram_lines == [[(19.90, 50.05), (19.91, 50.05)]]
+
+
+# --- Access ways: tracks and emergency-tagged ways routable for emergency vehicles ----------
+
+_A = [(19.90, 50.05), (19.901, 50.05)]
+
+
+def test_scan_collects_access_ways_separately(tmp_path: Path) -> None:
+    path = write_osm(
+        tmp_path,
+        line(_A, highway="track"),
+        line(_A, highway="track", tracktype="grade5"),
+        line(_A, highway="track", access="private"),
+        line(_A, highway="pedestrian", emergency="designated"),
+        line(_A, highway="footway", emergency="yes"),
+        line(_A, highway="residential", emergency="yes"),
+        line(_A, highway="primary"),
+    )
+    scan = scan_osm(path)
+    assert [w.highway for w in scan.access_ways] == ["track", "pedestrian"]
+    assert [w.highway for w in scan.drivable_ways] == ["residential", "primary"]
+
+
+def test_emergency_override_keeps_the_profile_count(tmp_path: Path) -> None:
+    scan = scan_osm(write_osm(tmp_path, line(_A, highway="service", access="no", emergency="yes")))
+    assert scan.drivable_excluded_by_access == 1
+    assert len(scan.access_ways) == 1
+    assert scan.drivable_ways == []
+
+
+def test_motor_vehicle_is_not_consulted(tmp_path: Path) -> None:
+    scan = scan_osm(
+        write_osm(tmp_path, line(_A, highway="track", motor_vehicle="no", tracktype="grade2"))
+    )
+    assert [w.highway for w in scan.access_ways] == ["track"]
+
+
+@pytest.mark.parametrize(
+    ("tracktype", "expected"),
+    [
+        (None, True),
+        ("grade1", True),
+        ("grade2", True),
+        ("grade3", True),
+        ("grade4", False),
+        ("grade5", False),
+    ],
+)
+def test_is_access_way_track_grades(tracktype: str | None, expected: bool) -> None:
+    properties: dict[str, object] = {} if tracktype is None else {"tracktype": tracktype}
+    assert is_access_way("track", properties) is expected
+
+
+@pytest.mark.parametrize("access", ["private", "no"])
+def test_is_access_way_rejects_closed_tracks(access: str) -> None:
+    assert is_access_way("track", {"access": access}) is False
+
+
+@pytest.mark.parametrize("emergency", sorted(EMERGENCY_ACCESS_VALUES))
+@pytest.mark.parametrize("highway", ["service", "pedestrian", "track", "residential"])
+def test_is_access_way_emergency_values(emergency: str, highway: str) -> None:
+    properties: dict[str, object] = {"emergency": emergency, "access": "no"}
+    if highway == "track":
+        properties["tracktype"] = "grade5"
+    assert is_access_way(highway, properties) is True
+
+
+@pytest.mark.parametrize("emergency", ["no", "destination", None])
+def test_is_access_way_ignores_other_emergency_values(emergency: str | None) -> None:
+    properties: dict[str, object] = {"access": "no"}
+    if emergency is not None:
+        properties["emergency"] = emergency
+    assert is_access_way("pedestrian", properties) is False
+
+
+@pytest.mark.parametrize("highway", ["footway", "path", "steps", "cycleway"])
+def test_is_access_way_never_opens_footways(highway: str) -> None:
+    assert is_access_way(highway, {"emergency": "yes"}) is False

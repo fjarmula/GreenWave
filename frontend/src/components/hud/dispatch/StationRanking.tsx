@@ -1,8 +1,11 @@
 import { Info, LoaderCircle, TriangleAlert } from "lucide-react";
+import { useId } from "react";
 
+import { formatSignalDistance } from "@/lib/driver-presentation";
 import { formatMinutesSeconds } from "@/lib/format-duration";
+import { candidateTotalSeconds } from "@/lib/station-choice";
 import { SOURCE_KIND_LABELS } from "@/lib/station-copy";
-import type { RankStatus } from "@/lib/useIncidentDispatch";
+import { selectedCandidate, type RankStatus } from "@/lib/useIncidentDispatch";
 import type { DispatchRankResponse, RankedCandidate } from "@/types/telemetry";
 
 type StationRankingProps = {
@@ -11,6 +14,8 @@ type StationRankingProps = {
   rankError: string | null;
   /** False in mock mode: the choice is straight-line nearest, without road times. */
   roadTimeRanking: boolean;
+  selectedStationId: string | null;
+  onSelect: (stationId: string) => void;
 };
 
 export function StationRanking({
@@ -18,7 +23,10 @@ export function StationRanking({
   rankStatus,
   rankError,
   roadTimeRanking,
+  selectedStationId,
+  onSelect,
 }: StationRankingProps) {
+  const name = useId();
   if (rankStatus === "loading") {
     return (
       <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
@@ -43,7 +51,8 @@ export function StationRanking({
     );
   }
 
-  const [winner, ...runnersUp] = ranking.candidates;
+  const [fastest] = ranking.candidates;
+  const selectedId = selectedCandidate({ ranking, selectedStationId })?.station.station_id;
   return (
     <div className="mt-4 space-y-2" aria-live="polite">
       {ranking.station_at_incident && (
@@ -52,60 +61,93 @@ export function StationRanking({
           fastest.
         </p>
       )}
-      <div className="rounded-xl border border-go/30 bg-go/8 p-3">
-        <div className="flex items-center justify-between gap-2">
-          <p className="dashboard-eyebrow">Dispatching from</p>
+      <fieldset className="station-choice">
+        <legend className="flex w-full items-center justify-between gap-2 pb-1.5">
+          <span className="dashboard-eyebrow">Dispatch from</span>
           {!roadTimeRanking && (
             <span className="hud-chip tone-caution text-2xs">Approximate (mock)</span>
           )}
-        </div>
-        <CandidateRow candidate={winner} roadTimeRanking={roadTimeRanking} emphasis />
-      </div>
-      {runnersUp.length > 0 && (
-        <ol className="space-y-1.5 px-1" aria-label="Runners-up">
-          {runnersUp.map((candidate) => (
-            <li key={candidate.station.station_id}>
-              <CandidateRow candidate={candidate} roadTimeRanking={roadTimeRanking} />
-            </li>
-          ))}
-        </ol>
-      )}
+        </legend>
+        {ranking.candidates.map((candidate) => (
+          <CandidateRow
+            key={candidate.station.station_id}
+            name={name}
+            candidate={candidate}
+            fastest={fastest}
+            checked={candidate.station.station_id === selectedId}
+            roadTimeRanking={roadTimeRanking}
+            onSelect={onSelect}
+          />
+        ))}
+      </fieldset>
     </div>
   );
 }
 
 function CandidateRow({
+  name,
   candidate,
+  fastest,
+  checked,
   roadTimeRanking,
-  emphasis = false,
+  onSelect,
 }: {
+  name: string;
   candidate: RankedCandidate;
+  fastest: RankedCandidate;
+  checked: boolean;
   roadTimeRanking: boolean;
-  emphasis?: boolean;
+  onSelect: (stationId: string) => void;
 }) {
   const { station } = candidate;
+  const isFastest = candidate === fastest;
   return (
-    <div className="mt-1 flex items-baseline justify-between gap-3">
-      <div className="min-w-0">
-        <p
-          className={`truncate ${emphasis ? "text-sm font-semibold" : "text-xs"}`}
-          title={station.name}
-        >
-          {station.name}
-        </p>
-        <p className="text-2xs text-muted-foreground">{SOURCE_KIND_LABELS[station.source_kind]}</p>
-      </div>
-      <span
-        className={`shrink-0 font-mono ${
-          emphasis
-            ? "hud-value text-sm font-semibold text-go"
-            : "hud-value text-xs text-muted-foreground"
-        }`}
-      >
-        {roadTimeRanking
-          ? formatMinutesSeconds(Math.round(candidate.greenwave_seconds))
-          : `${(candidate.distance_m / 1000).toFixed(1)} km`}
+    <label className="station-choice-row" data-checked={checked || undefined}>
+      <input
+        type="radio"
+        className="sr-only"
+        name={name}
+        value={station.station_id}
+        checked={checked}
+        onChange={() => onSelect(station.station_id)}
+      />
+      <span className="min-w-0 flex-1">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span
+            className={`min-w-0 truncate text-sm ${checked ? "font-semibold" : "font-medium"}`}
+            title={station.name}
+          >
+            {station.name}
+          </span>
+          {isFastest && <span className="hud-chip tone-go shrink-0 text-2xs">Fastest</span>}
+        </span>
+        <span className="block text-2xs text-muted-foreground">
+          {SOURCE_KIND_LABELS[station.source_kind]}
+        </span>
       </span>
-    </div>
+      <span className="shrink-0 text-right">
+        <span
+          className={`hud-value block font-mono text-sm ${
+            checked ? "font-semibold text-go" : "text-muted-foreground"
+          }`}
+        >
+          {roadTimeRanking
+            ? formatMinutesSeconds(Math.round(candidateTotalSeconds(candidate)))
+            : `${(candidate.distance_m / 1000).toFixed(1)} km`}
+        </span>
+        {candidate.on_foot && (
+          <span className="block text-2xs text-muted-foreground">
+            incl. {formatSignalDistance(candidate.on_foot.distance_m)} on foot
+          </span>
+        )}
+        {!isFastest && (
+          <span className="block font-mono text-2xs text-muted-foreground">
+            {roadTimeRanking
+              ? `+${Math.round(candidateTotalSeconds(candidate) - candidateTotalSeconds(fastest))} s`
+              : `+${((candidate.distance_m - fastest.distance_m) / 1000).toFixed(1)} km`}
+          </span>
+        )}
+      </span>
+    </label>
   );
 }

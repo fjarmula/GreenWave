@@ -1,5 +1,5 @@
 import { Settings2, Square } from "lucide-react";
-import { etaSeconds, savedPill } from "@/lib/driver-presentation";
+import { etaSeconds, formatSignalDistance, savedPill } from "@/lib/driver-presentation";
 import type { SimulationState } from "@/lib/simulation-state";
 import { isTelemetryStale } from "@/lib/simulation-state";
 import { VEHICLE_NAMES } from "@/lib/station-copy";
@@ -35,9 +35,12 @@ export function DriverStatus({
   const status = RUN_STATUS_LABELS[runStatusKey(state.simulationState, state.cancelReason)];
 
   if (!running) {
+    const onFoot = state.routeData?.destination_on_foot;
     const detail =
       state.simulationState === "FINISHED" && state.completion
-        ? `Arrived in ${formatDuration(state.completion.kpi_metrics.total_time_elapsed_sec)}`
+        ? onFoot
+          ? `Arrived at access point in ${formatDuration(state.completion.kpi_metrics.total_time_elapsed_sec)} · ${formatSignalDistance(onFoot.distance_m)} on foot`
+          : `Arrived in ${formatDuration(state.completion.kpi_metrics.total_time_elapsed_sec)}`
         : state.cancelReason === "STOPPED" || state.cancelReason === "SERVER_ERROR"
           ? status
           : state.cancelReason

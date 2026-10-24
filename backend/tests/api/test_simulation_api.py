@@ -115,3 +115,36 @@ def test_compare_start_rejects_an_active_id(layout: Layout) -> None:
     assert conflict.status_code == 409
     assert ErrorResponse.model_validate(conflict.json()).error_code == "SIMULATION_ID_IN_USE"
     assert duplicate.status_code == 422
+
+
+OFF_ROAD = {"lat": 50.004, "lng": 19.902}  # see test_dispatch_api.OFF_ROAD
+
+
+def test_start_off_road_returns_destination_on_foot(layout: Layout) -> None:
+    with TestClient(
+        create_app(processed_dir=layout.processed, manifest_path=layout.manifest)
+    ) as client:
+        body = client.post(
+            "/api/v1/simulation/start", json={**_request(), "destination": OFF_ROAD}
+        ).json()
+        leg = body["destination_on_foot"]
+        assert leg["distance_m"] > 0
+        assert leg["access_point"] == body["destination_snapped"]["position"]
+        assert body["destination_snapped"]["snap_distance_m"] > 150
+        on_road = client.post("/api/v1/simulation/start", json=_request("SIM-road")).json()
+        assert on_road["destination_on_foot"] is None
+
+
+def test_comparison_members_share_the_access_node(layout: Layout) -> None:
+    with TestClient(
+        create_app(processed_dir=layout.processed, manifest_path=layout.manifest)
+    ) as client:
+        response = client.post(
+            "/api/v1/simulation/compare/start", json=_comparison(destination=OFF_ROAD)
+        )
+        assert response.status_code == 200
+        body = response.json()
+        enabled, disabled = body["enabled"], body["disabled"]
+        assert enabled["destination_on_foot"] is not None
+        assert enabled["destination_on_foot"] == disabled["destination_on_foot"]
+        assert enabled["destination_snapped"] == disabled["destination_snapped"]

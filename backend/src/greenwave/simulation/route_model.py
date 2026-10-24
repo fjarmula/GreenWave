@@ -9,6 +9,7 @@ from greenwave.routing.network_index import RoutingIndex, SignalApproachRef
 from greenwave.routing.planner import PlannedRoute
 from greenwave.schemas.simulation import (
     GreenWaveMode,
+    OnFootLeg,
     Position,
     RouteGeometry,
     SignalMovementKind,
@@ -154,4 +155,13 @@ def to_start_response(
             snap_distance_m=route.destination_snap.snap_distance_m,
         ),
         green_wave_mode=green_wave_mode,
+        destination_on_foot=(
+            OnFootLeg(
+                access_point=route.destination_snap.position,
+                distance_m=route.on_foot.on_foot_m,
+                seconds=route.on_foot.on_foot_seconds,
+            )
+            if route.on_foot
+            else None
+        ),
     )

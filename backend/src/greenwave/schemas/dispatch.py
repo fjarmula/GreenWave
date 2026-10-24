@@ -8,7 +8,13 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from greenwave.schemas.simulation import Position, SchemaVersion, SnappedEndpoint, VehicleType
+from greenwave.schemas.simulation import (
+    OnFootLeg,
+    Position,
+    SchemaVersion,
+    SnappedEndpoint,
+    VehicleType,
+)
 
 STATION_ID_PATTERN = r"^STN-[AFP]-\d{4}$"
 
@@ -56,6 +62,9 @@ class RankedCandidate(BaseModel):
     station: Station
     greenwave_seconds: Annotated[float, Field(ge=0.0)]  # the preflight green-wave estimate
     distance_m: Annotated[float, Field(ge=0.0)]  # route length
+    # Off-road incident: the walk from this station's access point; candidates are ordered by
+    # greenwave_seconds + on_foot.seconds.
+    on_foot: OnFootLeg | None = None
 
 
 class DispatchRankResponse(BaseModel):

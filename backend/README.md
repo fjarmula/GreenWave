@@ -74,6 +74,14 @@ uv run python scripts/road_attribute_evidence.py --profile mild \
   --set normal_single_lane_factor=1.1 --set ambulance_bus_lane_factor=1.1
 ```
 
+The routable network also contains **access ways**: usable tracks (`highway=track` not closed by
+`access=private|no`, with `tracktype` absent or `grade1`-`grade3`) and ways tagged
+`emergency=yes|designated|official` whose `highway` is a drivable class, `track` or `pedestrian`
+(whatever their `access` tag). The scan keeps them in their own list, so the T1 profile's drivable
+count is unchanged, and `prepare_scan` merges them before welding. Their class speeds (`track`
+15 km/h, `pedestrian` 10 km/h) and the selection rules are uncalibrated placeholders in
+`etl/config.py`. Footways, paths and steps never become access ways.
+
 Three more steps exist as decision aids: `draft-overrides` (drafts the override file, never
 overwrites an existing one), `roundabouts` (an inventory report) and `cluster-map` (a check page). See the docstring of
 `scripts/run_etl.py` for what each step writes.

@@ -2,7 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import { SimulationAdapterError } from "@/lib/transport/errors";
-import { createIncidentDispatch, pinnedIncident, type Incident } from "@/lib/useIncidentDispatch";
+import {
+  createIncidentDispatch,
+  describeRankError,
+  pinnedIncident,
+  selectedCandidate,
+  type Incident,
+} from "@/lib/useIncidentDispatch";
 import type { DispatchRankRequest, DispatchRankResponse } from "@/types/telemetry";
 
 type Pending = {
@@ -51,6 +57,23 @@ const ranking = (stationId: string): DispatchRankResponse => ({
   ],
   station_at_incident: null,
 });
+
+const candidate = (stationId: string, seconds: number) => ({
+  station: {
+    station_id: stationId,
+    vehicle_type: "AMBULANCE" as const,
+    source_kind: "ambulance_base" as const,
+    name: stationId,
+    position: { lat: 50, lng: 19.9 },
+  },
+  greenwave_seconds: seconds,
+  distance_m: 900,
+});
+
+const threeStations: DispatchRankResponse = {
+  ...ranking("A"),
+  candidates: [candidate("A", 120), candidate("B", 150), candidate("C", 200)],
+};
 
 describe("createIncidentDispatch", () => {
   it("starts idle with an ambulance and no incident, without ranking", () => {
@@ -143,7 +166,7 @@ describe("createIncidentDispatch", () => {
   });
 
   it.each([
-    ["DESTINATION_OFF_NETWORK", "Location is off the road network"],
+    ["DESTINATION_OFF_NETWORK", "No vehicle access within 800 m of this location"],
     ["NO_STATION_REACHABLE", "No station of this type can reach this location"],
   ] as const)("test_error_copy: %s", async (code, copy) => {
     const { adapter, calls } = deferredAdapter();
@@ -186,6 +209,76 @@ describe("createIncidentDispatch", () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
+  it("selects the fastest by default", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(threeStations);
+    await flush();
+
+    expect(dispatch.getState().selectedStationId).toBeNull();
+    expect(selectedCandidate(dispatch.getState())?.station.station_id).toBe("A");
+  });
+
+  it("selects another candidate", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(threeStations);
+    await flush();
+    dispatch.selectStation("B");
+
+    expect(dispatch.getState().selectedStationId).toBe("B");
+    expect(selectedCandidate(dispatch.getState())?.station.station_id).toBe("B");
+  });
+
+  it("ignores unknown station ids", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(threeStations);
+    await flush();
+    const before = dispatch.getState();
+    const listener = vi.fn();
+    dispatch.subscribe(listener);
+    dispatch.selectStation("Z");
+
+    expect(dispatch.getState()).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("resets selection on every re-rank", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(threeStations);
+    await flush();
+    dispatch.selectStation("B");
+    dispatch.setIncident(incident(50.1));
+    expect(dispatch.getState().selectedStationId).toBeNull();
+    calls[1].resolve(threeStations);
+    await flush();
+    expect(dispatch.getState().selectedStationId).toBeNull();
+
+    dispatch.selectStation("C");
+    dispatch.setVehicleType("FIRE_TRUCK");
+    expect(dispatch.getState().selectedStationId).toBeNull();
+    calls[2].resolve(threeStations);
+    await flush();
+    expect(dispatch.getState().selectedStationId).toBeNull();
+  });
+
+  it("falls back to the fastest", () => {
+    expect(
+      selectedCandidate({ ranking: threeStations, selectedStationId: "gone" })?.station.station_id,
+    ).toBe("A");
+    expect(selectedCandidate({ ranking: null, selectedStationId: null })).toBeNull();
+  });
+
   it("dispose aborts the request in flight", () => {
     const { adapter, calls } = deferredAdapter();
     const dispatch = createIncidentDispatch(adapter);
@@ -204,5 +297,17 @@ describe("pinnedIncident", () => {
       label: "Pinned 50.0614, 19.9366",
       source: "map",
     });
+  });
+});
+
+describe("describeRankError", () => {
+  it("explains an incident beyond walking reach of any vehicle access", () => {
+    const error = new SimulationAdapterError({
+      kind: "http",
+      status: 422,
+      code: "DESTINATION_OFF_NETWORK",
+      message: "Incident is farther than 800 m on foot from any vehicle access point",
+    });
+    expect(describeRankError(error)).toBe("No vehicle access within 800 m of this location");
   });
 });

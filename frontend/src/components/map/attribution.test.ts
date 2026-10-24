@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { collapseCompactAttribution } from "@/components/map/attribution";
+import { DATA_ATTRIBUTION } from "@/components/map/useMaplibreMap";
 
 function fakeAttribution(classes: string[], open: boolean) {
   const classList = new Set(classes);
@@ -40,5 +41,11 @@ describe("collapseCompactAttribution", () => {
 
   it("tolerates a map without attribution", () => {
     expect(() => collapseCompactAttribution({ querySelector: () => null })).not.toThrow();
+  });
+});
+
+describe("DATA_ATTRIBUTION", () => {
+  it("leaves the simulation disclaimer to the provenance chip", () => {
+    expect(DATA_ATTRIBUTION.join(" ").toLowerCase()).not.toContain("simulated");
   });
 });

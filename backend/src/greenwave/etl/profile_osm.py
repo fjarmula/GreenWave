@@ -12,7 +12,10 @@ from shapely.geometry import shape
 from shapely.validation import explain_validity
 
 from greenwave.etl.config import (
+    ACCESS_TRACK_TRACKTYPES,
     DRIVABLE_HIGHWAY_VALUES,
+    EMERGENCY_ACCESS_VALUES,
+    EMERGENCY_EXTRA_HIGHWAY_VALUES,
     EXCLUDED_ACCESS_VALUES,
     SAMPLE_LIMIT,
 )
@@ -56,6 +59,8 @@ class OsmScan:
     highway_tagged_polygons: int = 0
     drivable_excluded_by_access: int = 0
     drivable_ways: list[DrivableWay] = field(default_factory=list)
+    # Tracks and emergency-tagged ways that are not drivable ways (config "Access ways").
+    access_ways: list[DrivableWay] = field(default_factory=list)
     signal_nodes: list[PointFeature] = field(default_factory=list)
     signal_features_not_points: int = 0
     # Points tagged crossing=traffic_signals that are not also highway=traffic_signals.
@@ -155,23 +160,39 @@ def _validate_non_point(scan: OsmScan, feature: OsmFeature) -> shapely.Geometry 
     return cast("shapely.Geometry", geometry)
 
 
+def is_access_way(highway: str, properties: dict[str, object]) -> bool:
+    """A usable track, or a drivable/track/pedestrian way tagged for emergency vehicles."""
+    if tag(properties, "emergency") in EMERGENCY_ACCESS_VALUES and (
+        highway in DRIVABLE_HIGHWAY_VALUES or highway in EMERGENCY_EXTRA_HIGHWAY_VALUES
+    ):
+        return True
+    if highway != "track" or tag(properties, "access") in EXCLUDED_ACCESS_VALUES:
+        return False
+    tracktype = tag(properties, "tracktype")
+    return tracktype is None or tracktype in ACCESS_TRACK_TRACKTYPES
+
+
+def _drivable_way(feature: OsmFeature, highway: str) -> DrivableWay:
+    raw = cast("list[list[float]]", feature.coordinates)
+    return DrivableWay(
+        line_number=feature.line_number,
+        highway=highway,
+        coordinates=[(float(c[0]), float(c[1])) for c in raw],
+        properties=feature.properties,
+    )
+
+
 def _handle_linestring_with_highway(scan: OsmScan, feature: OsmFeature, highway: str) -> None:
     scan.linestrings_with_highway += 1
     scan.highway_value_counts[highway] += 1
-    if highway not in DRIVABLE_HIGHWAY_VALUES:
-        return
-    if tag(feature.properties, "access") in EXCLUDED_ACCESS_VALUES:
+    if highway in DRIVABLE_HIGHWAY_VALUES:
+        if tag(feature.properties, "access") not in EXCLUDED_ACCESS_VALUES:
+            scan.drivable_ways.append(_drivable_way(feature, highway))
+            return
+        # Still counted: the T1 profile measures the drivable definition, not access ways.
         scan.drivable_excluded_by_access += 1
-        return
-    raw = cast("list[list[float]]", feature.coordinates)
-    scan.drivable_ways.append(
-        DrivableWay(
-            line_number=feature.line_number,
-            highway=highway,
-            coordinates=[(float(c[0]), float(c[1])) for c in raw],
-            properties=feature.properties,
-        )
-    )
+    if is_access_way(highway, feature.properties):
+        scan.access_ways.append(_drivable_way(feature, highway))
 
 
 def _scan_point(scan: OsmScan, feature: OsmFeature, highway: str | None) -> None:

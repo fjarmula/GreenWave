@@ -45,6 +45,8 @@ type MapContainerProps = {
   runnerUpIds: string[];
   /** Setup only: a click picks the incident. Ignored while a run is live. */
   onMapClick: (position: Position) => void;
+  /** Driver mode labels only the next junctions, by street; other workspaces label every one. */
+  signalLabels?: "full" | "driver";
 };
 
 export function MapContainer({
@@ -58,6 +60,7 @@ export function MapContainer({
   chosenStationId,
   runnerUpIds,
   onMapClick,
+  signalLabels = "full",
 }: MapContainerProps) {
   const liveState = useSimulationState();
   const { routeData, liveTelemetry, startRequest, simulationState, connection } = selectMapState(
@@ -73,6 +76,7 @@ export function MapContainer({
     map,
     live ? routeData : null,
     live && simulationState === "RUNNING" && !telemetryStale,
+    startRequest?.destination ?? null,
   );
   const showWake = useVehicleWake(
     map,
@@ -141,7 +145,6 @@ export function MapContainer({
           origin={origin}
           destination={destination}
           focusRequest={focusRequest}
-          live={live}
           fitToEndpoints={!(live && routeData)}
           startRequest={startRequest}
           routeData={routeData}
@@ -165,10 +168,14 @@ export function MapContainer({
           intersections={liveTelemetry?.intersections ?? NO_INTERSECTIONS}
           phases={liveTelemetry?.signal_phases ?? NO_SIGNAL_PHASES}
           theme={theme}
+          labels={signalLabels}
         />
       </div>
       {live && routeData && (
-        <div className="workspace-camera-controls absolute top-3 left-3 z-20 flex flex-wrap gap-2">
+        <div
+          className="workspace-camera-controls absolute top-3 left-3 z-20 flex flex-wrap gap-2"
+          data-map-occluder
+        >
           <button className="workspace-button workspace-float" onClick={camera.showRoute}>
             <Route aria-hidden />
             Show route

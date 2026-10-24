@@ -37,6 +37,18 @@ DRIVABLE_HIGHWAY_VALUES: frozenset[str] = frozenset(
 )
 EXCLUDED_ACCESS_VALUES: frozenset[str] = frozenset({"private", "no"})
 
+# Access ways: extra ways an emergency vehicle may use beyond the drivable set. They are kept
+# apart from the drivable ways (the T1 profile is unchanged) and merged before welding.
+# PLACEHOLDER 2026-10-24 (human requested tracks and emergency ways; uncalibrated):
+# a usable track is unpaved-but-firm (tracktype grade1-3 or untagged) and not closed by access;
+ACCESS_TRACK_TRACKTYPES: frozenset[str] = frozenset({"grade1", "grade2", "grade3"})
+# PLACEHOLDER 2026-10-24 (human requested tracks and emergency ways; uncalibrated):
+# an emergency tag opens a way whatever its access tag;
+EMERGENCY_ACCESS_VALUES: frozenset[str] = frozenset({"yes", "designated", "official"})
+# PLACEHOLDER 2026-10-24 (human requested tracks and emergency ways; uncalibrated):
+# classes an emergency tag may open beyond the drivable ones (never footways, paths or steps).
+EMERGENCY_EXTRA_HIGHWAY_VALUES: frozenset[str] = frozenset({"track", "pedestrian"})
+
 # Radii the profile evaluates for signal clustering. These are measurements, not the chosen
 # `SIGNAL_CLUSTER_RADIUS_METERS` (decision 2).
 CLUSTER_PROBE_RADII_METERS: tuple[float, ...] = (15.0, 30.0, 50.0)
@@ -148,6 +160,9 @@ CLASS_DEFAULT_SPEED_KMH: dict[str, int] = {
     "living_street": 20,
     "road": 50,
     "service": 30,
+    # PLACEHOLDER 2026-10-24 (human requested tracks and emergency ways; uncalibrated).
+    "track": 15,
+    "pedestrian": 10,
 }
 
 # Analysis only (not approved as a modelling rule): how close a signal node must be to a

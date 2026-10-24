@@ -9,6 +9,7 @@ from greenwave.api.simulation import error_response
 from greenwave.places.address_index import AddressIndex
 from greenwave.routing.errors import DestinationOffNetwork, NoStationReachable
 from greenwave.routing.network_index import RoutingIndex
+from greenwave.routing.planner import node_position
 from greenwave.routing.station_ranking import StationNode, rank_stations
 from greenwave.schemas import (
     DispatchRankRequest,
@@ -16,6 +17,7 @@ from greenwave.schemas import (
     ErrorCode,
     ErrorResponse,
     GeocodeResponse,
+    OnFootLeg,
     RankedCandidate,
     SnappedEndpoint,
     StationsResponse,
@@ -74,16 +76,15 @@ def rank(body: DispatchRankRequest, request: Request) -> DispatchRankResponse | 
             body.vehicle_type,
             cast(SimulationSettings, request.app.state.simulation_settings),
         )
-    except DestinationOffNetwork:
-        return error_response(
-            422, ErrorCode.DESTINATION_OFF_NETWORK, "incident is outside the routable network"
-        )
+    except DestinationOffNetwork as error:
+        return error_response(422, ErrorCode.DESTINATION_OFF_NETWORK, str(error))
     except NoStationReachable:
         return error_response(
             422,
             ErrorCode.NO_STATION_REACHABLE,
             f"no {body.vehicle_type.value} station can reach the incident",
         )
+    index = cast(RoutingIndex, request.app.state.routing_index)
     return DispatchRankResponse(
         schema_version="1.0",
         incident_snapped=SnappedEndpoint(
@@ -92,7 +93,16 @@ def rank(body: DispatchRankRequest, request: Request) -> DispatchRankResponse | 
         ),
         candidates=[
             RankedCandidate(
-                station=c.station, greenwave_seconds=c.greenwave_seconds, distance_m=c.distance_m
+                station=c.station,
+                greenwave_seconds=c.greenwave_seconds,
+                distance_m=c.distance_m,
+                on_foot=OnFootLeg(
+                    access_point=node_position(index, c.on_foot.node_key),
+                    distance_m=c.on_foot.on_foot_m,
+                    seconds=c.on_foot.on_foot_seconds,
+                )
+                if c.on_foot
+                else None,
             )
             for c in ranking.candidates
         ],

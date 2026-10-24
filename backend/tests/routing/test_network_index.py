@@ -21,12 +21,31 @@ def test_settings_rejects_priority_after_clearing() -> None:
         ("ambulance_min_speed_kmh", -1),
         ("speed_ema_alpha", 0),
         ("speed_ema_alpha", 1.01),
+        ("max_on_foot_meters", 0),
+        ("on_foot_detour_factor", 0.9),
+        ("on_foot_speed_meters_per_second", 0),
     ],
 )
 def test_settings_reject_invalid_ranges(field: str, value: float) -> None:
     """Negative timing/distance/speed values and invalid EMA weights are unsafe."""
     with pytest.raises(ValidationError):
         SimulationSettings(**{field: value})
+
+
+def test_settings_on_foot_defaults() -> None:
+    settings = SimulationSettings()
+    assert settings.max_on_foot_meters == 800
+    assert settings.on_foot_detour_factor == 1.3
+    assert settings.on_foot_speed_meters_per_second == 1.4
+
+
+def test_nodes_within_sorts_and_limits() -> None:
+    from tests.support.route_fixtures import PARK_CENTRE, park_index
+
+    nearby = park_index().nodes_within(*PARK_CENTRE, 615)
+    assert [key for key, _ in nearby] == ["s-mid", "n-mid"]
+    assert [distance for _, distance in nearby] == pytest.approx([400, 500])
+    assert park_index().nodes_within(*PARK_CENTRE, 399) == ()
 
 
 def test_index_resolves_dataset_approaches_intersections_and_nearby_nodes(tiny_dataset) -> None:

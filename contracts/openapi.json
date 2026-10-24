@@ -547,6 +547,31 @@
         "title": "KpiMetrics",
         "type": "object"
       },
+      "OnFootLeg": {
+        "description": "The walk from the vehicle's access point to an incident off the routable network.",
+        "properties": {
+          "access_point": {
+            "$ref": "#/components/schemas/Position"
+          },
+          "distance_m": {
+            "minimum": 0.0,
+            "title": "Distance M",
+            "type": "number"
+          },
+          "seconds": {
+            "minimum": 0.0,
+            "title": "Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "access_point",
+          "distance_m",
+          "seconds"
+        ],
+        "title": "OnFootLeg",
+        "type": "object"
+      },
       "Position": {
         "properties": {
           "lat": {
@@ -666,6 +691,16 @@
             "minimum": 0.0,
             "title": "Greenwave Seconds",
             "type": "number"
+          },
+          "on_foot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OnFootLeg"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "station": {
             "$ref": "#/components/schemas/Station"
@@ -978,6 +1013,16 @@
       },
       "SimulationStartResponse": {
         "properties": {
+          "destination_on_foot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OnFootLeg"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "destination_snapped": {
             "$ref": "#/components/schemas/SnappedEndpoint"
           },

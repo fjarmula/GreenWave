@@ -19,7 +19,7 @@ export function RaceBar({
   tickMilliseconds: number;
 }) {
   return (
-    <section className="race-bar surface-glass" aria-label="Race along the route">
+    <section className="race-bar surface-glass" aria-label="Race along the route" data-map-occluder>
       <div className="race-bar-head">
         <p className="race-bar-readout" role="status">
           {raceReadout(standing)}
