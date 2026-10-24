@@ -300,6 +300,7 @@ export function Dashboard({
           origin={origin}
           destination={destination}
           focusRequest={mapFocusRequest}
+          signalLabels={driver ? "driver" : "full"}
           {...mapProps}
         />
       }

@@ -45,6 +45,8 @@ type MapContainerProps = {
   runnerUpIds: string[];
   /** Setup only: a click picks the incident. Ignored while a run is live. */
   onMapClick: (position: Position) => void;
+  /** Driver mode labels only the next junctions, by street; other workspaces label every one. */
+  signalLabels?: "full" | "driver";
 };
 
 export function MapContainer({
@@ -58,6 +60,7 @@ export function MapContainer({
   chosenStationId,
   runnerUpIds,
   onMapClick,
+  signalLabels = "full",
 }: MapContainerProps) {
   const liveState = useSimulationState();
   const { routeData, liveTelemetry, startRequest, simulationState, connection } = selectMapState(
@@ -164,6 +167,7 @@ export function MapContainer({
           intersections={liveTelemetry?.intersections ?? NO_INTERSECTIONS}
           phases={liveTelemetry?.signal_phases ?? NO_SIGNAL_PHASES}
           theme={theme}
+          labels={signalLabels}
         />
       </div>
       {live && routeData && (

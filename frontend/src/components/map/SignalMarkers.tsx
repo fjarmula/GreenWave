@@ -15,6 +15,7 @@ import {
   type PhaseMarkerLayout,
   type SignalPhaseLayer,
 } from "@/lib/signal-phase-layer";
+import { distinctStreetName, upcomingIntersectionIds } from "@/lib/driver-signal-labels";
 import { isCascadeClearing, signalVisual } from "@/lib/signal-visuals";
 import type {
   IntersectionTelemetry,
@@ -57,6 +58,12 @@ function createPhaseMarker(map: Map, item: PhaseMarkerLayout): PhaseMarkerHandle
 
 const NO_PHASES: SignalPhaseIndicator[] = [];
 
+const FULL_LABEL_CLASS =
+  "absolute top-1/2 left-full ml-2 -translate-y-1/2 whitespace-nowrap surface-glass rounded-full! px-2 py-0.5 font-mono text-[10px] text-foreground";
+// Driver labels: a short street name, one line; the dot colour carries the state.
+const DRIVER_LABEL_CLASS =
+  "absolute top-1/2 left-full ml-2 -translate-y-1/2 max-w-[11rem] truncate whitespace-nowrap surface-glass rounded-full! px-2 py-0.5 font-sans text-[11px] font-medium text-foreground";
+
 type SignalMarkersProps = {
   map: Map | null;
   visible: boolean;
@@ -69,6 +76,8 @@ type SignalMarkersProps = {
    */
   phases: SignalPhaseIndicator[];
   theme: ResolvedTheme;
+  /** "driver": only the next junctions get a label, their distinguishing street name. */
+  labels?: "full" | "driver";
 };
 
 export function SignalMarkers({
@@ -78,6 +87,7 @@ export function SignalMarkers({
   intersections,
   phases,
   theme,
+  labels = "full",
 }: SignalMarkersProps) {
   const markers = useRef(new globalThis.Map<string, Marker>());
   const phaseLayer = useRef<SignalPhaseLayer | null>(null);
@@ -91,6 +101,10 @@ export function SignalMarkers({
         detailed,
       ),
     [intersections, shownPhases, detailed],
+  );
+  const upcoming = useMemo(
+    () => (labels === "driver" ? upcomingIntersectionIds(intersections) : null),
+    [labels, intersections],
   );
 
   useEffect(() => {
@@ -140,23 +154,32 @@ export function SignalMarkers({
         const dot = document.createElement("span");
         dot.className = "map-lamp";
         const label = document.createElement("span");
-        label.className =
-          "absolute top-1/2 left-full ml-2 -translate-y-1/2 whitespace-nowrap surface-glass rounded-full! px-2 py-0.5 font-mono text-[10px] text-foreground";
         element.append(dot, label);
         marker = new Marker({ element, anchor: "center" }).setLngLat(coordinates).addTo(map);
         currentMarkers.set(intersection.id, marker);
       }
       marker.setLngLat(coordinates);
-      const labels = coarseMarkerLabels(intersection, isCascadeClearing(intersection), detailed);
+      const markerLabels = coarseMarkerLabels(
+        intersection,
+        isCascadeClearing(intersection),
+        detailed,
+      );
       const element = marker.getElement();
-      element.setAttribute("aria-label", labels.ariaLabel);
+      element.setAttribute("aria-label", markerLabels.ariaLabel);
       const dot = element.firstElementChild as HTMLElement;
       dot.style.backgroundColor = signalColor(intersection, mapPalette(theme));
       dot.toggleAttribute("data-halo", signalVisual(intersection).halo);
       const label = element.lastElementChild as HTMLElement;
-      label.textContent = labels.text;
+      const text = upcoming
+        ? upcoming.has(intersection.id)
+          ? (distinctStreetName(intersection.id, routeIntersections) ?? "")
+          : ""
+        : markerLabels.text;
+      label.className = upcoming ? DRIVER_LABEL_CLASS : FULL_LABEL_CLASS;
+      label.textContent = text;
+      label.hidden = !text;
     });
-  }, [map, visible, dotIds, detailed, routeIntersections, intersections, theme]);
+  }, [map, visible, dotIds, detailed, routeIntersections, intersections, theme, upcoming]);
 
   return null;
 }
