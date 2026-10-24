@@ -424,6 +424,17 @@ export interface components {
             /** Total Time Elapsed Sec */
             total_time_elapsed_sec: number;
         };
+        /**
+         * OnFootLeg
+         * @description The walk from the vehicle's access point to an incident off the routable network.
+         */
+        OnFootLeg: {
+            access_point: components["schemas"]["Position"];
+            /** Distance M */
+            distance_m: number;
+            /** Seconds */
+            seconds: number;
+        };
         /** Position */
         Position: {
             /** Lat */
@@ -471,6 +482,7 @@ export interface components {
             distance_m: number;
             /** Greenwave Seconds */
             greenwave_seconds: number;
+            on_foot?: components["schemas"]["OnFootLeg"] | null;
             station: components["schemas"]["Station"];
         };
         /** RouteGeometry */
@@ -608,6 +620,7 @@ export interface components {
         };
         /** SimulationStartResponse */
         SimulationStartResponse: {
+            destination_on_foot?: components["schemas"]["OnFootLeg"] | null;
             destination_snapped: components["schemas"]["SnappedEndpoint"];
             /** Estimated Greenwave Time Sec */
             estimated_greenwave_time_sec: number;

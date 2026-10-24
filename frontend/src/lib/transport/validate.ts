@@ -171,6 +171,15 @@ function snappedEndpoint(value: unknown, path: string): void {
   finite(endpoint.snap_distance_m, `${path}.snap_distance_m`);
 }
 
+/** An optional on-foot leg (off-road incident): absent, `null`, or a valid leg. */
+function optionalOnFootLeg(value: unknown, path: string): void {
+  if (value === undefined || value === null) return;
+  const leg = record(value, path);
+  position(leg.access_point, `${path}.access_point`);
+  nonNegative(leg.distance_m, `${path}.distance_m`);
+  nonNegative(leg.seconds, `${path}.seconds`);
+}
+
 /** Throws `TypeError` naming the first offending field. */
 export function parseStartResponse(value: unknown): SimulationStartResponse {
   const body = record(value, "response");
@@ -212,6 +221,7 @@ export function parseStartResponse(value: unknown): SimulationStartResponse {
   });
   snappedEndpoint(body.origin_snapped, "origin_snapped");
   snappedEndpoint(body.destination_snapped, "destination_snapped");
+  optionalOnFootLeg(body.destination_on_foot, "destination_on_foot");
   member(GREEN_WAVE_MODES, body.green_wave_mode, "green_wave_mode");
   return body as SimulationStartResponse;
 }
@@ -419,6 +429,7 @@ export function validateRank(body: unknown): DispatchRankResponse {
     station(candidate.station, `${path}.station`);
     nonNegative(candidate.greenwave_seconds, `${path}.greenwave_seconds`);
     nonNegative(candidate.distance_m, `${path}.distance_m`);
+    optionalOnFootLeg(candidate.on_foot, `${path}.on_foot`);
   });
   if (response.station_at_incident !== null) {
     station(response.station_at_incident, "station_at_incident");

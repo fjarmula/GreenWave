@@ -82,6 +82,11 @@ def _edge_key(index: RoutingIndex, edge_id: str, settings: SimulationSettings) -
     return ambulance_edge_seconds(index.edge(edge_id), settings), edge_id
 
 
+def node_position(index: RoutingIndex, node_key: str) -> Position:
+    node = index.graph.nodes[node_key]
+    return Position(lat=float(node["lat"]), lng=float(node["lon"]))
+
+
 def snap_endpoint(index: RoutingIndex, position: Position, origin: bool) -> SnappedRouteEndpoint:
     xy = project_points(
         np.array([position.lng], dtype=np.float64), np.array([position.lat], dtype=np.float64)
@@ -92,10 +97,9 @@ def snap_endpoint(index: RoutingIndex, position: Position, origin: bool) -> Snap
         label = "Origin" if origin else "Destination"
         raise error(f"{label} is farther than the configured snap limit from the routable network")
     node_key, distance_m = snapped
-    node = index.graph.nodes[node_key]
     return SnappedRouteEndpoint(
         node_key=node_key,
-        position=Position(lat=float(node["lat"]), lng=float(node["lon"])),
+        position=node_position(index, node_key),
         snap_distance_m=distance_m,
     )
 
@@ -117,10 +121,9 @@ def snap_access_endpoint(
     best = best_access(lengths, nodes, exclude=origin_node)
     if best is None:
         raise NoRoute("no vehicle access point is reachable")
-    node = index.graph.nodes[best.node_key]
     snap = SnappedRouteEndpoint(
         node_key=best.node_key,
-        position=Position(lat=float(node["lat"]), lng=float(node["lon"])),
+        position=node_position(index, best.node_key),
         snap_distance_m=best.straight_m,
     )
     return snap, best

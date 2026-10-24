@@ -390,3 +390,10 @@ def test_comparison_member_carries_mode_and_id() -> None:
     assert enabled.model_dump(exclude=shared) == request.model_dump(
         exclude={"enabled_simulation_id", "disabled_simulation_id"}
     )
+
+
+def test_start_response_destination_on_foot_defaults_to_none() -> None:
+    from greenwave.schemas import SimulationStartResponse
+
+    assert SimulationStartResponse.model_fields["destination_on_foot"].default is None
+    assert not SimulationStartResponse.model_fields["destination_on_foot"].is_required()

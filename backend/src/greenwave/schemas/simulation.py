@@ -116,6 +116,14 @@ class SnappedEndpoint(BaseModel):
     snap_distance_m: Annotated[float, Field(ge=0.0)]
 
 
+class OnFootLeg(BaseModel):
+    """The walk from the vehicle's access point to an incident off the routable network."""
+
+    access_point: Position
+    distance_m: Annotated[float, Field(ge=0.0)]  # straight line x detour factor
+    seconds: Annotated[float, Field(ge=0.0)]
+
+
 class RouteIntersection(BaseModel):
     id: str
     name: str | None
@@ -142,6 +150,9 @@ class SimulationStartResponse(BaseModel):
     origin_snapped: SnappedEndpoint
     destination_snapped: SnappedEndpoint
     green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED  # the mode this run uses
+    # Set when the incident is off the network: the run ends at destination_snapped (the access
+    # point) and the crew walks this leg; the estimates cover the drive only.
+    destination_on_foot: OnFootLeg | None = None
 
 
 class ComparisonStartRequest(BaseModel):
