@@ -56,8 +56,10 @@ function dispatchState(patch: Partial<IncidentDispatch> = {}): IncidentDispatch 
     ranking: RANKING,
     rankStatus: "ready",
     rankError: null,
+    selectedStationId: null,
     setVehicleType: () => undefined,
     setIncident: () => undefined,
+    selectStation: () => {},
     ...patch,
   };
 }

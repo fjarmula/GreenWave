@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import { SimulationAdapterError } from "@/lib/transport/errors";
-import { createIncidentDispatch, pinnedIncident, type Incident } from "@/lib/useIncidentDispatch";
+import {
+  createIncidentDispatch,
+  pinnedIncident,
+  selectedCandidate,
+  type Incident,
+} from "@/lib/useIncidentDispatch";
 import type { DispatchRankRequest, DispatchRankResponse } from "@/types/telemetry";
 
 type Pending = {
@@ -51,6 +56,23 @@ const ranking = (stationId: string): DispatchRankResponse => ({
   ],
   station_at_incident: null,
 });
+
+const candidate = (stationId: string, seconds: number) => ({
+  station: {
+    station_id: stationId,
+    vehicle_type: "AMBULANCE" as const,
+    source_kind: "ambulance_base" as const,
+    name: stationId,
+    position: { lat: 50, lng: 19.9 },
+  },
+  greenwave_seconds: seconds,
+  distance_m: 900,
+});
+
+const threeStations: DispatchRankResponse = {
+  ...ranking("A"),
+  candidates: [candidate("A", 120), candidate("B", 150), candidate("C", 200)],
+};
 
 describe("createIncidentDispatch", () => {
   it("starts idle with an ambulance and no incident, without ranking", () => {
@@ -184,6 +206,76 @@ describe("createIncidentDispatch", () => {
     dispatch.setVehicleType("POLICE_CAR");
 
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("selects the fastest by default", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(threeStations);
+    await flush();
+
+    expect(dispatch.getState().selectedStationId).toBeNull();
+    expect(selectedCandidate(dispatch.getState())?.station.station_id).toBe("A");
+  });
+
+  it("selects another candidate", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(threeStations);
+    await flush();
+    dispatch.selectStation("B");
+
+    expect(dispatch.getState().selectedStationId).toBe("B");
+    expect(selectedCandidate(dispatch.getState())?.station.station_id).toBe("B");
+  });
+
+  it("ignores unknown station ids", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(threeStations);
+    await flush();
+    const before = dispatch.getState();
+    const listener = vi.fn();
+    dispatch.subscribe(listener);
+    dispatch.selectStation("Z");
+
+    expect(dispatch.getState()).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("resets selection on every re-rank", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(threeStations);
+    await flush();
+    dispatch.selectStation("B");
+    dispatch.setIncident(incident(50.1));
+    expect(dispatch.getState().selectedStationId).toBeNull();
+    calls[1].resolve(threeStations);
+    await flush();
+    expect(dispatch.getState().selectedStationId).toBeNull();
+
+    dispatch.selectStation("C");
+    dispatch.setVehicleType("FIRE_TRUCK");
+    expect(dispatch.getState().selectedStationId).toBeNull();
+    calls[2].resolve(threeStations);
+    await flush();
+    expect(dispatch.getState().selectedStationId).toBeNull();
+  });
+
+  it("falls back to the fastest", () => {
+    expect(
+      selectedCandidate({ ranking: threeStations, selectedStationId: "gone" })?.station.station_id,
+    ).toBe("A");
+    expect(selectedCandidate({ ranking: null, selectedStationId: null })).toBeNull();
   });
 
   it("dispose aborts the request in flight", () => {

@@ -2,7 +2,13 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 
 import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import { toSimulationErrorInfo } from "@/lib/transport/errors";
-import type { DispatchRankResponse, ErrorCode, Position, VehicleType } from "@/types/telemetry";
+import type {
+  DispatchRankResponse,
+  ErrorCode,
+  Position,
+  RankedCandidate,
+  VehicleType,
+} from "@/types/telemetry";
 
 export type Incident = { position: Position; label: string; source: "address" | "map" };
 
@@ -23,7 +29,21 @@ export type IncidentDispatchState = {
   ranking: DispatchRankResponse | null;
   rankStatus: RankStatus;
   rankError: string | null;
+  /** The dispatcher's pick; `null` means the fastest. Every re-rank resets it. */
+  selectedStationId: string | null;
 };
+
+/** The candidate the run starts from: the dispatcher's pick, else the fastest. */
+export function selectedCandidate(
+  state: Pick<IncidentDispatchState, "ranking" | "selectedStationId">,
+): RankedCandidate | null {
+  const candidates = state.ranking?.candidates ?? [];
+  return (
+    candidates.find((candidate) => candidate.station.station_id === state.selectedStationId) ??
+    candidates[0] ??
+    null
+  );
+}
 
 const RANK_ERROR_COPY: Partial<Record<ErrorCode, string>> = {
   DESTINATION_OFF_NETWORK: "Location is off the road network",
@@ -47,6 +67,7 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
     ranking: null,
     rankStatus: "idle",
     rankError: null,
+    selectedStationId: null,
   };
   const listeners = new Set<() => void>();
   let sequence = 0;
@@ -62,13 +83,25 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
     inFlight = null;
     const next = { ...state, ...patch };
     if (next.incident === null) {
-      update({ ...patch, ranking: null, rankStatus: "idle", rankError: null });
+      update({
+        ...patch,
+        ranking: null,
+        rankStatus: "idle",
+        rankError: null,
+        selectedStationId: null,
+      });
       return;
     }
     const current = ++sequence;
     const controller = new AbortController();
     inFlight = controller;
-    update({ ...patch, ranking: null, rankStatus: "loading", rankError: null });
+    update({
+      ...patch,
+      ranking: null,
+      rankStatus: "loading",
+      rankError: null,
+      selectedStationId: null,
+    });
     adapter
       .rank({ incident: next.incident.position, vehicle_type: next.vehicleType }, controller.signal)
       .then(
@@ -96,6 +129,11 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
     },
     setVehicleType: (vehicleType: VehicleType) => rank({ vehicleType }),
     setIncident: (incident: Incident | null) => rank({ incident }),
+    /** Picks a listed candidate; an ID outside the current ranking is ignored. */
+    selectStation(stationId: string) {
+      if (!state.ranking?.candidates.some((c) => c.station.station_id === stationId)) return;
+      update({ selectedStationId: stationId });
+    },
     /** Aborts the request in flight; the controller stays usable. */
     dispose() {
       sequence += 1;
@@ -108,11 +146,17 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
 export type IncidentDispatch = IncidentDispatchState & {
   setVehicleType: (vehicleType: VehicleType) => void;
   setIncident: (incident: Incident | null) => void;
+  selectStation: (stationId: string) => void;
 };
 
 export function useIncidentDispatch(adapter: DispatchAdapter): IncidentDispatch {
   const [dispatch] = useState(() => createIncidentDispatch(adapter));
   const state = useSyncExternalStore(dispatch.subscribe, dispatch.getState, dispatch.getState);
   useEffect(() => () => dispatch.dispose(), [dispatch]);
-  return { ...state, setVehicleType: dispatch.setVehicleType, setIncident: dispatch.setIncident };
+  return {
+    ...state,
+    setVehicleType: dispatch.setVehicleType,
+    setIncident: dispatch.setIncident,
+    selectStation: dispatch.selectStation,
+  };
 }
