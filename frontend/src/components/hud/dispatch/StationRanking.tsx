@@ -109,10 +109,10 @@ function CandidateRow({
         checked={checked}
         onChange={() => onSelect(station.station_id)}
       />
-      <span className="min-w-0">
-        <span className="flex items-center gap-1.5">
+      <span className="min-w-0 flex-1">
+        <span className="flex min-w-0 items-center gap-1.5">
           <span
-            className={`truncate text-sm ${checked ? "font-semibold" : "font-medium"}`}
+            className={`min-w-0 truncate text-sm ${checked ? "font-semibold" : "font-medium"}`}
             title={station.name}
           >
             {station.name}

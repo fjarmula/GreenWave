@@ -62,7 +62,7 @@ describe("StationRanking", () => {
   it("keeps each truncated station name readable in full on hover", () => {
     const markup = render();
     for (const name of ["SP ZOZ MSW", "5. Wojskowy", "KPR"]) {
-      expect(markup).toMatch(new RegExp(`<span class="truncate[^"]*" title="${name}">`));
+      expect(markup).toMatch(new RegExp(`<span class="[^"]*truncate[^"]*" title="${name}">`));
     }
   });
 
