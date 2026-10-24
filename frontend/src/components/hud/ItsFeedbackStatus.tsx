@@ -21,7 +21,7 @@ export function ItsFeedbackStatus({
   if (observedAt == null)
     return <p className="mt-2 text-xs text-muted-foreground">ITS feedback unavailable</p>;
   return (
-    <div className="mt-2 space-y-1 text-[10px] text-muted-foreground">
+    <div className="mt-2 space-y-1 text-2xs text-muted-foreground">
       <p>
         {request ? labels[request.status] : "No priority request"} ·{" "}
         {ended ? "Last simulated controller report" : "Simulated controller reports"}{" "}

@@ -1,11 +1,12 @@
 "use client";
 
-import { ArrowDown, Square, TriangleAlert } from "lucide-react";
+import { ArrowDown, CircleCheck, Navigation, Square, TriangleAlert } from "lucide-react";
 import { VehicleIcon } from "@/components/map/VehicleIcon";
 import { VEHICLE_ICON_COLORS } from "@/components/map/vehicle-icons";
 import { RUN_OUTCOME_TEXT } from "@/components/hud/run-status-tone";
 import { useSimulationState } from "@/components/simulation-provider";
 import type { ConnectionStatus } from "@/lib/simulation-adapter";
+import { isTelemetryStale } from "@/lib/simulation-state";
 import { VEHICLE_NAMES } from "@/lib/station-copy";
 import {
   connectionLabel,
@@ -38,17 +39,26 @@ function showPhoneRunSummary() {
 }
 
 const CONNECTION_STYLES: Record<ConnectionStatus, string> = {
-  open: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  connecting: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  reconnecting: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  lost: "bg-red-500/10 text-red-700 dark:text-red-300",
+  open: "tone-go",
+  connecting: "tone-caution",
+  reconnecting: "tone-caution",
+  lost: "tone-emergency",
 };
 
-// Only a real saving gets the success glow.
+/** Ended runs read by outcome; a live run reads as in progress (beacon). */
+const OUTCOME_TONES: Partial<Record<RunStatusKey, string>> = {
+  FINISHED: "tone-go",
+  CANCELLED: "tone-caution",
+  STOPPED: "tone-caution",
+  SERVER_ERROR: "tone-emergency",
+  ERROR: "tone-emergency",
+};
+
+// Only a real saving gets the success colour.
 const TIME_SAVED_STYLES: Record<TimeSavedTone, string> = {
-  positive: "text-emerald-600 drop-shadow-[0_0_12px_rgba(16,185,129,0.28)] dark:text-emerald-400",
+  positive: "text-go",
   neutral: "text-muted-foreground",
-  negative: "text-amber-700 dark:text-amber-300",
+  negative: "text-caution",
 };
 
 type KpiHeaderProps = {
@@ -76,31 +86,35 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
   const failedIts = simulationState === "CANCELLED" && cancelReason?.startsWith("ITS_");
   const saved = liveTelemetry?.kpi_metrics.current_time_saved_sec ?? 0;
   const speed = vehicleSpeedPresentation(simulationState, liveTelemetry);
+  const stale = isTelemetryStale({ simulationState, connection });
   const elapsedLabel = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
   return (
-    <section
-      aria-label="Simulation telemetry"
-      className="kpi-panel rounded-xl border border-border/80 bg-card/90 p-3"
-    >
+    <section aria-label="Simulation telemetry" className="kpi-panel hud-panel">
       <div className="kpi-vehicle">
         <span
           title={VEHICLE_NAMES[vehicleType]}
-          className={`grid size-7 shrink-0 place-items-center rounded-md ${VEHICLE_ICON_COLORS[vehicleType]}`}
+          className={`grid size-9 shrink-0 place-items-center rounded-lg ${VEHICLE_ICON_COLORS[vehicleType]}`}
         >
-          <VehicleIcon type={vehicleType} className="size-4" />
+          <VehicleIcon type={vehicleType} className="size-[1.125rem]" />
         </span>
         <div className="min-w-0">
           <span className="sr-only">{VEHICLE_NAMES[vehicleType]} </span>
-          <strong className="block truncate font-mono text-xs">
+          <strong
+            className="hud-value block truncate text-sm font-semibold"
+            title={liveTelemetry?.ambulance.id}
+          >
             {liveTelemetry?.ambulance.id ?? "Awaiting telemetry"}
           </strong>
-          <span className="block text-xs text-muted-foreground" title={speed.label}>
-            {speed.value} km/h<span className="sr-only">, {speed.label}</span>
-          </span>
         </div>
         <div className="kpi-statuses">
-          <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
-            <TriangleAlert className="size-3" aria-hidden />
+          <span className={`hud-chip ${OUTCOME_TONES[status] ?? "tone-beacon"}`}>
+            {status === "FINISHED" ? (
+              <CircleCheck aria-hidden />
+            ) : OUTCOME_TONES[status] ? (
+              <TriangleAlert aria-hidden />
+            ) : (
+              <Navigation aria-hidden />
+            )}
             {OUTCOME_BADGES[status] ??
               liveTelemetry?.ambulance.status.replaceAll("_", " ") ??
               "WAITING"}
@@ -108,12 +122,10 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
           {/* Always mounted so screen readers announce every change, including the first. */}
           <span role="status" className="contents">
             {connection && (
-              <span
-                className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${CONNECTION_STYLES[connection]}`}
-              >
+              <span className={`hud-chip ${CONNECTION_STYLES[connection]}`}>
                 <i
                   aria-hidden
-                  className={`size-1.5 rounded-full bg-current ${connection === "open" ? "animate-pulse" : ""}`}
+                  className={`hud-dot ${connection === "open" ? "status-breathe" : ""}`}
                 />
                 <span className="sr-only">Simulation stream: </span>
                 {connectionLabel(connection)}
@@ -123,20 +135,29 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
         </div>
       </div>
 
+      <div className="kpi-speed">
+        <span className="hud-stat-label">{stale ? "Last received speed" : "Speed"}</span>
+        <strong className="kpi-value hud-value mt-0.5 text-3xl font-semibold" title={speed.label}>
+          {speed.value}
+          <span className="kpi-unit"> km/h</span>
+        </strong>
+        <span className="sr-only">{speed.label}</span>
+      </div>
+
       <div className="kpi-saved">
-        <span className="dashboard-eyebrow block">
-          {failedIts ? "No completed savings" : "Time saved"}
-        </span>
+        <span className="hud-stat-label">{failedIts ? "No completed savings" : "Time saved"}</span>
         <strong
-          className={`kpi-value font-mono text-2xl ${TIME_SAVED_STYLES[failedIts ? "neutral" : timeSavedTone(saved)]}`}
+          className={`kpi-value hud-value mt-0.5 text-3xl font-semibold ${TIME_SAVED_STYLES[failedIts ? "neutral" : timeSavedTone(saved)]}`}
         >
           {failedIts ? "—" : formatSignedSeconds(saved)}
         </strong>
       </div>
 
       <div className="kpi-elapsed">
-        <span className="dashboard-eyebrow block">Elapsed</span>
-        <strong className="kpi-value font-mono text-lg">{elapsedLabel}</strong>
+        <span className="hud-stat-label">Elapsed</span>
+        <strong className="kpi-value hud-value mt-0.5 text-3xl font-semibold">
+          {elapsedLabel}
+        </strong>
         {routeData && (
           <span className="mt-1 block text-xs text-muted-foreground">
             {greenWaveModeLabel(routeData.green_wave_mode)}
@@ -151,7 +172,7 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
             disabled={stopRequested}
             aria-busy={stopRequested}
             aria-label="Stop simulation"
-            className="mt-1.5 ml-auto inline-flex min-h-8 items-center gap-1.5 rounded-md border border-red-500/40 bg-red-500/10 px-2.5 text-[10px] font-bold text-red-700 transition hover:bg-red-500/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 disabled:cursor-wait disabled:opacity-70 lg:hidden dark:text-red-300"
+            className="hud-danger pressable mt-1.5 ml-auto min-h-9 w-auto px-3 text-xs lg:hidden"
           >
             <Square className="size-3 fill-current" aria-hidden />
             {stopRequested ? "Stopping…" : "Stop"}
@@ -162,7 +183,7 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
             type="button"
             data-testid="run-outcome"
             onClick={showPhoneRunSummary}
-            className={`mt-1.5 ml-auto inline-flex min-h-8 items-center gap-1.5 rounded-md border border-border bg-background/70 px-2.5 text-[10px] font-bold transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 lg:hidden ${RUN_OUTCOME_TEXT[status]}`}
+            className={`hud-secondary pressable mt-1.5 ml-auto min-h-9 w-auto px-3 text-xs lg:hidden ${RUN_OUTCOME_TEXT[status]}`}
           >
             {RUN_STATUS_LABELS[status]}
             <span className="font-medium text-muted-foreground">· Summary</span>

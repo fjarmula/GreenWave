@@ -23,15 +23,9 @@ export function CascadeToggle({ enabled, onToggle, disabled = false }: CascadeTo
         aria-label="Cascade corridor mode"
         disabled={disabled}
         onClick={onToggle}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 disabled:cursor-not-allowed disabled:opacity-50 ${
-          enabled ? "bg-violet-500" : "bg-muted-foreground/30"
-        }`}
+        className="hud-switch tone-cascade"
       >
-        <span
-          className={`absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition-transform ${
-            enabled ? "translate-x-5" : "translate-x-0"
-          }`}
-        />
+        <span />
       </button>
     </div>
   );

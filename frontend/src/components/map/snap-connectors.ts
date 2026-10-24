@@ -3,7 +3,12 @@ import type { Position, SimulationStartResponse } from "@/types/telemetry";
 /** Below this the requested and snapped points overlap on screen; no connector is drawn. */
 export const SNAP_CONNECTOR_MIN_METERS = 5;
 
-type SnapProperties = { role: "origin" | "destination"; snapDistanceMeters: number };
+type SnapProperties = {
+  role: "origin" | "destination";
+  snapDistanceMeters: number;
+  /** The destination of an off-road incident: the crew walks this leg (dotted, beacon). */
+  onFoot: boolean;
+};
 // Map-layer data (GeoJSON), not a wire shape.
 type SnapConnectorCollection = {
   type: "FeatureCollection";
@@ -20,7 +25,10 @@ type SnapConnectorCollection = {
  */
 export function snapConnectorFeatures(
   requested: { origin: Position; destination: Position },
-  route: Pick<SimulationStartResponse, "origin_snapped" | "destination_snapped"> | null,
+  route: Pick<
+    SimulationStartResponse,
+    "origin_snapped" | "destination_snapped" | "destination_on_foot"
+  > | null,
   minimumMeters: number,
 ): SnapConnectorCollection {
   if (!route) return { type: "FeatureCollection", features: [] };
@@ -34,7 +42,11 @@ export function snapConnectorFeatures(
       .filter(([, , snapped]) => snapped.snap_distance_m > minimumMeters)
       .map(([role, from, snapped]) => ({
         type: "Feature",
-        properties: { role, snapDistanceMeters: snapped.snap_distance_m },
+        properties: {
+          role,
+          snapDistanceMeters: snapped.snap_distance_m,
+          onFoot: role === "destination" && !!route.destination_on_foot,
+        },
         geometry: {
           type: "LineString",
           coordinates: [

@@ -56,8 +56,10 @@ function dispatchState(patch: Partial<IncidentDispatch> = {}): IncidentDispatch 
     ranking: RANKING,
     rankStatus: "ready",
     rankError: null,
+    selectedStationId: null,
     setVehicleType: () => undefined,
     setIncident: () => undefined,
+    selectStation: () => {},
     ...patch,
   };
 }
@@ -381,5 +383,8 @@ it("uses the shared dispatch controls to configure both comparison modes", () =>
   expect(html).toContain("Green Wave and standard traffic");
   expect(html).not.toContain('aria-label="ER Green Wave mode"');
   expect(propsOf(tree, CascadeToggle).disabled).toBe(false);
-  expect(propsOf(tree, PlaybackSpeedSelector).label).toBe("Replay speed");
+  // Live comparison: no replay, the runs play at the chosen playback speed.
+  expect(propsOf(tree, PlaybackSpeedSelector).label).toBeUndefined();
+  expect(html).toContain("one simulated clock");
+  expect(html).not.toContain("Replay");
 });

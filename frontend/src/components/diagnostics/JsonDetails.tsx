@@ -73,15 +73,13 @@ function OpenJsonViewer({
   } = selection;
   const dialog = useRef<HTMLDialogElement>(null);
   const id = useId();
-  const [side, setSide] = useState<"request" | "response">(
-    snapshot.responseBody !== undefined || snapshot.responseOmitted ? "response" : "request",
-  );
   const [copied, setCopied] = useState("");
   useEffect(() => {
     dialog.current?.showModal();
   }, []);
-  const body = snapshot[`${side}Body`];
-  const omitted = snapshot[`${side}Omitted`];
+  const body = snapshot.responseBody;
+  const omitted = snapshot.responseOmitted;
+  const kind = snapshot.eventType ? "Event" : "Response";
   const formatted = useMemo(() => (body === undefined ? "" : formatJsonBody(body)), [body]);
   return (
     <dialog ref={dialog} className="json-dialog" aria-labelledby={id} onClose={onClose}>
@@ -127,22 +125,6 @@ function OpenJsonViewer({
             )}
             <p className="mt-3 text-sm text-muted-foreground">{description}</p>
             <div className="json-dialog-actions">
-              <div className="flex gap-2" role="group" aria-label="Payload direction">
-                {(["request", "response"] as const).map((value) => (
-                  <button
-                    type="button"
-                    key={value}
-                    className="workspace-button"
-                    aria-pressed={side === value}
-                    onClick={() => {
-                      setSide(value);
-                      setCopied("");
-                    }}
-                  >
-                    {value === "request" ? "Request" : snapshot.eventType ? "Event" : "Response"}
-                  </button>
-                ))}
-              </div>
               <button
                 type="button"
                 className="workspace-button"
@@ -157,7 +139,7 @@ function OpenJsonViewer({
                   }
                 }}
               >
-                Copy {snapshot.eventType && side === "response" ? "event" : side}
+                Copy {kind.toLowerCase()}
               </button>
             </div>
             <p className="text-sm" role="status">
@@ -169,17 +151,9 @@ function OpenJsonViewer({
                 not been truncated or reconstructed.
               </p>
             ) : body === undefined || body === "" ? (
-              <p className="json-body-note">
-                {side === "request"
-                  ? "No JSON request body. The method and endpoint are shown above."
-                  : "No response body captured for this observation."}
-              </p>
+              <p className="json-body-note">No response body captured for this observation.</p>
             ) : (
-              <pre
-                className="json-body"
-                tabIndex={0}
-                aria-label={`${side === "request" ? "Request" : snapshot.eventType ? "Event" : "Response"} body`}
-              >
+              <pre className="json-body" tabIndex={0} aria-label={`${kind} body`}>
                 <code>{formatted}</code>
               </pre>
             )}

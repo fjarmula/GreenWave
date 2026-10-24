@@ -9,6 +9,7 @@ import networkx as nx
 import numpy as np
 
 from greenwave.etl.geo import project_points, unproject_points
+from greenwave.routing.access import AccessNode, access_nodes, best_access
 from greenwave.routing.edge_times import ambulance_edge_seconds
 from greenwave.routing.errors import DestinationOffNetwork, NoRoute, OriginOffNetwork
 from greenwave.routing.network_index import EdgeView, RoutingIndex
@@ -47,6 +48,9 @@ class PlannedRoute:
     origin_snap: SnappedRouteEndpoint
     destination_snap: SnappedRouteEndpoint
     stop_lines: tuple[StopLineEvent, ...]
+    # Set when the destination is off the network: the route ends at this access node and the
+    # crew walks the rest. ``destination_snap`` is then that node, at its straight-line distance.
+    on_foot: AccessNode | None = None
 
 
 def edge_weight(
@@ -78,6 +82,11 @@ def _edge_key(index: RoutingIndex, edge_id: str, settings: SimulationSettings) -
     return ambulance_edge_seconds(index.edge(edge_id), settings), edge_id
 
 
+def node_position(index: RoutingIndex, node_key: str) -> Position:
+    node = index.graph.nodes[node_key]
+    return Position(lat=float(node["lat"]), lng=float(node["lon"]))
+
+
 def snap_endpoint(index: RoutingIndex, position: Position, origin: bool) -> SnappedRouteEndpoint:
     xy = project_points(
         np.array([position.lng], dtype=np.float64), np.array([position.lat], dtype=np.float64)
@@ -88,12 +97,36 @@ def snap_endpoint(index: RoutingIndex, position: Position, origin: bool) -> Snap
         label = "Origin" if origin else "Destination"
         raise error(f"{label} is farther than the configured snap limit from the routable network")
     node_key, distance_m = snapped
-    node = index.graph.nodes[node_key]
     return SnappedRouteEndpoint(
         node_key=node_key,
-        position=Position(lat=float(node["lat"]), lng=float(node["lon"])),
+        position=node_position(index, node_key),
         snap_distance_m=distance_m,
     )
+
+
+def snap_access_endpoint(
+    index: RoutingIndex, origin_node: str, destination: Position, settings: SimulationSettings
+) -> tuple[SnappedRouteEndpoint, AccessNode]:
+    """The access node with the least drive + walk time from ``origin_node`` (never itself).
+
+    Raises ``DestinationOffNetwork`` (nothing within walking reach) or ``NoRoute``. One
+    single-source Dijkstra over the graph: O((V + E) log V).
+    """
+    nodes = access_nodes(index, destination, settings)
+    lengths = nx.single_source_dijkstra_path_length(
+        index.graph,
+        origin_node,
+        weight=lambda _source, _target, data: edge_weight(index, data, settings),
+    )
+    best = best_access(lengths, nodes, exclude=origin_node)
+    if best is None:
+        raise NoRoute("no vehicle access point is reachable")
+    snap = SnappedRouteEndpoint(
+        node_key=best.node_key,
+        position=node_position(index, best.node_key),
+        snap_distance_m=best.straight_m,
+    )
+    return snap, best
 
 
 def plan_route(
@@ -104,7 +137,13 @@ def plan_route(
 ) -> PlannedRoute:
     """Plan the fastest ambulance route between snapped positions or raise a domain error."""
     origin_snap = snap_endpoint(index, origin, origin=True)
-    destination_snap = snap_endpoint(index, destination, origin=False)
+    on_foot: AccessNode | None = None
+    try:
+        destination_snap = snap_endpoint(index, destination, origin=False)
+    except DestinationOffNetwork:
+        destination_snap, on_foot = snap_access_endpoint(
+            index, origin_snap.node_key, destination, settings
+        )
     if origin_snap.node_key == destination_snap.node_key:
         raise NoRoute("origin and destination snap to the same node; route has no edges")
     try:
@@ -150,4 +189,5 @@ def plan_route(
         origin_snap=origin_snap,
         destination_snap=destination_snap,
         stop_lines=tuple(sorted(stop_lines, key=lambda stop: stop.distance_along_route_m)),
+        on_foot=on_foot,
     )

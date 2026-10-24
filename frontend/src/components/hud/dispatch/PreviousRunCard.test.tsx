@@ -56,8 +56,8 @@ describe("PreviousRunCard", () => {
 
 describe("PreviousRunCard saved tone", () => {
   it.each([
-    [-32, "text-amber-700"],
-    [380, "text-emerald-700"],
+    [-32, "text-caution"],
+    [380, "text-go"],
   ])("colours %i s saved by its sign", (savedSeconds, colour) => {
     const markup = renderToStaticMarkup(<PreviousRunCard run={{ ...RUN, savedSeconds }} />);
     const saved = markup.match(/Saved vs normal-traffic estimate<\/dt><dd class="([^"]*)"/)!;

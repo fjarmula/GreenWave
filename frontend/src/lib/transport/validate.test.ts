@@ -12,10 +12,12 @@ import {
 import { createMockSession } from "@/lib/mock-session";
 import { datasetQualityExample } from "@/lib/transport/__fixtures__/dataset-quality";
 import {
+  parseComparisonStartResponse,
   parseErrorResponse,
   parseStartResponse,
   parseStreamEvent,
   validateDatasetQuality,
+  validateRank,
 } from "@/lib/transport/validate";
 
 /** Round-trips through JSON like a real payload, then applies a mutation. */
@@ -291,5 +293,88 @@ describe("ER Green Wave mode and signal phases", () => {
     ["a missing label", (p: Record<string, unknown>) => delete p.accessible_label],
   ])("rejects a phase indicator with %s", (_label, mutate) => {
     expect(parseStreamEvent(withPhase(mutate), SIMULATION_ID)).toBeNull();
+  });
+});
+
+describe("parseComparisonStartResponse", () => {
+  const pair = {
+    schema_version: "1.0",
+    is_simulated: true,
+    enabled: { ...startResponseExample, simulation_id: "pair-e", green_wave_mode: "ENABLED" },
+    disabled: { ...startResponseExample, simulation_id: "pair-d", green_wave_mode: "DISABLED" },
+  };
+  it("accepts both runs of the pair", () => {
+    expect(parseComparisonStartResponse(wire(pair))).toEqual(pair);
+  });
+  it("rejects a member in the wrong mode", () => {
+    expect(() =>
+      parseComparisonStartResponse(
+        wire(pair, (copy) => {
+          record(copy.disabled).green_wave_mode = "ENABLED";
+        }),
+      ),
+    ).toThrow(/disabled/);
+  });
+  it("rejects an invalid member route", () => {
+    expect(() =>
+      parseComparisonStartResponse(
+        wire(pair, (copy) => {
+          record(copy.enabled).route_geometry = null;
+        }),
+      ),
+    ).toThrow(/enabled/);
+  });
+});
+
+const LEG = { access_point: { lat: 50.06, lng: 19.91 }, distance_m: 650, seconds: 464 };
+
+describe("on-foot legs", () => {
+  it("accepts a start response with a missing, null or valid destination_on_foot", () => {
+    expect(() => parseStartResponse(wire(startResponseExample))).not.toThrow();
+    for (const leg of [null, LEG]) {
+      const body = wire(startResponseExample, (copy) => {
+        copy.destination_on_foot = leg;
+      });
+      expect(record(parseStartResponse(body)).destination_on_foot).toEqual(leg);
+    }
+  });
+
+  it("rejects a negative destination_on_foot distance", () => {
+    const body = wire(startResponseExample, (copy) => {
+      copy.destination_on_foot = { ...LEG, distance_m: -1 };
+    });
+    expect(() => parseStartResponse(body)).toThrow("destination_on_foot.distance_m");
+  });
+
+  const rank = (onFoot?: unknown) => ({
+    schema_version: "1.0",
+    incident_snapped: { position: { lat: 50.06, lng: 19.91 }, snap_distance_m: 500 },
+    candidates: [
+      {
+        station: {
+          station_id: "STN-A-0001",
+          vehicle_type: "AMBULANCE",
+          source_kind: "ambulance_base",
+          name: "A",
+          position: { lat: 50.05, lng: 19.9 },
+        },
+        greenwave_seconds: 140,
+        distance_m: 2000,
+        ...(onFoot === undefined ? {} : { on_foot: onFoot }),
+      },
+    ],
+    station_at_incident: null,
+  });
+
+  it("accepts rank candidates with a missing, null or valid on_foot", () => {
+    for (const leg of [undefined, null, LEG]) {
+      expect(() => validateRank(wire(rank(leg)))).not.toThrow();
+    }
+  });
+
+  it("rejects a negative candidate on_foot distance", () => {
+    expect(() => validateRank(wire(rank({ ...LEG, distance_m: -1 })))).toThrow(
+      "candidates[0].on_foot.distance_m",
+    );
   });
 });

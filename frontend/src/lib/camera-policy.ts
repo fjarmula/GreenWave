@@ -30,7 +30,9 @@ export function createMapCamera(
 ) {
   let mode: CameraMode = "overview",
     fitted = false,
-    disposed = false;
+    disposed = false,
+    // A user pan or zoom since the last fit: overlay changes must not take the camera back.
+    userMoved = false;
   let last: [number, number] | null = null;
   let fresh = false;
   const update = (event: CameraEvent) => {
@@ -43,11 +45,17 @@ export function createMapCamera(
     if (!fitted && w > 0 && h > 0) {
       fit();
       fitted = true;
+      userMoved = false;
     }
   };
-  const zoom = (e: InputEvent) =>
+  const zoom = (e: InputEvent) => {
+    if (e.originalEvent) userMoved = true;
     update({ type: "zoom", zoom: map.getZoom(), user: !!e.originalEvent });
-  const pan = (e: InputEvent) => update({ type: "pan", user: !!e.originalEvent });
+  };
+  const pan = (e: InputEvent) => {
+    if (e.originalEvent) userMoved = true;
+    update({ type: "pan", user: !!e.originalEvent });
+  };
   map.on("zoomend", zoom);
   map.on("dragstart", pan);
   map.on("resize", fitOnce);
@@ -65,6 +73,12 @@ export function createMapCamera(
     },
     showRoute() {
       update({ type: "show-route" });
+      userMoved = false;
+      fit();
+    },
+    /** Refits after the map overlays changed, unless the user has taken the camera. */
+    reframe() {
+      if (disposed || mode !== "overview" || userMoved || !fitted) return;
       fit();
     },
     dispose() {

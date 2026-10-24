@@ -86,6 +86,58 @@ def test_rank_off_network_is_422(layout: Layout) -> None:
     assert response.status_code == 422
     assert response.json()["error_code"] == "DESTINATION_OFF_NETWORK"
     assert response.json()["schema_version"] == "1.0"
+    assert (
+        response.json()["message"]
+        == "Incident is farther than 800 m on foot from any vehicle access point"
+    )
+
+
+# North of Poprzeczna 7: beyond the 150 m snap limit, about 222 m from the nearest node.
+OFF_ROAD = {"lat": 50.004, "lng": 19.902}
+
+
+def _assert_off_road(layout: Layout) -> None:
+    """Precondition: OFF_ROAD does not snap but has access nodes in the tiny dataset."""
+    import numpy as np
+
+    from greenwave.dataset.loader import load_dataset
+    from greenwave.etl.geo import project_points
+    from greenwave.routing.access import access_nodes
+    from greenwave.routing.network_index import build_routing_index
+    from greenwave.schemas import Position
+    from greenwave.simulation_settings import SimulationSettings
+
+    settings = SimulationSettings()
+    index = build_routing_index(load_dataset(layout.processed, layout.manifest), settings)
+    x, y = project_points(np.array([OFF_ROAD["lng"]]), np.array([OFF_ROAD["lat"]]))[0]
+    assert index.snap(float(x), float(y)) is None
+    assert access_nodes(index, Position(**OFF_ROAD), settings)
+
+
+def test_rank_off_road_incident_returns_on_foot_leg(layout: Layout) -> None:
+    _assert_off_road(layout)
+    with client(layout) as c:
+        response = c.post(
+            "/api/v1/dispatch/rank", json={"incident": OFF_ROAD, "vehicle_type": "AMBULANCE"}
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    leg = body["candidates"][0]["on_foot"]
+    assert leg["distance_m"] > 0
+    assert leg["seconds"] > 0
+    assert body["incident_snapped"]["snap_distance_m"] > 150
+    assert body["incident_snapped"]["position"] == leg["access_point"]
+
+
+def test_rank_on_road_candidates_have_no_on_foot_leg(layout: Layout) -> None:
+    with client(layout) as c:
+        incident = _poprzeczna(c)
+        body = c.post(
+            "/api/v1/dispatch/rank", json={"incident": incident, "vehicle_type": "AMBULANCE"}
+        ).json()
+
+    assert all(candidate["on_foot"] is None for candidate in body["candidates"])
 
 
 def test_rank_no_station_reachable_is_422(layout: Layout) -> None:

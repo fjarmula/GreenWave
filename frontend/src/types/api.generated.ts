@@ -81,6 +81,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/simulation/compare/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Comparison
+         * @description Start the ER Green Wave and standard-traffic runs of one scenario in lockstep (ADR 0008).
+         *
+         *     Supersedes the active run or pair; each run streams and stops under its own id, and stopping
+         *     either stops both.
+         */
+        post: operations["start_comparison_api_v1_simulation_compare_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/simulation/start": {
         parameters: {
             query?: never;
@@ -175,6 +198,49 @@ export interface components {
          * @enum {string}
          */
         CancelReason: "ITS_REJECTED" | "ITS_TIMEOUT" | "ITS_HOLD_EXPIRED" | "STOPPED" | "SUPERSEDED" | "SERVER_ERROR";
+        /**
+         * ComparisonStartRequest
+         * @description One scenario run twice at once, ER Green Wave enabled and disabled, in lockstep (ADR 0008).
+         *
+         *     The fields are those of :class:`SimulationStartRequest` minus ``green_wave_mode``; each run
+         *     keeps its own client-chosen id and is streamed and stopped like a single run.
+         */
+        ComparisonStartRequest: {
+            destination: components["schemas"]["Position"];
+            /** Disabled Simulation Id */
+            disabled_simulation_id: string;
+            /** Enable Cascade Mode */
+            enable_cascade_mode: boolean;
+            /** Enabled Simulation Id */
+            enabled_simulation_id: string;
+            /** @default NOMINAL */
+            its_scenario: components["schemas"]["ItsScenario"];
+            origin: components["schemas"]["Position"];
+            /**
+             * Playback Speed
+             * @default 1
+             */
+            playback_speed: number;
+            /** Traffic Density Multiplier */
+            traffic_density_multiplier: number;
+            /** @default AMBULANCE */
+            vehicle_type: components["schemas"]["VehicleType"];
+        };
+        /** ComparisonStartResponse */
+        ComparisonStartResponse: {
+            disabled: components["schemas"]["SimulationStartResponse"];
+            enabled: components["schemas"]["SimulationStartResponse"];
+            /**
+             * Is Simulated
+             * @constant
+             */
+            is_simulated: true;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+        };
         /** DatasetQualityResponse */
         DatasetQualityResponse: {
             /** Checks */
@@ -432,6 +498,17 @@ export interface components {
             /** Total Time Elapsed Sec */
             total_time_elapsed_sec: number;
         };
+        /**
+         * OnFootLeg
+         * @description The walk from the vehicle's access point to an incident off the routable network.
+         */
+        OnFootLeg: {
+            access_point: components["schemas"]["Position"];
+            /** Distance M */
+            distance_m: number;
+            /** Seconds */
+            seconds: number;
+        };
         /** Position */
         Position: {
             /** Lat */
@@ -479,6 +556,7 @@ export interface components {
             distance_m: number;
             /** Greenwave Seconds */
             greenwave_seconds: number;
+            on_foot?: components["schemas"]["OnFootLeg"] | null;
             station: components["schemas"]["Station"];
         };
         /** RouteGeometry */
@@ -618,6 +696,7 @@ export interface components {
         };
         /** SimulationStartResponse */
         SimulationStartResponse: {
+            destination_on_foot?: components["schemas"]["OnFootLeg"] | null;
             destination_snapped: components["schemas"]["SnappedEndpoint"];
             /** Estimated Greenwave Time Sec */
             estimated_greenwave_time_sec: number;
@@ -888,6 +967,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    start_comparison_api_v1_simulation_compare_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComparisonStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComparisonStartResponse"];
+                };
+            };
+            /** @description SIMULATION_ID_IN_USE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description ORIGIN_OFF_NETWORK, DESTINATION_OFF_NETWORK or NO_ROUTE (ErrorResponse); request-schema violations return FastAPI's default validation body. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

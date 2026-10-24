@@ -28,6 +28,9 @@ it("offers destination, vehicle and traffic setup directly on comparison entry",
     "Scenario selection map",
   ])
     expect(html).toContain(label);
+  expect(html.match(/<select[^>]*aria-label="Simulated ITS feedback"[^>]*>/)?.[0]).not.toMatch(
+    /\sdisabled(?:=|\s|>)/,
+  );
   expect(html).not.toContain("Choose incident and station</a>");
   expect(html).toContain("Enter Focus");
   expect(html).not.toContain("Exit Focus");

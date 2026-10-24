@@ -1,6 +1,8 @@
 import * as maplibregl from "maplibre-gl";
 import type { Map } from "maplibre-gl";
 
+import { measureMapPadding } from "@/components/map/occluders";
+
 /** The visible map area, as MapLibre's `getBounds()` reports it. */
 export type ViewBounds = { west: number; south: number; east: number; north: number };
 
@@ -38,12 +40,10 @@ export function applyEndpointFit(
   map: Map,
   {
     points,
-    live,
     focusRequested,
     reduceMotion,
   }: {
     points: ReadonlyArray<[lng: number, lat: number]>;
-    live: boolean;
     focusRequested: boolean;
     reduceMotion: boolean;
   },
@@ -59,11 +59,8 @@ export function applyEndpointFit(
   if (endpointFitDecision({ points, viewBounds, focusRequested }) === "none") return;
   const bounds = new maplibregl.LngLatBounds(points[0], points[0]);
   points.forEach((point) => bounds.extend(point));
-  const mobile = map.getContainer().clientWidth < 640;
   map.fitBounds(bounds, {
-    padding: mobile
-      ? { top: live ? 180 : 110, right: 100, bottom: 80, left: 40 }
-      : { top: 140, right: 160, bottom: 140, left: 160 },
+    padding: measureMapPadding(map.getContainer()),
     maxZoom: points.length > 1 ? 13.2 : 14,
     duration: reduceMotion ? 0 : FOCUS_FIT_DURATION_MILLISECONDS,
   });

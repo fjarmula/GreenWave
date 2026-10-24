@@ -1,8 +1,10 @@
 import pytest
 from tests.support.route_fixtures import (
+    PARK_CENTRE,
     branch_index,
     corridor_index,
     neutral_settings,
+    park_index,
     position_at,
 )
 
@@ -84,3 +86,50 @@ def test_planner_prefers_bus_lane_branch_when_boosted() -> None:
     assert boosted.edge_ids == (f"{other}-a", f"{other}-b")
     assert [edge.edge_id for edge in boosted.edges] == list(boosted.edge_ids)
     assert all(edge.bus_lane for edge in boosted.edges)
+
+
+# --- Off-road destinations: on-foot access ----------------------------------------------------
+
+_X, _Y = 7_421_000.0, 5_541_000.0
+DEPOT_W = position_at(_X - 3_000, _Y + 900)
+DEPOT_E = position_at(_X + 2_000, _Y)
+
+
+def test_off_road_destination_picks_fastest_total_not_nearest() -> None:
+    route = plan_route(park_index(), DEPOT_W, position_at(*PARK_CENTRE), SimulationSettings())
+    assert route.destination_snap.node_key == "n-mid"
+    assert route.on_foot is not None
+    assert route.on_foot.node_key == "n-mid"
+    assert route.on_foot.straight_m == pytest.approx(500, abs=1e-3)
+    assert route.destination_snap.snap_distance_m == pytest.approx(500, abs=1e-3)
+
+
+def test_off_road_destination_from_the_other_depot() -> None:
+    route = plan_route(park_index(), DEPOT_E, position_at(*PARK_CENTRE), SimulationSettings())
+    assert route.destination_snap.node_key == "s-mid"
+    assert route.on_foot is not None
+    assert route.on_foot.straight_m == pytest.approx(400, abs=1e-3)
+
+
+def test_origin_on_an_access_node_uses_another() -> None:
+    route = plan_route(
+        park_index(),
+        position_at(_X + 500, _Y + 900),
+        position_at(*PARK_CENTRE),
+        SimulationSettings(),
+    )
+    assert route.origin_snap.node_key == "n-mid"
+    assert route.destination_snap.node_key == "s-mid"
+    assert route.edge_ids
+
+
+def test_on_road_destination_has_no_on_foot_leg() -> None:
+    route = plan_route(
+        corridor_index(), position_at(7_421_000), position_at(7_421_100), SimulationSettings()
+    )
+    assert route.on_foot is None
+
+
+def test_off_road_origin_still_rejected() -> None:
+    with pytest.raises(OriginOffNetwork):
+        plan_route(park_index(), position_at(*PARK_CENTRE), DEPOT_E, SimulationSettings())

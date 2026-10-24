@@ -28,20 +28,17 @@ export function IncidentMarker({ map, incident }: IncidentMarkerProps) {
 
 function createIncidentPin(label: string) {
   const element = document.createElement("div");
-  element.className =
-    "relative size-7 font-mono text-[10px] font-bold text-foreground drop-shadow-md";
+  element.className = "relative size-5 text-[11px] font-semibold text-foreground";
   element.setAttribute("aria-label", `Incident: ${label}`);
   element.style.zIndex = "2";
 
   const labelElement = document.createElement("span");
   labelElement.className =
-    "absolute top-1/2 left-full ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-border/80 bg-card/95 px-2 py-1 shadow-lg backdrop-blur";
+    "absolute top-1/2 left-full ml-2 -translate-y-1/2 whitespace-nowrap surface-glass rounded-full! px-2.5 py-1";
   labelElement.textContent = `Incident · ${label}`;
 
   const pin = document.createElement("span");
-  pin.className =
-    "grid size-7 place-items-center rounded-full border-2 border-background bg-red-500 shadow-lg";
-  pin.innerHTML = `<span class="size-2 rounded-full bg-white"></span>`;
+  pin.className = "map-dot map-dot--incident";
 
   element.append(pin, labelElement);
   return element;

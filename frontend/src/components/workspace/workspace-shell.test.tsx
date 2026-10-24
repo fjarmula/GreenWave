@@ -42,3 +42,14 @@ it("can open replay with full-width maps and an initially closed inspector", () 
   expect(html).toContain('aria-expanded="false"');
   expect(html).toContain("Both maps");
 });
+it("renders the map slot beneath floating header and inspector", () => {
+  const html = renderToStaticMarkup(
+    <WorkspaceShell map={<div>Map</div>} inspector={<p>Details</p>} header={<h1>Green Wave</h1>} />,
+  );
+  expect(html).toContain('data-layout="map-first"');
+  const slot = html.indexOf("data-map-slot");
+  expect(slot).toBeGreaterThan(-1);
+  expect(slot).toBeLessThan(html.indexOf("<header"));
+  expect(slot).toBeLessThan(html.indexOf('aria-label="Simulation details"'));
+  expect(html).toMatch(/class="workspace-inspector surface-glass"/);
+});

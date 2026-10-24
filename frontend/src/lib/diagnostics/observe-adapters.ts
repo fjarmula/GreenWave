@@ -109,6 +109,15 @@ export function observeSimulation(
         now,
         synthetic(transport, "/api/v1/simulation/start", "POST", r),
       ),
+    startComparison: (r) =>
+      observeOperation(
+        "compare-start",
+        transport,
+        () => adapter.startComparison(r),
+        store,
+        now,
+        synthetic(transport, "/api/v1/simulation/compare/start", "POST", r),
+      ),
     stop: (id) =>
       observeOperation(
         "stop",

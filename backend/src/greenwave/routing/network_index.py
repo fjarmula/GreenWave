@@ -112,6 +112,24 @@ class RoutingIndex:
             return None
         return self._node_keys[index], distance
 
+    def nodes_within(
+        self, x_m: float, y_m: float, radius_m: float
+    ) -> tuple[tuple[str, float], ...]:
+        """Snap-set nodes at most ``radius_m`` away, nearest first (ties by node key)."""
+        point = Point(x_m, y_m)
+        # Geographic/projected round trips can put an exact boundary a few nanometres outside.
+        inclusive_radius_m = radius_m + 1e-8
+        found = (
+            (self._node_keys[int(i)], float(point.distance(self._node_points[int(i)])))
+            for i in self._tree.query(point, predicate="dwithin", distance=inclusive_radius_m)
+        )
+        return tuple(
+            sorted(
+                ((key, distance) for key, distance in found if distance <= inclusive_radius_m),
+                key=lambda item: (item[1], item[0]),
+            )
+        )
+
     def edge(self, edge_id: str) -> EdgeView:
         """Get a route edge by its stable ETL edge id."""
         return self._edges[edge_id]

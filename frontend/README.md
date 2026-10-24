@@ -54,9 +54,9 @@ All routes, signal states, and dispatches remain simulated. Stop the stack with
 | `/`                      | Mode menu and return to the current run                     |
 | `/simulation/green-wave` | Priority corridor setup and simulation                      |
 | `/simulation/standard`   | Standard-traffic setup and simulation                       |
-| `/compare`               | Sequential recording, then synchronized replay              |
+| `/compare`               | Both modes live at once, then a result card                 |
 | `/diagnostics`           | Architecture, observed adapter activity and dataset quality |
-| `/driver`                | Phone presentation of the enabled simulation                |
+| `/driver`                | Map-first enabled run with a compact card and sheet         |
 
 Client navigation keeps the same in-memory scenario and single run subscription. Switching modes
 never starts or stops a run; replacing an active run requires an explicit action and successful Stop.
@@ -68,16 +68,18 @@ restores them and returns keyboard focus. The map is preserved within a mounted 
 Zoom above 16.5 to follow the vehicle; a deliberate pan suspends follow. **Resume following**
 restores it, and **Show route** returns to overview. All positions and signal states are simulated.
 
-Comparison opens with the same incident map, vehicle, station ranking, density and cascade controls
-as the individual simulation views. **Start comparison** freezes that scenario, records enabled then
-disabled at 10×, and automatically starts both maps together at the selected replay speed when
-both recordings cover every tick through successful completion. It never runs two backend sessions
-concurrently. Limits are 10,000 ticks per mode and 32 MiB serialized pair data, held only in memory.
-Missing ticks, cancellation, mismatched routes and limits yield an incomplete result. Replay uses a
-common simulated clock with shared pause, restart, speed and seek controls. Desktop opens with two
-equal maps and a closed results inspector; phone pane switching keeps the cursor. **Change scenario**
-returns to the retained dispatch settings, and hidden tabs pause clock advancement.
-Reported travel time, first observed arrival tick and recovery-completion tick are distinct values.
+Comparison opens with the same incident map, vehicle, station ranking, density, cascade and
+playback-speed controls as the individual simulation views. **Start comparison** starts the Green
+Wave and standard-traffic runs of that scenario together (`POST /api/v1/simulation/compare/start`,
+ADR 0008); both advance on one simulated clock and stream live into two equal maps (one map with a
+toggle on phones). The race bar shows both vehicles along the route and the measured distance lead
+only, never a projected time; either mode may lead or arrive first. One **Stop** stops both runs.
+When both have ended, the result card shows both actual travel times, their difference and the
+signals given priority in the Green Wave run; **New comparison** returns to setup. There is no
+replay. A run started elsewhere supersedes the pair and the card says so.
+
+On phones the Green Wave, Standard and Driver views use a draggable bottom sheet: the collapsed
+card stays on screen, a drag or the grabber reveals the details, Escape collapses it.
 
 Diagnostics stores at most 200 allowlisted observations, coalescing repeated ticks. Browser durations
 are not server latency; mock observations are synthetic. ITS dispatch is an internal simulated gateway
@@ -103,8 +105,7 @@ Nothing connects to or actuates a real controller. The payload is illustrative.
 
 Start requests accept `its_scenario`: NOMINAL (1 s acknowledgement), DELAYED (5 s),
 REJECTED or NO_FEEDBACK (8 s timeout). All timings are simulated seconds; playback
-changes wall-clock pacing only. Disabled runs normalize to NOMINAL; comparisons
-record NOMINAL. The dispatch form preserves scenario selection across navigation.
+changes wall-clock pacing only. Disabled runs normalize to NOMINAL; live comparisons use the selected scenario for the enabled member and NOMINAL for the baseline. The dispatch form preserves scenario selection across navigation.
 
 ITS_FEEDBACK has request identity and a per-run sequence. Each tick contains the full
 bounded request ledger and controller observation time for reconnect/drop recovery.

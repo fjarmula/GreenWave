@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import type { Map } from "maplibre-gl";
 
-const MAP_STYLES: Record<"light" | "dark", string> = {
+import { collapseCompactAttribution } from "@/components/map/attribution";
+import { createBasemapLoader, groundOnlyStyle } from "@/components/map/basemap-style";
+import { createMapThemeSwap } from "@/components/map/map-theme-swap";
+import { registerThemeBarrier, type ResolvedTheme } from "@/lib/theme-transition";
+
+const MAP_STYLES: Record<ResolvedTheme, string> = {
   light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
 };
@@ -13,25 +18,23 @@ const MAPLIBRE_WORKER_URL = new URL(
 
 const KRAKOW_CENTER: [number, number] = [19.945, 50.064];
 // Data attribution (architecture §5); the basemap's own OSM attribution is added by its style.
-const DATA_ATTRIBUTION = [
+// The simulation disclaimer lives in the always-visible provenance chip, not here.
+export const DATA_ATTRIBUTION = [
   '<a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre</a>',
   'Road network &amp; signals © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL)',
   "Street registry © City of Kraków (MSIP)",
-  "All signal states are simulated",
 ];
-const MAP_STYLE_FADE_OUT_MILLISECONDS = 220;
 
 /**
  * Owns the MapLibre instance for one container: creates it once, swaps the basemap
- * style when the theme changes (faded unless reduced motion) and counts style loads so
- * layers can re-add themselves.
+ * style inside the theme view transition (a registered barrier) and counts style loads
+ * so layers can re-add themselves.
  */
-export function useMaplibreMap(theme: "light" | "dark") {
+export function useMaplibreMap(theme: ResolvedTheme) {
   const mapElement = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Map | null>(null);
-  const initialTheme = useRef<"light" | "dark">(theme);
-  const appliedTheme = useRef<"light" | "dark" | null>(null);
-  const styleSwapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialTheme = useRef<ResolvedTheme>(theme);
+  const swapRef = useRef<ReturnType<typeof createMapThemeSwap> | null>(null);
   const [map, setMap] = useState<Map | null>(null);
   const [styleRevision, setStyleRevision] = useState(0);
 
@@ -41,7 +44,8 @@ export function useMaplibreMap(theme: "light" | "dark") {
     maplibregl.setWorkerUrl(MAPLIBRE_WORKER_URL);
     const instance = new maplibregl.Map({
       container: mapElement.current,
-      style: MAP_STYLES[initialTheme.current],
+      // The plain ground until the recoloured basemap arrives (below).
+      style: groundOnlyStyle(initialTheme.current),
       center: KRAKOW_CENTER,
       zoom: 12.4,
       minZoom: 10,
@@ -57,20 +61,43 @@ export function useMaplibreMap(theme: "light" | "dark") {
     );
 
     instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    const setStyle = createBasemapLoader(instance);
+    const swap = createMapThemeSwap(
+      {
+        setStyle,
+        onceStyleLoad: (callback) => instance.once("style.load", callback),
+        tilesReady: () => instance.areTilesLoaded(),
+        paint: () => instance.redraw(),
+      },
+      MAP_STYLES,
+      initialTheme.current,
+    );
+    swapRef.current = swap;
+    // Every basemap, the first one included, goes through the same recolouring path.
+    setStyle(MAP_STYLES[initialTheme.current], initialTheme.current);
+    const unregisterBarrier = registerThemeBarrier((next) => swap.to(next));
+    const container = mapElement.current;
+    let prefetched = false;
     const onStyleLoad = () => {
       setMap(instance);
       setStyleRevision((revision) => revision + 1);
-      requestAnimationFrame(() => {
-        instance.getCanvas().classList.remove("dashboard-map-canvas--switching");
-      });
+      container.dataset.mapTheme = swap.applied();
+      if (prefetched) return;
+      prefetched = true;
+      // Warm the other style so a theme switch waits on tiles, not on the network.
+      const other = swap.applied() === "dark" ? "light" : "dark";
+      void fetch(MAP_STYLES[other], { cache: "force-cache" }).catch(() => undefined);
     };
     instance.on("style.load", onStyleLoad);
+    instance.once("load", () => collapseCompactAttribution(container));
     const resize = new ResizeObserver(() => instance.resize());
-    resize.observe(mapElement.current);
+    resize.observe(container);
     mapRef.current = instance;
-    appliedTheme.current = initialTheme.current;
 
     return () => {
+      unregisterBarrier();
+      swap.dispose();
+      swapRef.current = null;
       resize.disconnect();
       instance.off("style.load", onStyleLoad);
       instance.remove();
@@ -79,37 +106,10 @@ export function useMaplibreMap(theme: "light" | "dark") {
     };
   }, []);
 
+  // Theme changes outside the toggle (OS setting, another tab) swap here; a toggle switch has
+  // already swapped inside its view transition, so this is a no-op then.
   useEffect(() => {
-    const instance = mapRef.current;
-    if (!instance) return;
-
-    if (styleSwapTimer.current) clearTimeout(styleSwapTimer.current);
-
-    if (appliedTheme.current === theme) {
-      instance.getCanvas().classList.remove("dashboard-map-canvas--switching");
-      return;
-    }
-
-    const canvas = instance.getCanvas();
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduceMotion) {
-      appliedTheme.current = theme;
-      instance.setStyle(MAP_STYLES[theme]);
-      return;
-    }
-
-    canvas.classList.add("dashboard-map-canvas--switching");
-    styleSwapTimer.current = setTimeout(() => {
-      styleSwapTimer.current = null;
-      if (mapRef.current !== instance) return;
-      appliedTheme.current = theme;
-      instance.setStyle(MAP_STYLES[theme]);
-    }, MAP_STYLE_FADE_OUT_MILLISECONDS);
-
-    return () => {
-      if (styleSwapTimer.current) clearTimeout(styleSwapTimer.current);
-      styleSwapTimer.current = null;
-    };
+    void swapRef.current?.to(theme);
   }, [theme]);
 
   return { mapElement, map, styleRevision };

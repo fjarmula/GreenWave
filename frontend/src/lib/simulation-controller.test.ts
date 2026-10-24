@@ -19,6 +19,9 @@ import type {
   SimulationStartResponse,
   SimulationTickEvent,
 } from "@/types/telemetry";
+const unusedComparison = async (): Promise<never> => {
+  throw new Error("comparison start is not used here");
+};
 
 const STALE_AFTER_MILLISECONDS = 3000;
 const LOST_AFTER_MILLISECONDS = 15_000;
@@ -99,6 +102,7 @@ function createFakeAdapter(): FakeAdapter {
     subscriptions: [],
     pendingStarts: [],
     stops: [],
+    startComparison: unusedComparison,
     start: (startRequest) =>
       new Promise((resolve, reject) => {
         adapter.pendingStarts.push({ request: startRequest, resolve, reject });

@@ -27,6 +27,14 @@ class SimulationSettings(BaseSettings):
     its_hold_buffer_seconds: int = Field(default=5, ge=0)
     tick_interval_seconds: float = Field(default=1, gt=0)
     max_snap_distance_meters: float = Field(default=150, ge=0)
+    # On-foot access to an incident beyond the snap limit (routing/access.py; ADR 0009).
+    # PLACEHOLDER 2026-10-24 (human: 800 m max walk; detour and speed uncalibrated).
+    max_on_foot_meters: float = Field(default=800, gt=0, allow_inf_nan=False)
+    # PLACEHOLDER 2026-10-24 (human: 800 m max walk; detour and speed uncalibrated):
+    # on-foot distance = straight line x this factor.
+    on_foot_detour_factor: float = Field(default=1.3, ge=1.0, allow_inf_nan=False)
+    # PLACEHOLDER 2026-10-24 (human: 800 m max walk; detour and speed uncalibrated).
+    on_foot_speed_meters_per_second: float = Field(default=1.4, gt=0, allow_inf_nan=False)
     max_playback_speed: int = Field(default=10, ge=1)
     # Stations given the full green-wave estimate after the reversed-Dijkstra shortlist.
     dispatch_shortlist_size: int = Field(default=5, ge=1)

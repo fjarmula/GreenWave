@@ -1,4 +1,4 @@
-"""Async lifecycle manager for the one active simulated emergency run.
+"""Async lifecycle manager for the one active simulated operation: a run or a comparison pair.
 
 The loop publishes independently of clients, one tick per simulated second at every playback
 speed: playback only shortens the wall-clock gap between ticks (1 s at 1x, 0.1 s at 10x), so the
@@ -7,8 +7,12 @@ iteration starts normally; it never emits a burst of catch-up ticks.  Subscriber
 bounded and use drop-oldest for ordinary telemetry, while terminal events always displace a tick.
 If the loop itself fails, the run ends with a ``SERVER_ERROR`` cancellation like any other
 terminal, so clients learn at once instead of waiting out their silence timeout.  Every run
-publishes exactly one terminal, and only the active run plus the most recent ended ones
+publishes exactly one terminal, and only the active operation plus the most recent ended runs
 (``retained_session_limit``) stay streamable.
+
+A comparison pair (ADR 0008) is one operation of two runs advanced by one shared loop: each
+interval steps every unfinished member once, so both always share the same simulated second.
+Starting anything supersedes the whole active operation, and stopping either member stops both.
 """
 
 import asyncio
@@ -22,12 +26,15 @@ from greenwave.its.gateway import ItsGateway
 from greenwave.routing.network_index import RoutingIndex
 from greenwave.schemas import (
     CancelReason,
+    ComparisonStartRequest,
+    ComparisonStartResponse,
+    GreenWaveMode,
     SimulationCancelledEvent,
     SimulationStartRequest,
     SimulationStartResponse,
     StopResponse,
 )
-from greenwave.simulation.assembly import SimulationPlanner, plan_simulation
+from greenwave.simulation.assembly import PlannedSimulation, SimulationPlanner, plan_simulation
 from greenwave.simulation.engine import SimulationEngine
 from greenwave.simulation.events import SimulationEvent, TerminalEvent, is_terminal
 from greenwave.simulation.state import EngineState
@@ -61,7 +68,7 @@ class _Session:
 
 
 class SessionManager:
-    """Own the single simulation task and non-blocking telemetry fan-out."""
+    """Own the one active operation's task and non-blocking telemetry fan-out."""
 
     def __init__(
         self,
@@ -78,49 +85,92 @@ class SessionManager:
         self._clock = clock or (lambda: datetime.now(UTC))
         self._sleep = sleep
         self._planner = planner
-        self._active: _Session | None = None
+        # Sessions of the active operation (one run or a pair); empty when idle.
+        self._operation: tuple[_Session, ...] = ()
         self._sessions: dict[str, _Session] = {}
         self._lock = asyncio.Lock()
 
-    async def start(self, request: SimulationStartRequest) -> SimulationStartResponse:
-        """Plan then start a run, superseding a different active simulation."""
-        async with self._lock:
-            if (
-                self._active is not None
-                and self._active.terminal is None
-                and self._active.simulation_id == request.simulation_id
-            ):
-                raise SimulationIdInUseError(request.simulation_id)
+    @property
+    def _active(self) -> _Session | None:
+        """The first session of the active operation (the run itself for a single run)."""
+        return self._operation[0] if self._operation else None
 
-            # Route search is CPU-bound; keep it off the event loop that runs live sessions.
-            planned = await asyncio.to_thread(
-                self._planner, self._index, request, self._settings, self._gateway
+    def _check_ids_free(self, *simulation_ids: str) -> None:
+        for session in self._operation:
+            if session.terminal is None and session.simulation_id in simulation_ids:
+                raise SimulationIdInUseError(session.simulation_id)
+
+    async def _plan(self, request: SimulationStartRequest) -> PlannedSimulation:
+        # Route search is CPU-bound; keep it off the event loop that runs live sessions.
+        return await asyncio.to_thread(
+            self._planner, self._index, request, self._settings, self._gateway
+        )
+
+    async def start(self, request: SimulationStartRequest) -> SimulationStartResponse:
+        """Plan then start a run, superseding a different active operation."""
+        async with self._lock:
+            self._check_ids_free(request.simulation_id)
+            planned = await self._plan(request)
+            await self._cancel_operation(CancelReason.SUPERSEDED)
+            self._launch((self._session(request, planned),))
+            return planned.response
+
+    async def start_comparison(self, request: ComparisonStartRequest) -> ComparisonStartResponse:
+        """Plan both runs of a pair, then start them in lockstep, superseding the active one."""
+        async with self._lock:
+            self._check_ids_free(request.enabled_simulation_id, request.disabled_simulation_id)
+            members = [
+                request.member(GreenWaveMode.ENABLED),
+                request.member(GreenWaveMode.DISABLED),
+            ]
+            # Both plans succeed before anything is superseded.
+            planned: list[PlannedSimulation] = []
+            try:
+                for member in members:
+                    planned.append(await self._plan(member))
+            except BaseException:
+                for item in planned:
+                    item.engine.close()
+                raise
+            await self._cancel_operation(CancelReason.SUPERSEDED)
+            self._launch(tuple(self._session(m, p) for m, p in zip(members, planned, strict=True)))
+            enabled, disabled = (p.response for p in planned)
+            return ComparisonStartResponse(
+                schema_version="1.0",
+                is_simulated=True,
+                enabled=enabled,
+                disabled=disabled,
             )
-            if self._active is not None and self._active.terminal is None:
-                await self._cancel(self._active, CancelReason.SUPERSEDED)
-            session = _Session(
-                simulation_id=request.simulation_id,
-                engine=planned.engine,
-                state=planned.engine.initial_state(),
-                playback_speed=request.playback_speed,
-            )
+
+    @staticmethod
+    def _session(request: SimulationStartRequest, planned: PlannedSimulation) -> _Session:
+        return _Session(
+            simulation_id=request.simulation_id,
+            engine=planned.engine,
+            state=planned.engine.initial_state(),
+            playback_speed=request.playback_speed,
+        )
+
+    def _launch(self, sessions: tuple[_Session, ...]) -> None:
+        for session in sessions:
             # Re-inserted so a reused id counts as the newest session for eviction.
             self._sessions.pop(session.simulation_id, None)
             self._sessions[session.simulation_id] = session
-            self._active = session
-            self._evict_retained()
-            session.task = asyncio.create_task(
-                self._run(session), name=f"simulation-{session.simulation_id}"
-            )
-            return planned.response
+        self._operation = sessions
+        self._evict_retained()
+        task = asyncio.create_task(
+            self._run(sessions), name=f"simulation-{sessions[0].simulation_id}"
+        )
+        for session in sessions:
+            session.task = task
 
     async def stop(self, simulation_id: str) -> StopResponse:
-        """Stop a live run; a completed retained run is a successful no-op."""
+        """Stop a live operation through any of its runs; an ended run alone is a no-op."""
         session = self._sessions.get(simulation_id)
         if session is None:
             raise SimulationNotFoundError(simulation_id)
-        if session.terminal is None:
-            await self._cancel(session, CancelReason.STOPPED)
+        if session in self._operation:
+            await self._cancel_operation(CancelReason.STOPPED, self._operation)
         return StopResponse(
             schema_version="1.0", is_simulated=True, simulation_id=simulation_id, status="STOPPED"
         )
@@ -155,33 +205,37 @@ class SessionManager:
 
     async def shutdown(self) -> None:
         """Cancel any live loop and release all retained subscriber references."""
-        sessions = tuple(self._sessions.values())
-        for session in sessions:
-            if session.terminal is None:
-                await self._cancel(session, CancelReason.STOPPED)
+        await self._cancel_operation(CancelReason.STOPPED)
+        for session in tuple(self._sessions.values()):
             session.subscribers.clear()
 
     def _evict_retained(self) -> None:
-        """Drop the oldest ended sessions beyond the limit; the active run is always kept."""
+        """Drop the oldest ended sessions beyond the limit; the active operation is always kept."""
         excess = len(self._sessions) - self._settings.retained_session_limit
         for simulation_id, session in tuple(self._sessions.items()):
             if excess <= 0:
                 break
-            if session is not self._active and session.terminal is not None:
+            if session not in self._operation and session.terminal is not None:
                 del self._sessions[simulation_id]
                 excess -= 1
 
-    async def _run(self, session: _Session) -> None:
+    async def _run(self, sessions: tuple[_Session, ...]) -> None:
         try:
-            while not session.state.completed:
+            while True:
                 started = asyncio.get_running_loop().time()
-                state, events = session.engine.step(session.state, self._clock())
-                session.state = state
-                for event in events:
-                    self._publish(session, event)
-                if session.state.completed:
+                live = [session for session in sessions if not session.state.completed]
+                if not live:
                     break
-                remaining = self._settings.tick_interval_seconds / session.playback_speed - (
+                now = self._clock()  # one simulated second, one timestamp, for every member
+                for session in live:
+                    state, events = session.engine.step(session.state, now)
+                    session.state = state
+                    for event in events:
+                        self._publish(session, event)
+                if all(session.state.completed for session in sessions):
+                    break
+                # Members share one playback speed (a pair is planned from one request).
+                remaining = self._settings.tick_interval_seconds / sessions[0].playback_speed - (
                     asyncio.get_running_loop().time() - started
                 )
                 if remaining > 0:
@@ -192,23 +246,32 @@ class SessionManager:
                     )
         except Exception:
             logger.exception(
-                "simulation_loop_failed", extra={"simulation_id": session.simulation_id}
+                "simulation_loop_failed",
+                extra={"simulation_id": ",".join(session.simulation_id for session in sessions)},
             )
-            self._publish(session, self._cancelled_event(session, CancelReason.SERVER_ERROR))
+            for session in sessions:
+                self._publish(session, self._cancelled_event(session, CancelReason.SERVER_ERROR))
         finally:
-            session.engine.close()
-            if self._active is session and session.terminal is not None:
-                self._active = None
+            for session in sessions:
+                session.engine.close()
+            if self._operation is sessions and all(s.terminal is not None for s in sessions):
+                self._operation = ()
 
-    async def _cancel(self, session: _Session, reason: CancelReason) -> None:
-        if session.task is not None and not session.task.done():
-            session.task.cancel()
-            with suppress(asyncio.CancelledError):
-                await session.task
-        session.engine.close()
-        self._publish(session, self._cancelled_event(session, reason))
-        if self._active is session:
-            self._active = None
+    async def _cancel_operation(
+        self, reason: CancelReason, sessions: tuple[_Session, ...] | None = None
+    ) -> None:
+        """Cancel the shared loop once, then end every member that has no terminal yet."""
+        sessions = self._operation if sessions is None else sessions
+        for task in {session.task for session in sessions if session.task is not None}:
+            if not task.done():
+                task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await task
+        for session in sessions:
+            session.engine.close()
+            self._publish(session, self._cancelled_event(session, reason))
+        if self._operation is sessions:
+            self._operation = ()
 
     def _cancelled_event(self, session: _Session, reason: CancelReason) -> SimulationCancelledEvent:
         return SimulationCancelledEvent(

@@ -1,6 +1,10 @@
 import pytest
 
-from greenwave.etl.config import CLASS_DEFAULT_SPEED_KMH, DRIVABLE_HIGHWAY_VALUES
+from greenwave.etl.config import (
+    CLASS_DEFAULT_SPEED_KMH,
+    DRIVABLE_HIGHWAY_VALUES,
+    EMERGENCY_EXTRA_HIGHWAY_VALUES,
+)
 from greenwave.etl.road_rules import (
     OnewayResolution,
     SpeedResolution,
@@ -74,7 +78,12 @@ def test_resolve_speed_reports_where_the_value_came_from(
 
 
 def test_every_drivable_class_has_a_default_speed() -> None:
-    assert set(CLASS_DEFAULT_SPEED_KMH) >= DRIVABLE_HIGHWAY_VALUES
+    assert set(CLASS_DEFAULT_SPEED_KMH) >= DRIVABLE_HIGHWAY_VALUES | EMERGENCY_EXTRA_HIGHWAY_VALUES
+
+
+def test_access_way_classes_have_placeholder_speeds() -> None:
+    assert resolve_speed({}, "track") == SpeedResolution(15, "class_default")
+    assert resolve_speed({}, "pedestrian") == SpeedResolution(10, "class_default")
 
 
 def test_resolve_speed_fails_loudly_for_class_without_default() -> None:

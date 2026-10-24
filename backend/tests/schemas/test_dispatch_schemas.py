@@ -73,3 +73,25 @@ def test_station_id_pattern() -> None:
 
 def test_no_station_reachable_error_code() -> None:
     assert ErrorCode("NO_STATION_REACHABLE") is ErrorCode.NO_STATION_REACHABLE
+
+
+def test_ranked_candidate_on_foot_defaults_to_none_and_rejects_negative() -> None:
+    from greenwave.schemas import OnFootLeg, RankedCandidate
+
+    station = {
+        "station_id": "STN-A-0001",
+        "vehicle_type": "AMBULANCE",
+        "source_kind": "ambulance_base",
+        "name": "A",
+        "position": {"lat": 50.0, "lng": 19.9},
+    }
+    candidate = RankedCandidate.model_validate(
+        {"station": station, "greenwave_seconds": 1.0, "distance_m": 1.0}
+    )
+    assert candidate.on_foot is None
+    leg = {"access_point": {"lat": 50.0, "lng": 19.9}, "distance_m": 650.0, "seconds": 464.0}
+    assert OnFootLeg.model_validate(leg).distance_m == 650.0
+    with pytest.raises(ValidationError):
+        OnFootLeg.model_validate({**leg, "distance_m": -1})
+    with pytest.raises(ValidationError):
+        OnFootLeg.model_validate({**leg, "seconds": -1})

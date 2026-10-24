@@ -11,7 +11,7 @@ function BrowserThemeColor() {
     if (!resolvedTheme) return;
     // Media defaults cover first paint; manual theme choices must also match browser chrome.
     document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
-      meta.content = resolvedTheme === "dark" ? "#0a0a0a" : "#ffffff";
+      meta.content = resolvedTheme === "dark" ? "#0e0f11" : "#f1f4f7";
     });
   }, [resolvedTheme]);
   return null;

@@ -1,0 +1,43 @@
+export type SheetSnap = "collapsed" | "expanded";
+
+/** A release faster than this (px/ms) is a flick: its direction decides the snap. */
+const FLICK_VELOCITY = 0.11;
+/** Share of an overshoot past a bound the sheet still follows. */
+const OVERSHOOT_FOLLOW = 0.25;
+
+/**
+ * The snap a released drag settles on. `offsetPx` is the drag delta (negative = up),
+ * `velocityPxPerMs` its release velocity (same sign), `travelPx` the distance between snaps.
+ */
+export function nextSnap(
+  current: SheetSnap,
+  offsetPx: number,
+  velocityPxPerMs: number,
+  travelPx: number,
+): SheetSnap {
+  if (Math.abs(velocityPxPerMs) > FLICK_VELOCITY)
+    return velocityPxPerMs < 0 ? "expanded" : "collapsed";
+  if (current === "collapsed") return offsetPx <= -travelPx / 2 ? "expanded" : "collapsed";
+  return offsetPx >= travelPx / 2 ? "collapsed" : "expanded";
+}
+
+/** Inside the bounds the sheet follows 1:1; past them it resists instead of stopping hard. */
+export function dampedOffset(offsetPx: number, minPx: number, maxPx: number): number {
+  if (offsetPx < minPx) return minPx + (offsetPx - minPx) * OVERSHOOT_FOLLOW;
+  if (offsetPx > maxPx) return maxPx + (offsetPx - maxPx) * OVERSHOOT_FOLLOW;
+  return offsetPx;
+}
+
+/**
+ * A drag that starts in the scrollable details moves the sheet only when the list is at
+ * its top and the drag pulls down; otherwise the list scrolls.
+ */
+export function shouldDragSheet(scrollTop: number, deltaY: number, fromContent: boolean): boolean {
+  if (!fromContent) return true;
+  return scrollTop <= 0 && deltaY > 0;
+}
+
+/** How far the collapsed sheet sits below its expanded position, from measured heights. */
+export function sheetTravel(sheetHeightPx: number, collapsedHeightPx: number): number {
+  return Math.max(0, sheetHeightPx - collapsedHeightPx);
+}

@@ -19,14 +19,17 @@ type RunSummaryProps = {
   onBackToSetup: () => void;
   /** Stops the live run; setup is offered only once the run has ended. */
   onStop: () => void;
+  /** False where another control (the phone sheet's telemetry strip) owns Stop. */
+  showStop?: boolean;
 };
 
 /** Live-run panel: Stop while running, then the completed summary, cancellation or lost stream. */
-export function RunSummary({ onBackToSetup, onStop }: RunSummaryProps) {
+export function RunSummary({ onBackToSetup, onStop, showStop = true }: RunSummaryProps) {
   const { simulationState, routeData, completion, cancelReason, error, stopRequested, stopError } =
     useSimulationState();
 
   if (simulationState === "RUNNING") {
+    if (!showStop) return null;
     return (
       <RunningRunControls stopRequested={stopRequested} stopError={stopError} onStop={onStop} />
     );
@@ -105,22 +108,21 @@ function RunningRunControls({
   onStop: () => void;
 }) {
   return (
-    <section className="rounded-xl border border-cyan-500/35 bg-card/92 p-4 text-cyan-700 shadow-2xl backdrop-blur-xl dark:text-cyan-300">
-      <div className="flex items-start gap-2.5">
-        <Radio className="mt-0.5 size-4 shrink-0" aria-hidden />
+    <section className="hud-panel">
+      <div className="flex items-start gap-3">
+        <span className="hud-icon tone-beacon">
+          <Radio aria-hidden />
+        </span>
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold">Simulation running</h2>
-          <p className="mt-1 text-[11px] text-muted-foreground">
+          <h2 className="hud-title">Simulation running</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
             Stop ends the simulated run; you can then return to dispatch setup.
           </p>
         </div>
       </div>
       {stopError && (
-        <p
-          role="alert"
-          className="mt-3 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/8 px-3 py-2 text-[11px] font-medium text-red-700 dark:text-red-300"
-        >
-          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+        <p role="alert" className="hud-alert tone-emergency mt-3">
+          <TriangleAlert aria-hidden />
           Could not stop the simulation: {stopError}
         </p>
       )}
@@ -130,7 +132,7 @@ function RunningRunControls({
         onClick={onStop}
         disabled={stopRequested}
         aria-busy={stopRequested}
-        className="mt-4 hidden min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-500/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 disabled:cursor-wait disabled:opacity-70 lg:flex dark:text-red-300"
+        className="hud-danger pressable mt-4 hidden lg:flex"
       >
         <Square className="size-3.5 fill-current" aria-hidden />
         {stopRequested ? "Stopping…" : "Stop simulation"}
@@ -159,15 +161,18 @@ export function FinishedRunSummary({
       onBackToSetup={onBackToSetup}
     >
       <dl className="mt-3 grid grid-cols-2 gap-3">
-        <div className="col-span-2 rounded-lg border border-emerald-500/25 bg-emerald-500/7 px-3 py-2">
-          <dt className="text-[10px] text-muted-foreground">{total.label}</dt>
-          <dd className="mt-1 font-mono text-2xl font-bold">{total.value}</dd>
+        <div className="col-span-2 rounded-lg border border-go/25 bg-go/8 px-3 py-2.5">
+          <dt className="hud-stat-label">{total.label}</dt>
+          <dd className="hud-value mt-1 text-3xl font-semibold">{total.value}</dd>
         </div>
         {details.map(({ label, value }) => (
           <div key={label}>
-            <dt className="text-[10px] text-muted-foreground">{label}</dt>
+            <dt className="hud-stat-label">{label}</dt>
             <dd
-              className={["mt-1 font-mono text-sm font-bold", label === SAVED_LABEL && savedTone]
+              className={[
+                "hud-value mt-1 text-sm font-semibold",
+                label === SAVED_LABEL && savedTone,
+              ]
                 .filter(Boolean)
                 .join(" ")}
             >
@@ -181,15 +186,9 @@ export function FinishedRunSummary({
 }
 
 const TONES = {
-  success: {
-    icon: CircleCheck,
-    className: "border-emerald-500/35 text-emerald-600 dark:text-emerald-400",
-  },
-  neutral: {
-    icon: CircleSlash,
-    className: "border-amber-500/35 text-amber-700 dark:text-amber-300",
-  },
-  error: { icon: TriangleAlert, className: "border-red-500/35 text-red-700 dark:text-red-300" },
+  success: { icon: CircleCheck, className: "tone-go" },
+  neutral: { icon: CircleSlash, className: "tone-caution" },
+  error: { icon: TriangleAlert, className: "tone-emergency" },
 } as const;
 
 function SummaryCard({
@@ -209,22 +208,20 @@ function SummaryCard({
   return (
     <section
       role={tone === "error" ? "alert" : "status"}
-      className={`rounded-xl border bg-card/92 p-4 shadow-2xl backdrop-blur-xl ${className}`}
+      className={`hud-panel hud-enter ${className}`}
     >
-      <div className="flex items-start gap-2.5">
-        <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <div className="flex items-start gap-3">
+        <span className="hud-icon">
+          <Icon aria-hidden />
+        </span>
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold">{title}</h2>
-          <p className="mt-1 text-[11px] text-muted-foreground">{detail}</p>
+          <h2 className="hud-title">{title}</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
         </div>
       </div>
-      <div className="text-foreground">{children}</div>
-      <button
-        type="button"
-        onClick={onBackToSetup}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background/70 px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70"
-      >
-        <Settings2 className="size-3.5" aria-hidden />
+      <div>{children}</div>
+      <button type="button" onClick={onBackToSetup} className="hud-secondary pressable mt-4">
+        <Settings2 aria-hidden />
         Back to dispatch setup
       </button>
     </section>

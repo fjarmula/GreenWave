@@ -6,7 +6,6 @@ import { Marker, type Map } from "maplibre-gl";
 
 import { stationFeatures, type StationFeature } from "@/components/map/station-layer";
 import { VehicleIcon } from "@/components/map/VehicleIcon";
-import { VEHICLE_ICON_COLORS } from "@/components/map/vehicle-icons";
 import { SOURCE_KIND_LABELS } from "@/lib/station-copy";
 import type { Station, VehicleType } from "@/types/telemetry";
 
@@ -75,26 +74,21 @@ function StationPin({ feature }: { feature: StationFeature }) {
   const { name, vehicle_type, source_kind, dimmed, role } = feature.properties;
   const label = `${name} (${SOURCE_KIND_LABELS[source_kind]})`;
   const size = role === "chosen" ? "size-8" : "size-6";
+  // Chosen and runner-up stations wear the single accent; every station is beacon blue.
   const ring =
-    role === "chosen"
-      ? "ring-4 ring-emerald-400"
-      : role === "runner_up"
-        ? "ring-2 ring-emerald-400/70 ring-offset-1 ring-offset-background"
-        : "";
+    role === "chosen" ? "ring-4 ring-go" : role === "runner_up" ? "ring-2 ring-go/60" : "";
   return (
     <div
-      className={`relative font-mono text-[10px] font-bold text-foreground ${dimmed ? "opacity-35 grayscale" : ""}`}
+      className={`relative text-[11px] font-semibold text-foreground ${dimmed ? "opacity-35 grayscale" : ""}`}
       title={label}
       aria-label={`Station: ${label}`}
       role="img"
     >
-      <span
-        className={`grid place-items-center rounded-full border-2 border-background shadow-md ${size} ${ring} ${VEHICLE_ICON_COLORS[vehicle_type]}`}
-      >
+      <span className={`map-dot map-dot--station grid place-items-center ${size} ${ring}`}>
         <VehicleIcon type={vehicle_type} className={role === "chosen" ? "size-4" : "size-3.5"} />
       </span>
       {role === "chosen" && (
-        <span className="absolute top-1/2 left-full ml-2 -translate-y-1/2 rounded-md border border-border/80 bg-card/95 px-2 py-1 whitespace-nowrap shadow-lg backdrop-blur">
+        <span className="absolute top-1/2 left-full ml-2 -translate-y-1/2 surface-glass rounded-full! px-2.5 py-1 whitespace-nowrap">
           {name}
         </span>
       )}

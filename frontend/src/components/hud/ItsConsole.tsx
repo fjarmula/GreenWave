@@ -18,20 +18,20 @@ export function ItsConsole() {
   const { itsLog, simulationState, itsRequests, liveTelemetry } = useSimulationState();
   const logEntries = itsLog.slice(-5);
   return (
-    <section className="overflow-hidden rounded-xl border border-border/80 bg-card/92 shadow-2xl backdrop-blur-xl">
-      <div className="flex items-center justify-between gap-4 border-b border-border px-3 py-2.5 font-mono text-[10px] text-muted-foreground">
+    <section className="hud-panel overflow-hidden p-0">
+      <div className="flex items-center justify-between gap-4 border-b border-border px-3.5 py-2.5 text-2xs font-medium text-muted-foreground">
         <span className="flex items-center gap-2">
-          <Activity className="size-3.5 text-cyan-600 dark:text-cyan-300" aria-hidden />
+          <Activity className="size-3.5 text-beacon" aria-hidden />
           {getFrontendConfig().transport === "mock" ? "Mock" : "Simulated"} ITS gateway audit log
         </span>
-        <span className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
-          <i
-            className={`size-1.5 rounded-full bg-current ${simulationState === "RUNNING" ? "animate-pulse" : ""}`}
-          />
+        <span
+          className={`hud-chip hud-value text-2xs ${simulationState === "RUNNING" ? "tone-emergency" : ""}`}
+        >
+          <i className={`hud-dot ${simulationState === "RUNNING" ? "status-breathe" : ""}`} />
           {PHASE_CHIPS[simulationState] ?? "IDLE"}
         </span>
       </div>
-      <div className="space-y-2 bg-slate-950/[0.04] px-3 py-3 dark:bg-slate-950/55">
+      <div className="space-y-1.5 bg-muted/50 px-3.5 py-3 dark:bg-black/25">
         {itsRequests.map((request) => (
           <ItsFeedbackStatus
             key={request.message_id}
@@ -60,8 +60,8 @@ export function ItsConsole() {
             <p
               key={entry.messageId}
               aria-current={newest || undefined}
-              className={`flex gap-2 font-mono text-[9px] leading-relaxed ${
-                newest ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"
+              className={`hud-value flex gap-2 text-2xs leading-relaxed ${
+                newest ? "text-go" : "text-muted-foreground"
               }`}
             >
               <span className="shrink-0 text-muted-foreground opacity-60">

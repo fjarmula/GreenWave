@@ -50,6 +50,90 @@
         "title": "CancelReason",
         "type": "string"
       },
+      "ComparisonStartRequest": {
+        "description": "One scenario run twice at once, ER Green Wave enabled and disabled, in lockstep (ADR 0008).\n\nThe fields are those of :class:`SimulationStartRequest` minus ``green_wave_mode``; each run\nkeeps its own client-chosen id and is streamed and stopped like a single run.",
+        "properties": {
+          "destination": {
+            "$ref": "#/components/schemas/Position"
+          },
+          "disabled_simulation_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Disabled Simulation Id",
+            "type": "string"
+          },
+          "enable_cascade_mode": {
+            "title": "Enable Cascade Mode",
+            "type": "boolean"
+          },
+          "enabled_simulation_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Enabled Simulation Id",
+            "type": "string"
+          },
+          "its_scenario": {
+            "$ref": "#/components/schemas/ItsScenario",
+            "default": "NOMINAL"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/Position"
+          },
+          "playback_speed": {
+            "default": 1,
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Playback Speed",
+            "type": "integer"
+          },
+          "traffic_density_multiplier": {
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Traffic Density Multiplier",
+            "type": "number"
+          },
+          "vehicle_type": {
+            "$ref": "#/components/schemas/VehicleType",
+            "default": "AMBULANCE"
+          }
+        },
+        "required": [
+          "enabled_simulation_id",
+          "disabled_simulation_id",
+          "origin",
+          "destination",
+          "traffic_density_multiplier",
+          "enable_cascade_mode"
+        ],
+        "title": "ComparisonStartRequest",
+        "type": "object"
+      },
+      "ComparisonStartResponse": {
+        "properties": {
+          "disabled": {
+            "$ref": "#/components/schemas/SimulationStartResponse"
+          },
+          "enabled": {
+            "$ref": "#/components/schemas/SimulationStartResponse"
+          },
+          "is_simulated": {
+            "const": true,
+            "title": "Is Simulated",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "is_simulated",
+          "enabled",
+          "disabled"
+        ],
+        "title": "ComparisonStartResponse",
+        "type": "object"
+      },
       "DatasetQualityResponse": {
         "properties": {
           "checks": {
@@ -653,6 +737,31 @@
         "title": "KpiMetrics",
         "type": "object"
       },
+      "OnFootLeg": {
+        "description": "The walk from the vehicle's access point to an incident off the routable network.",
+        "properties": {
+          "access_point": {
+            "$ref": "#/components/schemas/Position"
+          },
+          "distance_m": {
+            "minimum": 0.0,
+            "title": "Distance M",
+            "type": "number"
+          },
+          "seconds": {
+            "minimum": 0.0,
+            "title": "Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "access_point",
+          "distance_m",
+          "seconds"
+        ],
+        "title": "OnFootLeg",
+        "type": "object"
+      },
       "Position": {
         "properties": {
           "lat": {
@@ -772,6 +881,16 @@
             "minimum": 0.0,
             "title": "Greenwave Seconds",
             "type": "number"
+          },
+          "on_foot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OnFootLeg"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "station": {
             "$ref": "#/components/schemas/Station"
@@ -1088,6 +1207,16 @@
       },
       "SimulationStartResponse": {
         "properties": {
+          "destination_on_foot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OnFootLeg"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "destination_snapped": {
             "$ref": "#/components/schemas/SnappedEndpoint"
           },
@@ -1604,6 +1733,58 @@
         "summary": "Health",
         "tags": [
           "system"
+        ]
+      }
+    },
+    "/api/v1/simulation/compare/start": {
+      "post": {
+        "description": "Start the ER Green Wave and standard-traffic runs of one scenario in lockstep (ADR 0008).\n\nSupersedes the active run or pair; each run streams and stops under its own id, and stopping\neither stops both.",
+        "operationId": "start_comparison_api_v1_simulation_compare_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComparisonStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonStartResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "SIMULATION_ID_IN_USE"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "ORIGIN_OFF_NETWORK, DESTINATION_OFF_NETWORK or NO_ROUTE (ErrorResponse); request-schema violations return FastAPI's default validation body."
+          }
+        },
+        "summary": "Start Comparison",
+        "tags": [
+          "simulation"
         ]
       }
     },

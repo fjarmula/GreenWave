@@ -6,9 +6,9 @@ Canonical definition of the payloads in ``GreenWave_ARCHITECTURE.md`` section 4 
 """
 
 from enum import StrEnum
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import AwareDatetime, BaseModel, Field, RootModel
+from pydantic import AwareDatetime, BaseModel, Field, RootModel, model_validator
 
 from greenwave.schemas.its import ItsFeedbackEvent, ItsRequestSnapshot, ItsScenario
 
@@ -122,6 +122,14 @@ class SnappedEndpoint(BaseModel):
     snap_distance_m: Annotated[float, Field(ge=0.0)]
 
 
+class OnFootLeg(BaseModel):
+    """The walk from the vehicle's access point to an incident off the routable network."""
+
+    access_point: Position
+    distance_m: Annotated[float, Field(ge=0.0)]  # straight line x detour factor
+    seconds: Annotated[float, Field(ge=0.0)]
+
+
 class RouteIntersection(BaseModel):
     id: str
     name: str | None
@@ -149,6 +157,55 @@ class SimulationStartResponse(BaseModel):
     destination_snapped: SnappedEndpoint
     its_scenario: ItsScenario = ItsScenario.NOMINAL
     green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED  # the mode this run uses
+    # Set when the incident is off the network: the run ends at destination_snapped (the access
+    # point) and the crew walks this leg; the estimates cover the drive only.
+    destination_on_foot: OnFootLeg | None = None
+
+
+class ComparisonStartRequest(BaseModel):
+    """One scenario run twice at once, ER Green Wave enabled and disabled, in lockstep (ADR 0008).
+
+    The fields are those of :class:`SimulationStartRequest` minus ``green_wave_mode``; each run
+    keeps its own client-chosen id and is streamed and stopped like a single run.
+    """
+
+    enabled_simulation_id: SimulationId
+    disabled_simulation_id: SimulationId
+    origin: Position
+    destination: Position
+    traffic_density_multiplier: Annotated[float, Field(ge=1.0, le=3.0)]
+    enable_cascade_mode: bool
+    playback_speed: Annotated[int, Field(ge=1, le=10)] = 1
+    vehicle_type: VehicleType = VehicleType.AMBULANCE
+    its_scenario: ItsScenario = ItsScenario.NOMINAL
+
+    @model_validator(mode="after")
+    def distinct_ids(self) -> Self:
+        if self.enabled_simulation_id == self.disabled_simulation_id:
+            raise ValueError("enabled_simulation_id and disabled_simulation_id must differ")
+        return self
+
+    def member(self, mode: GreenWaveMode) -> SimulationStartRequest:
+        """The single-run request of the pair member that uses ``mode``."""
+        enabled = mode is GreenWaveMode.ENABLED
+        return SimulationStartRequest(
+            simulation_id=self.enabled_simulation_id if enabled else self.disabled_simulation_id,
+            origin=self.origin,
+            destination=self.destination,
+            traffic_density_multiplier=self.traffic_density_multiplier,
+            enable_cascade_mode=self.enable_cascade_mode,
+            playback_speed=self.playback_speed,
+            vehicle_type=self.vehicle_type,
+            green_wave_mode=mode,
+            its_scenario=self.its_scenario,
+        )
+
+
+class ComparisonStartResponse(BaseModel):
+    schema_version: SchemaVersion
+    is_simulated: Literal[True]
+    enabled: SimulationStartResponse
+    disabled: SimulationStartResponse
 
 
 class AmbulanceTelemetry(BaseModel):
@@ -278,6 +335,8 @@ __all__ = [
     "AmbulanceStatus",
     "AmbulanceTelemetry",
     "CancelReason",
+    "ComparisonStartRequest",
+    "ComparisonStartResponse",
     "ErrorCode",
     "ErrorResponse",
     "GreenWaveMode",

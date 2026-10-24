@@ -1,10 +1,12 @@
 import { itsDispatchEventExample } from "@/lib/transport/__fixtures__/architecture-examples";
-
 import { expect, it, vi } from "vitest";
 import { observeSimulation, observeDispatch } from "./observe-adapters";
 import { createDiagnosticStore } from "./store";
 import { request, route, tick } from "@/lib/comparison/fixtures.test-support";
 import type { SimulationStreamSubscriber } from "@/lib/simulation-adapter";
+const unusedComparison = async (): Promise<never> => {
+  throw new Error("comparison start is not used here");
+};
 it("preserves values, error identity, callback order and unsubscribe exactly once", async () => {
   const s = createDiagnosticStore();
   let subscriber!: SimulationStreamSubscriber;
@@ -12,6 +14,7 @@ it("preserves values, error identity, callback order and unsubscribe exactly onc
   let now = 0;
   const adapter = observeSimulation(
     {
+      startComparison: unusedComparison,
       start: async () => route(),
       stop: async () => {},
       subscribe: (_, v) => {
@@ -70,6 +73,7 @@ it("diagnostic listener errors cannot interrupt stream delivery", async () => {
   let subscriber!: SimulationStreamSubscriber;
   const adapter = observeSimulation(
     {
+      startComparison: unusedComparison,
       start: async () => route(),
       stop: async () => {},
       subscribe: (_, v) => {
@@ -98,7 +102,12 @@ it("diagnostic listener errors cannot interrupt stream delivery", async () => {
 it("labels mock request and response values as synthetic captures", async () => {
   const store = createDiagnosticStore();
   const observed = observeSimulation(
-    { start: async () => route(), stop: async () => {}, subscribe: () => () => {} },
+    {
+      start: async () => route(),
+      startComparison: unusedComparison,
+      stop: async () => {},
+      subscribe: () => () => {},
+    },
     "mock",
     store,
   );
@@ -109,11 +118,36 @@ it("labels mock request and response values as synthetic captures", async () => 
   });
 });
 
+it("records a comparison start as a compare-start capture", async () => {
+  const store = createDiagnosticStore();
+  const pair = { schema_version: "1.0", is_simulated: true, enabled: route(), disabled: route() };
+  const observed = observeSimulation(
+    {
+      start: async () => route(),
+      startComparison: async () => pair as never,
+      stop: async () => {},
+      subscribe: () => () => {},
+    },
+    "mock",
+    store,
+  );
+  const comparison = { enabled_simulation_id: "a", disabled_simulation_id: "b" } as never;
+  await observed.startComparison(comparison);
+  expect(store.getSnapshot().at(-1)).toMatchObject({
+    operation: "compare-start",
+    outcome: "success",
+    capture: { method: "POST", path: "/api/v1/simulation/compare/start" },
+  });
+});
+
 it("captures synthetic ITS events as received with explicit event types", () => {
   const store = createDiagnosticStore();
   let subscriber!: SimulationStreamSubscriber;
   const adapter = observeSimulation(
     {
+      startComparison: async () => {
+        throw new Error("unused");
+      },
       start: async () => route(),
       stop: async () => {},
       subscribe: (_, s) => {

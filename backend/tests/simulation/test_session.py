@@ -7,13 +7,19 @@ import pytest
 from greenwave.routing.errors import OriginOffNetwork
 from greenwave.schemas import (
     CancelReason,
+    ComparisonStartRequest,
+    GreenWaveMode,
     SimulationCancelledEvent,
     SimulationCompletedEvent,
     SimulationStartRequest,
     SimulationStartResponse,
 )
 from greenwave.simulation.assembly import PlannedSimulation, SimulationPlanner
-from greenwave.simulation.session import SessionManager, SimulationNotFoundError
+from greenwave.simulation.session import (
+    SessionManager,
+    SimulationIdInUseError,
+    SimulationNotFoundError,
+)
 from greenwave.simulation_settings import SimulationSettings
 
 
@@ -474,3 +480,306 @@ async def test_a_failure_after_the_terminal_publishes_no_second_terminal(
     received = [listener.get_nowait() for _ in range(listener.qsize())]
     assert [type(event) for event in received] == [SimulationCompletedEvent]
     await manager.shutdown()
+
+
+# Comparison pairs (ADR 0008): one operation of two sessions advanced by one shared loop.
+
+
+def _comparison(enabled_id: str = "on", disabled_id: str = "off") -> ComparisonStartRequest:
+    return ComparisonStartRequest.model_validate(
+        {
+            "enabled_simulation_id": enabled_id,
+            "disabled_simulation_id": disabled_id,
+            "origin": {"lat": 50.0, "lng": 19.0},
+            "destination": {"lat": 50.1, "lng": 19.1},
+            "traffic_density_multiplier": 1.0,
+            "enable_cascade_mode": False,
+        }
+    )
+
+
+def _completed(simulation_id: str, tick: int) -> SimulationCompletedEvent:
+    return SimulationCompletedEvent(
+        schema_version="1.0",
+        is_simulated=True,
+        event_type="SIMULATION_COMPLETED",
+        simulation_id=simulation_id,
+        tick=tick,
+        timestamp=datetime(2026, 10, 16, tzinfo=UTC),
+        kpi_metrics={"current_time_saved_sec": 0, "total_time_elapsed_sec": tick},
+    )
+
+
+class _CountingEngine(_Engine):
+    """Ticks 1..n (stand-in tick events), completing on tick ``n``; logs every step."""
+
+    def __init__(self, simulation_id: str, n: int | None, log: list[tuple[str, int]]) -> None:
+        self.simulation_id, self.n, self.log = simulation_id, n, log
+
+    def step(self, state: SimpleNamespace, _: datetime) -> tuple[SimpleNamespace, list[object]]:
+        tick = state.tick + 1
+        self.log.append((self.simulation_id, tick))
+        if tick == self.n:
+            return SimpleNamespace(tick=tick, completed=True), [
+                _completed(self.simulation_id, tick)
+            ]
+        return SimpleNamespace(tick=tick, completed=False), [SimpleNamespace(tick=tick)]
+
+
+def _pair_planner(
+    log: list[tuple[str, int]], enabled_n: int | None, disabled_n: int | None
+) -> SimulationPlanner:
+    def plan(_: object, request: SimulationStartRequest, *__: object) -> PlannedSimulation:
+        n = enabled_n if request.green_wave_mode is GreenWaveMode.ENABLED else disabled_n
+        engine = _CountingEngine(request.simulation_id, n, log)
+        response = _response(request.simulation_id).model_copy(
+            update={"green_wave_mode": request.green_wave_mode}
+        )
+        return PlannedSimulation(engine, response)  # type: ignore[arg-type]
+
+    return plan
+
+
+async def _events(manager: SessionManager, simulation_id: str) -> list[object]:
+    return [event async for event in manager.subscribe(simulation_id)]
+
+
+async def _pair_run(
+    manager: SessionManager, enabled_n: int | None, disabled_n: int | None
+) -> tuple[list[tuple[str, int]], list[object], list[object]]:
+    log: list[tuple[str, int]] = []
+    manager._planner = _pair_planner(log, enabled_n, disabled_n)
+    manager._sleep = _yield
+    response = await manager.start_comparison(_comparison())
+    assert response.enabled.green_wave_mode is GreenWaveMode.ENABLED
+    assert response.disabled.green_wave_mode is GreenWaveMode.DISABLED
+    on, off = await asyncio.wait_for(
+        asyncio.gather(_events(manager, "on"), _events(manager, "off")), timeout=1
+    )
+    return log, on, off
+
+
+@pytest.mark.asyncio
+async def test_pair_members_advance_in_lockstep(manager: SessionManager) -> None:
+    log, on, off = await _pair_run(manager, 4, 4)
+    assert log == [(sid, tick) for tick in range(1, 5) for sid in ("on", "off")]
+    assert isinstance(on[-1], SimulationCompletedEvent)
+    assert isinstance(off[-1], SimulationCompletedEvent)
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_pair_keeps_streaming_the_slower_member_after_the_first_completes(
+    manager: SessionManager,
+) -> None:
+    log, on, off = await _pair_run(manager, 3, 5)
+    assert [tick for sid, tick in log if sid == "on"] == [1, 2, 3]
+    assert [tick for sid, tick in log if sid == "off"] == [1, 2, 3, 4, 5]
+    assert isinstance(on[-1], SimulationCompletedEvent) and on[-1].tick == 3
+    assert isinstance(off[-1], SimulationCompletedEvent) and off[-1].tick == 5
+    assert manager._active is None
+    await manager.shutdown()
+
+
+async def _running_pair(
+    manager: SessionManager, enabled_n: int | None = None, disabled_n: int | None = None
+) -> list[tuple[str, int]]:
+    log: list[tuple[str, int]] = []
+    manager._planner = _pair_planner(log, enabled_n, disabled_n)
+    await manager.start_comparison(_comparison())
+    await asyncio.sleep(0)
+    return log
+
+
+def _terminal(manager: SessionManager, simulation_id: str) -> object:
+    return manager._sessions[simulation_id].terminal
+
+
+@pytest.mark.asyncio
+async def test_stopping_one_member_stops_both(manager: SessionManager) -> None:
+    await _running_pair(manager)
+    await manager.stop("on")
+    for simulation_id in ("on", "off"):
+        terminal = _terminal(manager, simulation_id)
+        assert isinstance(terminal, SimulationCancelledEvent)
+        assert terminal.reason is CancelReason.STOPPED
+    assert manager._active is None
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_stopping_a_pair_after_one_arrival_cancels_only_the_live_member(
+    manager: SessionManager,
+) -> None:
+    await _running_pair(manager, enabled_n=1)
+    assert isinstance(_terminal(manager, "on"), SimulationCompletedEvent)
+
+    await manager.stop("on")  # the finished member's id still stops the live one
+
+    assert isinstance(_terminal(manager, "on"), SimulationCompletedEvent)
+    off = _terminal(manager, "off")
+    assert isinstance(off, SimulationCancelledEvent)
+    assert off.reason is CancelReason.STOPPED
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_single_start_supersedes_a_running_pair(manager: SessionManager) -> None:
+    await _running_pair(manager)
+    manager._planner = _planner(_Engine)
+    await manager.start(_request("single"))
+    for simulation_id in ("on", "off"):
+        terminal = _terminal(manager, simulation_id)
+        assert isinstance(terminal, SimulationCancelledEvent)
+        assert terminal.reason is CancelReason.SUPERSEDED
+    assert manager._active is not None
+    assert manager._active.simulation_id == "single"
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_comparison_start_supersedes_a_running_single(manager: SessionManager) -> None:
+    await manager.start(_request("single"))
+    await _running_pair(manager)
+    terminal = _terminal(manager, "single")
+    assert isinstance(terminal, SimulationCancelledEvent)
+    assert terminal.reason is CancelReason.SUPERSEDED
+    assert _terminal(manager, "on") is None
+    assert _terminal(manager, "off") is None
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_comparison_start_rejects_a_live_id(manager: SessionManager) -> None:
+    await manager.start(_request("on"))
+    with pytest.raises(SimulationIdInUseError):
+        await manager.start_comparison(_comparison())
+    assert _terminal(manager, "on") is None
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_failed_pair_planning_keeps_the_active_operation(manager: SessionManager) -> None:
+    await manager.start(_request("first"))
+    manager._planner = _failing_planner
+
+    with pytest.raises(OriginOffNetwork):
+        await manager.start_comparison(_comparison())
+
+    assert not manager.exists("on")
+    assert not manager.exists("off")
+    assert manager._active is not None
+    assert manager._active.simulation_id == "first"
+    assert _terminal(manager, "first") is None
+    await manager.shutdown()
+
+
+class _PairFailEngine(_CountingEngine):
+    def step(self, state: SimpleNamespace, at: datetime) -> tuple[SimpleNamespace, list[object]]:
+        if self.simulation_id == "off" and state.tick == 1:
+            raise RuntimeError("engine bug")
+        return super().step(state, at)
+
+
+@pytest.mark.asyncio
+async def test_pair_loop_failure_ends_both_with_server_error(manager: SessionManager) -> None:
+    log: list[tuple[str, int]] = []
+
+    def plan(_: object, request: SimulationStartRequest, *__: object) -> PlannedSimulation:
+        engine = _PairFailEngine(request.simulation_id, None, log)
+        return PlannedSimulation(engine, _response(request.simulation_id))  # type: ignore[arg-type]
+
+    manager._planner = plan
+    manager._sleep = _yield
+    await manager.start_comparison(_comparison())
+    on, off = await asyncio.wait_for(
+        asyncio.gather(_events(manager, "on"), _events(manager, "off")), timeout=1
+    )
+    for events in (on, off):
+        assert isinstance(events[-1], SimulationCancelledEvent)
+        assert events[-1].reason is CancelReason.SERVER_ERROR
+    assert manager._active is None
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_pair_members_are_kept_by_eviction(manager: SessionManager) -> None:
+    _limited(manager, 1)
+    await manager.start(_request("old"))
+    await _running_pair(manager)
+    assert not manager.exists("old")
+    assert manager.exists("on")
+    assert manager.exists("off")
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_second_pair_plan_failure_closes_the_first_engine(manager: SessionManager) -> None:
+    closed: list[str] = []
+
+    class TrackedEngine(_Engine):
+        def close(self) -> None:
+            closed.append("on")
+
+    def plan(_: object, request: SimulationStartRequest, *__: object) -> PlannedSimulation:
+        if request.green_wave_mode is GreenWaveMode.DISABLED:
+            raise OriginOffNetwork("second plan failed")
+        return PlannedSimulation(TrackedEngine(), _response(request.simulation_id))  # type: ignore[arg-type]
+
+    manager._planner = plan
+    with pytest.raises(OriginOffNetwork):
+        await manager.start_comparison(_comparison())
+    assert closed == ["on"]
+    assert not manager.exists("on")
+
+
+def test_comparison_members_preserve_the_selected_its_scenario() -> None:
+    from greenwave.schemas.its import ItsScenario
+
+    request = ComparisonStartRequest.model_validate(
+        {**_comparison().model_dump(), "its_scenario": "REJECTED"}
+    )
+    assert request.member(GreenWaveMode.ENABLED).its_scenario is ItsScenario.REJECTED
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("scenario", "failure"),
+    # This fixture's nominal request expires under main's unchanged hold policy.
+    [("NOMINAL", "ITS_HOLD_EXPIRED"), ("REJECTED", "ITS_REJECTED"), ("NO_FEEDBACK", "ITS_TIMEOUT")],
+)
+async def test_real_engine_comparison_keeps_feedback_and_baseline_isolated(
+    scenario: str, failure: str | None
+) -> None:
+    from tests.support.route_fixtures import corridor_index, position_at
+
+    manager = SessionManager(corridor_index(), SimulationSettings(), sleep=_yield)
+    request = ComparisonStartRequest.model_validate(
+        {
+            **_comparison().model_dump(),
+            "origin": position_at(7_422_000),
+            "destination": position_at(7_422_850.02),
+            "its_scenario": scenario,
+        }
+    )
+    try:
+        response = await manager.start_comparison(request)
+        assert response.enabled.its_scenario.value == scenario
+        assert response.disabled.its_scenario.value == "NOMINAL"
+        assert (
+            manager._sessions["on"].engine.controller
+            is not manager._sessions["off"].engine.controller
+        )
+        on, off = await asyncio.wait_for(
+            asyncio.gather(_events(manager, "on"), _events(manager, "off")), timeout=3
+        )
+        assert isinstance(off[-1], SimulationCompletedEvent)
+        if failure:
+            assert isinstance(on[-1], SimulationCancelledEvent)
+            assert on[-1].reason.value == failure
+            assert not any(isinstance(event, SimulationCompletedEvent) for event in on)
+        else:
+            assert isinstance(on[-1], SimulationCompletedEvent)
+        assert all(session.engine._closed for session in manager._sessions.values())
+    finally:
+        await manager.shutdown()
