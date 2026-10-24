@@ -7,6 +7,7 @@ import type { SimulationStartRequest } from "@/types/telemetry";
 export const request: SimulationStartRequest = {
   simulation_id: "pair",
   green_wave_mode: "ENABLED",
+  its_scenario: "NOMINAL" as const,
   origin: { lat: 50.0612, lng: 19.9571 },
   destination: { lat: 50.0621, lng: 19.9248 },
   traffic_density_multiplier: 1.5,
@@ -18,6 +19,7 @@ export const route = (id = "pair", mode: "ENABLED" | "DISABLED" = "ENABLED") => 
   ...startResponseExample,
   simulation_id: id,
   green_wave_mode: mode,
+  its_scenario: "NOMINAL" as const,
 });
 export const tick = (n: number, id = "pair") => ({
   ...tickEventExample,

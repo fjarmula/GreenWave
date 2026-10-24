@@ -4,13 +4,18 @@ from typing import TypeGuard
 
 from greenwave.schemas import (
     ItsDispatchEvent,
+    ItsFeedbackEvent,
     SimulationCancelledEvent,
     SimulationCompletedEvent,
     SimulationTickEvent,
 )
 
 SimulationEvent = (
-    SimulationTickEvent | ItsDispatchEvent | SimulationCompletedEvent | SimulationCancelledEvent
+    SimulationTickEvent
+    | ItsFeedbackEvent
+    | ItsDispatchEvent
+    | SimulationCompletedEvent
+    | SimulationCancelledEvent
 )
 TerminalEvent = SimulationCancelledEvent | SimulationCompletedEvent
 

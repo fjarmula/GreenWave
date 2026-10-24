@@ -6,12 +6,14 @@ import { MODE_LABELS } from "./ComparisonLivePane";
 /** Both vehicles on one track of the shared route, with the measured lead. */
 export function RaceBar({
   standing,
+  readout,
   running,
   stopping,
   onStop,
   tickMilliseconds,
 }: {
   standing: RaceStanding;
+  readout?: string;
   running: boolean;
   stopping: boolean;
   onStop: () => void;
@@ -22,7 +24,7 @@ export function RaceBar({
     <section className="race-bar surface-glass" aria-label="Race along the route" data-map-occluder>
       <div className="race-bar-head">
         <p className="race-bar-readout" role="status">
-          {raceReadout(standing)}
+          {readout ?? raceReadout(standing)}
         </p>
         {running && (
           <button

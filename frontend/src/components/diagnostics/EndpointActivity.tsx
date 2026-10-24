@@ -1,4 +1,9 @@
 "use client";
+import {
+  diagnosticOutcomeLabel,
+  diagnosticTitle,
+  diagnosticTickLabel,
+} from "@/lib/diagnostics/presentation";
 import { useState } from "react";
 import { JsonInspectButton, JsonViewer, type JsonInspection } from "./JsonDetails";
 import type { DiagnosticEntry } from "@/lib/diagnostics/store";
@@ -14,9 +19,9 @@ export function EndpointActivity({ entries }: { entries: ReadonlyArray<Diagnosti
           <li key={i}>
             {e.transport === "mock" ? "Synthetic" : "Backend"} · {e.operation} ·{" "}
             <strong className={e.outcome === "success" ? "text-go" : "text-caution"}>
-              {e.outcome}
+              {diagnosticOutcomeLabel(e)}
             </strong>
-            {e.tick === undefined ? "" : ` · tick ${e.tick}`}
+            {diagnosticTickLabel(e.tick)}
             {(e.count ?? 0) > 1 ? ` · ${e.count} sampled ticks · latest payload` : ""}
             {e.capture && (
               <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2">
@@ -25,11 +30,11 @@ export function EndpointActivity({ entries }: { entries: ReadonlyArray<Diagnosti
                   {e.capture.status === undefined ? "" : ` · ${e.capture.status}`}
                 </span>
                 <JsonInspectButton
-                  title={`${e.transport === "mock" ? "Synthetic" : "Backend"} ${e.operation} · ${e.outcome}${e.tick === undefined ? "" : ` · tick ${e.tick}`}`}
+                  title={diagnosticTitle(e)}
                   onClick={() =>
                     setSelection({
                       capture: { ...e.capture! },
-                      title: `${e.transport === "mock" ? "Synthetic" : "Backend"} ${e.operation} · ${e.outcome}${e.tick === undefined ? "" : ` · tick ${e.tick}`}`,
+                      title: diagnosticTitle(e),
                     })
                   }
                 />

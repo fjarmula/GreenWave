@@ -197,7 +197,7 @@ export interface components {
          * CancelReason
          * @enum {string}
          */
-        CancelReason: "STOPPED" | "SUPERSEDED" | "SERVER_ERROR";
+        CancelReason: "ITS_REJECTED" | "ITS_TIMEOUT" | "ITS_HOLD_EXPIRED" | "STOPPED" | "SUPERSEDED" | "SERVER_ERROR";
         /**
          * ComparisonStartRequest
          * @description One scenario run twice at once, ER Green Wave enabled and disabled, in lockstep (ADR 0008).
@@ -213,6 +213,8 @@ export interface components {
             enable_cascade_mode: boolean;
             /** Enabled Simulation Id */
             enabled_simulation_id: string;
+            /** @default NOMINAL */
+            its_scenario: components["schemas"]["ItsScenario"];
             origin: components["schemas"]["Position"];
             /**
              * Playback Speed
@@ -417,6 +419,78 @@ export interface components {
             priority_level: 1;
             vehicle_type: components["schemas"]["VehicleType"];
         };
+        /** ItsFeedbackEvent */
+        ItsFeedbackEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "ITS_FEEDBACK";
+            /** Feedback Sequence */
+            feedback_sequence: number;
+            /** Intersections Group */
+            intersections_group: string[];
+            /**
+             * Is Simulated
+             * @constant
+             */
+            is_simulated: true;
+            /** Observed At Simulated Sec */
+            observed_at_simulated_sec: number;
+            reason?: components["schemas"]["ItsFeedbackReason"] | null;
+            /** Request Message Id */
+            request_message_id: string;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Simulation Id */
+            simulation_id: string;
+            status: components["schemas"]["ItsRequestStatus"];
+            /** Tick */
+            tick: number;
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+        };
+        /**
+         * ItsFeedbackReason
+         * @enum {string}
+         */
+        ItsFeedbackReason: "CONTROLLER_REJECTED" | "ACK_TIMEOUT" | "HOLD_EXPIRED";
+        /** ItsRequestSnapshot */
+        ItsRequestSnapshot: {
+            /** Acknowledged At Simulated Sec */
+            acknowledged_at_simulated_sec?: number | null;
+            /** Intersections Group */
+            intersections_group: string[];
+            /**
+             * Last Feedback Sequence
+             * @default 0
+             */
+            last_feedback_sequence: number;
+            /** Last Updated At Simulated Sec */
+            last_updated_at_simulated_sec: number;
+            /** Message Id */
+            message_id: string;
+            reason?: components["schemas"]["ItsFeedbackReason"] | null;
+            status: components["schemas"]["ItsRequestStatus"];
+            /** Submitted At Simulated Sec */
+            submitted_at_simulated_sec: number;
+        };
+        /**
+         * ItsRequestStatus
+         * @enum {string}
+         */
+        ItsRequestStatus: "REQUESTED" | "ACCEPTED" | "RELEASED" | "REJECTED" | "TIMED_OUT" | "EXPIRED";
+        /**
+         * ItsScenario
+         * @enum {string}
+         */
+        ItsScenario: "NOMINAL" | "DELAYED" | "REJECTED" | "NO_FEEDBACK";
         /** KpiMetrics */
         KpiMetrics: {
             /** Current Time Saved Sec */
@@ -605,6 +679,8 @@ export interface components {
             enable_cascade_mode: boolean;
             /** @default ENABLED */
             green_wave_mode: components["schemas"]["GreenWaveMode"];
+            /** @default NOMINAL */
+            its_scenario: components["schemas"]["ItsScenario"];
             origin: components["schemas"]["Position"];
             /**
              * Playback Speed
@@ -635,6 +711,8 @@ export interface components {
              * @constant
              */
             is_simulated: true;
+            /** @default NOMINAL */
+            its_scenario: components["schemas"]["ItsScenario"];
             origin_snapped: components["schemas"]["SnappedEndpoint"];
             route_geometry: components["schemas"]["RouteGeometry"];
             /** Route Intersections */
@@ -661,7 +739,7 @@ export interface components {
          *     A RootModel (not a bare alias) so the union is a named OpenAPI component and the frontend
          *     gets a named ``SimulationStreamEvent`` type.
          */
-        SimulationStreamEvent: components["schemas"]["SimulationTickEvent"] | components["schemas"]["ItsDispatchEvent"] | components["schemas"]["SimulationCompletedEvent"] | components["schemas"]["SimulationCancelledEvent"];
+        SimulationStreamEvent: components["schemas"]["SimulationTickEvent"] | components["schemas"]["ItsFeedbackEvent"] | components["schemas"]["ItsDispatchEvent"] | components["schemas"]["SimulationCompletedEvent"] | components["schemas"]["SimulationCancelledEvent"];
         /** SimulationTickEvent */
         SimulationTickEvent: {
             ambulance: components["schemas"]["AmbulanceTelemetry"];
@@ -677,6 +755,13 @@ export interface components {
              * @constant
              */
             is_simulated: true;
+            /** Its Observed At Simulated Sec */
+            its_observed_at_simulated_sec?: number | null;
+            /**
+             * Its Requests
+             * @default []
+             */
+            its_requests: components["schemas"]["ItsRequestSnapshot"][];
             kpi_metrics: components["schemas"]["KpiMetrics"];
             /**
              * Schema Version

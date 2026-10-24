@@ -3,6 +3,7 @@
 import { ArrowUpRight, Gauge, Radio, ShieldCheck, Target, TriangleAlert, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { ItsScenarioControl } from "./dispatch/ItsScenarioControl";
 import { CascadeToggle } from "@/components/hud/dispatch/CascadeToggle";
 import { GreenWaveToggle } from "@/components/hud/dispatch/GreenWaveToggle";
 import { IncidentInput } from "@/components/hud/dispatch/IncidentInput";
@@ -149,6 +150,11 @@ export function DispatchForm({
           onChange={(mode) => update({ greenWaveMode: mode })}
         />
       )}
+      <ItsScenarioControl
+        value={settings.itsScenario ?? "NOMINAL"}
+        disabled={intent !== "comparison" && greenWaveMode === "DISABLED"}
+        onChange={(itsScenario) => update({ itsScenario })}
+      />
       <CascadeToggle
         enabled={cascadeEnabled}
         onToggle={() => update({ cascadeEnabled: !cascadeEnabled })}
@@ -165,6 +171,9 @@ export function DispatchForm({
           is simulated.
         </p>
       )}
+      <p className="mt-3 text-xs text-muted-foreground">
+        Times are model estimates. Simulated controller feedback may delay or end a run.
+      </p>
       {previousRun && <PreviousRunCard run={previousRun} />}
 
       <button

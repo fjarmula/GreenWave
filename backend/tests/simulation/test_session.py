@@ -32,6 +32,9 @@ class _Engine:
     def __init__(self, *_: object) -> None:
         pass
 
+    def close(self) -> None:
+        pass
+
     def initial_state(self) -> SimpleNamespace:
         return SimpleNamespace(tick=0, completed=False)
 
@@ -708,3 +711,75 @@ async def test_pair_members_are_kept_by_eviction(manager: SessionManager) -> Non
     assert manager.exists("on")
     assert manager.exists("off")
     await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_second_pair_plan_failure_closes_the_first_engine(manager: SessionManager) -> None:
+    closed: list[str] = []
+
+    class TrackedEngine(_Engine):
+        def close(self) -> None:
+            closed.append("on")
+
+    def plan(_: object, request: SimulationStartRequest, *__: object) -> PlannedSimulation:
+        if request.green_wave_mode is GreenWaveMode.DISABLED:
+            raise OriginOffNetwork("second plan failed")
+        return PlannedSimulation(TrackedEngine(), _response(request.simulation_id))  # type: ignore[arg-type]
+
+    manager._planner = plan
+    with pytest.raises(OriginOffNetwork):
+        await manager.start_comparison(_comparison())
+    assert closed == ["on"]
+    assert not manager.exists("on")
+
+
+def test_comparison_members_preserve_the_selected_its_scenario() -> None:
+    from greenwave.schemas.its import ItsScenario
+
+    request = ComparisonStartRequest.model_validate(
+        {**_comparison().model_dump(), "its_scenario": "REJECTED"}
+    )
+    assert request.member(GreenWaveMode.ENABLED).its_scenario is ItsScenario.REJECTED
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("scenario", "failure"),
+    # This fixture's nominal request expires under main's unchanged hold policy.
+    [("NOMINAL", "ITS_HOLD_EXPIRED"), ("REJECTED", "ITS_REJECTED"), ("NO_FEEDBACK", "ITS_TIMEOUT")],
+)
+async def test_real_engine_comparison_keeps_feedback_and_baseline_isolated(
+    scenario: str, failure: str | None
+) -> None:
+    from tests.support.route_fixtures import corridor_index, position_at
+
+    manager = SessionManager(corridor_index(), SimulationSettings(), sleep=_yield)
+    request = ComparisonStartRequest.model_validate(
+        {
+            **_comparison().model_dump(),
+            "origin": position_at(7_422_000),
+            "destination": position_at(7_422_850.02),
+            "its_scenario": scenario,
+        }
+    )
+    try:
+        response = await manager.start_comparison(request)
+        assert response.enabled.its_scenario.value == scenario
+        assert response.disabled.its_scenario.value == "NOMINAL"
+        assert (
+            manager._sessions["on"].engine.controller
+            is not manager._sessions["off"].engine.controller
+        )
+        on, off = await asyncio.wait_for(
+            asyncio.gather(_events(manager, "on"), _events(manager, "off")), timeout=3
+        )
+        assert isinstance(off[-1], SimulationCompletedEvent)
+        if failure:
+            assert isinstance(on[-1], SimulationCancelledEvent)
+            assert on[-1].reason.value == failure
+            assert not any(isinstance(event, SimulationCompletedEvent) for event in on)
+        else:
+            assert isinstance(on[-1], SimulationCompletedEvent)
+        assert all(session.engine._closed for session in manager._sessions.values())
+    finally:
+        await manager.shutdown()

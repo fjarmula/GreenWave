@@ -52,6 +52,10 @@ export function DriverStatus({
           Simulated · {VEHICLE_NAMES[state.startRequest.vehicle_type]}
         </p>
         <p className="driver-card-result">{detail}</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Last simulated controller report ·{" "}
+          {state.cancelReason ? cancelReasonLabel(state.cancelReason) : "Run ended"}
+        </p>
         {state.simulationState === "FINISHED" && (
           <p className={`hud-chip mt-2 ${PILL_TONES[timeSavedTone(saved)]}`}>{savedPill(saved)}</p>
         )}

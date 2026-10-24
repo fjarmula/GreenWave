@@ -95,3 +95,22 @@ No headers, credentials, extra requests or real traffic-controller commands are 
 The driver view needs no geolocation. It shares this browser session's enabled run, including stale
 feedback and recoverable Stop errors. Phone browser chrome, safe-area and keyboard behavior still
 need confirmation on physical iOS/Android hardware; desktop device emulation cannot prove them.
+
+## Simulated ITS feedback
+
+Priority submission creates REQUESTED only. A separate per-run in-process controller
+accepts/rejects it and supplies reported intersection/signal snapshots. Acceptance
+starts CLEARING; PRIORITY_GREEN requires supported route vehicle indications green.
+Nothing connects to or actuates a real controller. The payload is illustrative.
+
+Start requests accept `its_scenario`: NOMINAL (1 s acknowledgement), DELAYED (5 s),
+REJECTED or NO_FEEDBACK (8 s timeout). All timings are simulated seconds; playback
+changes wall-clock pacing only. Disabled runs normalize to NOMINAL; live comparisons use the selected scenario for the enabled member and NOMINAL for the baseline. The dispatch form preserves scenario selection across navigation.
+
+ITS_FEEDBACK has request identity and a per-run sequence. Each tick contains the full
+bounded request ledger and controller observation time for reconnect/drop recovery.
+Request status is displayed separately from reported traffic, with original JSON in
+diagnostics. Missing legacy feedback is labelled unavailable; ended runs show the
+last report. Rejection, timeout and enforced hold expiry cancel the run explicitly,
+without completion/successful comparison. Estimates are model baselines, not timing
+guarantees. See proposed [ADR 0008](../docs/adr/0008-simulated-its-feedback.md).

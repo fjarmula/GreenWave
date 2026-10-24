@@ -44,8 +44,8 @@ export function formatSignalDistance(meters: number): string {
 const SIGNAL_COPY: Record<IntersectionState, string> = {
   PRIORITY_GREEN: "Green",
   CLEARING: "Clearing",
-  NORMAL: "Red",
-  RECOVERY: "Red",
+  NORMAL: "Ordinary signal",
+  RECOVERY: "Recovery",
 };
 
 export function nextSignalCopy(signal: NextSignal): string {

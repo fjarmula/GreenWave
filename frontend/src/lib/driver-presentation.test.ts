@@ -88,8 +88,8 @@ describe("copy", () => {
     const signal = { intersectionId: "INT-A", name: null, distanceM: 184 };
     expect(nextSignalCopy({ ...signal, state: "PRIORITY_GREEN" })).toBe("Green in 180 m");
     expect(nextSignalCopy({ ...signal, state: "CLEARING" })).toBe("Clearing in 180 m");
-    expect(nextSignalCopy({ ...signal, state: "NORMAL" })).toBe("Red in 180 m");
-    expect(nextSignalCopy({ ...signal, state: "RECOVERY" })).toBe("Red in 180 m");
+    expect(nextSignalCopy({ ...signal, state: "NORMAL" })).toBe("Ordinary signal in 180 m");
+    expect(nextSignalCopy({ ...signal, state: "RECOVERY" })).toBe("Recovery in 180 m");
   });
   it("labels time against the estimate", () => {
     expect(savedPill(41)).toBe("41 s faster · simulated");

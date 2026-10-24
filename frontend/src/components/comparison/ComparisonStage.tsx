@@ -24,6 +24,9 @@ export function ComparisonStage({
 }) {
   const route = state.runs.ENABLED.routeData;
   const standing = route ? raceStanding(route, state.runs) : null;
+  const interrupted = Object.values(state.runs).some(
+    (run) => run.cancelReason || run.simulationState === "ERROR",
+  );
   const running = state.status === "running";
   const ended =
     state.status === "finished" || state.status === "cancelled" || state.status === "error";
@@ -56,6 +59,7 @@ export function ComparisonStage({
         {standing && (
           <RaceBar
             standing={standing}
+            readout={interrupted ? "Comparison interrupted · waiting for remaining run" : undefined}
             running={running}
             stopping={state.stopping}
             onStop={onStop}

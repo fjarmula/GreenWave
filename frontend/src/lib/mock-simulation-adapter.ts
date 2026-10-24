@@ -36,6 +36,7 @@ export function createMockSimulationAdapter(): SimulationAdapter {
     session: MockSession,
     terminal: SimulationCompletedEvent | SimulationCancelledEvent,
   ) => {
+    session.controller.close();
     const id = session.request.simulation_id;
     live = live.filter((member) => member !== session);
     if (live.length === 0) stopTimer();
@@ -51,11 +52,15 @@ export function createMockSimulationAdapter(): SimulationAdapter {
 
   const emitNextTicks = () => {
     for (const session of [...live]) {
-      const { tick, dispatch, completed } = advanceMockSession(session);
+      const { tick, dispatch, completed, feedbacks, failure } = advanceMockSession(session);
       const listeners = [...(subscribers.get(session.request.simulation_id) ?? [])];
+      feedbacks.forEach((event) =>
+        listeners.forEach((subscriber) => subscriber.onItsFeedback(event)),
+      );
       if (dispatch) listeners.forEach((subscriber) => subscriber.onItsDispatch(dispatch));
       listeners.forEach((subscriber) => subscriber.onTick(tick));
-      if (completed) endSession(session, completedEvent(tick));
+      if (failure) endSession(session, cancelledEvent(session, failure));
+      else if (completed) endSession(session, completedEvent(tick));
     }
   };
 

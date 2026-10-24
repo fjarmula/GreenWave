@@ -1,3 +1,4 @@
+import type { SimulationStreamEvent } from "@/types/telemetry";
 import type { SimulationAdapter } from "@/lib/simulation-adapter";
 import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import {
@@ -131,7 +132,7 @@ export function observeSimulation(
         operation: Operation,
         outcome: DiagnosticEntry["outcome"],
         tick?: number,
-        body?: unknown,
+        body?: SimulationStreamEvent,
       ) =>
         store.record({
           operation,
@@ -143,6 +144,7 @@ export function observeSimulation(
                 capture: {
                   method: "GET",
                   path: `/api/v1/simulation/${id}/stream`,
+                  eventType: body.event_type,
                   responseBody: serialize(body),
                 },
               }
@@ -153,8 +155,12 @@ export function observeSimulation(
           record("sse", "tick", e.tick, e);
           subscriber.onTick(e);
         },
+        onItsFeedback: (e) => {
+          record("its-feedback", "received", e.tick, e);
+          subscriber.onItsFeedback(e);
+        },
         onItsDispatch: (e) => {
-          record("its", "success", e.tick, e);
+          record("its", "received", e.tick, e);
           subscriber.onItsDispatch(e);
         },
         onTerminal: (e) => {

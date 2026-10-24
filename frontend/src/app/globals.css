@@ -916,7 +916,7 @@ button,
   width: 0.875rem;
   height: 0.875rem;
   border-radius: 999px;
-  background: var(--emergency);
+  background: var(--muted-foreground);
 }
 .next-signal-lamp[data-state="PRIORITY_GREEN"] {
   background: var(--go);

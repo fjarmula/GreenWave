@@ -7,6 +7,7 @@ import type { ComparisonStartRequest } from "@/types/telemetry";
 import { cancelledEventExample } from "@/lib/transport/__fixtures__/architecture-examples";
 
 const request: ComparisonStartRequest = {
+  its_scenario: "NOMINAL" as const,
   enabled_simulation_id: "pair-e",
   disabled_simulation_id: "pair-d",
   origin: { lat: 50.0612, lng: 19.9571 },
@@ -183,4 +184,38 @@ describe("live comparison stop", () => {
       reason: "Could not stop: offline",
     });
   });
+});
+
+it.each(["ITS_REJECTED", "ITS_TIMEOUT", "ITS_HOLD_EXPIRED"] as const)(
+  "does not report a successful comparison after %s",
+  async (reason) => {
+    const { controller, stream, slot } = await running();
+    stream("pair-e").onTerminal({
+      ...cancelledEventExample,
+      simulation_id: "pair-e",
+      tick: 1,
+      reason,
+    });
+    stream("pair-d").onTerminal(completed(1, "pair-d"));
+    expect(controller.getState().status).toBe("error");
+    expect(controller.getState().reason).toMatch(/ITS|controller/i);
+    expect(slot.getOwner()).toBeNull();
+  },
+);
+
+it("ignores an old stop failure after a new comparison starts", async () => {
+  const { controller, adapter } = await running();
+  let rejectStop!: (reason: Error) => void;
+  vi.mocked(adapter.stop).mockReturnValueOnce(
+    new Promise((_resolve, reject) => {
+      rejectStop = reject;
+    }),
+  );
+  const pending = controller.stop();
+  controller.reset();
+  await controller.start(request);
+  rejectStop(new Error("old request failed"));
+  await pending;
+  expect(controller.getState()).toMatchObject({ status: "running", reason: null, stopping: false });
+  controller.reset();
 });

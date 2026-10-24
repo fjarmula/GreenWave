@@ -8,11 +8,13 @@ export const operations = [
   "stop",
   "quality",
   "its",
+  "its-feedback",
 ] as const;
 export type Operation = (typeof operations)[number];
 const outcomes = [
   "pending",
   "success",
+  "received",
   "failure",
   "tick",
   "completed",

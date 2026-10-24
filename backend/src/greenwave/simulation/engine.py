@@ -1,31 +1,41 @@
-"""Deterministic one-second simulation engine.
+"""One-second motion and request engine consuming separate simulated ITS reports.
 
-State transitions depend only on the supplied state and clock; the one side effect is handing each
-ITS dispatch payload to the injected (simulated) gateway.
+The per-run controller owns decisions and signal phases. Submitting a request never
+changes confirmed traffic state; the legacy gateway is an optional diagnostic sink.
 """
 
 from dataclasses import replace
 from datetime import datetime
 
 from greenwave.its import ItsGateway
+from greenwave.its.controller import SimulatedItsController
+from greenwave.its.models import (
+    ItsController,
+    ItsIntersectionObservation,
+    ItsObservation,
+    ItsRequest,
+)
 from greenwave.routing.estimates import Estimates
 from greenwave.routing.planner import PlannedRoute
 from greenwave.schemas import (
+    CancelReason,
     GreenWaveMode,
     IntersectionState,
     ItsDispatchEvent,
+    ItsFeedbackEvent,
+    ItsFeedbackReason,
+    ItsRequestStatus,
+    ItsScenario,
+    SignalPhaseIndicator,
+    SimulationCancelledEvent,
     SimulationCompletedEvent,
     SimulationTickEvent,
     VehicleType,
 )
-from greenwave.simulation.corridor import advance_corridor
+from greenwave.simulation.corridor import holding_priority, time_to_intersection
 from greenwave.simulation.dispatch import build_dispatch_payload, dispatch_event
 from greenwave.simulation.motion import move_one_second
-from greenwave.simulation.phases import (
-    advance_signal_phases,
-    route_lights_shown_green,
-    route_movement_color_at,
-)
+from greenwave.simulation.priority_requests import PriorityRequestLedger
 from greenwave.simulation.route_model import RouteModel
 from greenwave.simulation.route_track import RouteTrack
 from greenwave.simulation.state import EngineState
@@ -41,7 +51,13 @@ from greenwave.simulation_settings import SimulationSettings
 
 __all__ = ["EngineEvent", "EngineState", "SimulationEngine"]
 
-EngineEvent = SimulationTickEvent | ItsDispatchEvent | SimulationCompletedEvent
+EngineEvent = (
+    SimulationTickEvent
+    | ItsDispatchEvent
+    | ItsFeedbackEvent
+    | SimulationCompletedEvent
+    | SimulationCancelledEvent
+)
 
 
 class SimulationEngine:
@@ -55,14 +71,20 @@ class SimulationEngine:
         estimates: Estimates,
         traffic_density_multiplier: float,
         settings: SimulationSettings,
-        gateway: ItsGateway,
+        gateway: ItsGateway | None = None,
         vehicle_type: VehicleType = VehicleType.AMBULANCE,
         green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED,
+        controller: ItsController | None = None,
+        its_scenario: ItsScenario = ItsScenario.NOMINAL,
     ) -> None:
         self.simulation_id, self.route, self.route_model = simulation_id, route, route_model
         self.vehicle_type, self.green_wave_mode = vehicle_type, green_wave_mode
         self.traffic_density_multiplier = traffic_density_multiplier
         self.estimates, self.settings, self.gateway = estimates, settings, gateway
+        self.controller = controller or SimulatedItsController(route_model, settings, its_scenario)
+        self.ledger = PriorityRequestLedger(simulation_id)
+        self._last_phases: tuple[SignalPhaseIndicator, ...] = ()
+        self._closed = False
         self._track = RouteTrack.from_route(route, settings)
         # Intersections controlling each stop-line position, for the hold at the line.
         self._stop_line_ids: dict[float, set[str]] = {}
@@ -93,14 +115,8 @@ class SimulationEngine:
     def step(
         self, state: EngineState, wall_clock_utc: datetime
     ) -> tuple[EngineState, list[EngineEvent]]:
-        """One simulated second: move, advance signals, dispatch, then report.
-
-        Motion and the reported phases read the same simulated programme
-        (:func:`route_movement_color_at` mid-tick, :func:`advance_signal_phases` at tick end).
-        Every step is streamed as its own tick, and the map animates the marker across it under
-        that tick's lights, so priority is released only for intersections passed before it.
-        """
-        if state.completed:
+        """Move under the previous report, observe, apply feedback, submit, then publish."""
+        if state.completed or self._closed:
             return state, []
         before = state
         released_before_m = state.distance_travelled_m
@@ -111,45 +127,124 @@ class SimulationEngine:
             self.settings,
             self.green_wave_mode,
             self.traffic_density_multiplier,
-            lambda intersection_id, at_s: route_movement_color_at(
-                self.route_model, before, intersection_id, at_s, self.settings
-            ),
-            lambda distance_m: route_lights_shown_green(
-                self.route_model,
-                before,
-                self._stop_line_ids.get(distance_m, set()),
-                self.settings,
+            self.controller.ordinary_route_color_at,
+            lambda distance_m: self._confirmed_green(before, distance_m),
+        )
+        observation = ItsObservation(
+            float(state.simulated_time_s),
+            tuple(
+                ItsIntersectionObservation(
+                    item.id,
+                    time_to_intersection(item.first_stop_line_m, runtime, state),
+                    runtime.passed
+                    or (
+                        item.last_stop_line_m <= state.distance_travelled_m
+                        and not holding_priority(item, state, released_before_m)
+                    ),
+                )
+                for item, runtime in zip(
+                    self.route_model.intersections, state.intersection_runtimes, strict=True
+                )
             ),
         )
-        corridor = advance_corridor(
-            self.route_model,
+        update = self.controller.advance(observation)
+        self._last_phases = update.signal_phases
+        state = replace(
             state,
-            self.settings,
-            priority_enabled=self.green_wave_mode is GreenWaveMode.ENABLED,
-            released_before_m=released_before_m,
+            intersection_runtimes=update.intersection_runtimes,
+            signal_heads=update.signal_heads,
         )
-        state = replace(state, intersection_runtimes=corridor.runtimes)
         events: list[EngineEvent] = []
-        if corridor.entered_clearing:
-            state, dispatch = self._dispatch(state, corridor.entered_clearing, wall_clock_utc)
-            events.append(dispatch)
+        for decision in update.feedback:
+            feedback = ItsFeedbackEvent(
+                schema_version="1.0",
+                is_simulated=True,
+                event_type="ITS_FEEDBACK",
+                simulation_id=decision.simulation_id,
+                tick=state.tick,
+                timestamp=wall_clock_utc,
+                request_message_id=decision.request_message_id,
+                feedback_sequence=decision.feedback_sequence,
+                status=decision.status,
+                intersections_group=list(decision.intersections_group),
+                observed_at_simulated_sec=decision.observed_at_simulated_sec,
+                reason=decision.reason,
+            )
+            if self.ledger.apply(feedback):
+                events.append(feedback)
+        for snapshot in self.ledger.snapshots():
+            if (
+                snapshot.status is ItsRequestStatus.REQUESTED
+                and state.simulated_time_s
+                >= snapshot.submitted_at_simulated_sec + self.settings.its_ack_timeout_seconds
+            ):
+                timeout = ItsFeedbackEvent(
+                    schema_version="1.0",
+                    is_simulated=True,
+                    event_type="ITS_FEEDBACK",
+                    simulation_id=self.simulation_id,
+                    tick=state.tick,
+                    timestamp=wall_clock_utc,
+                    request_message_id=snapshot.message_id,
+                    feedback_sequence=self.ledger.last_sequence + 1,
+                    status=ItsRequestStatus.TIMED_OUT,
+                    intersections_group=snapshot.intersections_group,
+                    observed_at_simulated_sec=state.simulated_time_s,
+                    reason=ItsFeedbackReason.ACK_TIMEOUT,
+                )
+                self.ledger.apply(timeout)
+                events.append(timeout)
+        failures = {
+            ItsRequestStatus.REJECTED: CancelReason.ITS_REJECTED,
+            ItsRequestStatus.TIMED_OUT: CancelReason.ITS_TIMEOUT,
+            ItsRequestStatus.EXPIRED: CancelReason.ITS_HOLD_EXPIRED,
+        }
+        failure = next(
+            (failures[r.status] for r in self.ledger.snapshots() if r.status in failures), None
+        )
+        if failure is None and self.green_wave_mode is GreenWaveMode.ENABLED:
+            selected = self.ledger.select(self.route_model, state, self.settings)
+            if selected:
+                state, dispatch = self._dispatch(state, selected, wall_clock_utc)
+                events.append(dispatch)
         kpi = kpi_metrics(
             self.route, self.route_model, state, self.traffic_density_multiplier, self.settings
         )
         ambulance = ambulance_telemetry(self.vehicle_type, state, actual_speed, self._track)
         intersections = intersection_telemetry(self.route_model, state)
-        heads, phases = advance_signal_phases(self.route_model, state, self.settings)
-        state = replace(state, signal_heads=heads)
-        events.append(
-            tick_event(
-                self.simulation_id, state, wall_clock_utc, ambulance, kpi, intersections, phases
-            )
+        tick = tick_event(
+            self.simulation_id,
+            state,
+            wall_clock_utc,
+            ambulance,
+            kpi,
+            intersections,
+            list(update.signal_phases),
         )
+        tick.its_requests = list(self.ledger.snapshots())
+        tick.its_observed_at_simulated_sec = update.observed_at_simulated_sec
+        events.append(tick)
+        if failure is not None:
+            state = replace(state, completed=True)
+            events.append(
+                SimulationCancelledEvent(
+                    schema_version="1.0",
+                    is_simulated=True,
+                    event_type="SIMULATION_CANCELLED",
+                    simulation_id=self.simulation_id,
+                    tick=state.tick,
+                    timestamp=wall_clock_utc,
+                    reason=failure,
+                )
+            )
+            self.close()
+            return state, events
         if state.arrived and all(
             item.state is IntersectionState.NORMAL for item in state.intersection_runtimes
         ):
             state = replace(state, completed=True)
             events.append(completed_event(self.simulation_id, state, wall_clock_utc, kpi))
+            self.close()
         return state, events
 
     def _dispatch(
@@ -158,6 +253,39 @@ class SimulationEngine:
         payload = build_dispatch_payload(
             self.route_model, state, ids, now, self.settings, self.vehicle_type
         )
-        self.gateway.dispatch(payload)
         state = replace(state, message_sequence=state.message_sequence + 1)
-        return state, dispatch_event(self.simulation_id, state, payload, now)
+        dispatch = dispatch_event(self.simulation_id, state, payload, now)
+        request = ItsRequest(
+            self.simulation_id,
+            dispatch.message_id,
+            state.simulated_time_s,
+            payload,
+            tuple(self.ledger.cascade_flags[i] for i in ids),
+        )
+        self.ledger.record(request)
+        self.controller.submit(request)
+        if self.gateway is not None:
+            self.gateway.dispatch(payload)  # optional legacy diagnostic sink, never authoritative
+        return state, dispatch
+
+    def _confirmed_green(self, state: EngineState, distance_m: float) -> bool:
+        ids = self._stop_line_ids.get(distance_m, set())
+        for item in self.route_model.intersections:
+            if item.id not in ids:
+                continue
+            # Missing supported route movements retain the existing conservative dwell model.
+            phases = [
+                p
+                for p in self._last_phases
+                if p.intersection_id == item.id
+                and p.kind == "VEHICLE"
+                and p.signal_key in item.route_signal_keys
+            ]
+            if phases and any(p.color != "GREEN" for p in phases):
+                return False
+        return True
+
+    def close(self) -> None:
+        if not self._closed:
+            self._closed = True
+            self.controller.close()

@@ -1,3 +1,5 @@
+import { applyItsFeedback } from "../its-feedback-state";
+import type { ItsRequestSnapshot } from "@/types/telemetry";
 import { beginHttpCapture } from "@/lib/diagnostics/wire-capture";
 import { diagnosticStore } from "@/lib/diagnostics/store";
 /**
@@ -44,6 +46,7 @@ export type BackendAdapterOptions = {
 const STREAM_EVENT_TYPES = [
   "SIMULATION_TICK",
   "ITS_DISPATCH",
+  "ITS_FEEDBACK",
   "SIMULATION_COMPLETED",
   "SIMULATION_CANCELLED",
 ] as const satisfies readonly SimulationStreamEvent["event_type"][];
@@ -281,11 +284,18 @@ function openStream(
     report("reconnecting");
   });
 
+  let lastFeedbackSequence = 0;
+  let feedbackRequests: ItsRequestSnapshot[] = [];
   const handle = (eventType: SimulationStreamEvent["event_type"], message: MessageEvent) => {
     if (closed) return;
     const event = decodeStreamFrame(eventType, message, simulationId);
     diagnosticStore.record({
-      operation: eventType === "ITS_DISPATCH" ? "its" : "sse",
+      operation:
+        eventType === "ITS_DISPATCH"
+          ? "its"
+          : eventType === "ITS_FEEDBACK"
+            ? "its-feedback"
+            : "sse",
       transport: "backend",
       outcome: !event
         ? "failure"
@@ -295,7 +305,7 @@ function openStream(
             ? "completed"
             : eventType === "SIMULATION_CANCELLED"
               ? "cancelled"
-              : "success",
+              : "received",
       ...(event ? { tick: event.tick } : {}),
       capture: {
         method: "GET",
@@ -318,11 +328,35 @@ function openStream(
       case "SIMULATION_TICK":
         if (event.tick <= lastTick) return;
         lastTick = event.tick;
+        feedbackRequests = event.its_requests ?? [];
+        lastFeedbackSequence = Math.max(
+          lastFeedbackSequence,
+          ...feedbackRequests.map((r) => r.last_feedback_sequence),
+        );
         subscriber.onTick(event);
         return;
+      case "ITS_FEEDBACK": {
+        const updated = applyItsFeedback(feedbackRequests, event, lastFeedbackSequence);
+        if (!updated) return;
+        feedbackRequests = updated;
+        lastFeedbackSequence = event.feedback_sequence;
+        subscriber.onItsFeedback(event);
+        return;
+      }
       case "ITS_DISPATCH":
         if (event.tick <= lastTick || seenMessageIds.has(event.message_id)) return;
         seenMessageIds.add(event.message_id);
+        if (!feedbackRequests.some((r) => r.message_id === event.message_id))
+          feedbackRequests.push({
+            message_id: event.message_id,
+            intersections_group: event.payload.intersections_group,
+            status: "REQUESTED",
+            submitted_at_simulated_sec: event.tick,
+            last_updated_at_simulated_sec: event.tick,
+            last_feedback_sequence: 0,
+            acknowledged_at_simulated_sec: null,
+            reason: null,
+          });
         subscriber.onItsDispatch(event);
         return;
       case "SIMULATION_COMPLETED":

@@ -1,6 +1,6 @@
 import { MapContainer } from "@/components/map/MapContainer";
 import { formatSignalDistance } from "@/lib/driver-presentation";
-import { vehicleSpeedPresentation } from "@/lib/simulation-copy";
+import { cancelReasonLabel, vehicleSpeedPresentation } from "@/lib/simulation-copy";
 import { isTelemetryStale, type SimulationState } from "@/lib/simulation-state";
 import type { ComparisonMode } from "@/lib/comparison/race";
 
@@ -64,13 +64,17 @@ export function ComparisonLivePane({
             ·
           </span>
           <span className="hud-value">
-            {run.simulationState === "FINISHED"
-              ? "Arrived"
-              : stale
-                ? "Reconnecting…"
-                : left === null
-                  ? "—"
-                  : `${formatSignalDistance(left)} left`}
+            {run.cancelReason
+              ? cancelReasonLabel(run.cancelReason)
+              : run.simulationState === "ERROR"
+                ? "Telemetry stopped"
+                : run.simulationState === "FINISHED"
+                  ? "Arrived"
+                  : stale
+                    ? "Reconnecting…"
+                    : left === null
+                      ? "—"
+                      : `${formatSignalDistance(left)} left`}
           </span>
         </p>
       </div>

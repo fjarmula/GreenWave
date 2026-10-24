@@ -13,6 +13,7 @@ import type {
 
 const request: SimulationStartRequest = {
   green_wave_mode: "ENABLED",
+  its_scenario: "NOMINAL" as const,
   simulation_id: "test",
   origin: { lat: 0, lng: 0 },
   destination: { lat: (5400 / 6_371_000) * (180 / Math.PI), lng: 0 },
@@ -33,6 +34,7 @@ function collect() {
   const errors: SimulationErrorInfo[] = [];
   const subscriber: SimulationStreamSubscriber = {
     onTick: (event) => ticks.push(event),
+    onItsFeedback: () => {},
     onItsDispatch: (event) => dispatches.push(event),
     onTerminal: (event) =>
       event.event_type === "SIMULATION_COMPLETED"
@@ -102,9 +104,9 @@ describe("mock simulation stream", () => {
     expect(dispatch.message_id).toBe("MSG-ITS-1");
     const tickOfDispatch = events.ticks.find((tick) => tick.tick === dispatch.tick);
     const cascaded = tickOfDispatch?.intersections.find((i) => i.id === "INT-9002");
-    expect(cascaded).toMatchObject({ state: "CLEARING", is_cascade: true });
+    expect(cascaded).toMatchObject({ state: "NORMAL", is_cascade: true });
     expect(tickOfDispatch?.intersections[0]).toMatchObject({
-      state: "CLEARING",
+      state: "NORMAL",
       is_cascade: false,
     });
   });
@@ -271,6 +273,7 @@ it("keeps public estimate seconds integral without stalling a subsecond trip", a
 
 describe("mock comparison pair", () => {
   const comparison = {
+    its_scenario: "NOMINAL" as const,
     enabled_simulation_id: "pair-e",
     disabled_simulation_id: "pair-d",
     origin: request.origin,
@@ -382,3 +385,33 @@ describe("mock comparison pair", () => {
     ).rejects.toMatchObject({ kind: "http", status: 422 });
   });
 });
+
+it.each(["REJECTED", "NO_FEEDBACK"] as const)(
+  "propagates %s controller failures from a comparison member",
+  async (its_scenario) => {
+    vi.useFakeTimers();
+    const adapter = createMockSimulationAdapter();
+    const scenario = request;
+    const pair = await adapter.startComparison({
+      ...scenario,
+      its_scenario,
+      enabled_simulation_id: "failed-on",
+      disabled_simulation_id: "baseline-off",
+    });
+    const enabled = collect();
+    const disabled = collect();
+    const feedback = vi.fn();
+    adapter.subscribe("failed-on", { ...enabled.subscriber, onItsFeedback: feedback });
+    adapter.subscribe("baseline-off", disabled.subscriber);
+    vi.advanceTimersByTime(120_000);
+    expect(feedback).toHaveBeenCalled();
+    expect(enabled.completions).toHaveLength(0);
+    expect(enabled.cancellations).toEqual([
+      expect.objectContaining({
+        reason: its_scenario === "REJECTED" ? "ITS_REJECTED" : "ITS_TIMEOUT",
+      }),
+    ]);
+    expect(disabled.completions).toHaveLength(1);
+    expect(pair.disabled.its_scenario).toBe("NOMINAL");
+  },
+);

@@ -7,6 +7,7 @@ import type {
   ComparisonStartRequest,
   ComparisonStartResponse,
   ItsDispatchEvent,
+  ItsFeedbackEvent,
   SimulationCancelledEvent,
   SimulationCompletedEvent,
   SimulationStartRequest,
@@ -18,6 +19,7 @@ export type ConnectionStatus = "connecting" | "open" | "reconnecting" | "lost";
 
 export type SimulationStreamSubscriber = {
   onTick: (event: SimulationTickEvent) => void;
+  onItsFeedback: (event: ItsFeedbackEvent) => void;
   onItsDispatch: (event: ItsDispatchEvent) => void;
   /** Called once; the adapter closes the stream afterwards. */
   onTerminal: (event: SimulationCompletedEvent | SimulationCancelledEvent) => void;

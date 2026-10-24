@@ -15,17 +15,14 @@ class SimulationSettings(BaseSettings):
     priority_green_tti_seconds: float = Field(default=25, ge=0)
     recovery_hold_seconds: float = Field(default=15, ge=0)
     min_intersection_delay_seconds: float = Field(default=3, ge=0)
-    # APPROVED 2026-10-23 (human): ER Green Wave spends D_min as a rolling slowdown over this
-    # approach to each intersection's first stop line instead of a stop (simulation/motion.py).
-    greenwave_approach_distance_m: float = Field(default=60, gt=0, allow_inf_nan=False)
-    # APPROVED 2026-10-23 (human): the slowdown never drops below this; any D_min it cannot absorb
-    # before the line is spent past it at this speed, so the vehicle never stops for D_min.
-    greenwave_min_rolling_speed_kmh: float = Field(default=15, gt=0, allow_inf_nan=False)
     ambulance_speed_factor: float = Field(default=1.3, gt=0)
     ambulance_min_speed_kmh: float = Field(default=30, ge=0)
     ambulance_max_speed_kmh: float = Field(default=90, gt=0)
     speed_ema_alpha: float = Field(default=0.25, gt=0, le=1)
     speed_floor_meters_per_second: float = Field(default=5, ge=0)
+    its_ack_delay_seconds: int = Field(default=1, ge=1)
+    its_delayed_ack_seconds: int = Field(default=5, ge=1)
+    its_ack_timeout_seconds: int = Field(default=8, ge=2)
     its_min_hold_seconds: int = Field(default=40, ge=0)
     its_hold_buffer_seconds: int = Field(default=5, ge=0)
     tick_interval_seconds: float = Field(default=1, gt=0)
@@ -75,6 +72,12 @@ class SimulationSettings(BaseSettings):
     @model_validator(mode="after")
     def priority_precedes_clearing(self) -> Self:
         """The priority threshold must be reached within the clearing window."""
+        if (
+            not self.its_ack_delay_seconds
+            <= self.its_delayed_ack_seconds
+            < self.its_ack_timeout_seconds
+        ):
+            raise ValueError("ITS acknowledgement delays must be ordered and precede timeout")
         if self.priority_green_tti_seconds > self.clearing_tti_seconds:
             raise ValueError("priority_green_tti_seconds must not exceed clearing_tti_seconds")
         if self.ambulance_min_speed_kmh > self.ambulance_max_speed_kmh:

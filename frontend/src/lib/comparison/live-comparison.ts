@@ -1,3 +1,4 @@
+import { cancelReasonLabel } from "@/lib/simulation-copy";
 import type { createOperationSlot } from "@/lib/operation-slot";
 import type { SimulationAdapter } from "@/lib/simulation-adapter";
 import { connectSimulationStream } from "@/lib/simulation-controller";
@@ -91,7 +92,10 @@ export function createLiveComparisonController(
       finish("error", runs.find((run) => run.error)?.error?.message ?? "Telemetry stopped");
     else if (runs.some((run) => run.cancelReason === "SERVER_ERROR"))
       finish("error", "The simulation stopped on the server");
-    else finish("finished", null);
+    else if (runs.some((run) => run.cancelReason?.startsWith("ITS_"))) {
+      const failed = runs.find((run) => run.cancelReason?.startsWith("ITS_"))!;
+      finish("error", cancelReasonLabel(failed.cancelReason!));
+    } else finish("finished", null);
   };
 
   const dispatchFor = (mode: ComparisonMode, token: number) => (action: SimulationAction) => {
@@ -181,11 +185,12 @@ export function createLiveComparisonController(
     /** Stops the pair: either id stops every live member (ADR 0008). */
     async stop() {
       if (state.status !== "running" || state.stopping || !request) return;
+      const token = generation;
       publish({ ...state, stopping: true, reason: null });
       try {
         await adapter.stop(request.enabled_simulation_id);
       } catch (error) {
-        if (state.status !== "running") return;
+        if (token !== generation || state.status !== "running") return;
         publish({
           ...state,
           stopping: false,

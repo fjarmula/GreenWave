@@ -62,6 +62,7 @@ export function ComparisonWorkspace() {
       enable_cascade_mode: runSettings.cascadeEnabled,
       playback_speed: runSettings.playbackSpeed,
       vehicle_type: dispatch.vehicleType,
+      its_scenario: runSettings.itsScenario ?? "NOMINAL",
     };
     await controller.start(request);
   };

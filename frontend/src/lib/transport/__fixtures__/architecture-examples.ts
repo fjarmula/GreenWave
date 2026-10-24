@@ -57,6 +57,7 @@ export const startResponseExample: SimulationStartResponse = {
   origin_snapped: { position: { lat: 50.0611, lng: 19.9568 }, snap_distance_m: 12.4 },
   destination_snapped: { position: { lat: 50.0136, lng: 19.9979 }, snap_distance_m: 31.7 },
   green_wave_mode: "ENABLED",
+  its_scenario: "NOMINAL",
 };
 
 export const tickEventExample: SimulationTickEvent = {
@@ -91,6 +92,8 @@ export const tickEventExample: SimulationTickEvent = {
       is_active_corridor: true,
     },
   ],
+  its_requests: [],
+  its_observed_at_simulated_sec: null,
   signal_phases: [
     {
       intersection_id: "INT-0360",

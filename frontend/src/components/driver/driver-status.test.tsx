@@ -60,3 +60,15 @@ it("keeps the plain arrival copy without an on-foot leg", () => {
   expect(html).toMatch(/Arrived in [^<]+</);
   expect(html).not.toContain("on foot");
 });
+
+it("shows ITS failure and identifies retained controller state", () => {
+  const state = {
+    ...initialSimulationState,
+    startRequest: request,
+    simulationState: "CANCELLED" as const,
+    cancelReason: "ITS_TIMEOUT" as const,
+  };
+  const html = renderToStaticMarkup(<DriverStatus state={state} onStop={() => {}} />);
+  expect(html).toContain("acknowledgement timed out");
+  expect(html).toContain("Last simulated controller report");
+});

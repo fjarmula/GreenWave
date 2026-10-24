@@ -40,6 +40,9 @@
       },
       "CancelReason": {
         "enum": [
+          "ITS_REJECTED",
+          "ITS_TIMEOUT",
+          "ITS_HOLD_EXPIRED",
           "STOPPED",
           "SUPERSEDED",
           "SERVER_ERROR"
@@ -66,6 +69,10 @@
             "pattern": "^[A-Za-z0-9_-]{1,64}$",
             "title": "Enabled Simulation Id",
             "type": "string"
+          },
+          "its_scenario": {
+            "$ref": "#/components/schemas/ItsScenario",
+            "default": "NOMINAL"
           },
           "origin": {
             "$ref": "#/components/schemas/Position"
@@ -528,6 +535,189 @@
         "title": "ItsDispatchPayload",
         "type": "object"
       },
+      "ItsFeedbackEvent": {
+        "properties": {
+          "event_type": {
+            "const": "ITS_FEEDBACK",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "feedback_sequence": {
+            "exclusiveMinimum": 0.0,
+            "title": "Feedback Sequence",
+            "type": "integer"
+          },
+          "intersections_group": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Intersections Group",
+            "type": "array"
+          },
+          "is_simulated": {
+            "const": true,
+            "title": "Is Simulated",
+            "type": "boolean"
+          },
+          "observed_at_simulated_sec": {
+            "minimum": 0.0,
+            "title": "Observed At Simulated Sec",
+            "type": "number"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ItsFeedbackReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request_message_id": {
+            "pattern": "^MSG-ITS-[0-9]+$",
+            "title": "Request Message Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulation_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Simulation Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ItsRequestStatus"
+          },
+          "tick": {
+            "minimum": 0.0,
+            "title": "Tick",
+            "type": "integer"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "is_simulated",
+          "event_type",
+          "simulation_id",
+          "tick",
+          "timestamp",
+          "request_message_id",
+          "feedback_sequence",
+          "status",
+          "intersections_group",
+          "observed_at_simulated_sec"
+        ],
+        "title": "ItsFeedbackEvent",
+        "type": "object"
+      },
+      "ItsFeedbackReason": {
+        "enum": [
+          "CONTROLLER_REJECTED",
+          "ACK_TIMEOUT",
+          "HOLD_EXPIRED"
+        ],
+        "title": "ItsFeedbackReason",
+        "type": "string"
+      },
+      "ItsRequestSnapshot": {
+        "properties": {
+          "acknowledged_at_simulated_sec": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acknowledged At Simulated Sec"
+          },
+          "intersections_group": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Intersections Group",
+            "type": "array"
+          },
+          "last_feedback_sequence": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Last Feedback Sequence",
+            "type": "integer"
+          },
+          "last_updated_at_simulated_sec": {
+            "minimum": 0.0,
+            "title": "Last Updated At Simulated Sec",
+            "type": "number"
+          },
+          "message_id": {
+            "pattern": "^MSG-ITS-[0-9]+$",
+            "title": "Message Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ItsFeedbackReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ItsRequestStatus"
+          },
+          "submitted_at_simulated_sec": {
+            "minimum": 0.0,
+            "title": "Submitted At Simulated Sec",
+            "type": "number"
+          }
+        },
+        "required": [
+          "message_id",
+          "intersections_group",
+          "status",
+          "submitted_at_simulated_sec",
+          "last_updated_at_simulated_sec"
+        ],
+        "title": "ItsRequestSnapshot",
+        "type": "object"
+      },
+      "ItsRequestStatus": {
+        "enum": [
+          "REQUESTED",
+          "ACCEPTED",
+          "RELEASED",
+          "REJECTED",
+          "TIMED_OUT",
+          "EXPIRED"
+        ],
+        "title": "ItsRequestStatus",
+        "type": "string"
+      },
+      "ItsScenario": {
+        "enum": [
+          "NOMINAL",
+          "DELAYED",
+          "REJECTED",
+          "NO_FEEDBACK"
+        ],
+        "title": "ItsScenario",
+        "type": "string"
+      },
       "KpiMetrics": {
         "properties": {
           "current_time_saved_sec": {
@@ -975,6 +1165,10 @@
             "$ref": "#/components/schemas/GreenWaveMode",
             "default": "ENABLED"
           },
+          "its_scenario": {
+            "$ref": "#/components/schemas/ItsScenario",
+            "default": "NOMINAL"
+          },
           "origin": {
             "$ref": "#/components/schemas/Position"
           },
@@ -1052,6 +1246,10 @@
             "title": "Is Simulated",
             "type": "boolean"
           },
+          "its_scenario": {
+            "$ref": "#/components/schemas/ItsScenario",
+            "default": "NOMINAL"
+          },
           "origin_snapped": {
             "$ref": "#/components/schemas/SnappedEndpoint"
           },
@@ -1108,6 +1306,7 @@
         "discriminator": {
           "mapping": {
             "ITS_DISPATCH": "#/components/schemas/ItsDispatchEvent",
+            "ITS_FEEDBACK": "#/components/schemas/ItsFeedbackEvent",
             "SIMULATION_CANCELLED": "#/components/schemas/SimulationCancelledEvent",
             "SIMULATION_COMPLETED": "#/components/schemas/SimulationCompletedEvent",
             "SIMULATION_TICK": "#/components/schemas/SimulationTickEvent"
@@ -1117,6 +1316,9 @@
         "oneOf": [
           {
             "$ref": "#/components/schemas/SimulationTickEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ItsFeedbackEvent"
           },
           {
             "$ref": "#/components/schemas/ItsDispatchEvent"
@@ -1151,6 +1353,26 @@
             "const": true,
             "title": "Is Simulated",
             "type": "boolean"
+          },
+          "its_observed_at_simulated_sec": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Its Observed At Simulated Sec"
+          },
+          "its_requests": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ItsRequestSnapshot"
+            },
+            "title": "Its Requests",
+            "type": "array"
           },
           "kpi_metrics": {
             "$ref": "#/components/schemas/KpiMetrics"

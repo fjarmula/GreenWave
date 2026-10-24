@@ -118,3 +118,20 @@ describe("comparison stage", () => {
     expect(count(html, /data-testid="comparison-stop"/g)).toBe(0);
   });
 });
+
+it("shows a failed member immediately while the baseline keeps running", () => {
+  const html = render({
+    ...running,
+    runs: {
+      ...running.runs,
+      ENABLED: {
+        ...running.runs.ENABLED,
+        simulationState: "CANCELLED",
+        cancelReason: "ITS_TIMEOUT",
+      },
+    },
+  });
+  expect(html).toContain("acknowledgement timed out");
+  expect(html).not.toMatch(/Green Wave ahead by/);
+  expect(html).toContain('data-testid="comparison-stop"');
+});

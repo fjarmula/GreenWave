@@ -1,3 +1,4 @@
+import { tickEventExample } from "@/lib/transport/__fixtures__/architecture-examples";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -65,6 +66,7 @@ describe("KpiHeader time saved", () => {
         kpi_metrics: { current_time_saved_sec: saved, total_time_elapsed_sec: 30 },
         intersections: [],
         signal_phases: [],
+        its_requests: [],
       },
     };
     const markup = renderToStaticMarkup(<KpiHeader />);
@@ -127,6 +129,7 @@ describe("KpiHeader vehicle type", () => {
         playback_speed: 1,
         vehicle_type: type,
         green_wave_mode: "ENABLED",
+        its_scenario: "NOMINAL",
       },
     };
     const markup = renderToStaticMarkup(<KpiHeader />);
@@ -166,6 +169,7 @@ describe("KpiHeader speed headline", () => {
       kpi_metrics: { current_time_saved_sec: 12, total_time_elapsed_sec: 30 },
       intersections: [],
       signal_phases: [],
+      its_requests: [],
     },
   });
 
@@ -188,3 +192,21 @@ describe("KpiHeader speed headline", () => {
     expect(speed).toContain("Last received speed");
   });
 });
+
+it.each(["ITS_REJECTED", "ITS_TIMEOUT", "ITS_HOLD_EXPIRED"] as const)(
+  "does not present successful savings after %s",
+  (reason) => {
+    state = {
+      ...initialSimulationState,
+      simulationState: "CANCELLED",
+      cancelReason: reason,
+      liveTelemetry: {
+        ...tickEventExample,
+        kpi_metrics: { total_time_elapsed_sec: 25, current_time_saved_sec: 29 },
+      },
+    };
+    const html = renderToStaticMarkup(<KpiHeader />);
+    expect(html).not.toContain("+29s");
+    expect(html).toContain("No completed savings");
+  },
+);

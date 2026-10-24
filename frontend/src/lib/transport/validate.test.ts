@@ -45,6 +45,7 @@ describe("parseStartResponse", () => {
   it("accepts the frontend mock start response", () => {
     const route = createMockSession({
       green_wave_mode: "ENABLED",
+      its_scenario: "NOMINAL" as const,
       simulation_id: "validation-mock",
       origin: { lat: 50.0612, lng: 19.9571 },
       destination: { lat: 50.0134, lng: 19.9982 },

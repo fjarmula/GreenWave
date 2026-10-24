@@ -63,6 +63,15 @@ export function RunSummary({ onBackToSetup, onStop, showStop = true }: RunSummar
     );
   }
 
+  if (simulationState === "CANCELLED" && cancelReason?.startsWith("ITS_"))
+    return (
+      <SummaryCard
+        tone="error"
+        title={cancelReasonLabel(cancelReason)}
+        detail="Simulation ended. The map retains the last simulated controller report and vehicle position. Start a new run explicitly from dispatch setup."
+        onBackToSetup={onBackToSetup}
+      />
+    );
   if (simulationState === "CANCELLED" && cancelReason) {
     return (
       <SummaryCard

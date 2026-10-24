@@ -74,7 +74,7 @@ class SessionManager:
         self,
         index: RoutingIndex,
         settings: SimulationSettings,
-        gateway: ItsGateway,
+        gateway: ItsGateway | None = None,
         clock: Clock | None = None,
         sleep: Sleep = asyncio.sleep,
         planner: SimulationPlanner = plan_simulation,
@@ -124,7 +124,14 @@ class SessionManager:
                 request.member(GreenWaveMode.DISABLED),
             ]
             # Both plans succeed before anything is superseded.
-            planned = [await self._plan(member) for member in members]
+            planned: list[PlannedSimulation] = []
+            try:
+                for member in members:
+                    planned.append(await self._plan(member))
+            except BaseException:
+                for item in planned:
+                    item.engine.close()
+                raise
             await self._cancel_operation(CancelReason.SUPERSEDED)
             self._launch(tuple(self._session(m, p) for m, p in zip(members, planned, strict=True)))
             enabled, disabled = (p.response for p in planned)
@@ -245,6 +252,8 @@ class SessionManager:
             for session in sessions:
                 self._publish(session, self._cancelled_event(session, CancelReason.SERVER_ERROR))
         finally:
+            for session in sessions:
+                session.engine.close()
             if self._operation is sessions and all(s.terminal is not None for s in sessions):
                 self._operation = ()
 
@@ -259,6 +268,7 @@ class SessionManager:
                 with suppress(asyncio.CancelledError):
                     await task
         for session in sessions:
+            session.engine.close()
             self._publish(session, self._cancelled_event(session, reason))
         if self._operation is sessions:
             self._operation = ()
