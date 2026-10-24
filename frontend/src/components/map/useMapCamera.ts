@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Map } from "maplibre-gl";
 import { createMapCamera, type CameraMode } from "@/lib/camera-policy";
+import { observeOccluders } from "@/components/map/occluders";
 import { applyRouteFit } from "@/components/map/useRouteFit";
 import type { SimulationStartResponse } from "@/types/telemetry";
 export function useMapCamera(
@@ -27,7 +28,9 @@ export function useMapCamera(
       setMode,
     );
     camera.current = controller;
+    const stopObserving = observeOccluders(map.getContainer(), () => controller.reframe());
     return () => {
+      stopObserving();
       controller.dispose();
       camera.current = null;
     };
