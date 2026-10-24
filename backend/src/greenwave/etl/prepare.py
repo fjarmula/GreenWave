@@ -22,7 +22,7 @@ WELDS_FILENAME = "welds.csv"
 
 @dataclass(slots=True)
 class PreparedScan:
-    scan: OsmScan  # drivable_ways are the welded ways
+    scan: OsmScan  # drivable_ways are the welded drivable + access ways
     inputs_sha256: dict[str, str]
     near_misses_before: pl.DataFrame
     near_miss_report_before: NearMissReport
@@ -32,11 +32,14 @@ class PreparedScan:
 def prepare_scan(raw_dir: Path) -> PreparedScan:
     inputs_sha256 = verify_raw_inputs(raw_dir)
     scan = scan_osm(raw_dir / OSM_RELATIVE_PATH)
-    routable = [way for way in scan.drivable_ways if is_routable_way(way)]
+    # Access ways join the network here, before welding, so every later step treats them as
+    # ordinary routable ways; the scan keeps its own list for reporting.
+    merged = [*scan.drivable_ways, *scan.access_ways]
+    routable = [way for way in merged if is_routable_way(way)]
     near_frame, near_report = find_near_misses(build_graph(routable).graph, routable)
     welded_routable, weld_report = weld_ways(routable, near_frame)
     welded_by_line = {way.line_number: way for way in welded_routable}
-    ways = [welded_by_line.get(way.line_number, way) for way in scan.drivable_ways]
+    ways = [welded_by_line.get(way.line_number, way) for way in merged]
     logger.info(
         "welded %d of %d near-miss candidates (%d near-misses within the check tolerance)",
         weld_report.welded,

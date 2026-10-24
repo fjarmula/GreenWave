@@ -6,8 +6,10 @@ from greenwave.etl.near_misses import find_near_misses
 from greenwave.etl.prepare import prepare_scan, tertiary_plus_cases, welds_frame
 from greenwave.etl.profile import OSM_RELATIVE_PATH
 from greenwave.etl.profile_osm import DrivableWay, LonLat
+from greenwave.etl.road_rules import is_routable_way
 from greenwave.etl.weld import weld_ways
 from tests.support.osm_fixtures import line, point, write_osm
+from tests.support.pipeline_fixtures import make_raw
 
 STEP = 0.001
 METRE_LAT = 1 / 111_200
@@ -95,3 +97,56 @@ def test_prepare_scan_welds_the_ways_every_later_step_sees(tmp_path: Path) -> No
     assert stem.coordinates[-1] in main.coordinates  # now a shared vertex
     assert len(prepared.scan.signal_nodes) == 1  # everything else in the scan is untouched
     json.dumps(prepared.weld_report.model_dump())
+
+
+# --- Access ways join the prepared network --------------------------------------------------
+
+
+def test_access_ways_join_the_prepared_network(tmp_path: Path) -> None:
+    raw = make_raw(
+        tmp_path,
+        extra=(
+            line([at(6, 3), at(9, 3)], highway="residential", name="Lesna"),
+            line([at(9, 3), at(11, 3)], highway="track", name="Dukt"),
+        ),
+    )
+    names = [w.properties.get("name") for w in prepare_scan(raw).scan.drivable_ways]
+    assert "Lesna" in names
+    assert "Dukt" in names
+
+
+def test_access_ways_are_welded(tmp_path: Path) -> None:
+    raw = make_raw(
+        tmp_path,
+        extra=(
+            line([at(6, 3), at(9, 3)], highway="residential", name="Lesna"),
+            line([at(7, 5), north_of(at(7, 3), 0.5)], highway="track", name="Dukt"),
+        ),
+    )
+    prepared = prepare_scan(raw)
+    highway_by_line = {w.line_number: w.highway for w in prepared.scan.drivable_ways}
+    welded = {highway_by_line[weld.way_line] for weld in prepared.weld_report.welds} | {
+        highway_by_line[weld.other_way_line] for weld in prepared.weld_report.welds
+    }
+    assert "track" in welded
+
+
+def test_driveway_stays_excluded_after_merge(tmp_path: Path) -> None:
+    raw = make_raw(
+        tmp_path,
+        extra=(
+            line(
+                [at(6, 3), at(9, 3)],
+                highway="service",
+                service="driveway",
+                access="no",
+                emergency="yes",
+                name="Podjazd",
+            ),
+        ),
+    )
+    ways = [
+        w for w in prepare_scan(raw).scan.drivable_ways if w.properties.get("name") == "Podjazd"
+    ]
+    assert len(ways) == 1
+    assert is_routable_way(ways[0]) is False
