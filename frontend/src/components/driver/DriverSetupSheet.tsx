@@ -15,7 +15,7 @@ import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import { settingsSummary } from "@/lib/driver-presentation";
 import type { PreviousRun } from "@/lib/previous-run";
 import type { DispatchSettings } from "@/lib/start-request";
-import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
+import { selectedCandidate, type IncidentDispatch } from "@/lib/useIncidentDispatch";
 
 export function canStartDispatch(dispatch: IncidentDispatch) {
   return dispatch.rankStatus === "ready" && (dispatch.ranking?.candidates.length ?? 0) > 0;
@@ -164,7 +164,9 @@ export function DriverSetupDetails({
         isMockTransport={isMockTransport}
         trafficDensity={settings.trafficDensity}
         origin={
-          canStartDispatch(dispatch) ? (ranking?.candidates[0]?.station.position ?? null) : null
+          canStartDispatch(dispatch)
+            ? (selectedCandidate(dispatch)?.station.position ?? null)
+            : null
         }
         incident={incident?.position ?? null}
       />

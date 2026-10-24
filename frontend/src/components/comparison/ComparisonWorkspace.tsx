@@ -15,7 +15,8 @@ import { getFrontendConfig } from "@/lib/config";
 import { dispatchAdapter } from "@/lib/dispatch-adapter";
 import { createSimulationId } from "@/lib/simulation-id";
 import type { DispatchSettings } from "@/lib/start-request";
-import { pinnedIncident } from "@/lib/useIncidentDispatch";
+import { runnerUpIds } from "@/lib/station-choice";
+import { pinnedIncident, selectedCandidate } from "@/lib/useIncidentDispatch";
 import type { ComparisonStartRequest, Position } from "@/types/telemetry";
 
 export function ComparisonWorkspace() {
@@ -32,7 +33,7 @@ export function ComparisonWorkspace() {
   const { prepareComparison } = useSimulationActions();
   const [pane, setPane] = useState<ComparisonMode>("ENABLED");
   const [mapFocusRequest, setMapFocusRequest] = useState(0);
-  const chosenStation = dispatch.ranking?.candidates[0]?.station ?? null;
+  const chosenStation = selectedCandidate(dispatch)?.station ?? null;
   const { setIncident } = dispatch;
   const onMapClick = useCallback(
     (position: Position) => setIncident(pinnedIncident(position)),
@@ -105,11 +106,7 @@ export function ComparisonWorkspace() {
               stations={stations}
               selectedVehicleType={dispatch.vehicleType}
               chosenStationId={chosenStation?.station_id ?? null}
-              runnerUpIds={
-                dispatch.ranking?.candidates
-                  .slice(1)
-                  .map((candidate) => candidate.station.station_id) ?? []
-              }
+              runnerUpIds={runnerUpIds(dispatch.ranking, dispatch.selectedStationId)}
               onMapClick={starting ? () => {} : onMapClick}
             />
           </div>

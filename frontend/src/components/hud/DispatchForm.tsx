@@ -16,7 +16,7 @@ import { getFrontendConfig } from "@/lib/config";
 import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import type { PreviousRun } from "@/lib/previous-run";
 import type { DispatchSettings } from "@/lib/start-request";
-import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
+import { selectedCandidate, type IncidentDispatch } from "@/lib/useIncidentDispatch";
 
 type DispatchFormProps = {
   /** Owned by the dashboard so the chosen settings outlive each run. */
@@ -198,7 +198,7 @@ export function DispatchForm({
       <PreflightEstimate
         isMockTransport={isMockTransport}
         trafficDensity={trafficDensity}
-        origin={canStart ? (ranking?.candidates[0]?.station.position ?? null) : null}
+        origin={canStart ? (selectedCandidate(dispatch)?.station.position ?? null) : null}
         incident={incident?.position ?? null}
       />
 
