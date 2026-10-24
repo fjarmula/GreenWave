@@ -245,6 +245,47 @@ def _index(
     )
 
 
+PARK_CENTRE: tuple[float, float] = (_X + 500, _Y + 400)
+
+
+def park_index(*, trap: bool = False) -> RoutingIndex:
+    """A park (``PARK_CENTRE``) between a slow south road and a fast north road, with a depot
+    road at each end. Only ``s-mid`` (400 m) and ``n-mid`` (500 m) are within the default
+    on-foot reach. ``trap`` adds ``trap`` (_X + 500, _Y - 900), entered one-way from ``s-mid``."""
+    graph = nx.MultiDiGraph()
+    node, edge = _builders(graph, {})
+
+    def two_way(name: str, a: str, b: str, length: float, speed: float) -> None:
+        edge(f"{name}-fwd", a, b, length, speed)
+        edge(f"{name}-rev", b, a, length, speed)
+
+    node("s-west", _X)
+    node("s-mid", _X + 500)
+    node("s-east", _X + 1_000)
+    node("n-west", _X, _Y + 900)
+    node("n-mid", _X + 500, _Y + 900)
+    node("depot-w", _X - 3_000, _Y + 900)
+    node("depot-e", _X + 2_000)
+    two_way("south-w", "s-west", "s-mid", 500, 30)
+    two_way("south-e", "s-mid", "s-east", 500, 30)
+    two_way("north", "n-west", "n-mid", 500, 90)
+    two_way("west-link", "n-west", "s-west", 900, 30)
+    two_way("depot-w-road", "depot-w", "n-west", 3_000, 90)
+    two_way("depot-e-road", "depot-e", "s-east", 1_000, 90)
+    if trap:
+        node("trap", _X + 500, _Y - 900)
+        edge("trap-in", "s-mid", "trap", 900, 30)
+    return _index(graph, {}, {}, None)
+
+
+def park_stations() -> pl.DataFrame:
+    """Ambulances at the west and east depots of ``park_index``."""
+    return stations_frame(
+        ("STN-A-0001", "AMBULANCE", _X - 3_000, _Y + 900),
+        ("STN-A-0002", "AMBULANCE", _X + 2_000, _Y),
+    )
+
+
 def stations_frame(*rows: tuple[str, str, float, float]) -> pl.DataFrame:
     """``stations.parquet``-shaped rows ``(station_id, vehicle_type, x_m, y_m)`` on a fixture."""
     kinds = {"AMBULANCE": "ambulance_base", "FIRE_TRUCK": "fire_state", "POLICE_CAR": "police"}
