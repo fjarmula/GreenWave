@@ -46,7 +46,7 @@ export function selectedCandidate(
 }
 
 const RANK_ERROR_COPY: Partial<Record<ErrorCode, string>> = {
-  DESTINATION_OFF_NETWORK: "Location is off the road network",
+  DESTINATION_OFF_NETWORK: "No vehicle access within 800 m of this location",
   NO_STATION_REACHABLE: "No station of this type can reach this location",
 };
 

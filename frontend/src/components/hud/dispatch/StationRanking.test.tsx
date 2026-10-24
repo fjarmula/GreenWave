@@ -122,6 +122,34 @@ describe("StationRanking", () => {
     expect(markup).not.toContain("+");
   });
 
+  const LEG = { access_point: { lat: 50.06, lng: 19.91 }, distance_m: 650, seconds: 464 };
+
+  it("shows the total time", () => {
+    const markup = render({
+      ranking: {
+        ...RANKING,
+        candidates: [{ ...RANKING.candidates[0], greenwave_seconds: 140, on_foot: LEG }],
+      },
+    });
+    expect(markup).toContain("10m 04s");
+    expect(markup).toContain("incl. 650 m on foot");
+  });
+
+  it("measures deltas on the totals", () => {
+    const [a, b] = RANKING.candidates;
+    const markup = render({
+      ranking: {
+        ...RANKING,
+        candidates: [
+          { ...a, greenwave_seconds: 300, on_foot: { ...LEG, seconds: 100 } }, // 400
+          { ...b, greenwave_seconds: 200, on_foot: { ...LEG, seconds: 260 } }, // 460
+        ],
+      },
+    });
+    expect(markup).toContain("+60 s");
+    expect(markup).not.toContain("incl. 0 m");
+  });
+
   it("labels the mock choice approximate and shows no times", () => {
     const markup = render({
       roadTimeRanking: false,

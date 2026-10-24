@@ -1,7 +1,9 @@
 import { Info, LoaderCircle, TriangleAlert } from "lucide-react";
 import { useId } from "react";
 
+import { formatSignalDistance } from "@/lib/driver-presentation";
 import { formatMinutesSeconds } from "@/lib/format-duration";
+import { candidateTotalSeconds } from "@/lib/station-choice";
 import { SOURCE_KIND_LABELS } from "@/lib/station-copy";
 import { selectedCandidate, type RankStatus } from "@/lib/useIncidentDispatch";
 import type { DispatchRankResponse, RankedCandidate } from "@/types/telemetry";
@@ -130,13 +132,18 @@ function CandidateRow({
           }`}
         >
           {roadTimeRanking
-            ? formatMinutesSeconds(Math.round(candidate.greenwave_seconds))
+            ? formatMinutesSeconds(Math.round(candidateTotalSeconds(candidate)))
             : `${(candidate.distance_m / 1000).toFixed(1)} km`}
         </span>
+        {candidate.on_foot && (
+          <span className="block text-2xs text-muted-foreground">
+            incl. {formatSignalDistance(candidate.on_foot.distance_m)} on foot
+          </span>
+        )}
         {!isFastest && (
           <span className="block font-mono text-2xs text-muted-foreground">
             {roadTimeRanking
-              ? `+${Math.round(candidate.greenwave_seconds - fastest.greenwave_seconds)} s`
+              ? `+${Math.round(candidateTotalSeconds(candidate) - candidateTotalSeconds(fastest))} s`
               : `+${((candidate.distance_m - fastest.distance_m) / 1000).toFixed(1)} km`}
           </span>
         )}

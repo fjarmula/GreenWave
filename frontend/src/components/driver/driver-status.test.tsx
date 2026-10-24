@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vitest";
 import { DriverStatus } from "./DriverStatus";
 import { initialSimulationState } from "@/lib/simulation-state";
-import { request, route, tick } from "@/lib/comparison/fixtures.test-support";
+import { completed, request, route, tick } from "@/lib/comparison/fixtures.test-support";
 it("shows vehicle-specific simulated status, stale feedback and recoverable Stop", () => {
   const state = {
     ...initialSimulationState,
@@ -37,4 +37,26 @@ it("never presents a disabled run as enabled driver telemetry", () => {
   );
   expect(html).toContain("Enabled simulation required");
   expect(html).not.toContain("km/h");
+});
+
+const finished = (onFoot: boolean) => ({
+  ...initialSimulationState,
+  simulationState: "FINISHED" as const,
+  startRequest: request,
+  routeData: {
+    ...route(),
+    destination_on_foot: onFoot
+      ? { access_point: { lat: 50.06, lng: 19.91 }, distance_m: 650, seconds: 464 }
+      : null,
+  },
+  completion: completed(383),
+});
+it("names the access point and the walk when the incident is off the road", () => {
+  const html = renderToStaticMarkup(<DriverStatus state={finished(true)} onStop={() => {}} />);
+  expect(html).toMatch(/Arrived at access point in [^<]+ · 650 m on foot/);
+});
+it("keeps the plain arrival copy without an on-foot leg", () => {
+  const html = renderToStaticMarkup(<DriverStatus state={finished(false)} onStop={() => {}} />);
+  expect(html).toMatch(/Arrived in [^<]+</);
+  expect(html).not.toContain("on foot");
 });

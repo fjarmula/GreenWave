@@ -43,9 +43,18 @@ describe("mapPalette", () => {
       palette.wake,
       palette.cascade,
       palette.endpointLine,
+      palette.onFootLine,
       ...Object.values(palette.signal),
     ];
     for (const value of values) expect(value).toMatch(HEX);
+  });
+
+  it("draws the on-foot leg in the beacon colour, apart from the snap dash", () => {
+    expect(mapPalette("light").onFootLine).toBe("#007598"); // --beacon oklch(0.52 0.11 225)
+    expect(mapPalette("dark").onFootLine).toBe("#48ceea"); // --beacon oklch(0.79 0.12 215)
+    for (const theme of ["light", "dark"] as const) {
+      expect(mapPalette(theme).onFootLine).not.toBe(mapPalette(theme).endpointLine);
+    }
   });
 
   it("keeps clearing and priority green apart", () => {

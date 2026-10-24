@@ -4,6 +4,7 @@ import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import { SimulationAdapterError } from "@/lib/transport/errors";
 import {
   createIncidentDispatch,
+  describeRankError,
   pinnedIncident,
   selectedCandidate,
   type Incident,
@@ -165,7 +166,7 @@ describe("createIncidentDispatch", () => {
   });
 
   it.each([
-    ["DESTINATION_OFF_NETWORK", "Location is off the road network"],
+    ["DESTINATION_OFF_NETWORK", "No vehicle access within 800 m of this location"],
     ["NO_STATION_REACHABLE", "No station of this type can reach this location"],
   ] as const)("test_error_copy: %s", async (code, copy) => {
     const { adapter, calls } = deferredAdapter();
@@ -296,5 +297,17 @@ describe("pinnedIncident", () => {
       label: "Pinned 50.0614, 19.9366",
       source: "map",
     });
+  });
+});
+
+describe("describeRankError", () => {
+  it("explains an incident beyond walking reach of any vehicle access", () => {
+    const error = new SimulationAdapterError({
+      kind: "http",
+      status: 422,
+      code: "DESTINATION_OFF_NETWORK",
+      message: "Incident is farther than 800 m on foot from any vehicle access point",
+    });
+    expect(describeRankError(error)).toBe("No vehicle access within 800 m of this location");
   });
 });

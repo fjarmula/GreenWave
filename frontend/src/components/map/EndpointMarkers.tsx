@@ -72,11 +72,13 @@ export function EndpointMarkers({
     if (!connectors.features.length) return;
     const sourceId = "greenwave-snap-connectors";
     const layerId = "greenwave-snap-connectors-line";
+    const onFootLayerId = "greenwave-on-foot-line";
     map.addSource(sourceId, { type: "geojson", data: connectors });
     map.addLayer({
       id: layerId,
       type: "line",
       source: sourceId,
+      filter: ["!", ["get", "onFoot"]],
       paint: {
         "line-color": mapPalette(theme).endpointLine,
         "line-width": 2,
@@ -85,7 +87,21 @@ export function EndpointMarkers({
       },
       layout: { "line-cap": "round" },
     });
+    // The walk to an off-road incident: dotted, in the beacon colour, not the snap dash.
+    map.addLayer({
+      id: onFootLayerId,
+      type: "line",
+      source: sourceId,
+      filter: ["get", "onFoot"],
+      paint: {
+        "line-color": mapPalette(theme).onFootLine,
+        "line-width": 2.5,
+        "line-dasharray": [0.5, 2],
+      },
+      layout: { "line-cap": "round" },
+    });
     return () => {
+      if (map.getLayer(onFootLayerId)) map.removeLayer(onFootLayerId);
       if (map.getLayer(layerId)) map.removeLayer(layerId);
       if (map.getSource(sourceId)) map.removeSource(sourceId);
     };

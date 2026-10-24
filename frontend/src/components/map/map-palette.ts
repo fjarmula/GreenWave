@@ -24,6 +24,8 @@ export type MapPalette = {
   wake: string;
   cascade: string;
   endpointLine: string;
+  /** The walk from an off-road incident's access point (dotted). */
+  onFootLine: string;
   signal: Record<IntersectionState, string>;
 };
 
@@ -47,6 +49,7 @@ const PALETTES: Record<ResolvedTheme, MapPalette> = {
     wake: "#007e4b", // --go
     cascade: "#7544cd", // --cascade
     endpointLine: "#54585f", // --fg-muted
+    onFootLine: "#007598", // --beacon
     signal: {
       NORMAL: "#d01c29", // --emergency
       CLEARING: "#008977", // --go shifted to teal (oklch 0.56 0.11 180)
@@ -72,6 +75,7 @@ const PALETTES: Record<ResolvedTheme, MapPalette> = {
     wake: "#36da90", // --go
     cascade: "#b296ff", // --cascade
     endpointLine: "#a1a5ab", // --fg-muted
+    onFootLine: "#48ceea", // --beacon
     signal: {
       NORMAL: "#ff645f", // --emergency
       CLEARING: "#40d9c1", // --go shifted to teal (oklch 0.8 0.13 180)

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildStartRequest, DEFAULT_DISPATCH_SETTINGS } from "@/lib/start-request";
-import { runnerUpIds } from "@/lib/station-choice";
+import { candidateTotalSeconds, runnerUpIds } from "@/lib/station-choice";
 import { selectedCandidate } from "@/lib/useIncidentDispatch";
 import type { DispatchRankResponse, RankedCandidate } from "@/types/telemetry";
 
@@ -44,4 +44,14 @@ it("starts the run from the selected station", () => {
   );
 
   expect(request.origin).toEqual({ lat: 50.02, lng: 19.9 });
+});
+
+describe("candidateTotalSeconds", () => {
+  it("adds the walk to the drive", () => {
+    const leg = { access_point: { lat: 50, lng: 19.9 }, distance_m: 650, seconds: 464 };
+    expect(candidateTotalSeconds({ ...candidate("A", 50.01), greenwave_seconds: 140 })).toBe(140);
+    expect(
+      candidateTotalSeconds({ ...candidate("A", 50.01), greenwave_seconds: 140, on_foot: leg }),
+    ).toBe(604);
+  });
 });
