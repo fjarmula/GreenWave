@@ -76,6 +76,7 @@ export function MapContainer({
     map,
     live ? routeData : null,
     live && simulationState === "RUNNING" && !telemetryStale,
+    startRequest?.destination ?? null,
   );
   const showWake = useVehicleWake(
     map,

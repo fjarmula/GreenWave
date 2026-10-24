@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { applyEndpointFit } from "@/components/map/endpoint-fit";
 import { measureMapPadding, OCCLUDER_SELECTOR } from "@/components/map/occluders";
-import { applyRouteFit } from "@/components/map/useRouteFit";
+import { applyRouteFit, routeFitCoordinates } from "@/components/map/useRouteFit";
 import { occluderPadding, type Rect } from "@/lib/workspace-layout";
 
 vi.mock("maplibre-gl", () => ({
@@ -201,5 +201,30 @@ describe("applyRouteFit", () => {
     const { map, fitBounds } = fakeMap(width, height);
     applyRouteFit(map, route, false);
     expect(fitBounds).not.toHaveBeenCalled();
+  });
+});
+
+describe("routeFitCoordinates", () => {
+  const geometry = {
+    type: "LineString" as const,
+    coordinates: [
+      [19.9, 50.07],
+      [19.91, 50.062],
+    ] as [number, number][],
+  };
+  const incident = { lat: 50.0597, lng: 19.909 };
+  const leg = { access_point: { lat: 50.062, lng: 19.91 }, distance_m: 264, seconds: 189 };
+
+  it("frames the walk to an off-road incident with the route", () => {
+    expect(
+      routeFitCoordinates({ route_geometry: geometry, destination_on_foot: leg }, incident),
+    ).toEqual([...geometry.coordinates, [19.909, 50.0597]]);
+  });
+
+  it("frames only the route for an on-road incident", () => {
+    expect(
+      routeFitCoordinates({ route_geometry: geometry, destination_on_foot: null }, incident),
+    ).toEqual(geometry.coordinates);
+    expect(routeFitCoordinates({ route_geometry: geometry }, null)).toEqual(geometry.coordinates);
   });
 });

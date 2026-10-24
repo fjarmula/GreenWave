@@ -2,13 +2,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Map } from "maplibre-gl";
 import { createMapCamera, type CameraMode } from "@/lib/camera-policy";
 import { observeOccluders } from "@/components/map/occluders";
-import { applyRouteFit } from "@/components/map/useRouteFit";
-import type { SimulationStartResponse } from "@/types/telemetry";
+import { applyRouteFit, routeFitCoordinates } from "@/components/map/useRouteFit";
+import type { Position, SimulationStartResponse } from "@/types/telemetry";
 export function useMapCamera(
   map: Map | null,
   route: SimulationStartResponse | null,
   active: boolean,
+  /** The requested incident; framed with the route when the run ends at an access point. */
+  incident: Position | null = null,
 ) {
+  const incidentLat = incident?.lat ?? null;
+  const incidentLng = incident?.lng ?? null;
   const camera = useRef<ReturnType<typeof createMapCamera> | null>(null);
   const [mode, setMode] = useState<CameraMode>("overview");
   const activeRef = useRef(active);
@@ -22,7 +26,12 @@ export function useMapCamera(
       () =>
         applyRouteFit(
           map,
-          route.route_geometry.coordinates,
+          routeFitCoordinates(
+            route,
+            incidentLat !== null && incidentLng !== null
+              ? { lat: incidentLat, lng: incidentLng }
+              : null,
+          ),
           window.matchMedia("(prefers-reduced-motion: reduce)").matches,
         ),
       setMode,
@@ -34,7 +43,7 @@ export function useMapCamera(
       controller.dispose();
       camera.current = null;
     };
-  }, [map, route]);
+  }, [map, route, incidentLat, incidentLng]);
   const display = useCallback(
     (point: [number, number]) => camera.current?.display(point, activeRef.current),
     [],
