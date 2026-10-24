@@ -18,11 +18,11 @@ const MAPLIBRE_WORKER_URL = new URL(
 
 const KRAKOW_CENTER: [number, number] = [19.945, 50.064];
 // Data attribution (architecture §5); the basemap's own OSM attribution is added by its style.
-const DATA_ATTRIBUTION = [
+// The simulation disclaimer lives in the always-visible provenance chip, not here.
+export const DATA_ATTRIBUTION = [
   '<a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre</a>',
   'Road network &amp; signals © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL)',
   "Street registry © City of Kraków (MSIP)",
-  "All signal states are simulated",
 ];
 
 /**
