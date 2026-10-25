@@ -1,5 +1,6 @@
 import { ArrowDownRight, TimerReset } from "lucide-react";
 
+import { formatSignalDistance } from "@/lib/driver-presentation";
 import { formatMinutesSeconds } from "@/lib/format-duration";
 import { estimateMockRoute } from "@/lib/mock-route-metrics";
 import type { Position, RankedCandidate } from "@/types/telemetry";
@@ -46,7 +47,12 @@ export function PreflightEstimate({
         </span>
       </div>
       {/* Never show mock numbers as backend ones, or backend ones as measured times. */}
-      {!hasEstimate ? (
+      {onFoot && candidate?.on_site ? (
+        // On site (ADR 0012): no drive and no simulated run, only the walk.
+        <p className="mt-3 text-2xs text-muted-foreground">
+          {`On site · no drive · on foot about ${formatMinutesSeconds(Math.round(onFoot.seconds))} (${formatSignalDistance(onFoot.distance_m)}) · simulated estimate.`}
+        </p>
+      ) : !hasEstimate ? (
         <p className="mt-3 text-2xs text-muted-foreground">
           {isMockTransport
             ? "Select an incident and wait for a station selection to see approximate mock estimates."

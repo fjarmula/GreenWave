@@ -382,6 +382,29 @@ describe("mock preflight estimates", () => {
     expect(markup).toContain("03m 10s");
   });
 
+  it("shows only the walk for an on-site pick, with no simulated runs", () => {
+    const station = RANKING.candidates[0].station;
+    const markup = renderToStaticMarkup(
+      <PreflightEstimate
+        isMockTransport={false}
+        trafficDensity={1}
+        origin={null}
+        incident={null}
+        candidate={{
+          ...RANKING.candidates[0],
+          greenwave_seconds: 0,
+          standard_seconds: 0,
+          distance_m: 0,
+          on_foot: { access_point: station.position, distance_m: 60, seconds: 45 },
+          on_site: true,
+        }}
+      />,
+    );
+    expect(markup).toContain("On site · no drive · on foot about 00m 45s (60 m)");
+    for (const absent of ["Simulated runs", "Standard time", "GreenWave time", "TIME SAVED"])
+      expect(markup).not.toContain(absent);
+  });
+
   it("shows no time saved when the standard run is the shorter one", () => {
     const candidate = { ...RANKING.candidates[0], standard_seconds: 220, greenwave_seconds: 246 };
     const markup = renderToStaticMarkup(
