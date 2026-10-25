@@ -15,6 +15,7 @@ from greenwave.schemas import (
 from greenwave.simulation.phases import (
     advance_signal_phases,
     movement_slots,
+    ordinary_seconds_until_green,
     phase_decisions,
     project_signal_phases,
     route_movement_color_at,
@@ -367,6 +368,58 @@ def test_route_movement_color_is_none_without_a_route_vehicle_signal() -> None:
     model = _int_a()
     state = _state(model, 0, IntersectionState.NORMAL)
     assert route_movement_color_at(model, state, model.intersections[1].id, 0.0, SETTINGS) is None
+
+
+def test_seconds_until_green_is_zero_while_green_and_counts_down_otherwise() -> None:
+    # 20 s green + 3 s yellow + 2 s all-red: slot 25 s, cycle 50 s. The route group
+    # ("corridor-a") sorts before "cross-street", so it takes slot 0: green [0, 20).
+    model = _int_a()
+    assert ordinary_seconds_until_green(model, "INT-A", 10.0, SETTINGS) == 0.0
+    assert ordinary_seconds_until_green(model, "INT-A", 20.5, SETTINGS) == pytest.approx(29.5)
+    assert ordinary_seconds_until_green(model, "INT-A", 49.0, SETTINGS) == pytest.approx(1.0)
+    assert ordinary_seconds_until_green(model, "INT-A", 50.0, SETTINGS) == 0.0
+
+
+def test_seconds_until_green_follows_the_route_slot() -> None:
+    # A cross-street group that sorts first puts the route in slot 1: green [25, 45).
+    cross_first = (
+        SIGNALS["INT-A"][0],
+        signal_ref("INT-A", "sig-a-cross", _X + 1_105, _Y - 5, "a-cross-street"),
+    )
+    model = _int_a(cross_first)
+    assert (
+        route_movement_color_at(
+            model, _state(model, 0, IntersectionState.NORMAL), "INT-A", 0.0, SETTINGS
+        )
+        is RED
+    )
+    assert ordinary_seconds_until_green(model, "INT-A", 0.0, SETTINGS) == pytest.approx(25.0)
+    assert ordinary_seconds_until_green(model, "INT-A", 30.0, SETTINGS) == 0.0
+    assert ordinary_seconds_until_green(model, "INT-A", 46.0, SETTINGS) == pytest.approx(29.0)
+
+
+def test_seconds_until_green_is_none_without_route_signal() -> None:
+    walk_only = (_pedestrian(SIGNALS["INT-A"][0]), SIGNALS["INT-A"][1])
+    for model in (_int_a(walk_only), _model(corridor_index())):
+        assert ordinary_seconds_until_green(model, "INT-A", 0.0, SETTINGS) is None
+    model = _int_a()
+    assert ordinary_seconds_until_green(model, model.intersections[1].id, 0.0, SETTINGS) is None
+
+
+@pytest.mark.parametrize("at_s", [x / 2 for x in range(0, 200)])
+def test_seconds_until_green_agrees_with_the_programme(at_s: float) -> None:
+    model = _int_a()
+    state = _state(model, 0, IntersectionState.NORMAL)
+    wait = ordinary_seconds_until_green(model, "INT-A", at_s, SETTINGS)
+    assert wait is not None
+    is_green = route_movement_color_at(model, state, "INT-A", at_s, SETTINGS) is GREEN
+    assert (wait == 0.0) is is_green
+    if not is_green:
+        green_at = at_s + wait
+        assert route_movement_color_at(model, state, "INT-A", green_at, SETTINGS) is GREEN
+        assert (
+            route_movement_color_at(model, state, "INT-A", green_at - 0.01, SETTINGS) is not GREEN
+        )
 
 
 def test_display_head_history_never_changes_the_route_movement_color() -> None:

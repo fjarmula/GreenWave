@@ -18,7 +18,11 @@ from greenwave.schemas import (
     SignalMovementKind,
     SignalPhaseColor,
 )
-from greenwave.simulation.phases import advance_signal_phases, route_movement_color_at
+from greenwave.simulation.phases import (
+    advance_signal_phases,
+    ordinary_seconds_until_green,
+    route_movement_color_at,
+)
 from greenwave.simulation.route_model import RouteModel
 from greenwave.simulation.state import EngineState
 from greenwave.simulation.state_machine import IntersectionRuntime
@@ -220,6 +224,13 @@ class SimulatedItsController:
         )
         return route_movement_color_at(
             self.model, ordinary, intersection_id, at_simulated_sec, self.settings
+        )
+
+    def ordinary_route_seconds_until_green(
+        self, intersection_id: str, at_simulated_sec: float
+    ) -> float | None:
+        return ordinary_seconds_until_green(
+            self.model, intersection_id, at_simulated_sec, self.settings
         )
 
     def close(self) -> None:

@@ -83,6 +83,38 @@ def route_movement_color_at(
     return None
 
 
+def ordinary_seconds_until_green(
+    route_model: RouteModel, intersection_id: str, at_s: float, settings: SimulationSettings
+) -> float | None:
+    """Seconds from ``at_s`` until the route vehicle movement is next green in the ordinary
+    programme (no priority); 0.0 while it is green, ``None`` without a supported route signal.
+
+    All route signals share one cycle slot ``g``, whose green starts at ``g x slot`` in every
+    ``2 x slot`` cycle (:func:`_cycle_colors`).
+    """
+    item = next((item for item in route_model.intersections if item.id == intersection_id), None)
+    if item is None:
+        return None
+    slots = movement_slots(item.signals, item.route_signal_keys)
+    route_slots = {
+        slots[signal.signal_key]
+        for signal in item.signals
+        if signal.signal_key in item.route_signal_keys
+        and signal.signal_key in slots
+        and VEHICLE in signal.movement_kinds
+    }
+    if not route_slots:
+        return None
+    (group,) = route_slots
+    slot = settings.signal_green_seconds + settings.signal_yellow_seconds
+    slot += settings.signal_all_red_seconds
+    cycle = slot * _GROUPS
+    since_green = (at_s - group * slot) % cycle
+    if since_green < settings.signal_green_seconds:
+        return 0.0
+    return cycle - since_green
+
+
 def route_lights_shown_green(
     route_model: RouteModel,
     state: EngineState,

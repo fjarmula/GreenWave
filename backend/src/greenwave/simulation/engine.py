@@ -129,6 +129,7 @@ class SimulationEngine:
             self.traffic_density_multiplier,
             self.controller.ordinary_route_color_at,
             lambda distance_m: self._confirmed_green(before, distance_m),
+            self.controller.ordinary_route_seconds_until_green,
         )
         observation = ItsObservation(
             float(state.simulated_time_s),

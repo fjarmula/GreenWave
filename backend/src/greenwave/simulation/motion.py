@@ -74,6 +74,34 @@ def greenwave_slowdown(
     return max(window_m, needed_m)
 
 
+def standard_crossing(
+    wait_s: float | None,
+    delay_s: float,
+    limit_mps: float,
+    density: float,
+    settings: SimulationSettings,
+) -> tuple[float, float]:
+    """``(length_m, extra_s)`` of a standard-traffic crossing at a red or yellow route line.
+
+    The extra time scales with the wait for the ordinary green (``delay_s``, the intersection's
+    normal delay, when the movement is unknown) and traffic density, capped at
+    ``standard_max_red_loss_seconds``. The crossing lasts at least
+    ``standard_crossing_distance_m`` and extends so the speed spreading the extra time over it
+    never drops below ``standard_min_rolling_speed_kmh``. A limit already at or below that floor
+    adds no extra time: the vehicle is already slow there.
+    """
+    floor_mps = settings.standard_min_rolling_speed_kmh / 3.6
+    if limit_mps <= floor_mps:
+        return settings.standard_crossing_distance_m, 0.0
+    wait = delay_s if wait_s is None else wait_s
+    extra_s = min(
+        settings.standard_clearance_factor * wait * density,
+        settings.standard_max_red_loss_seconds,
+    )
+    length_m = max(settings.standard_crossing_distance_m, extra_s / (1 / floor_mps - 1 / limit_mps))
+    return length_m, extra_s
+
+
 def _window_start_m(
     route_model: RouteModel, stop: RouteIntersection, settings: SimulationSettings
 ) -> float:
@@ -98,6 +126,7 @@ def move_one_second(
     traffic_density_multiplier: float,
     route_movement_color_at: Callable[[str, float], SignalPhaseColor | None],
     may_leave_stop_line: Callable[[float], bool] = lambda _distance_m: True,
+    route_seconds_until_green: Callable[[str, float], float | None] = lambda _id, _t: None,
 ) -> tuple[EngineState, float]:
     """Spend one simulated second; return the new state and the distance actually driven.
 
@@ -112,9 +141,12 @@ def move_one_second(
     requested too late for its approach therefore holds the ambulance instead of showing it drive
     through red. Disabled asks ``route_movement_color_at`` for the route
     movement at the exact time it reaches each route stop line, including lines inside a junction:
-    GREEN drives on; RED, YELLOW or an unknown movement (``None``) starts a controlled crossing of
-    ``standard_crossing_distance_m``, rolled at no more than each edge's ordinary limit plus the
-    standard cautious time spread over it, across edge ends. A later stop line replaces it.
+    GREEN drives on; RED, YELLOW or an unknown movement (``None``) starts a controlled crossing
+    (:func:`standard_crossing`): extra time from ``route_seconds_until_green`` (the longest wait
+    of the facing intersections; an unknown one counts its normal delay), capped, spread over a
+    crossing long enough to stay above ``standard_min_rolling_speed_kmh`` at the ordinary limit
+    there, rolled at no more than each edge's ordinary limit, across edge ends. A later stop line
+    replaces it with its own decision.
     Open-road motion is the same in both modes.
     """
     now, tick = state.simulated_time_s + 1, state.tick + 1
@@ -193,12 +225,24 @@ def move_one_second(
                 for item in line[1]
                 if route_movement_color_at(item.id, at_s) is not SignalPhaseColor.GREEN
             ]
-            crossing = settings.standard_crossing_distance_m if facing else 0.0
-            cautious = (
-                settings.standard_clearance_factor
-                * max((item.delay_seconds for item in facing), default=0.0)
-                * traffic_density_multiplier
-            )
+            crossing, cautious = 0.0, 0.0
+            if facing:
+                waits = [
+                    item.delay_seconds if wait is None else wait
+                    for item in facing
+                    for wait in (route_seconds_until_green(item.id, at_s),)
+                ]
+                crossing, cautious = standard_crossing(
+                    max(waits),
+                    max(item.delay_seconds for item in facing),
+                    # The crossing is driven beyond the line: on the next edge at an edge end.
+                    min(
+                        track.speed_mps(track.edge_at(distance)),
+                        track.speed_limit_mps(track.edge_at(distance)),
+                    ),
+                    traffic_density_multiplier,
+                    settings,
+                )
     moved = distance - state.distance_travelled_m
     arrived = arrived_at is not None
     return replace(

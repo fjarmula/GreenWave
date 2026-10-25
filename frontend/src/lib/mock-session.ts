@@ -10,6 +10,8 @@ import {
   MOCK_SAMPLE_INTERSECTIONS,
   MOCK_STANDARD_CLEARANCE_SECONDS,
   MOCK_STANDARD_CROSSING_DISTANCE_M,
+  MOCK_STANDARD_MAX_RED_LOSS_SECONDS,
+  MOCK_STANDARD_MIN_ROLLING_SPEED_MPS,
 } from "@/lib/mock-simulation-config";
 import { estimateMockRoute, type MockRouteMetrics } from "@/lib/mock-route-metrics";
 import { SimulationAdapterError } from "@/lib/transport/errors";
@@ -163,6 +165,20 @@ function cautiousSpeedMps(limitMps: number, remainingMeters: number, extraSecond
 }
 
 /**
+ * `[length, extra]` of a standard red crossing, the backend's `standard_crossing` with the fixed
+ * delay as the wait: the loss is capped and the crossing extends so it never drops below the floor.
+ */
+function standardCrossing(limitMps: number, density: number): [number, number] {
+  const floor = MOCK_STANDARD_MIN_ROLLING_SPEED_MPS;
+  if (limitMps <= floor) return [MOCK_STANDARD_CROSSING_DISTANCE_M, 0];
+  const extra = Math.min(
+    MOCK_STANDARD_CLEARANCE_SECONDS * density,
+    MOCK_STANDARD_MAX_RED_LOSS_SECONDS,
+  );
+  return [Math.max(MOCK_STANDARD_CROSSING_DISTANCE_M, extra / (1 / floor - 1 / limitMps)), extra];
+}
+
+/**
  * The whole drive, precomputed: open road at the ambulance speed and, with ER Green Wave disabled,
  * a controlled crossing wherever the route movement is red or yellow on reaching a stop line. The
  * backend's rolling formula at contract level; a later stop line replaces an active crossing.
@@ -236,8 +252,12 @@ function mockTimeline(
       reachSeconds.push(seconds);
       if (!enabled) {
         const red = routeMovementColor(seconds) !== "GREEN";
-        crossing = red ? MOCK_STANDARD_CROSSING_DISTANCE_M : 0;
-        cautious = red ? MOCK_STANDARD_CLEARANCE_SECONDS * request.traffic_density_multiplier : 0;
+        [crossing, cautious] = red
+          ? standardCrossing(
+              Math.min(ambulanceMps, MOCK_ORDINARY_SPEED_LIMIT_MPS),
+              request.traffic_density_multiplier,
+            )
+          : [0, 0];
       }
     }
   }

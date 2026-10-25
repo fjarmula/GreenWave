@@ -74,6 +74,12 @@ class SimulationSettings(BaseSettings):
     # red-light entry, life-corridor forming). Not measured Kraków geometry.
     standard_clearance_factor: float = Field(default=1.0, ge=0, allow_inf_nan=False)
     standard_crossing_distance_m: float = Field(default=30, gt=0, allow_inf_nan=False)
+    # PLACEHOLDER 2026-10-25 (human: roll a red crossing, never crawl): the crossing extends past
+    # standard_crossing_distance_m so the vehicle never drops below this speed there.
+    standard_min_rolling_speed_kmh: float = Field(default=10, gt=0, allow_inf_nan=False)
+    # PLACEHOLDER 2026-10-25 (human: roll a red crossing, never crawl): the most a red or yellow
+    # route movement adds to one crossing, whatever the wait for green.
+    standard_max_red_loss_seconds: float = Field(default=15, ge=0, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def priority_precedes_clearing(self) -> Self:

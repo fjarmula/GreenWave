@@ -27,7 +27,12 @@ from greenwave.schemas import (
     SimulationTickEvent,
 )
 from greenwave.simulation.engine import SimulationEngine
-from greenwave.simulation.motion import cautious_speed_mps, greenwave_slowdown, move_one_second
+from greenwave.simulation.motion import (
+    cautious_speed_mps,
+    greenwave_slowdown,
+    move_one_second,
+    standard_crossing,
+)
 from greenwave.simulation.route_model import RouteIntersection, RouteModel
 from greenwave.simulation.route_track import RouteTrack
 from greenwave.simulation.state import EngineState
@@ -37,7 +42,11 @@ _NOW = datetime(2026, 10, 21, tzinfo=UTC)
 _DENSITY = 1.5
 _STOP_M, _DELAY_S, _CROSSING_M = 90.0, 20.0, 20.0
 _AMBULANCE_MPS, _LIMIT_MPS = 13.0, 10.0
-_CAUTIOUS_S = _DELAY_S * _DENSITY
+_FLOOR_STD_MPS = 10 / 3.6
+# Every red, yellow or unknown case in these fixtures waits long enough (or uses D_u = 20 s x 1.5)
+# to hit standard_max_red_loss_seconds; the crossing then extends to keep the 10 km/h floor.
+_CAUTIOUS_S = 15.0
+_STD_L = _CAUTIOUS_S / (1 / _FLOOR_STD_MPS - 1 / _LIMIT_MPS)
 _REACH_S = _STOP_M / _AMBULANCE_MPS
 GREEN, YELLOW, RED = SignalPhaseColor.GREEN, SignalPhaseColor.YELLOW, SignalPhaseColor.RED
 # Phase programmes that put the route movement (controlling edge "first") in a known colour when
@@ -127,7 +136,7 @@ def _at(states: list[EngineState], seconds: int) -> EngineState:
     return states[seconds - 1]
 
 
-def _crossing_s(crossing_m: float = _CROSSING_M) -> float:
+def _crossing_s(crossing_m: float = _STD_L) -> float:
     return crossing_m / _LIMIT_MPS + _CAUTIOUS_S
 
 
@@ -279,15 +288,16 @@ def test_disabled_red_or_unknown_movement_rolls_into_the_crossing(
     """Yellow and an unknown movement take the cautious path; nothing dwells at the stop line."""
     states, _ = _run(_engine(GreenWaveMode.DISABLED, phase=phase))
     at_7 = _at(states, 7)
-    speed = cautious_speed_mps(_LIMIT_MPS, _CROSSING_M, _CAUTIOUS_S)
+    speed = cautious_speed_mps(_LIMIT_MPS, _STD_L, _CAUTIOUS_S)
+    assert speed == pytest.approx(_FLOOR_STD_MPS)
     assert at_7.dwell_remaining_s == 0.0
     assert at_7.dwelling_intersection_id is None
     assert at_7.distance_travelled_m == pytest.approx(_STOP_M + speed * (7 - _REACH_S))
     assert at_7.cautious_crossing_remaining_m == pytest.approx(
-        _STOP_M + _CROSSING_M - at_7.distance_travelled_m
+        _STOP_M + _STD_L - at_7.distance_travelled_m
     )
     assert at_7.cautious_time_remaining_s == pytest.approx(
-        _CAUTIOUS_S * at_7.cautious_crossing_remaining_m / _CROSSING_M
+        _CAUTIOUS_S * at_7.cautious_crossing_remaining_m / _STD_L
     )
 
 
@@ -313,9 +323,47 @@ def test_disabled_cautious_crossing_adds_exactly_the_cautious_time(
     phase: SignalPhaseColor | None,
 ) -> None:
     states, ticks = _run(_engine(GreenWaveMode.DISABLED, phase=phase))
-    expected = (200 - _CROSSING_M) / _AMBULANCE_MPS + _crossing_s()
+    expected = (200 - _STD_L) / _AMBULANCE_MPS + _crossing_s()
     assert states[-1].arrived_at_s == pytest.approx(expected)
     assert ticks[-1].kpi_metrics.total_time_elapsed_sec == round(expected)
+
+
+def test_standard_crossing_extends_to_respect_the_floor() -> None:
+    length, extra = standard_crossing(100.0, 20.0, 10.0, 1.5, SimulationSettings())
+    assert extra == 15.0  # min(1.0 x 100 x 1.5, 15)
+    assert length == pytest.approx(15.0 / (1 / _FLOOR_STD_MPS - 1 / 10.0))
+    assert cautious_speed_mps(10.0, length, extra) == pytest.approx(_FLOOR_STD_MPS)
+
+
+def test_short_wait_scales_the_loss_below_the_cap() -> None:
+    length, extra = standard_crossing(4.0, 20.0, 10.0, 1.5, SimulationSettings())
+    assert extra == pytest.approx(6.0)
+    assert length == 30.0  # L_c dominates
+
+
+def test_unknown_movement_uses_the_intersection_delay() -> None:
+    _, extra = standard_crossing(None, 4.0, 10.0, 1.0, SimulationSettings())
+    assert extra == pytest.approx(4.0)
+
+
+def test_limit_at_or_below_floor_adds_no_extra_time() -> None:
+    settings = SimulationSettings()
+    assert standard_crossing(100.0, 20.0, _FLOOR_STD_MPS, 1.0, settings) == (30.0, 0.0)
+    assert standard_crossing(100.0, 20.0, 1.0, 1.0, settings) == (30.0, 0.0)
+
+
+@pytest.mark.parametrize("phase", [None, YELLOW, RED])
+def test_disabled_crossing_never_drops_below_the_floor(phase: SignalPhaseColor | None) -> None:
+    states, _ = _run(_engine(GreenWaveMode.DISABLED, phase=phase))
+    moved = _moved_each_second(states)
+    assert min(moved) >= _FLOOR_STD_MPS - 1e-9
+
+
+def test_a_crossing_from_an_edge_end_uses_the_limit_beyond_the_line() -> None:
+    """A line at an edge end is crossed on the next edge; its slower limit sets the length."""
+    engine = _engine(GreenWaveMode.DISABLED, stop_lines=(100.0,), speeds_kmh=(54.0, 36.0))
+    states, _ = _run(engine)
+    assert min(_moved_each_second(states)) >= _FLOOR_STD_MPS - 1e-9
 
 
 def test_disabled_green_movement_has_no_penalty() -> None:
@@ -326,11 +374,15 @@ def test_disabled_green_movement_has_no_penalty() -> None:
 
 
 def test_the_crossing_follows_each_edge_speed_limit_across_the_edge_end() -> None:
-    """Segment time is d / v + remaining cautious time x d / remaining crossing distance."""
+    """Segment time is d / v + remaining cautious time x d / remaining crossing distance.
+
+    The crossing length is fixed at the line from the limit there (10 m/s).
+    """
     states, _ = _run(_engine(GreenWaveMode.DISABLED, speeds_kmh=(36.0, 54.0)))
-    first = 10.0 / 10.0 + _CAUTIOUS_S * 10.0 / 20.0  # [90, 100] at a 10 m/s limit
-    second = 10.0 / 15.0 + (_CAUTIOUS_S / 2) * 10.0 / 10.0  # [100, 110] at a 15 m/s limit
-    expected = _REACH_S + first + second + 90.0 / 19.5  # 54 km/h x 1.3
+    first = 10.0 / 10.0 + _CAUTIOUS_S * 10.0 / _STD_L  # [90, 100] at a 10 m/s limit
+    rest_m, rest_s = _STD_L - 10.0, _CAUTIOUS_S * (_STD_L - 10.0) / _STD_L
+    second = rest_m / 15.0 + rest_s  # [100, 90 + L] at a 15 m/s limit
+    expected = _REACH_S + first + second + (110.0 - _STD_L) / 19.5  # 54 km/h x 1.3
     assert states[-1].arrived_at_s == pytest.approx(expected)
 
 
@@ -339,9 +391,9 @@ def test_a_stop_line_inside_a_crossing_starts_a_fresh_penalty() -> None:
     expected = (
         _REACH_S
         + 10.0 / _LIMIT_MPS
-        + _CAUTIOUS_S * 10.0 / _CROSSING_M  # 90 -> 100, half of INT-1's budget
-        + _crossing_s()  # INT-2 replaces it: 100 -> 120
-        + 80.0 / _AMBULANCE_MPS
+        + _CAUTIOUS_S * 10.0 / _STD_L  # 90 -> 100, part of INT-1's budget
+        + _crossing_s()  # INT-2 replaces it with its own decision: 100 -> 100 + L
+        + (100.0 - _STD_L) / _AMBULANCE_MPS
     )
     assert states[-1].arrived_at_s == pytest.approx(expected)
 
@@ -401,6 +453,10 @@ def test_disabled_mode_is_deterministic() -> None:
         ("standard_clearance_factor", -0.1),
         ("standard_crossing_distance_m", float("inf")),
         ("standard_clearance_factor", float("nan")),
+        ("standard_min_rolling_speed_kmh", 0),
+        ("standard_min_rolling_speed_kmh", float("inf")),
+        ("standard_max_red_loss_seconds", -1),
+        ("standard_max_red_loss_seconds", float("nan")),
     ],
 )
 def test_standard_crossing_settings_reject_invalid_values(field: str, value: float) -> None:
@@ -426,10 +482,11 @@ def test_every_red_route_stop_line_of_a_junction_starts_a_controlled_crossing(
     states, _ = _run(_two_line_engine(phase))
     expected = (
         _REACH_S
-        + _crossing_s()  # 90 -> 110
-        + 40.0 / _AMBULANCE_MPS  # 110 -> 150 open road
-        + _crossing_s()  # a fresh crossing at the line inside the junction: 150 -> 170
-        + 30.0 / _AMBULANCE_MPS
+        + _crossing_s()  # 90 -> 90 + L
+        + (60.0 - _STD_L) / _AMBULANCE_MPS  # open road up to 150
+        # A fresh crossing at the line inside the junction, cut at the destination (200 m).
+        + 50.0 / _LIMIT_MPS
+        + _CAUTIOUS_S * 50.0 / _STD_L
     )
     assert states[-1].arrived_at_s == pytest.approx(expected)
 
