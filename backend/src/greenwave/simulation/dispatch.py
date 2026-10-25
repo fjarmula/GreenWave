@@ -19,23 +19,31 @@ def release_seconds(
     settings: SimulationSettings,
 ) -> float:
     """Seconds until the vehicle can clear ``intersection_id``: the open road to its last stop
-    line at each edge's ambulance speed plus ``D_min`` for every unpassed route intersection up
-    to and including it.
+    line at each edge's ambulance speed, plus ``D_min`` for every unpassed route intersection up
+    to and including it or with its first stop line inside it, plus the extra time a slowdown in
+    progress has still to spend.
 
     A hold shorter than this would expire while the vehicle is still spending the rolling
     slowdowns of the intersections before the target, crossing a multi-line target, or driving
     a slower road than the one it just drove (the smoothed speed is only the recent past).
+    Only ER Green Wave dispatches, so the remaining extra time is always a rolling slowdown's;
+    one for an unpassed intersection is counted twice, which only lengthens the hold.
     """
     runtimes = list(route_runtimes(route_model, state))
     target = next(item for item, _ in runtimes if item.id == intersection_id)
     junctions = sum(
         1
         for item, runtime in runtimes
-        if not runtime.passed and item.first_stop_line_m <= target.first_stop_line_m
+        if not runtime.passed
+        and (
+            item.first_stop_line_m <= target.first_stop_line_m
+            or item.first_stop_line_m < target.last_stop_line_m
+        )
     )
     return (
         track.open_road_seconds(state.distance_travelled_m, target.last_stop_line_m)
         + settings.min_intersection_delay_seconds * junctions
+        + state.cautious_time_remaining_s
     )
 
 

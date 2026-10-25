@@ -164,6 +164,38 @@ def test_hold_reaches_the_last_stop_line_of_a_multi_line_target() -> None:
     ) == pytest.approx(19.0)
 
 
+def test_a_junction_inside_a_multi_line_target_adds_its_d_min() -> None:
+    model = RouteModel(
+        intersections=(
+            RouteIntersection("TARGET", 100.0, 160.0, 10.0),
+            RouteIntersection("INSIDE", 130.0, 130.0, 10.0),
+        ),
+        _cascade_targets={},
+    )
+    state = replace(
+        _state(),
+        intersection_runtimes=(IntersectionRuntime(), IntersectionRuntime()),
+    )
+
+    # 160 m at 10 m/s = 16 s, plus D_min at TARGET and at INSIDE (its line is before 160 m).
+    assert release_seconds(
+        model, _track((200.0, 10.0)), state, "TARGET", SimulationSettings()
+    ) == pytest.approx(22.0)
+
+
+def test_a_slowdown_in_progress_adds_its_remaining_time() -> None:
+    # FIRST is passed but its slowdown still has 2 s to spend past the line.
+    state = replace(
+        _three_junction_state(passed_first=True),
+        cautious_crossing_remaining_m=10.0,
+        cautious_time_remaining_s=2.0,
+    )
+
+    assert release_seconds(
+        _three_junction_model(), _track((500.0, 10.0)), state, "SECOND", SimulationSettings()
+    ) == pytest.approx(20.0 + 3.0 + 2.0)
+
+
 def test_passed_junctions_add_no_d_min() -> None:
     model = _three_junction_model()
     settings = SimulationSettings()

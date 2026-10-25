@@ -25,9 +25,10 @@ of about 2.9 km/h for about 37 s. Design: `docs/superpowers/specs/2026-10-25-pos
   line when needed and cut at the destination; the trip still takes `T_greenwave`. The safety
   hold at the first stop line (leave only once every route light there was shown green) stays.
 - **Hold coverage (D2).** For each target `i`:
-  `release_i = open_road(distance -> last_stop_line_m_i) + D_min x k_i`, where `open_road`
-  drives each route edge at its ambulance speed and `k_i` counts unpassed route intersections
-  whose first stop line is at or before target `i`'s. `hold = max(its_min_hold_seconds,
+  `release_i = open_road(distance -> last_stop_line_m_i) + D_min x k_i + r`, where `open_road`
+  drives each route edge at its ambulance speed, `k_i` counts unpassed route intersections
+  whose first stop line is at or before target `i`'s or before its last stop line, and `r` is
+  the extra time a slowdown in progress has still to spend. `hold = max(its_min_hold_seconds,
   ceil(max_i release_i) + its_hold_buffer_seconds)`; the contract floor of 40 s stays.
   `expected_arrival_utc` is unchanged (nearest member, open-road TTI). No renewal or retry is
   added; expiry stays a failed run (ADR 0008).

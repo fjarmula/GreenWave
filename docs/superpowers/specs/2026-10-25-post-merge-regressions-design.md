@@ -35,7 +35,9 @@ hold      = max(its_min_hold_seconds, ceil(max_i release_i) + its_hold_buffer_se
 ```
 `open_road` drives each route edge at its ambulance speed (`RouteTrack.open_road_seconds`).
 Amended 2026-10-25 (human): the first cut divided by `v_avg`, which overestimates a slower road
-ahead and left 9/40 sampled runs expiring.
+ahead and left 9/40 sampled runs expiring. Amended again 2026-10-25 (human, review fix): `k_i`
+also counts `j` with `first_stop_line_m_j < last_stop_line_m_i`, and `release_i` adds the
+in-progress slowdown's `cautious_time_remaining_s` (conservative).
 `expected_arrival_utc` is unchanged (nearest member, open-road TTI). The mock already uses its
 exact timeline and is unchanged.
 
