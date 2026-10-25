@@ -88,6 +88,13 @@ _PROGRAMMES = [
     ),
 ]
 
+_LATE_PRIORITY = SimulationSettings(
+    signal_green_seconds=13,
+    signal_yellow_seconds=4,
+    clearing_tti_seconds=2,
+    priority_green_tti_seconds=1,
+)
+
 
 @pytest.mark.parametrize("cascade", [False, True])
 @pytest.mark.parametrize("settings", _PROGRAMMES)
@@ -110,12 +117,16 @@ def test_the_ambulance_only_leaves_a_stop_line_on_a_shown_green(
 
 @pytest.mark.parametrize("origin_x", _ORIGINS)
 def test_priority_is_held_while_the_ambulance_waits_at_the_stop_line(origin_x: float) -> None:
-    engine, ticks = _run(origin_x, SimulationSettings(), cascade=False)
+    """The ambulance rolls ``D_min``; a tick that ends on a line still shows its priority.
+
+    Priority requested this late (1-2 s before the line) makes the ambulance wait at the line.
+    """
+    engine, ticks = _run(origin_x, _LATE_PRIORITY, cascade=False)
+    waited = 0
     for item in engine.route_model.intersections:
         waiting = [tick for distance, tick in ticks if distance == item.first_stop_line_m]
+        waited += len(waiting)
         if not waiting:
-            # Explicit hold expiry can terminate before later route intersections.
-            assert any(r.status == "EXPIRED" for r in engine.ledger.snapshots())
             continue
         for tick in waiting:
             state = next(i.state for i in tick.intersections if i.id == item.id)
@@ -127,13 +138,14 @@ def test_priority_is_held_while_the_ambulance_waits_at_the_stop_line(origin_x: f
             assert tick.ambulance.status == "CROSSING_INTERSECTION"
         # Released only once the ambulance has gone.
         assert _route_lights(engine, waiting[-1], item.id) == {SignalPhaseColor.GREEN}
+    assert waited, "the ambulance never waited at a stop line"
 
 
 def test_without_a_late_start_the_trip_still_takes_t_greenwave() -> None:
     """Holding never delays an ambulance whose priority was in place in time."""
     engine, ticks = _run(_X + 1_000, SimulationSettings(), cascade=False)
-    assert any(r.status == "EXPIRED" for r in engine.ledger.snapshots())
-    assert ticks[-1][1].kpi_metrics.total_time_elapsed_sec < round(
+    assert not any(r.status == "EXPIRED" for r in engine.ledger.snapshots())
+    assert ticks[-1][1].kpi_metrics.total_time_elapsed_sec == round(
         engine.estimates.greenwave_seconds
     )
 

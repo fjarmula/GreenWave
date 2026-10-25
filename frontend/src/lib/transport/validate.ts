@@ -205,6 +205,7 @@ export function parseStartResponse(value: unknown): SimulationStartResponse {
   finite(body.total_distance_m, "total_distance_m");
   finite(body.estimated_normal_time_sec, "estimated_normal_time_sec");
   finite(body.estimated_greenwave_time_sec, "estimated_greenwave_time_sec");
+  finite(body.estimated_standard_time_sec, "estimated_standard_time_sec");
   list(body.intersections_on_route, "intersections_on_route").forEach((id, index) =>
     text(id, `intersections_on_route[${index}]`),
   );
@@ -513,8 +514,12 @@ export function validateRank(body: unknown): DispatchRankResponse {
     const candidate = record(value, path);
     station(candidate.station, `${path}.station`);
     nonNegative(candidate.greenwave_seconds, `${path}.greenwave_seconds`);
+    nonNegative(candidate.standard_seconds, `${path}.standard_seconds`);
     nonNegative(candidate.distance_m, `${path}.distance_m`);
     optionalOnFootLeg(candidate.on_foot, `${path}.on_foot`);
+    // Additive (ADR 0012): an older backend omits it; its candidates always drive.
+    if (candidate.on_site === undefined) candidate.on_site = false;
+    bool(candidate.on_site, `${path}.on_site`);
   });
   if (response.station_at_incident !== null) {
     station(response.station_at_incident, "station_at_incident");

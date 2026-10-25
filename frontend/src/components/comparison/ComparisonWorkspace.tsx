@@ -9,13 +9,14 @@ import { useSimulationState } from "@/components/simulation-provider";
 import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import { DispatchForm } from "@/components/hud/DispatchForm";
+import { OnSiteResult } from "@/components/hud/OnSiteResult";
 import { MapContainer } from "@/components/map/MapContainer";
 import type { ComparisonMode } from "@/lib/comparison/race";
 import { getFrontendConfig } from "@/lib/config";
 import { dispatchAdapter } from "@/lib/dispatch-adapter";
 import { createSimulationId } from "@/lib/simulation-id";
 import type { DispatchSettings } from "@/lib/start-request";
-import { runnerUpIds } from "@/lib/station-choice";
+import { onSiteResult, runnerUpIds, shownOnSite, type OnSite } from "@/lib/station-choice";
 import { pinnedIncident, selectedCandidate } from "@/lib/useIncidentDispatch";
 import type { ComparisonStartRequest, Position } from "@/types/telemetry";
 
@@ -33,6 +34,9 @@ export function ComparisonWorkspace() {
   const { prepareComparison } = useSimulationActions();
   const [pane, setPane] = useState<ComparisonMode>("ENABLED");
   const [mapFocusRequest, setMapFocusRequest] = useState(0);
+  // An on-site answer never starts a pair (ADR 0012); it replaces setup until dismissed.
+  const [onSiteAnswer, setOnSiteAnswer] = useState<OnSite | null>(null);
+  const onSite = shownOnSite(onSiteAnswer, dispatch);
   const chosenStation = selectedCandidate(dispatch)?.station ?? null;
   const { setIncident } = dispatch;
   const onMapClick = useCallback(
@@ -48,7 +52,15 @@ export function ComparisonWorkspace() {
   const setupError = !live && state.status === "error" ? state.reason : null;
 
   const start = async (runSettings: DispatchSettings) => {
-    if (!chosenStation || !dispatch.incident || starting) return;
+    if (starting) return;
+    const answer = onSiteResult(
+      selectedCandidate(dispatch),
+      dispatch.incident,
+      dispatch.vehicleType,
+    );
+    setOnSiteAnswer(answer);
+    if (answer) return;
+    if (!chosenStation || !dispatch.incident) return;
     if (active && !window.confirm("Stop the active simulation and start this comparison?")) return;
     retainResult(simulation);
     if (!(await prepareComparison())) return;
@@ -122,20 +134,30 @@ export function ComparisonWorkspace() {
                 successful Stop.
               </p>
             )}
-            <DispatchForm
-              intent="comparison"
-              settings={settings}
-              onSettingsChange={setSettings}
-              stationsError={stationsError}
-              pending={simulation.simulationState === "STARTING" || starting}
-              replacement={active}
-              errorMessage={setupError}
-              dispatch={dispatch}
-              capabilities={dispatchAdapter.capabilities}
-              geocode={dispatchAdapter.geocode}
-              onInitialize={(values) => void start(values)}
-              onFocusMap={() => setMapFocusRequest((value) => value + 1)}
-            />
+            {onSite ? (
+              <div className="p-4">
+                <OnSiteResult
+                  station={onSite.station}
+                  walk={onSite.walk}
+                  onBackToSetup={() => setOnSiteAnswer(null)}
+                />
+              </div>
+            ) : (
+              <DispatchForm
+                intent="comparison"
+                settings={settings}
+                onSettingsChange={setSettings}
+                stationsError={stationsError}
+                pending={simulation.simulationState === "STARTING" || starting}
+                replacement={active}
+                errorMessage={setupError}
+                dispatch={dispatch}
+                capabilities={dispatchAdapter.capabilities}
+                geocode={dispatchAdapter.geocode}
+                onInitialize={(values) => void start(values)}
+                onFocusMap={() => setMapFocusRequest((value) => value + 1)}
+              />
+            )}
           </>
         )
       }

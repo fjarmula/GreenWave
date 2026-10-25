@@ -1,4 +1,7 @@
-import { tickEventExample } from "@/lib/transport/__fixtures__/architecture-examples";
+import {
+  startResponseExample,
+  tickEventExample,
+} from "@/lib/transport/__fixtures__/architecture-examples";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -83,6 +86,24 @@ describe("KpiHeader time saved", () => {
     expect(value).toBe(text);
     expect(classes.split(" ")).toContain(colour);
     if (saved <= 0) expect(classes).not.toContain("text-go");
+  });
+});
+
+describe("KpiHeader baseline label", () => {
+  it('labels the KPI "vs normal traffic" in a disabled run', () => {
+    const run = (mode: "ENABLED" | "DISABLED") => {
+      state = {
+        ...initialSimulationState,
+        simulationState: "RUNNING",
+        routeData: { ...startResponseExample, green_wave_mode: mode },
+        liveTelemetry: tickEventExample,
+      };
+      return renderToStaticMarkup(<KpiHeader />);
+    };
+
+    expect(run("DISABLED")).toContain("vs normal traffic");
+    expect(run("DISABLED")).not.toContain("Time saved");
+    expect(run("ENABLED")).toContain("Time saved");
   });
 });
 

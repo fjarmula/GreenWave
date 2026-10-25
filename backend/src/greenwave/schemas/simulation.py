@@ -151,6 +151,8 @@ class SimulationStartResponse(BaseModel):
     total_distance_m: Annotated[float, Field(ge=0.0)]
     estimated_normal_time_sec: Annotated[int, Field(ge=0)]
     estimated_greenwave_time_sec: Annotated[int, Field(ge=0)]
+    # The ambulance-without-priority run (ER Green Wave disabled), exact before rounding.
+    estimated_standard_time_sec: Annotated[int, Field(ge=0)]
     intersections_on_route: list[str]
     route_intersections: list[RouteIntersection]  # route order; same ids as intersections_on_route
     origin_snapped: SnappedEndpoint
@@ -261,7 +263,8 @@ class ItsDispatchPayload(BaseModel):
     vehicle_type: VehicleType  # the start request's; widened from "AMBULANCE" by ADR 0006
     intersections_group: Annotated[list[str], Field(min_length=1)]
     action: Literal["FORCE_GREEN_PHASE"]
-    # max(40, ceil(largest TTI in group at dispatch) + its_hold_buffer_seconds)
+    # max(40, ceil(largest release time in group at dispatch) + its_hold_buffer_seconds): the
+    # open road to the last stop line plus D_min per unpassed junction up to it (ADR 0010)
     hold_duration_sec: Annotated[int, Field(ge=HOLD_DURATION_FLOOR_SEC)]
     expected_arrival_utc: AwareDatetime  # emission time + smallest TTI in the group
 

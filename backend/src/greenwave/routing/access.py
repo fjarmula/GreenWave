@@ -33,6 +33,19 @@ class AccessNode:
     on_foot_seconds: float  # on_foot_m / on_foot_speed_meters_per_second
 
 
+def walk_between(
+    origin: Position, destination: Position, settings: SimulationSettings
+) -> tuple[float, float]:
+    """``(on_foot_m, on_foot_seconds)`` from ``origin`` to ``destination``: the EPSG:2178
+    straight line times ``on_foot_detour_factor``, at ``on_foot_speed_meters_per_second``."""
+    (x0, y0), (x1, y1) = project_points(
+        np.array([origin.lng, destination.lng], dtype=np.float64),
+        np.array([origin.lat, destination.lat], dtype=np.float64),
+    )
+    on_foot_m = float(np.hypot(x1 - x0, y1 - y0)) * settings.on_foot_detour_factor
+    return on_foot_m, on_foot_m / settings.on_foot_speed_meters_per_second
+
+
 def access_nodes(
     index: RoutingIndex, position: Position, settings: SimulationSettings
 ) -> tuple[AccessNode, ...]:

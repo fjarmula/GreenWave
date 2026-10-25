@@ -34,9 +34,10 @@ export function createMockDispatchAdapter(
           (a, b) =>
             a.distance - b.distance || a.station.station_id.localeCompare(b.station.station_id),
         );
-      const stationAtIncident = ranked.find((item) => item.distance === 0)?.station ?? null;
+      // A station at the incident answers on site (ADR 0012): no drive, a 0 m walk.
+      const onSite = ranked.filter((item) => item.distance === 0);
       const nearest = ranked.find((item) => item.distance > 0);
-      if (!nearest) {
+      if (!onSite.length && !nearest) {
         throw new SimulationAdapterError({
           kind: "http",
           code: "NO_STATION_REACHABLE",
@@ -47,9 +48,27 @@ export function createMockDispatchAdapter(
         schema_version: "1.0",
         incident_snapped: { position: incident, snap_distance_m: 0 },
         candidates: [
-          { station: nearest.station, greenwave_seconds: 0, distance_m: nearest.distance },
-        ],
-        station_at_incident: stationAtIncident,
+          ...onSite.map(({ station }) => ({
+            station,
+            greenwave_seconds: 0,
+            standard_seconds: 0,
+            distance_m: 0,
+            on_foot: { access_point: station.position, distance_m: 0, seconds: 0 },
+            on_site: true,
+          })),
+          ...(nearest
+            ? [
+                {
+                  station: nearest.station,
+                  greenwave_seconds: 0,
+                  standard_seconds: 0,
+                  distance_m: nearest.distance,
+                  on_site: false,
+                },
+              ]
+            : []),
+        ].slice(0, 3),
+        station_at_incident: null,
       };
     },
   };

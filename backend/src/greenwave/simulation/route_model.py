@@ -120,6 +120,8 @@ def to_start_response(
     estimates: "Estimates",
     index: RoutingIndex,
     green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED,
+    *,
+    standard_seconds: float,
 ) -> SimulationStartResponse:
     """Map route domain data to the frozen start-response contract at the API boundary."""
     route_intersections = [
@@ -145,6 +147,7 @@ def to_start_response(
         total_distance_m=route.total_distance_m,
         estimated_normal_time_sec=round(estimates.normal_seconds),
         estimated_greenwave_time_sec=round(estimates.greenwave_seconds),
+        estimated_standard_time_sec=round(standard_seconds),
         intersections_on_route=[intersection.id for intersection in route_model.intersections],
         route_intersections=route_intersections,
         origin_snapped=SnappedEndpoint(

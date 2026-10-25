@@ -1,6 +1,7 @@
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
+import pytest
 from tests.support.route_fixtures import corridor_index, position_at, route_edges
 
 from greenwave.its import MockItsGateway
@@ -17,9 +18,10 @@ from greenwave.schemas import (
 )
 from greenwave.simulation import dispatch
 from greenwave.simulation.assembly import plan_simulation
-from greenwave.simulation.dispatch import build_dispatch_payload, dispatch_event
+from greenwave.simulation.dispatch import build_dispatch_payload, dispatch_event, release_seconds
 from greenwave.simulation.engine import EngineEvent, SimulationEngine
 from greenwave.simulation.route_model import RouteIntersection, RouteModel
+from greenwave.simulation.route_track import RouteTrack
 from greenwave.simulation.state import EngineState
 from greenwave.simulation.state_machine import IntersectionRuntime
 from greenwave.simulation_settings import SimulationSettings
@@ -34,6 +36,22 @@ def _model() -> RouteModel:
             RouteIntersection("FAR", 9.1, 9.1, 10.0),
         ),
         _cascade_targets={},
+    )
+
+
+def _track(*edges: tuple[float, float]) -> RouteTrack:
+    """A straight track of ``(length_m, ambulance_mps)`` edges."""
+    ends, end = [], 0.0
+    for length, _ in edges:
+        end += length
+        ends.append(end)
+    return RouteTrack(
+        total_distance_m=end,
+        _edge_ends_m=tuple(ends),
+        _speeds_mps=tuple(speed for _, speed in edges),
+        _speed_limits_mps=tuple(speed for _, speed in edges),
+        _polyline=((19.0, 50.0), (19.1, 50.0)),
+        _polyline_offsets_m=(0.0, end),
     )
 
 
@@ -57,19 +75,169 @@ def test_payload_holds_until_last_member_plus_buffer() -> None:
     settings = SimulationSettings()
 
     payload = build_dispatch_payload(
-        _model(), _state(), ("FAR", "NEAR"), _NOW, settings, VehicleType.AMBULANCE
+        _model(),
+        _track((20.0, 1.0)),
+        _state(),
+        ("FAR", "NEAR"),
+        _NOW,
+        settings,
+        VehicleType.AMBULANCE,
     )
 
+    # FAR: 9.1 m at 1 m/s plus D_min (3 s) at NEAR and at FAR -> 15.1 s -> 16 s + buffer.
     assert payload.hold_duration_sec == max(
-        settings.its_min_hold_seconds, 10 + settings.its_hold_buffer_seconds
+        settings.its_min_hold_seconds, 16 + settings.its_hold_buffer_seconds
     )
     assert payload.expected_arrival_utc == _NOW + timedelta(seconds=4.2)
     assert payload.intersections_group == ["FAR", "NEAR"]
 
 
+def _three_junction_state(passed_first: bool = False) -> EngineState:
+    return replace(
+        _state(),
+        v_avg_meters_per_second=10.0,
+        intersection_runtimes=(
+            IntersectionRuntime(passed=passed_first),
+            IntersectionRuntime(),
+            IntersectionRuntime(),
+        ),
+    )
+
+
+def _three_junction_model() -> RouteModel:
+    return RouteModel(
+        intersections=(
+            RouteIntersection("FIRST", 50.0, 50.0, 10.0),
+            RouteIntersection("SECOND", 200.0, 200.0, 10.0),
+            RouteIntersection("THIRD", 380.0, 400.0, 10.0),
+        ),
+        _cascade_targets={},
+    )
+
+
+def test_hold_covers_every_d_min_up_to_the_farthest_target() -> None:
+    settings = SimulationSettings()
+
+    payload = build_dispatch_payload(
+        _three_junction_model(),
+        _track((500.0, 5.0)),
+        replace(_three_junction_state(), v_avg_meters_per_second=5.0),
+        ("SECOND", "THIRD"),
+        _NOW,
+        settings,
+        VehicleType.AMBULANCE,
+    )
+
+    # THIRD: last line 400 m at 5 m/s = 80 s, plus 3 junctions x D_min 3 s = 89 s.
+    assert payload.hold_duration_sec == 89 + settings.its_hold_buffer_seconds
+    # Arrival stays the open-road TTI to the nearest member's first line.
+    assert payload.expected_arrival_utc == _NOW + timedelta(seconds=40.0)
+
+
+def test_hold_is_floored_by_the_minimum_hold() -> None:
+    settings = SimulationSettings(its_min_hold_seconds=60)  # release 49 s + 5 s buffer < 60
+
+    payload = build_dispatch_payload(
+        _three_junction_model(),
+        _track((500.0, 10.0)),
+        _three_junction_state(),
+        ("SECOND", "THIRD"),
+        _NOW,
+        settings,
+        VehicleType.AMBULANCE,
+    )
+
+    assert payload.hold_duration_sec == 60
+
+
+def test_hold_reaches_the_last_stop_line_of_a_multi_line_target() -> None:
+    model = RouteModel(
+        intersections=(RouteIntersection("INT-1", 100.0, 160.0, 10.0),),
+        _cascade_targets={},
+    )
+    state = replace(
+        _state(), v_avg_meters_per_second=10.0, intersection_runtimes=(IntersectionRuntime(),)
+    )
+
+    assert release_seconds(
+        model, _track((200.0, 10.0)), state, "INT-1", SimulationSettings()
+    ) == pytest.approx(19.0)
+
+
+def test_a_junction_inside_a_multi_line_target_adds_its_d_min() -> None:
+    model = RouteModel(
+        intersections=(
+            RouteIntersection("TARGET", 100.0, 160.0, 10.0),
+            RouteIntersection("INSIDE", 130.0, 130.0, 10.0),
+        ),
+        _cascade_targets={},
+    )
+    state = replace(
+        _state(),
+        intersection_runtimes=(IntersectionRuntime(), IntersectionRuntime()),
+    )
+
+    # 160 m at 10 m/s = 16 s, plus D_min at TARGET and at INSIDE (its line is before 160 m).
+    assert release_seconds(
+        model, _track((200.0, 10.0)), state, "TARGET", SimulationSettings()
+    ) == pytest.approx(22.0)
+
+
+def test_a_slowdown_in_progress_adds_its_remaining_time() -> None:
+    # FIRST is passed but its slowdown still has 2 s to spend past the line.
+    state = replace(
+        _three_junction_state(passed_first=True),
+        cautious_crossing_remaining_m=10.0,
+        cautious_time_remaining_s=2.0,
+    )
+
+    assert release_seconds(
+        _three_junction_model(), _track((500.0, 10.0)), state, "SECOND", SimulationSettings()
+    ) == pytest.approx(20.0 + 3.0 + 2.0)
+
+
+def test_passed_junctions_add_no_d_min() -> None:
+    model = _three_junction_model()
+    settings = SimulationSettings()
+
+    track = _track((500.0, 10.0))
+    unpassed = release_seconds(model, track, _three_junction_state(), "SECOND", settings)
+    passed = release_seconds(
+        model, track, _three_junction_state(passed_first=True), "SECOND", settings
+    )
+
+    # 200 m at 10 m/s = 20 s; FIRST and SECOND each add D_min until FIRST is passed.
+    assert unpassed == pytest.approx(26.0)
+    assert passed == pytest.approx(23.0)
+
+
+def test_release_counts_only_the_distance_still_to_drive() -> None:
+    state = replace(_three_junction_state(passed_first=True), distance_travelled_m=120.0)
+
+    assert release_seconds(
+        _three_junction_model(), _track((500.0, 10.0)), state, "THIRD", SimulationSettings()
+    ) == pytest.approx(28.0 + 2 * 3.0)
+
+
+def test_release_drives_the_route_speeds_ahead_not_the_recent_average() -> None:
+    # Recent average 20 m/s, but 200 -> 500 m is driven at 5 m/s: 10 s + 40 s + 3 x D_min.
+    state = replace(_three_junction_state(), v_avg_meters_per_second=20.0)
+    track = _track((200.0, 20.0), (300.0, 5.0))
+
+    assert release_seconds(
+        _three_junction_model(), track, state, "THIRD", SimulationSettings()
+    ) == pytest.approx(59.0)
+
+
 def test_event_uses_the_state_message_sequence_and_tick() -> None:
     payload = build_dispatch_payload(
-        _model(), _state(), ("NEAR",), _NOW, SimulationSettings(), VehicleType.AMBULANCE
+        _model(),
+        _track((20.0, 1.0)),
+        _state(),
+        ("NEAR",),
+        _NOW,
+        SimulationSettings(),
+        VehicleType.AMBULANCE,
     )
 
     event = dispatch_event("SIM-1", replace(_state(), message_sequence=3), payload, _NOW)

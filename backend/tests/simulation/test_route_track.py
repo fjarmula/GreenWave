@@ -81,3 +81,13 @@ def test_route_track_speed_includes_calming_seconds() -> None:
 
     assert track.speed_mps(0) == pytest.approx(100.0 / (100.0 / 13.0 + 10.0))
     assert track.speed_mps(1) == pytest.approx(13.0)
+
+
+def test_open_road_seconds_sums_each_edge_at_its_ambulance_speed() -> None:
+    track = RouteTrack.from_route(_route((100.0, 100.0), (36.0, 54.0)), SimulationSettings())
+    first, second = track.speed_mps(0), track.speed_mps(1)
+
+    assert track.open_road_seconds(40.0, 160.0) == pytest.approx(60 / first + 60 / second)
+    assert track.open_road_seconds(100.0, 200.0) == pytest.approx(100 / second)
+    assert track.open_road_seconds(150.0, 150.0) == 0.0
+    assert track.open_road_seconds(160.0, 40.0) == 0.0

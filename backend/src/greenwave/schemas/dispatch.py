@@ -56,22 +56,29 @@ class GeocodeResponse(BaseModel):
 class DispatchRankRequest(BaseModel):
     incident: Position
     vehicle_type: VehicleType
+    # Density the standard estimate is computed for; the run's own multiplier (1.0-3.0).
+    traffic_density_multiplier: Annotated[float, Field(ge=1.0, le=3.0)] = 1.0
 
 
 class RankedCandidate(BaseModel):
     station: Station
     greenwave_seconds: Annotated[float, Field(ge=0.0)]  # the preflight green-wave estimate
+    # The exact pre-run standard estimate (ER Green Wave disabled) at the request's density.
+    standard_seconds: Annotated[float, Field(ge=0.0)]
     distance_m: Annotated[float, Field(ge=0.0)]  # route length
     # Off-road incident: the walk from this station's access point; candidates are ordered by
     # greenwave_seconds + on_foot.seconds.
     on_foot: OnFootLeg | None = None
+    # The incident is at the station (ADR 0012): no drive (both times and distance_m are 0); the
+    # crew walks on_foot from the station itself. Never starts a simulation.
+    on_site: bool = False
 
 
 class DispatchRankResponse(BaseModel):
     schema_version: SchemaVersion
     incident_snapped: SnappedEndpoint
     candidates: Annotated[list[RankedCandidate], Field(min_length=1, max_length=3)]  # best first
-    # A station of the type on the incident's own node: not routable, left out of candidates.
+    # Deprecated: on-site stations are candidates (ADR 0012).
     station_at_incident: Station | None
 
 

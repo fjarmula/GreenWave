@@ -19,17 +19,23 @@ const RANKING: DispatchRankResponse = {
     {
       station: station("STN-A-0006", "SP ZOZ MSW", "hospital_ed"),
       greenwave_seconds: 248.4,
+      standard_seconds: 301.2,
       distance_m: 2810,
+      on_site: false,
     },
     {
       station: station("STN-A-0007", "5. Wojskowy", "hospital_ed"),
       greenwave_seconds: 289,
+      standard_seconds: 342,
       distance_m: 3403,
+      on_site: false,
     },
     {
       station: station("STN-A-0004", "KPR", "ambulance_base"),
       greenwave_seconds: 349,
+      standard_seconds: 401,
       distance_m: 4592,
+      on_site: false,
     },
   ],
   station_at_incident: null,
@@ -42,6 +48,7 @@ const render = (props: Partial<Parameters<typeof StationRanking>[0]> = {}) =>
       rankStatus="ready"
       rankError={null}
       roadTimeRanking
+      timeMode="GREENWAVE"
       selectedStationId={null}
       onSelect={() => {}}
       {...props}
@@ -71,13 +78,32 @@ describe("StationRanking", () => {
     expect(render()).toContain("Ambulance base");
   });
 
-  it("explains a station at the incident", () => {
+  it("no longer shows the station-at-incident notice", () => {
     const markup = render({
       ranking: { ...RANKING, station_at_incident: station("STN-A-0001", "Here", "ambulance_base") },
     });
-    expect(markup).toContain(
-      "A station of this type is at this location; dispatching from the next fastest.",
-    );
+    expect(markup).not.toContain("A station of this type is at this location");
+  });
+
+  it('shows "On site" and the walk for an on-site candidate', () => {
+    const [a, b] = RANKING.candidates;
+    const onSite = {
+      ...a,
+      greenwave_seconds: 0,
+      standard_seconds: 0,
+      distance_m: 0,
+      on_foot: { access_point: a.station.position, distance_m: 120, seconds: 111 },
+      on_site: true,
+    };
+    for (const timeMode of ["GREENWAVE", "STANDARD", "BOTH"] as const) {
+      const markup = render({ ranking: { ...RANKING, candidates: [onSite, b] }, timeMode });
+      expect(markup).toContain("On site");
+      expect(markup).not.toContain("Fastest"); // one chip, so the name keeps its room
+      expect(markup).toContain("on foot · 120 m");
+      expect(markup).toContain("01m 51s");
+      expect(markup).not.toContain("drive +");
+      expect(markup).not.toContain("GW 01m 51s");
+    }
   });
 
   it("renders a radio per candidate", () => {
@@ -132,7 +158,76 @@ describe("StationRanking", () => {
       },
     });
     expect(markup).toContain("10m 04s");
-    expect(markup).toContain("incl. 650 m on foot");
+    expect(markup).toContain("02m 20s drive + 07m 44s on foot · 650 m");
+  });
+
+  const twoModes = (patch: Partial<DispatchRankResponse["candidates"][number]> = {}) => ({
+    ...RANKING,
+    candidates: [
+      { ...RANKING.candidates[0], greenwave_seconds: 310, standard_seconds: 422, ...patch },
+    ],
+  });
+
+  it("shows the standard time on the standard page", () => {
+    const markup = render({ ranking: twoModes(), timeMode: "STANDARD" });
+    expect(markup).toContain("07m 02s");
+    expect(markup).not.toContain("05m 10s");
+  });
+
+  it("marks the standard-fastest candidate on the standard page", () => {
+    const [a, b, c] = RANKING.candidates;
+    const markup = render({
+      timeMode: "STANDARD",
+      ranking: {
+        ...RANKING,
+        candidates: [
+          { ...a, greenwave_seconds: 200, standard_seconds: 500 },
+          { ...b, greenwave_seconds: 250, standard_seconds: 300 },
+          { ...c, greenwave_seconds: 300, standard_seconds: 400 },
+        ],
+      },
+    });
+    const fastest = markup.indexOf("Fastest");
+    expect(markup.indexOf("5. Wojskowy")).toBeLessThan(fastest);
+    expect(markup.indexOf("KPR")).toBeGreaterThan(fastest);
+    expect(markup.indexOf("SP ZOZ MSW")).toBeGreaterThan(markup.indexOf("KPR"));
+    expect(markup).toContain("+100 s");
+    expect(markup).toContain("+200 s");
+  });
+
+  it("checks the standard-fastest by default on the standard page", () => {
+    const [a, b] = RANKING.candidates;
+    const markup = render({
+      timeMode: "STANDARD",
+      ranking: {
+        ...RANKING,
+        candidates: [
+          { ...a, greenwave_seconds: 200, standard_seconds: 500 },
+          { ...b, greenwave_seconds: 250, standard_seconds: 300 },
+        ],
+      },
+    });
+    const checked = [...markup.matchAll(/<input[^>]*type="radio"[^>]*>/g)]
+      .filter(([input]) => /\schecked=""/.test(input))
+      .map(([input]) => /value="([^"]+)"/.exec(input)?.[1]);
+    expect(checked).toEqual([b.station.station_id]);
+  });
+
+  it("shows both times on the comparison page", () => {
+    const markup = render({ ranking: twoModes(), timeMode: "BOTH" });
+    expect(markup).toContain("GW");
+    expect(markup).toContain("05m 10s");
+    expect(markup).toContain("07m 02s");
+    expect(markup).toContain("Std");
+  });
+
+  it("splits drive and walk for an off-road candidate", () => {
+    const markup = render({
+      ranking: twoModes({ on_foot: { ...LEG, seconds: 550 } }),
+      timeMode: "STANDARD",
+    });
+    expect(markup).toContain("16m 12s");
+    expect(markup).toContain("07m 02s drive + 09m 10s on foot · 650 m");
   });
 
   it("measures deltas on the totals", () => {

@@ -134,18 +134,20 @@ Where $V_{\mathrm{ambulance}}(e) = \min(\max(1.3 \cdot V_e \cdot b(e),\; 30\text
 
 One edge-time function (`backend/src/greenwave/routing/edge_times.py`) drives route choice (minimum ambulance edge time), both estimates and simulated motion: on each edge the simulated ambulance moves at the effective speed $L_e / t_a(e)$ with $t_a(e) = L_e / V_{\mathrm{ambulance}}(e) + n_e \cdot s_{\mathrm{ambulance}}$, so calming seconds are spread over the edge and the simulated trip matches $T_{\mathrm{greenwave}}$, including a route ending exactly on a stop line. All factors are `GREENWAVE_SIM_*` settings; 1.0 / 0 s makes an attribute neutral.
 
-In the simulation the ambulance dwells $D_{\min}$ at each intersection's first controlled stop line and then leaves only once every route vehicle light at that line was last **shown** green (section 4, signal phases). Priority normally turns green long before, so this hold changes nothing; it only matters when priority is requested too late (for example a route that starts just before a junction), where the ambulance waits at the line instead of driving through red.
+In the simulation the ambulance never stops for $D_{\min}$: it spends it as a rolling slowdown over the `greenwave_approach_distance_m` (60 m) before each intersection's first controlled stop line (never before the previous one), at a constant reduced speed that adds exactly $D_{\min}$, never below `greenwave_min_rolling_speed_kmh` (15 km/h); when the window is too short the slowdown continues past the line, and it is cut at the destination, so the trip still takes $T_{\mathrm{greenwave}}$. A safety hold remains: at the first stop line the ambulance leaves only once every route vehicle light there was last **shown** green (section 4, signal phases). Priority normally turns green long before, so this hold changes nothing; it only matters when priority is requested too late (for example a route that starts just before a junction), where the ambulance waits at the line instead of driving through red (ADR 0010).
 
 #### 3. Standard-traffic crossing (ER Green Wave disabled)
 
 With `green_wave_mode: "DISABLED"` the route and the open-road motion are exactly those of model 2; only signalised stop lines are crossed differently. At **every** controlled stop line of the route (including lines inside a junction), the engine samples the simulated route movement colour (section 4, signal phases) at the exact simulated time the vehicle reaches the line:
 
 1. **`GREEN`:** the vehicle drives on at $V_{\mathrm{ambulance}}(e)$; no penalty.
-2. **`RED`, `YELLOW`, or no supported route vehicle signal:** the vehicle rolls one controlled crossing of $L_c$ = `standard_crossing_distance_m` (default 30 m) without stopping. Its extra cautious time $C_u = c \cdot D_u \cdot \mu_{\mathrm{traffic}}$ (cautious red-light entry while traffic forms a life corridor, $c$ = `standard_clearance_factor`, default 1.0) is spread over that distance: a segment of length $d$ on an edge with ordinary limit $v = \min(V_{\mathrm{ambulance}}(e), V_e)$ takes
+2. **`RED`, `YELLOW`, or no supported route vehicle signal:** the vehicle rolls one controlled crossing without stopping. Its extra cautious time (cautious red-light entry while traffic forms a life corridor) scales with the wait $w$ until that movement is next green in the ordinary programme ($w = D_u$ for an unknown movement), and is capped:
+   $$C = \min(c \cdot w \cdot \mu_{\mathrm{traffic}},\; C_{\max})$$
+   with $c$ = `standard_clearance_factor` (default 1.0) and $C_{\max}$ = `standard_max_red_loss_seconds` (default 15 s). The crossing is at least $L_c$ = `standard_crossing_distance_m` (default 30 m) long and extends so its speed never drops below $v_f$ = `standard_min_rolling_speed_kmh` (default 10 km/h): $L = \max(L_c,\; C / (1/v_f - 1/v_{\min}))$, where $v_{\min}$ is the lowest ordinary limit $\min(V_{\mathrm{ambulance}}(e), V_e)$ over the edges the crossing covers (recomputed until stable). An edge at or below $v_f$ at the line gives $C = 0$; one further on ends the crossing where it starts, with $C$ capped at $(\text{slow start} - \text{line}) \cdot (1/v_f - 1/v_{\min})$ so the edges before it keep the floor. $C$ is spread over $L$: a segment of length $d$ on an edge with ordinary limit $v$ takes
    $$\frac{d}{v} + C_{\mathrm{remaining}} \cdot \frac{d}{L_{\mathrm{remaining}}},$$
-   so the speed is positive, never above $v$, and carries across edge ends.
+   so the speed is at least $v_f$ (on edges whose limit is above it), never above $v$, and carries across edge ends.
 
-A later stop line replaces an active crossing with its own decision (a fresh crossing if it is not green). Each intersection's route signals share one cycle phase, so the lines of one through movement show the same colour. The crossing is a modelling boundary (the ETL has no junction exit geometry), and $c$, $L_c$ are PoC assumptions, not measured Kraków values; $L_c$ is strictly positive and both are finite. There is no separate disabled-mode estimate: the run's `total_time_elapsed_sec` is the exact simulated arrival, and `current_time_saved_sec` compares it with $T_{\mathrm{normal}}$ in either mode. Implementation: `backend/src/greenwave/simulation/motion.py`.
+A later stop line replaces an active crossing with its own decision (a fresh crossing if it is not green). Each intersection's route signals share one cycle phase, so the lines of one through movement show the same colour. The crossing is a modelling boundary (the ETL has no junction exit geometry), and $c$, $L_c$, $C_{\max}$, $v_f$ are PoC assumptions, not measured Kraków values; $L_c$ and $v_f$ are strictly positive and all are finite (ADR 0010). The pre-run standard estimate is a dry run of this motion: `standard_run_seconds` drives `move_one_second` in disabled mode against the pure ordinary programme (deterministic from $t = 0$, no ITS) until arrival, so `estimated_standard_time_sec` (start response) and `standard_seconds` (each ranked candidate) equal the disabled run's arrival exactly before rounding (ADR 0011; at most about 12 ms per route on the Kraków sample). $T_{\mathrm{normal}}$ stays the product's normal-traffic baseline: `current_time_saved_sec` compares the run's elapsed time with it in either mode, and the dashboard labels that number "vs normal traffic" in a disabled run. Implementation: `backend/src/greenwave/simulation/motion.py`.
 
 ---
 
@@ -220,9 +222,9 @@ incident (additive to contract v1, `docs/adr/0006-incident-dispatch-contract.md`
 GET  /api/v1/stations                    -> StationsResponse (all types, by station_id)
 GET  /api/v1/geocode?q=<2-100>&limit=<1-10, default 8>
                                          -> GeocodeResponse ({label, position} results)
-POST /api/v1/dispatch/rank {incident, vehicle_type}
+POST /api/v1/dispatch/rank {incident, vehicle_type, traffic_density_multiplier = 1.0}
                                          -> DispatchRankResponse (1-3 candidates, best first,
-                                            incident_snapped, station_at_incident)
+                                            incident_snapped, station_at_incident = null)
 ```
 
 - **Data:** the ETL `places` step writes `stations.parquet` (ambulance bases,
@@ -232,10 +234,22 @@ POST /api/v1/dispatch/rank {incident, vehicle_type}
 - **Ranking:** a reversed Dijkstra from the incident over the routing weight
   shortlists `dispatch_shortlist_size` (5) stations; each gets the real
   `plan_route` + route model + `estimate_times`, ranked by
-  `(greenwave_seconds + on_foot.seconds, station_id)`. The displayed time is
-  therefore the `estimated_greenwave_time_sec` the run reports, plus the walk.
-  A station on the incident's own node is returned as `station_at_incident`
-  and skipped. Errors: `DESTINATION_OFF_NETWORK`, `NO_STATION_REACHABLE` (422).
+  `(greenwave_seconds + on_foot.seconds, station_id)`. Each candidate also
+  carries `standard_seconds`, the exact standard-run estimate at the request's
+  density (1.0-3.0). The displayed times are therefore the
+  `estimated_greenwave_time_sec` / `estimated_standard_time_sec` the run
+  reports, plus the walk. The frontend shows, orders and badges by the page's
+  mode (green wave, standard; the comparison shows both in backend order) and
+  splits an off-road total into `{drive} drive + {walk} on foot · {distance}`.
+  A station on the incident's own node is an **on-site** candidate (ADR 0012):
+  `on_site = true`, `greenwave_seconds = standard_seconds = distance_m = 0`,
+  `on_foot = {access_point: station position, distance_m, seconds}` (straight
+  line × detour factor at walking speed). Off the network, a station whose own
+  node is an access node is on-site when that walk beats its driven option or
+  it has none (driving wins ties). It ranks by its walk; starting it shows an
+  on-site result card and never calls the simulation API.
+  `station_at_incident` stays in the schema, always `null` (deprecated).
+  Errors: `DESTINATION_OFF_NETWORK`, `NO_STATION_REACHABLE` (422).
 - **Off-road incidents** (ADR 0009, additive): when the incident is beyond the
   snap limit, the reversed Dijkstra is seeded at every access node within
   walking reach with its walking seconds, and each candidate carries
@@ -313,6 +327,7 @@ This supersedes the earlier 1 Hz batching (ADR 0003, D9).
   "total_distance_m": 5400,
   "estimated_normal_time_sec": 780,
   "estimated_greenwave_time_sec": 380,
+  "estimated_standard_time_sec": 455,
   "intersections_on_route": ["INT-0361", "INT-0367"],
   "route_intersections": [
     {
@@ -360,6 +375,8 @@ really starts / ends at and its distance from the requested point.
 `green_wave_mode` echoes the mode the run uses, so a result is never read as
 the other mode's. `estimated_greenwave_time_sec` is always the model 2
 baseline, also in a disabled run.
+`estimated_standard_time_sec` is the exact pre-run time of the same route
+with ER Green Wave disabled (a dry run of disabled motion), in both modes.
 
 **Errors** (body `ErrorResponse`):
 
@@ -407,8 +424,8 @@ never leaves the marker behind the lights. The offline mock transport
 follows the same one-tick-per-simulated-second rule and intervals.
 Ambulance `status` is an enum of
 `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`;
-`CROSSING_INTERSECTION` covers, in an enabled run, the $D_{\min}$ dwell
-and any hold at a stop line and, in a disabled run, the whole controlled
+`CROSSING_INTERSECTION` covers, in an enabled run, the $D_{\min}$ rolling
+slowdown and any safety hold at a stop line and, in a disabled run, the whole controlled
 crossing. `speed_kmh` is the distance
 actually driven in that simulated second, including the arrival tick.
 
@@ -614,9 +631,13 @@ expiry wins. Recovery lasts 15 simulated seconds. Duplicates are idempotent;
 conflicting duplicate submissions are rejected and invalid feedback cannot refresh
 the deadline or regress the ledger.
 
-`hold_duration_sec = max(40, ceil(largest first-stop TTI at submission) + 5)`
-is enforced from submission, without renewal. Long multi-stop-line crossings or
-controller waits can exceed that estimate. Rejection, acknowledgement timeout and
+`hold_duration_sec = max(40, ceil(largest release time at submission) + 5)`
+is enforced from submission, without renewal. A target's release time is the open
+road to its **last** stop line at each edge's ambulance speed, plus $D_{\min}$ for every
+unpassed route intersection up to and including it or whose first stop line lies inside it,
+plus the extra time a slowdown in progress has still to spend (ADR 0010), so a nominal run
+outlasts its rolling slowdowns and multi-line crossings; controller waits can still
+exceed it. Rejection, acknowledgement timeout and
 active expiry emit a final diagnostic tick then exactly one cancellation:
 ITS_REJECTED, ITS_TIMEOUT or ITS_HOLD_EXPIRED. They never emit successful completion.
 Stop, supersession, server error and completion close the controller idempotently.
@@ -649,15 +670,16 @@ The payload remains an illustrative internal contract, not a city ITS protocol:
     "vehicle_type": "AMBULANCE",
     "intersections_group": ["INT-0361", "INT-0367"],
     "action": "FORCE_GREEN_PHASE",
-    "hold_duration_sec": 55,
+    "hold_duration_sec": 61,
     "expected_arrival_utc": "2026-10-25T14:32:38Z"
   }
 }
 ```
 
-Here INT-0361 has TTI 40 s and its cascaded neighbour INT-0367 has TTI
-50 s: the hold is `max(40, 50 + 5) = 55`. `hold_duration_sec` is never
-below 40.
+Here INT-0361 has TTI 40 s and its cascaded neighbour INT-0367 is 50 s
+of open road to its last stop line, with both unpassed: its release time
+is `50 + 2 x 3 = 56` s and the hold is `max(40, 56 + 5) = 61`.
+`hold_duration_sec` is never below 40.
 
 ---
 
@@ -690,7 +712,7 @@ physical traffic signal states.
 
 All previously open questions have been resolved and approved:
 
-1. **State machine:** Intersection `state` is strictly `NORMAL | CLEARING | PRIORITY_GREEN | RECOVERY`, with `is_cascade: bool` as a separate field. Transitions occur at $\mathrm{TTI} \le 40\text{ s}$ (`CLEARING`), $\mathrm{TTI} \le 25\text{ s}$ (`PRIORITY_GREEN`), $d_i \le 0\text{ m}$ once the vehicle has left the last stop line and the tick carrying it across has been shown (`RECOVERY`, section 4, rule 3), and $+15\text{ s}$ (`NORMAL`). Cascade is one hop only (section 4, rule 1). `CLEARING_CASCADE` is not a state. `hold_duration_sec = max(40, ceil(TTI at dispatch) + its_hold_buffer_seconds)` with `its_hold_buffer_seconds = 5` (section 4, Phase 3).
+1. **State machine:** Intersection `state` is strictly `NORMAL | CLEARING | PRIORITY_GREEN | RECOVERY`, with `is_cascade: bool` as a separate field. Transitions occur at $\mathrm{TTI} \le 40\text{ s}$ (`CLEARING`), $\mathrm{TTI} \le 25\text{ s}$ (`PRIORITY_GREEN`), $d_i \le 0\text{ m}$ once the vehicle has left the last stop line and the tick carrying it across has been shown (`RECOVERY`, section 4, rule 3), and $+15\text{ s}$ (`NORMAL`). Cascade is one hop only (section 4, rule 1). `CLEARING_CASCADE` is not a state. `hold_duration_sec = max(40, ceil(release time at dispatch) + its_hold_buffer_seconds)` with `its_hold_buffer_seconds = 5`; the release time covers the open road to the target's last stop line, every $D_{\min}$ up to and inside it, and an in-progress slowdown (section 4, Phase 3; ADR 0010).
 2. **Identifiers:** All endpoints, telemetry ticks, and mock ITS payloads use the ETL's `INT-0001`..`INT-0535` IDs (`intersection_ids.json`). No `MSIP-SIG-*` IDs are used.
 3. **Contract completeness:** `simulation_id`, `schema_version: "1.0"`, and `is_simulated: true` are included in all responses and ticks; streaming uses SSE (`GET /api/v1/simulation/{simulation_id}/stream`) with a cancel endpoint (`POST /api/v1/simulation/{simulation_id}/stop`); one active operation (a run or a lockstep comparison pair, ADR 0008) is supported at a time; ambulance `status` is `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`; `traffic_density_multiplier` is bounded to `[1.0, 3.0]`.
 4. **ITS feedback (Phase 3):** A per-run deterministic simulated controller owns decisions and reported phases. Dispatch alone never confirms green (proposed ADR 0008).
@@ -700,7 +722,7 @@ All previously open questions have been resolved and approved:
 7. **Terminology:** `STeR_KRAKOW_ITS` is retained as the mocked target name.
 8. **Intersection delay:** $D_u$ (35 s per kind via ETL configuration) and $D_{\min}$ (3 s) are applied once per unique `INT-xxxx` whose controlled approach the route passes, never per signal node or per approach. The ETL provides `delay_seconds` per intersection by kind (signalised junction and mid-block signal use the signal delay, a standalone pedestrian crossing the crossing delay).
 9. **Cascade distance:** the threshold is `d <= 250 m` (inclusive) along the active route, measured between stop lines. The ETL's neighbour table uses the same inclusive threshold by shortest drive and is a candidate set only.
-10. **Snapping:** the origin and destination snap to the nearest graph node (EPSG:2178) from which a route exists. An origin farther than **150 m** (engine configuration `max_snap_distance_meters`, not a contract field) is rejected with `ORIGIN_OFF_NETWORK`. A destination farther than 150 m falls back to on-foot access (`docs/adr/0009-on-foot-incident-access.md`): the route ends at the main-component node within walking reach with the lowest drive + walk time from that origin, where walk = straight line × `on_foot_detour_factor` (1.3) at `on_foot_speed_meters_per_second` (1.4), and its on-foot distance is at most `max_on_foot_meters` (**800 m**, inclusive; all three are PoC placeholders). Without such a node the destination is rejected with `DESTINATION_OFF_NETWORK`. Origins never fall back. The run ends at the access node; the estimates and `time_saved` cover the drive only, and the walk (straight line, barriers not modelled) is reported separately as `destination_on_foot`.
+10. **Snapping:** the origin and destination snap to the nearest graph node (EPSG:2178) from which a route exists. An origin farther than **150 m** (engine configuration `max_snap_distance_meters`, not a contract field) is rejected with `ORIGIN_OFF_NETWORK`. A destination farther than 150 m falls back to on-foot access (`docs/adr/0009-on-foot-incident-access.md`): the route ends at the main-component node within walking reach with the lowest drive + walk time from that origin, where walk = straight line × `on_foot_detour_factor` (1.3) at `on_foot_speed_meters_per_second` (1.4), and its on-foot distance is at most `max_on_foot_meters` (**800 m**, inclusive; all three are PoC placeholders). Without such a node the destination is rejected with `DESTINATION_OFF_NETWORK`. Origins never fall back. A station on the incident's snapped node is answered on site, without a route (ADR 0012). The run ends at the access node; the estimates and `time_saved` cover the drive only, and the walk (straight line, barriers not modelled) is reported separately as `destination_on_foot`.
 11. **Contract v1:** the stream event union, SSE framing, error codes, `playback_speed` and the remaining simulation semantics are recorded in `docs/adr/0003-simulation-contract-v1.md`. Its D9 (1 Hz wall-clock tick advancing `playback_speed` seconds) is superseded: every simulated second is streamed as its own tick and playback only shortens the wall-clock interval (section 4, Phase 1). The wire schema is unchanged.
 12. **ER Green Wave mode (additive to contract v1, `schema_version` stays `"1.0"`):** the start request and response carry `green_wave_mode: ENABLED | DISABLED` (closed enum, no boolean form; default `ENABLED`), and ticks carry `signal_phases` (default `[]`). Disabled runs use the standard-traffic crossing (section 3, model 3), stay `NORMAL`, never cascade or dispatch, and keep route choice and open-road motion identical to enabled runs. Signal phases are a simulated explanation drawn only at high zoom (section 4, Phase 2). The frontend has six destinations: home (`/`), enabled simulation (`/simulation/green-wave`), disabled simulation (`/simulation/standard`), live comparison (`/compare`), diagnostics (`/diagnostics`) and driver presentation (`/driver`). A root runtime owns one subscription and shared in-memory scenario across navigation. Comparison starts an enabled/disabled pair through the same exclusive operation slot and streams both on one simulated clock (ADR 0008 live comparison pair). Each member has its own simulated ITS controller; controller failures do not produce successful comparison results. The completed-run summary leads with total travel time and names the mode. Design: `docs/superpowers/specs/2026-10-20-er-green-wave-mode-design.md`, amended by `docs/superpowers/specs/2026-10-21-er-green-wave-corrections-design.md` (rolling disabled crossing, supported signal movements, phase-detail fallback).
 13. **Server-side run failure (additive to contract v1, `schema_version` stays `"1.0"`):** if the simulation loop fails, the server logs it and ends the run with `SIMULATION_CANCELLED` (`reason: SERVER_ERROR`, the last completed tick) like any other terminal, so clients learn at once instead of after their silence timeout. The dashboard shows "Simulation server error. Retry the green corridor initialization.", which is also shown when a start fails with HTTP 5xx. Retry is manual from dispatch setup; the mock never emits it. Decision: `docs/adr/0007-server-error-cancel-reason.md`.

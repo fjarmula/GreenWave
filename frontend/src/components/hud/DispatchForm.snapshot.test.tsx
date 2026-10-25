@@ -39,7 +39,9 @@ const RANKING: DispatchRankResponse = {
         position: { lat: 50.05, lng: 19.95 },
       },
       greenwave_seconds: 309,
+      standard_seconds: 372,
       distance_m: 3290,
+      on_site: false,
     },
   ],
   station_at_incident: null,
@@ -53,12 +55,14 @@ function dispatchState(patch: Partial<IncidentDispatch> = {}): IncidentDispatch 
       label: "Rynek Główny 1",
       source: "address",
     },
+    trafficDensity: 1,
     ranking: RANKING,
     rankStatus: "ready",
     rankError: null,
     selectedStationId: null,
     setVehicleType: () => undefined,
     setIncident: () => undefined,
+    setTrafficDensity: () => undefined,
     selectStation: () => {},
     ...patch,
   };
@@ -83,6 +87,9 @@ function render(
     />,
   );
 }
+
+const fullStartButton = (markup: string) =>
+  markup.match(/<button[^>]*data-testid="start-corridor"[^>]*>[\s\S]*?<\/button>/)?.[0] ?? "";
 
 const startButton = (markup: string) =>
   markup.match(/<button[^>]*data-testid="start-corridor"[^>]*>/)?.[0] ?? "";
@@ -121,14 +128,23 @@ describe("DispatchForm start button", () => {
     expect(startButton(render(dispatchState()))).not.toMatch(/ disabled=""/);
   });
 
-  it("stays enabled when a station sits at the incident and others exist", () => {
-    const dispatch = dispatchState({
-      ranking: {
-        ...RANKING,
-        station_at_incident: { ...RANKING.candidates[0].station, station_id: "STN-F-0001" },
+  it('labels the start "Dispatch on foot" for an on-site selection', () => {
+    const onSite = {
+      ...RANKING.candidates[0],
+      greenwave_seconds: 0,
+      standard_seconds: 0,
+      distance_m: 0,
+      on_foot: {
+        access_point: RANKING.candidates[0].station.position,
+        distance_m: 120,
+        seconds: 111,
       },
-    });
-    expect(startButton(render(dispatch))).not.toMatch(/ disabled=""/);
+      on_site: true,
+    };
+    const markup = render(dispatchState({ ranking: { ...RANKING, candidates: [onSite] } }));
+    expect(fullStartButton(markup)).toContain("Dispatch on foot");
+    expect(startButton(markup)).not.toMatch(/ disabled=""/);
+    expect(fullStartButton(render(dispatchState()))).not.toContain("Dispatch on foot");
   });
 
   it("offers the three vehicle types", () => {
@@ -366,12 +382,55 @@ describe("mock preflight estimates", () => {
     expect(markup).toContain("03m 10s");
   });
 
-  it("keeps backend estimates after start without mock claims", () => {
+  it("shows only the walk for an on-site pick, with no simulated runs", () => {
+    const station = RANKING.candidates[0].station;
+    const markup = renderToStaticMarkup(
+      <PreflightEstimate
+        isMockTransport={false}
+        trafficDensity={1}
+        origin={null}
+        incident={null}
+        candidate={{
+          ...RANKING.candidates[0],
+          greenwave_seconds: 0,
+          standard_seconds: 0,
+          distance_m: 0,
+          on_foot: { access_point: station.position, distance_m: 60, seconds: 45 },
+          on_site: true,
+        }}
+      />,
+    );
+    expect(markup).toContain("On site · no drive · on foot about 00m 45s (60 m)");
+    for (const absent of ["Simulated runs", "Standard time", "GreenWave time", "TIME SAVED"])
+      expect(markup).not.toContain(absent);
+  });
+
+  it("shows no time saved when the standard run is the shorter one", () => {
+    const candidate = { ...RANKING.candidates[0], standard_seconds: 220, greenwave_seconds: 246 };
+    const markup = renderToStaticMarkup(
+      <PreflightEstimate
+        isMockTransport={false}
+        trafficDensity={1}
+        origin={null}
+        incident={null}
+        candidate={candidate}
+      />,
+    );
+    expect(markup).toContain("NO TIME SAVED");
+    expect(markup).toContain("+00m 26s");
+    expect(markup).not.toMatch(/−-|m -|% TIME SAVED/);
+    expect(markup).not.toContain('text-go"><svg');
+  });
+
+  it("shows backend standard and green-wave estimates before start", () => {
     transport.current = "backend";
     const markup = render(dispatchState());
-    expect(markup).toContain("AFTER START");
-    expect(markup).not.toContain("TIME SAVED");
+    expect(markup).not.toContain("AFTER START");
     expect(markup).not.toContain("Mock pre-flight");
+    const preflight = markup.slice(markup.indexOf("Pre-flight estimation"));
+    expect(preflight).toContain("06m 12s"); // standard_seconds 372
+    expect(preflight).toContain("05m 09s"); // greenwave_seconds 309
+    expect(preflight).toContain("−01m 03s");
   });
 });
 

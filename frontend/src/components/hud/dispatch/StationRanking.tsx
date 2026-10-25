@@ -1,11 +1,17 @@
-import { Info, LoaderCircle, TriangleAlert } from "lucide-react";
+import { LoaderCircle, TriangleAlert } from "lucide-react";
 import { useId } from "react";
 
 import { formatSignalDistance } from "@/lib/driver-presentation";
 import { formatMinutesSeconds } from "@/lib/format-duration";
-import { candidateTotalSeconds } from "@/lib/station-choice";
+import {
+  candidateDriveSeconds,
+  candidateTotalSeconds,
+  orderCandidates,
+  pageCandidate,
+  type TimeMode,
+} from "@/lib/station-choice";
 import { SOURCE_KIND_LABELS } from "@/lib/station-copy";
-import { selectedCandidate, type RankStatus } from "@/lib/useIncidentDispatch";
+import type { RankStatus } from "@/lib/useIncidentDispatch";
 import type { DispatchRankResponse, RankedCandidate } from "@/types/telemetry";
 
 type StationRankingProps = {
@@ -14,6 +20,8 @@ type StationRankingProps = {
   rankError: string | null;
   /** False in mock mode: the choice is straight-line nearest, without road times. */
   roadTimeRanking: boolean;
+  /** The page's mode: its own times, order and "Fastest" chip; the comparison shows both. */
+  timeMode: TimeMode;
   selectedStationId: string | null;
   onSelect: (stationId: string) => void;
 };
@@ -23,6 +31,7 @@ export function StationRanking({
   rankStatus,
   rankError,
   roadTimeRanking,
+  timeMode,
   selectedStationId,
   onSelect,
 }: StationRankingProps) {
@@ -51,16 +60,11 @@ export function StationRanking({
     );
   }
 
-  const [fastest] = ranking.candidates;
-  const selectedId = selectedCandidate({ ranking, selectedStationId })?.station.station_id;
+  const ordered = orderCandidates(ranking.candidates, timeMode);
+  const [fastest] = ordered;
+  const selectedId = pageCandidate({ ranking, selectedStationId }, timeMode)?.station.station_id;
   return (
     <div className="mt-4 space-y-2" aria-live="polite">
-      {ranking.station_at_incident && (
-        <p className="hud-alert tone-caution text-2xs">
-          <Info aria-hidden />A station of this type is at this location; dispatching from the next
-          fastest.
-        </p>
-      )}
       <fieldset className="station-choice">
         <legend className="flex w-full items-center justify-between gap-2 pb-1.5">
           <span className="dashboard-eyebrow">Dispatch from</span>
@@ -68,7 +72,7 @@ export function StationRanking({
             <span className="hud-chip tone-caution text-2xs">Approximate (mock)</span>
           )}
         </legend>
-        {ranking.candidates.map((candidate) => (
+        {ordered.map((candidate) => (
           <CandidateRow
             key={candidate.station.station_id}
             name={name}
@@ -76,6 +80,7 @@ export function StationRanking({
             fastest={fastest}
             checked={candidate.station.station_id === selectedId}
             roadTimeRanking={roadTimeRanking}
+            timeMode={timeMode}
             onSelect={onSelect}
           />
         ))}
@@ -90,6 +95,7 @@ function CandidateRow({
   fastest,
   checked,
   roadTimeRanking,
+  timeMode,
   onSelect,
 }: {
   name: string;
@@ -97,10 +103,15 @@ function CandidateRow({
   fastest: RankedCandidate;
   checked: boolean;
   roadTimeRanking: boolean;
+  timeMode: TimeMode;
   onSelect: (stationId: string) => void;
 }) {
-  const { station } = candidate;
+  const { station, on_foot: onFoot } = candidate;
   const isFastest = candidate === fastest;
+  // The comparison keeps the green-wave order, so its deltas are green-wave deltas.
+  const deltaMode = timeMode === "STANDARD" ? "STANDARD" : "GREENWAVE";
+  const total = (mode: "GREENWAVE" | "STANDARD") =>
+    formatMinutesSeconds(Math.round(candidateTotalSeconds(candidate, mode)));
   return (
     <label className="station-choice-row" data-checked={checked || undefined}>
       <input
@@ -119,7 +130,11 @@ function CandidateRow({
           >
             {station.name}
           </span>
-          {isFastest && <span className="hud-chip tone-go shrink-0 text-2xs">Fastest</span>}
+          {candidate.on_site ? (
+            <span className="hud-chip tone-beacon shrink-0 text-2xs">On site</span>
+          ) : (
+            isFastest && <span className="hud-chip tone-go shrink-0 text-2xs">Fastest</span>
+          )}
         </span>
         <span className="block text-2xs text-muted-foreground">
           {SOURCE_KIND_LABELS[station.source_kind]}
@@ -131,23 +146,53 @@ function CandidateRow({
             checked ? "font-semibold text-go" : "text-muted-foreground"
           }`}
         >
-          {roadTimeRanking
-            ? formatMinutesSeconds(Math.round(candidateTotalSeconds(candidate)))
-            : `${(candidate.distance_m / 1000).toFixed(1)} km`}
+          {!roadTimeRanking ? (
+            `${(candidate.distance_m / 1000).toFixed(1)} km`
+          ) : candidate.on_site ? (
+            // No drive, so both modes take the same walk.
+            total("GREENWAVE")
+          ) : timeMode === "BOTH" ? (
+            <>
+              <span className="block" title="ER Green Wave">
+                GW {total("GREENWAVE")}
+              </span>
+              <span className="block" title="Standard traffic">
+                Std {total("STANDARD")}
+              </span>
+            </>
+          ) : (
+            total(timeMode)
+          )}
         </span>
-        {candidate.on_foot && (
+        {onFoot && (
           <span className="block text-2xs text-muted-foreground">
-            incl. {formatSignalDistance(candidate.on_foot.distance_m)} on foot
+            {onFootLine(candidate, onFoot, roadTimeRanking, timeMode)}
           </span>
         )}
         {!isFastest && (
           <span className="block font-mono text-2xs text-muted-foreground">
             {roadTimeRanking
-              ? `+${Math.round(candidateTotalSeconds(candidate) - candidateTotalSeconds(fastest))} s`
+              ? `+${Math.round(candidateTotalSeconds(candidate, deltaMode) - candidateTotalSeconds(fastest, deltaMode))} s`
               : `+${((candidate.distance_m - fastest.distance_m) / 1000).toFixed(1)} km`}
           </span>
         )}
       </span>
     </label>
   );
+}
+
+/** "07m 02s drive + 09m 10s on foot · 650 m" with the page's own drive; the walk alone otherwise. */
+function onFootLine(
+  candidate: RankedCandidate,
+  onFoot: NonNullable<RankedCandidate["on_foot"]>,
+  roadTimeRanking: boolean,
+  timeMode: TimeMode,
+): string {
+  const distance = formatSignalDistance(onFoot.distance_m);
+  if (candidate.on_site) return `on foot · ${distance}`;
+  if (!roadTimeRanking) return `incl. ${distance} on foot`;
+  const walk = formatMinutesSeconds(Math.round(onFoot.seconds));
+  if (timeMode === "BOTH") return `incl. ${walk} on foot · ${distance}`;
+  const drive = formatMinutesSeconds(Math.round(candidateDriveSeconds(candidate, timeMode)));
+  return `${drive} drive + ${walk} on foot · ${distance}`;
 }

@@ -65,6 +65,7 @@ def test_start_response_uses_route_ordered_intersection_metadata_and_snaps() -> 
         route=route,
         route_model=model,
         estimates=Estimates(normal_seconds=185.002, greenwave_seconds=77.386153846),
+        standard_seconds=90.4,
         index=index,
     )
 
@@ -94,6 +95,7 @@ def _start_response(
         route=route,
         route_model=model,
         estimates=Estimates(normal_seconds=185.002, greenwave_seconds=77.386153846),
+        standard_seconds=90.4,
         index=index,
     )
 
@@ -120,6 +122,7 @@ def test_start_response_cascade_targets_are_later_route_ids_in_order() -> None:
         route=route,
         route_model=model,
         estimates=Estimates(normal_seconds=185.002, greenwave_seconds=77.386153846),
+        standard_seconds=90.4,
         index=index,
     )
 
@@ -146,6 +149,7 @@ def test_start_response_reports_the_selected_green_wave_mode() -> None:
         route=route,
         route_model=model,
         estimates=Estimates(normal_seconds=185.002, greenwave_seconds=77.386153846),
+        standard_seconds=90.4,
         index=index,
         green_wave_mode=GreenWaveMode.DISABLED,
     )

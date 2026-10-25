@@ -86,7 +86,9 @@ export function DriverStatus({
           </div>
           {eta !== null && (
             <div>
-              <dt className="hud-stat-label">ETA</dt>
+              <dt className="hud-stat-label">
+                {state.routeData?.destination_on_foot ? "ETA to access point" : "ETA"}
+              </dt>
               <dd className="hud-value driver-card-eta">{formatDuration(eta)}</dd>
             </div>
           )}

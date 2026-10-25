@@ -29,6 +29,7 @@ export const startResponseExample: SimulationStartResponse = {
   total_distance_m: 5400,
   estimated_normal_time_sec: 780,
   estimated_greenwave_time_sec: 380,
+  estimated_standard_time_sec: 455,
   intersections_on_route: ["INT-0360", "INT-0366"],
   route_intersections: [
     {

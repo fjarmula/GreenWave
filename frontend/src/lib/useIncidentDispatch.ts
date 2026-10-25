@@ -23,13 +23,18 @@ export function pinnedIncident(position: Position): Incident {
 
 export type RankStatus = "idle" | "loading" | "ready" | "error";
 
+/** A density slider drag re-ranks once, this long after its last step. */
+export const DENSITY_RERANK_DELAY_MS = 250;
+
 export type IncidentDispatchState = {
   vehicleType: VehicleType;
   incident: Incident | null;
+  /** The density the ranking's standard times are computed for (the run's own). */
+  trafficDensity: number;
   ranking: DispatchRankResponse | null;
   rankStatus: RankStatus;
   rankError: string | null;
-  /** The dispatcher's pick; `null` means the fastest. Every re-rank resets it. */
+  /** The dispatcher's pick; `null` means the fastest. A re-rank resets it, except a density one. */
   selectedStationId: string | null;
 };
 
@@ -56,7 +61,7 @@ export function describeRankError(error: unknown): string {
 }
 
 /**
- * Vehicle type + incident → station ranking, without React. Every change re-ranks:
+ * Vehicle type + incident + traffic density → station ranking, without React. Every change re-ranks:
  * the previous request is aborted and, should it still settle, discarded by its
  * sequence number, so an older response never overwrites a newer one.
  */
@@ -64,6 +69,7 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
   let state: IncidentDispatchState = {
     vehicleType: "AMBULANCE",
     incident: null,
+    trafficDensity: 1,
     ranking: null,
     rankStatus: "idle",
     rankError: null,
@@ -72,13 +78,21 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
   const listeners = new Set<() => void>();
   let sequence = 0;
   let inFlight: AbortController | null = null;
+  let densityTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function cancelDensityRerank() {
+    if (densityTimer !== null) clearTimeout(densityTimer);
+    densityTimer = null;
+  }
 
   function update(patch: Partial<IncidentDispatchState>) {
     state = { ...state, ...patch };
     listeners.forEach((listener) => listener());
   }
 
-  function rank(patch: Partial<IncidentDispatchState>) {
+  /** `keepSelection`: a density-only re-rank, whose candidates are the same stations. */
+  function rank(patch: Partial<IncidentDispatchState>, keepSelection = false) {
+    cancelDensityRerank();
     inFlight?.abort();
     inFlight = null;
     const current = ++sequence;
@@ -95,18 +109,28 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
     }
     const controller = new AbortController();
     inFlight = controller;
+    const kept = keepSelection ? state.selectedStationId : null;
     update({
       ...patch,
       ranking: null,
       rankStatus: "loading",
       rankError: null,
-      selectedStationId: null,
+      selectedStationId: kept,
     });
     adapter
-      .rank({ incident: next.incident.position, vehicle_type: next.vehicleType }, controller.signal)
+      .rank(
+        {
+          incident: next.incident.position,
+          vehicle_type: next.vehicleType,
+          traffic_density_multiplier: next.trafficDensity,
+        },
+        controller.signal,
+      )
       .then(
         (ranking) => {
-          if (current === sequence) update({ ranking, rankStatus: "ready" });
+          if (current !== sequence) return;
+          const stillListed = ranking.candidates.some((c) => c.station.station_id === kept);
+          update({ ranking, rankStatus: "ready", selectedStationId: stillListed ? kept : null });
         },
         (error: unknown) => {
           if (current === sequence && !controller.signal.aborted) {
@@ -129,6 +153,17 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
     },
     setVehicleType: (vehicleType: VehicleType) => rank({ vehicleType }),
     setIncident: (incident: Incident | null) => rank({ incident }),
+    /**
+     * Re-ranks for a new density (standard times depend on it), once a slider drag settles and
+     * keeping the pick; the same value is a no-op. Without an incident it is only remembered.
+     */
+    setTrafficDensity(trafficDensity: number) {
+      if (trafficDensity === state.trafficDensity) return;
+      update({ trafficDensity });
+      if (state.incident === null) return;
+      cancelDensityRerank();
+      densityTimer = setTimeout(() => rank({}, true), DENSITY_RERANK_DELAY_MS);
+    },
     /** Picks a listed candidate; an ID outside the current ranking is ignored. */
     selectStation(stationId: string) {
       if (!state.ranking?.candidates.some((c) => c.station.station_id === stationId)) return;
@@ -136,6 +171,7 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
     },
     /** Aborts the request in flight; the controller stays usable. */
     dispose() {
+      cancelDensityRerank();
       sequence += 1;
       inFlight?.abort();
       inFlight = null;
@@ -146,6 +182,7 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
 export type IncidentDispatch = IncidentDispatchState & {
   setVehicleType: (vehicleType: VehicleType) => void;
   setIncident: (incident: Incident | null) => void;
+  setTrafficDensity: (trafficDensity: number) => void;
   selectStation: (stationId: string) => void;
 };
 
@@ -157,6 +194,7 @@ export function useIncidentDispatch(adapter: DispatchAdapter): IncidentDispatch 
     ...state,
     setVehicleType: dispatch.setVehicleType,
     setIncident: dispatch.setIncident,
+    setTrafficDensity: dispatch.setTrafficDensity,
     selectStation: dispatch.selectStation,
   };
 }

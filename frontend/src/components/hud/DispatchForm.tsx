@@ -17,7 +17,8 @@ import { getFrontendConfig } from "@/lib/config";
 import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import type { PreviousRun } from "@/lib/previous-run";
 import type { DispatchSettings } from "@/lib/start-request";
-import { selectedCandidate, type IncidentDispatch } from "@/lib/useIncidentDispatch";
+import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
+import { isOnSite, pageCandidate, timeModeFor } from "@/lib/station-choice";
 
 type DispatchFormProps = {
   /** Owned by the dashboard so the chosen settings outlive each run. */
@@ -64,6 +65,7 @@ export function DispatchForm({
   const { trafficDensity, cascadeEnabled, greenWaveMode, playbackSpeed } = settings;
   const update = (patch: Partial<DispatchSettings>) => onSettingsChange({ ...settings, ...patch });
   const isMockTransport = getFrontendConfig().transport === "mock";
+  const timeMode = timeModeFor(greenWaveMode, intent);
   const { incident, ranking, rankStatus } = dispatch;
   const canStart = rankStatus === "ready" && (ranking?.candidates.length ?? 0) > 0;
   const incidentKey = incident
@@ -98,6 +100,7 @@ export function DispatchForm({
         rankStatus={rankStatus}
         rankError={dispatch.rankError}
         roadTimeRanking={capabilities.roadTimeRanking}
+        timeMode={timeMode}
         selectedStationId={dispatch.selectedStationId}
         onSelect={dispatch.selectStation}
       />
@@ -187,15 +190,17 @@ export function DispatchForm({
         <Zap className="size-4" aria-hidden />
         {pending
           ? "Computing route…"
-          : intent === "comparison"
-            ? replacement
-              ? "Replace run & compare"
-              : "Start comparison"
-            : replacement
-              ? "Replace active simulation"
-              : greenWaveMode === "ENABLED"
-                ? "Initialize green corridor"
-                : "Start standard-traffic run"}
+          : canStart && isOnSite(pageCandidate(dispatch, timeMode))
+            ? "Dispatch on foot"
+            : intent === "comparison"
+              ? replacement
+                ? "Replace run & compare"
+                : "Start comparison"
+              : replacement
+                ? "Replace active simulation"
+                : greenWaveMode === "ENABLED"
+                  ? "Initialize green corridor"
+                  : "Start standard-traffic run"}
         <ArrowUpRight className="ml-auto size-4" aria-hidden />
       </button>
 
@@ -209,15 +214,16 @@ export function DispatchForm({
       <PreflightEstimate
         isMockTransport={isMockTransport}
         trafficDensity={trafficDensity}
-        origin={canStart ? (selectedCandidate(dispatch)?.station.position ?? null) : null}
+        origin={canStart ? (pageCandidate(dispatch, timeMode)?.station.position ?? null) : null}
         incident={incident?.position ?? null}
+        candidate={canStart ? pageCandidate(dispatch, timeMode) : null}
       />
 
       <p className="mt-5 flex items-center gap-2 text-2xs leading-relaxed text-muted-foreground">
         <ShieldCheck className="size-4 shrink-0 text-go" aria-hidden />
         {isMockTransport
           ? "Demo uses synthetic route estimates and sample signal telemetry."
-          : "Route estimates come from the simulation backend after initialization. All signal states are simulated."}
+          : "Route estimates come from the simulation backend. All signal states are simulated."}
       </p>
 
       {children && <div className="mt-6">{children}</div>}

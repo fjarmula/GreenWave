@@ -188,22 +188,23 @@ def test_kpi_ends_at_normal_minus_greenwave_and_holds_through_recovery() -> None
         assert tick.kpi_metrics.total_time_elapsed_sec == expected_elapsed
 
 
-def test_step_advances_at_current_edge_speed_and_dwells_at_stop_line() -> None:
+def test_step_rolls_d_min_before_the_stop_line_at_current_edge_speed() -> None:
     engine = engine_for_single_stop()
     state = engine.initial_state()
     now = datetime(2026, 10, 16, tzinfo=UTC)
-
-    # 13 m/s: three full seconds reach 39 m; the 4th reaches the 50 m stop line after 11/13 s
-    # and spends the remaining 2/13 s of it dwelling (D13).
-    for _ in range(4):
-        state, _ = engine.step(state, now)
-    assert state.distance_travelled_m == 50.0
-    assert state.dwell_remaining_s == pytest.approx(3 - 2 / 13)
+    # The 50 m stop line is inside the 60 m approach, so D_min = 3 s is spread over [0, 50] at
+    # 13 m/s: 50 m take 50/13 + 3 s, then open road at 13 m/s (no stop).
+    slow_mps = 50 / (50 / 13 + 3)
 
     state, events = engine.step(state, now)
-    assert state.distance_travelled_m == 50.0
-    assert state.dwell_remaining_s == pytest.approx(2 - 2 / 13)
-    assert events[-1].ambulance.speed_kmh == 0.0
+    assert state.distance_travelled_m == pytest.approx(slow_mps)
+    assert events[-1].ambulance.speed_kmh == pytest.approx(slow_mps * 3.6)
+    assert events[-1].ambulance.status == "CROSSING_INTERSECTION"
+    for _ in range(6):
+        state, events = engine.step(state, now)
+    assert state.dwell_remaining_s == 0.0
+    assert state.distance_travelled_m == pytest.approx(50 + 13 * (7 - (50 / 13 + 3)))
+    assert events[-1].ambulance.speed_kmh > 0
 
 
 def test_own_clear_cascades_once_and_batches_its_dispatch() -> None:
@@ -216,8 +217,9 @@ def test_own_clear_cascades_once_and_batches_its_dispatch() -> None:
     assert events[0].payload.hold_duration_sec == 40
 
 
-def test_calming_estimate_is_not_a_guarantee_for_multi_line_hold() -> None:
-    """Calming seconds reach the estimate and the simulated motion alike (one edge-time model)."""
+def test_calming_reaches_the_estimate_the_motion_and_the_hold_alike() -> None:
+    """Calming seconds reach the estimate, the simulated motion and the hold (one edge-time
+    model), so a multi-line junction behind calmed edges no longer outlives its hold."""
     settings = neutral_settings(ambulance_calming_seconds=2.0)
     index = corridor_index({"corridor-twin-1": {"calming_count": 3}})
     # Ends past INT-B: a route ending on a stop line arrives before that last D_min dwell.
@@ -234,8 +236,7 @@ def test_calming_estimate_is_not_a_guarantee_for_multi_line_hold() -> None:
 
     assert len(model.intersections) == 4  # D_min is part of both numbers
     assert estimates.greenwave_seconds == pytest.approx(neutral.greenwave_seconds + 6.0)
-    assert events[-1].event_type == "SIMULATION_CANCELLED"
-    assert events[-1].reason == "ITS_HOLD_EXPIRED"
+    assert events[-1].event_type == "SIMULATION_COMPLETED"
 
 
 def test_ticks_identify_the_dispatched_vehicle_type_not_the_simulation() -> None:

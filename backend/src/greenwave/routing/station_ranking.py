@@ -2,11 +2,16 @@
 
 A reversed Dijkstra from the incident gives every station's motion time with the weight
 ``plan_route`` minimises; the best ``dispatch_shortlist_size`` then get the real pipeline
-(``plan_route``, route model, ``estimate_times``), so the displayed time is the preflight one.
+(``plan_route``, route model, ``estimate_times``, ``standard_run_seconds``), so the displayed
+times are the preflight ones.
 The shortlist is a speed cut: per-intersection delay can reorder stations beyond it.
 
 An incident off the network seeds that Dijkstra at every access node with its walking time, so
 the shortlist already orders by drive + walk; candidates are sorted by the same total.
+
+A station on the incident's own node is an *on-site* candidate (ADR 0012): no route, only the
+walk from the station. Off the network, a station whose node is an access node is on-site when
+that walk beats its driven option (or it has none); driving wins ties.
 """
 
 import logging
@@ -16,7 +21,7 @@ from typing import Any
 
 import polars as pl
 
-from greenwave.routing.access import AccessNode, access_nodes, seeded_lengths
+from greenwave.routing.access import AccessNode, access_nodes, seeded_lengths, walk_between
 from greenwave.routing.errors import (
     DestinationOffNetwork,
     NoRoute,
@@ -29,11 +34,13 @@ from greenwave.routing.planner import (
     PlannedRoute,
     SnappedRouteEndpoint,
     edge_weight,
+    node_position,
     plan_route,
     snap_endpoint,
 )
-from greenwave.schemas import Position, Station, VehicleType
+from greenwave.schemas import GreenWaveMode, Position, Station, VehicleType
 from greenwave.simulation.route_model import build_route_model
+from greenwave.simulation.standard_estimate import standard_run_seconds
 from greenwave.simulation_settings import SimulationSettings
 
 logger = logging.getLogger(__name__)
@@ -51,20 +58,31 @@ class StationNode:
 class RankedStation:
     station: Station
     greenwave_seconds: float
+    standard_seconds: float
     distance_m: float
     on_foot: AccessNode | None = None
+    # On-site (ADR 0012): no drive; the walk from the station to the incident.
+    on_site: bool = False
+    walk_m: float | None = None
+    walk_seconds: float | None = None
 
     @property
     def total_seconds(self) -> float:
-        """Drive estimate plus the walk from the access node; the ranking order."""
-        return self.greenwave_seconds + (self.on_foot.on_foot_seconds if self.on_foot else 0.0)
+        """Green-wave drive estimate plus the walk from the access node; the ranking order."""
+        return self.total_seconds_for(GreenWaveMode.ENABLED)
+
+    def total_seconds_for(self, mode: GreenWaveMode) -> float:
+        """The drive estimate of ``mode`` plus the walk from the access node (on-site: the walk)."""
+        if self.on_site:
+            return self.walk_seconds or 0.0
+        drive = self.greenwave_seconds if mode is GreenWaveMode.ENABLED else self.standard_seconds
+        return drive + (self.on_foot.on_foot_seconds if self.on_foot else 0.0)
 
 
 @dataclass(frozen=True)
 class StationRanking:
     incident_snap: SnappedRouteEndpoint
     candidates: tuple[RankedStation, ...]  # best first, at most MAX_CANDIDATES
-    station_at_incident: Station | None
 
 
 def station_from_row(row: Mapping[str, Any]) -> Station:
@@ -98,22 +116,34 @@ def rank_stations(
     incident: Position,
     vehicle_type: VehicleType,
     settings: SimulationSettings,
+    traffic_density_multiplier: float = 1.0,
 ) -> StationRanking:
-    """Raises ``DestinationOffNetwork`` or ``NoStationReachable``."""
+    """Raises ``DestinationOffNetwork`` or ``NoStationReachable``.
+
+    ``traffic_density_multiplier`` only changes each candidate's standard estimate; the order
+    stays the green-wave one.
+    """
     incident_snap: SnappedRouteEndpoint | None
+    access: dict[str, AccessNode] = {}
     try:
         incident_snap = snap_endpoint(index, incident, origin=False)
         seeds = {incident_snap.node_key: 0.0}
     except DestinationOffNetwork:
         # Off the network: every access node within walking reach starts at its walking time.
         incident_snap = None
-        seeds = {n.node_key: n.on_foot_seconds for n in access_nodes(index, incident, settings)}
+        access = {n.node_key: n for n in access_nodes(index, incident, settings)}
+        seeds = {key: n.on_foot_seconds for key, n in access.items()}
     incident_node = incident_snap.node_key if incident_snap else None
     of_type = [s for s in stations if s.station.vehicle_type == vehicle_type]
-    at_incident = sorted(
-        (s.station for s in of_type if s.node_key == incident_node),
-        key=lambda station: station.station_id,
-    )
+    # On the network only the incident's own node is on-site; off it, any access node may be.
+    on_site_nodes = {incident_node} if incident_node else set(seeds)
+    on_site: dict[str, RankedStation] = {}
+    for s in of_type:
+        if s.node_key in on_site_nodes:
+            walk_m, walk_seconds = walk_between(s.station.position, incident, settings)
+            on_site[s.station.station_id] = RankedStation(
+                s.station, 0.0, 0.0, 0.0, on_site=True, walk_m=walk_m, walk_seconds=walk_seconds
+            )
     motion = seeded_lengths(
         index.graph.reverse(copy=False),
         seeds,
@@ -124,24 +154,51 @@ def rank_stations(
         key=lambda s: (motion[s.node_key], s.station.station_id),
     )[: settings.dispatch_shortlist_size]
 
-    ranked: list[tuple[RankedStation, PlannedRoute]] = []
+    ranked: list[tuple[RankedStation, PlannedRoute | None]] = []
     for node in shortlist:
         try:
             route = plan_route(index, node.station.position, incident, settings)
         except NoRoute:
             continue
         model = build_route_model(route, index, settings, False)
-        estimates = estimate_times(route, model, 1.0, settings)
+        estimates = estimate_times(route, model, traffic_density_multiplier, settings)
         candidate = RankedStation(
-            node.station, estimates.greenwave_seconds, route.total_distance_m, route.on_foot
+            node.station,
+            estimates.greenwave_seconds,
+            standard_run_seconds(route, model, traffic_density_multiplier, settings),
+            route.total_distance_m,
+            route.on_foot,
         )
+        walk = on_site.get(node.station.station_id)
+        if walk is not None and walk.total_seconds < candidate.total_seconds:
+            continue  # walking from the station beats driving to another access point
+        on_site.pop(node.station.station_id, None)
         ranked.append((candidate, route))
+    ranked.extend((candidate, None) for candidate in on_site.values())
     if not ranked:
         raise NoStationReachable(f"no {vehicle_type.value} station can reach the incident")
     ranked.sort(key=lambda item: (item[0].total_seconds, item[0].station.station_id))
     return StationRanking(
-        # Off the network, the incident "snaps" to the fastest candidate's access node.
-        incident_snap=incident_snap or ranked[0][1].destination_snap,
+        incident_snap=incident_snap or _off_road_snap(index, ranked, access, stations),
         candidates=tuple(candidate for candidate, _ in ranked[:MAX_CANDIDATES]),
-        station_at_incident=at_incident[0] if at_incident else None,
+    )
+
+
+def _off_road_snap(
+    index: RoutingIndex,
+    ranked: Sequence[tuple[RankedStation, PlannedRoute | None]],
+    access: Mapping[str, AccessNode],
+    stations: Sequence[StationNode],
+) -> SnappedRouteEndpoint:
+    """The fastest candidate's access node: its route's end, or an on-site station's own node."""
+    best, route = ranked[0]
+    if route is not None:
+        return route.destination_snap
+    node_key = next(
+        s.node_key
+        for s in stations
+        if s.station.station_id == best.station.station_id and s.node_key in access
+    )
+    return SnappedRouteEndpoint(
+        node_key, node_position(index, node_key), access[node_key].straight_m
     )

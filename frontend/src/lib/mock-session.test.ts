@@ -1,4 +1,4 @@
-import { haversineMeters } from "@/lib/mock-route-metrics";
+import { estimateMockRoute, haversineMeters } from "@/lib/mock-route-metrics";
 import { describe, expect, it } from "vitest";
 import {
   advanceMockSession,
@@ -17,6 +17,10 @@ import {
   MOCK_SIGNAL_YELLOW_SECONDS,
   MOCK_STANDARD_CLEARANCE_SECONDS,
   MOCK_STANDARD_CROSSING_DISTANCE_M,
+  MOCK_STANDARD_MAX_RED_LOSS_SECONDS,
+  MOCK_STANDARD_MIN_ROLLING_SPEED_MPS,
+  MOCK_MIN_INTERSECTION_DELAY_SECONDS,
+  MOCK_MIN_ROLLING_SPEED_MPS,
 } from "@/lib/mock-simulation-config";
 import type {
   GreenWaveMode,
@@ -39,9 +43,10 @@ function requestWithCascade(enableCascadeMode: boolean): SimulationStartRequest 
   };
 }
 
-// First sample signal arrives at 1480 / 5400 * 380 ≈ 104.1 s, so its TTI is ≤ 40 s at 65 s;
-// the second (152 m further, TTI ≈ 49.8 s) is still outside its own clearing window.
-const ELAPSED_WITH_FIRST_SIGNAL_CLEARING = 65;
+// Open road at 5400 / 374 m/s plus a 3 s rolling slowdown over the last 60 m: the first sample
+// signal is reached at ≈ 105.5 s, so its TTI is ≤ 40 s at 66 s; the second (152 m further, ≈ 119 s)
+// is still outside its own clearing window.
+const ELAPSED_WITH_FIRST_SIGNAL_CLEARING = 66;
 
 describe("stepMockSignals", () => {
   it.each([
@@ -118,6 +123,17 @@ describe("ER Green Wave mode in the mock", () => {
     expect(createMockSession(modeRequest(mode)).route.green_wave_mode).toBe(mode);
   });
 
+  it.each(["ENABLED", "DISABLED"] as const)(
+    "reports the disabled timeline's trip time as the standard estimate (%s)",
+    (mode) => {
+      const disabled = createMockSession(modeRequest("DISABLED"));
+
+      expect(createMockSession(modeRequest(mode)).route.estimated_standard_time_sec).toBe(
+        Math.round(disabled.timeline.tripSeconds),
+      );
+    },
+  );
+
   it("never dispatches or activates a corridor when disabled, even with cascade", () => {
     const { ticks, dispatches } = runToCompletion(createMockSession(modeRequest("DISABLED")));
 
@@ -135,15 +151,75 @@ describe("ER Green Wave mode in the mock", () => {
     expect(session.route.route_intersections.map((item) => item.cascade_targets)).toEqual([[], []]);
   });
 
-  // Density 1.5: INT-9001 is reached at ~104.1 s, in the all-red interval of the route group
-  // (RED); after its crossing INT-9002 is reached at ~167.4 s, on green.
-  const AMBULANCE_MPS = MOCK_REFERENCE_DISTANCE_METERS / MOCK_REFERENCE_GREENWAVE_SECONDS;
-  const CAUTIOUS_SECONDS = MOCK_STANDARD_CLEARANCE_SECONDS * 1.5;
-  const CROSSING_SECONDS =
-    MOCK_STANDARD_CROSSING_DISTANCE_M / MOCK_ORDINARY_SPEED_LIMIT_MPS + CAUTIOUS_SECONDS;
   const DENSITY = { traffic_density_multiplier: 1.5 };
+
+  it("slows before each junction in Green Wave mode and keeps the trip time", () => {
+    const session = createMockSession(modeRequest("ENABLED", DENSITY));
+    const { legs, tripSeconds } = session.timeline;
+    expect(tripSeconds).toBeCloseTo(MOCK_REFERENCE_GREENWAVE_SECONDS, 6);
+    for (const junction of session.route.route_intersections) {
+      const leg = legs.find(
+        (item) =>
+          Math.abs(
+            item.startMeters +
+              (item.endSeconds - item.startSeconds) * item.speedMps -
+              junction.distance_along_route_m,
+          ) < 1e-6,
+      );
+      expect(leg).toBeDefined();
+      expect(leg?.crossing).toBe(true);
+      expect(leg?.speedMps).toBeLessThan(AMBULANCE_MPS);
+      expect(leg?.speedMps).toBeGreaterThanOrEqual(MOCK_MIN_ROLLING_SPEED_MPS);
+    }
+  });
+
+  it("spends every D_min before arriving, whatever the route length", () => {
+    // Near the rolling floor the slowdown would outrun the destination; it is cut there.
+    for (let meters = 20; meters <= 3000; meters += 5) {
+      const request = modeRequest("ENABLED", {
+        ...DENSITY,
+        destination: { lat: 0, lng: meters / 111_320 },
+      });
+      const expected = estimateMockRoute(
+        request.origin,
+        request.destination,
+        request.traffic_density_multiplier,
+      ).greenwaveSeconds;
+      expect(createMockSession(request).timeline.tripSeconds).toBeCloseTo(expected, 6);
+    }
+  });
+
+  it("never reports 0 km/h in Green Wave mode", () => {
+    const { ticks } = runToCompletion(createMockSession(modeRequest("ENABLED", DENSITY)));
+    const driving = ticks.filter((tick) => tick.ambulance.status !== "ARRIVED");
+    expect(driving.length).toBeGreaterThan(0);
+    for (const tick of driving) expect(tick.ambulance.speed_kmh).toBeGreaterThan(0);
+  });
+
+  // Open road (both modes) at the ambulance speed: the Green Wave estimate minus its D_min.
+  const AMBULANCE_MPS =
+    MOCK_REFERENCE_DISTANCE_METERS /
+    (MOCK_REFERENCE_GREENWAVE_SECONDS - 2 * MOCK_MIN_INTERSECTION_DELAY_SECONDS);
+  const LIMIT_MPS = Math.min(AMBULANCE_MPS, MOCK_ORDINARY_SPEED_LIMIT_MPS);
+  // 35 s x 1.5 is capped; the crossing then extends so the speed stays at the floor.
+  const CAUTIOUS_SECONDS = Math.min(
+    MOCK_STANDARD_CLEARANCE_SECONDS * 1.5,
+    MOCK_STANDARD_MAX_RED_LOSS_SECONDS,
+  );
+  const CROSSING_M = Math.max(
+    MOCK_STANDARD_CROSSING_DISTANCE_M,
+    CAUTIOUS_SECONDS / (1 / MOCK_STANDARD_MIN_ROLLING_SPEED_MPS - 1 / LIMIT_MPS),
+  );
+  const CROSSING_SECONDS = CROSSING_M / LIMIT_MPS + CAUTIOUS_SECONDS;
   const FIRST_REACH_SECONDS =
     (MOCK_SAMPLE_INTERSECTIONS[0].routeFraction * MOCK_REFERENCE_DISTANCE_METERS) / AMBULANCE_MPS;
+  const SECOND_REACH_SECONDS =
+    FIRST_REACH_SECONDS +
+    CROSSING_SECONDS +
+    ((MOCK_SAMPLE_INTERSECTIONS[1].routeFraction - MOCK_SAMPLE_INTERSECTIONS[0].routeFraction) *
+      MOCK_REFERENCE_DISTANCE_METERS -
+      CROSSING_M) /
+      AMBULANCE_MPS;
 
   it("keeps the open road identical and adds the cautious time only at a red crossing", () => {
     const enabled = runToCompletion(createMockSession(modeRequest("ENABLED", DENSITY)));
@@ -151,10 +227,11 @@ describe("ER Green Wave mode in the mock", () => {
 
     // Before the first sample intersection (~104 s) both vehicles are in the same place.
     expect(disabled.ticks[60].ambulance.position).toEqual(enabled.ticks[60].ambulance.position);
+    // The capped crossing leaves INT-9001 early enough to reach INT-9002 on red as well.
     const trip =
-      MOCK_REFERENCE_GREENWAVE_SECONDS +
-      CROSSING_SECONDS -
-      MOCK_STANDARD_CROSSING_DISTANCE_M / AMBULANCE_MPS; // INT-9002 is green: no second penalty
+      MOCK_REFERENCE_GREENWAVE_SECONDS -
+      2 * MOCK_MIN_INTERSECTION_DELAY_SECONDS +
+      2 * (CROSSING_SECONDS - CROSSING_M / AMBULANCE_MPS);
     const disabledArrival = disabled.ticks.findIndex((tick) => tick.ambulance.status === "ARRIVED");
     expect(disabled.ticks[disabledArrival].kpi_metrics.total_time_elapsed_sec).toBe(
       Math.round(trip),
@@ -164,20 +241,28 @@ describe("ER Green Wave mode in the mock", () => {
     );
   });
 
+  it("never drops below the standard floor in a disabled mock run", () => {
+    const { legs } = createMockSession(modeRequest("DISABLED", DENSITY)).timeline;
+    expect(legs.some((leg) => leg.crossing)).toBe(true);
+    for (const leg of legs) {
+      expect(leg.speedMps).toBeGreaterThanOrEqual(MOCK_STANDARD_MIN_ROLLING_SPEED_MPS - 1e-9);
+    }
+  });
+
   it("rolls through a red crossing at a positive speed no faster than the ordinary limit", () => {
     const { ticks } = runToCompletion(createMockSession(modeRequest("DISABLED", DENSITY)));
     const crossing = ticks.filter((tick) => tick.ambulance.status === "CROSSING_INTERSECTION");
 
-    // Only INT-9001's crossing: whole ticks between reaching it and leaving it.
-    expect(crossing.map((tick) => tick.kpi_metrics.total_time_elapsed_sec)).toEqual(
+    // INT-9001's and INT-9002's crossings: whole ticks between reaching each and leaving it.
+    const wholeTicks = (reach: number) =>
       Array.from(
-        {
-          length:
-            Math.ceil(FIRST_REACH_SECONDS + CROSSING_SECONDS) - Math.ceil(FIRST_REACH_SECONDS),
-        },
-        (_, index) => Math.ceil(FIRST_REACH_SECONDS) + index,
-      ),
-    );
+        { length: Math.ceil(reach + CROSSING_SECONDS) - Math.ceil(reach) },
+        (_, index) => Math.ceil(reach) + index,
+      );
+    expect(crossing.map((tick) => tick.kpi_metrics.total_time_elapsed_sec)).toEqual([
+      ...wholeTicks(FIRST_REACH_SECONDS),
+      ...wholeTicks(SECOND_REACH_SECONDS),
+    ]);
     for (const [index, tick] of crossing.entries()) {
       expect(tick.ambulance.speed_kmh).toBeGreaterThan(0);
       expect(tick.ambulance.speed_kmh).toBeLessThanOrEqual(MOCK_ORDINARY_SPEED_LIMIT_MPS * 3.6);
@@ -358,8 +443,11 @@ describe("route-specific geometry and motion", () => {
     const disabled = runToCompletion(
       createMockSession({ ...request, green_wave_mode: "DISABLED" }),
     );
-    const firstReach = (distance * (1480 / 5400)) / (5400 / 380);
-    for (let index = 0; index + 1 < firstReach; index += 1) {
+    // Identical until the Green Wave run starts slowing for the first junction.
+    const greenwave = (distance * 380) / 5400;
+    const openRoadSeconds = greenwave - 2 * Math.min(3, greenwave / 4);
+    const slowdownStart = Math.max(0, distance * (1480 / 5400) - 60) / (distance / openRoadSeconds);
+    for (let index = 0; index + 1 < slowdownStart; index += 1) {
       expect(disabled.ticks[index].ambulance).toMatchObject({
         position: enabled.ticks[index].ambulance.position,
         speed_kmh: enabled.ticks[index].ambulance.speed_kmh,

@@ -17,7 +17,15 @@ const STATION: Station = {
 const RANK: DispatchRankResponse = {
   schema_version: "1.0",
   incident_snapped: { position: { lat: 50.0617, lng: 19.9373 }, snap_distance_m: 4.2 },
-  candidates: [{ station: STATION, greenwave_seconds: 309.4, distance_m: 3290 }],
+  candidates: [
+    {
+      station: STATION,
+      greenwave_seconds: 309.4,
+      standard_seconds: 372.6,
+      distance_m: 3290,
+      on_site: false,
+    },
+  ],
   station_at_incident: null,
 };
 
@@ -62,6 +70,7 @@ describe("createBackendDispatchAdapter", () => {
     const request = {
       incident: { lat: 50.0617, lng: 19.9373 },
       vehicle_type: "FIRE_TRUCK" as const,
+      traffic_density_multiplier: 1,
     };
 
     await expect(adapter.rank(request)).resolves.toEqual(RANK);
@@ -82,7 +91,11 @@ describe("createBackendDispatchAdapter", () => {
   ])("rejects a ranking with %s", async (_name, body) => {
     respond(200, body);
     const error = await adapter
-      .rank({ incident: { lat: 50, lng: 19.9 }, vehicle_type: "FIRE_TRUCK" })
+      .rank({
+        incident: { lat: 50, lng: 19.9 },
+        vehicle_type: "FIRE_TRUCK",
+        traffic_density_multiplier: 1,
+      })
       .catch((e) => e);
     expect(error).toBeInstanceOf(SimulationAdapterError);
     expect(error.kind).toBe("http");
@@ -93,7 +106,11 @@ describe("createBackendDispatchAdapter", () => {
     async (code) => {
       respond(422, { schema_version: "1.0", error_code: code, message: "nope" });
       const error = await adapter
-        .rank({ incident: { lat: 50, lng: 19.9 }, vehicle_type: "AMBULANCE" })
+        .rank({
+          incident: { lat: 50, lng: 19.9 },
+          vehicle_type: "AMBULANCE",
+          traffic_density_multiplier: 1,
+        })
         .catch((e) => e);
       expect(error).toBeInstanceOf(SimulationAdapterError);
       expect(error.code).toBe(code);
@@ -149,7 +166,11 @@ it("captures the full wire envelope and error JSON without changing validation",
     capture: { method: "GET", path: "/api/v1/stations", status: 200, responseBody: text },
   });
   respond(422, { detail: [{ msg: "invalid destination" }] });
-  const request = { incident: { lat: 50.06, lng: 19.94 }, vehicle_type: "FIRE_TRUCK" as const };
+  const request = {
+    incident: { lat: 50.06, lng: 19.94 },
+    vehicle_type: "FIRE_TRUCK" as const,
+    traffic_density_multiplier: 1,
+  };
   await expect(adapter.rank(request)).rejects.toBeInstanceOf(SimulationAdapterError);
   expect(diagnosticStore.getSnapshot().at(-1)).toMatchObject({
     outcome: "failure",

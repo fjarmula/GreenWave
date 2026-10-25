@@ -15,18 +15,28 @@ export const MOCK_PRIORITY_GREEN_TTI_SECONDS = 25;
 export const MOCK_RECOVERY_SECONDS = 15;
 export const MOCK_MIN_HOLD_SECONDS = 40;
 export const MOCK_HOLD_BUFFER_SECONDS = 5;
+// Mirrors of the backend's ER Green Wave D_min slowdown (simulation/motion.py): D_min is spent
+// rolling over the approach to each junction, never below the floor, never as a stop.
+export const MOCK_MIN_INTERSECTION_DELAY_SECONDS = 3;
+export const MOCK_GREENWAVE_APPROACH_DISTANCE_M = 60;
+export const MOCK_MIN_ROLLING_SPEED_MPS = 15 / 3.6;
 
 // Mirrors of the backend's PoC signal programme and ER Green Wave disabled crossing, used only by
 // the mock: two movement groups (green, yellow, all-red). Facing a red or yellow route movement,
-// a disabled vehicle rolls MOCK_STANDARD_CROSSING_DISTANCE_M at no more than the synthetic
-// ordinary limit, spreading the default signalised-junction delay x traffic density over it; on
-// green it drives on (no priority, no dispatch). Synthetic values, not route data.
+// a disabled vehicle rolls at no more than the synthetic ordinary limit, spreading the default
+// signalised-junction delay x traffic density (capped at MOCK_STANDARD_MAX_RED_LOSS_SECONDS) over
+// at least MOCK_STANDARD_CROSSING_DISTANCE_M, extended so it never drops below
+// MOCK_STANDARD_MIN_ROLLING_SPEED_MPS; on green it drives on (no priority, no dispatch). The
+// backend scales the loss by the seconds until green; the mock uses the fixed delay as that wait
+// (contract level, it has no seconds-until-green helper). Synthetic values, not route data.
 export const MOCK_SIGNAL_GREEN_SECONDS = 30;
 export const MOCK_SIGNAL_YELLOW_SECONDS = 3;
 export const MOCK_SIGNAL_ALL_RED_SECONDS = 2;
 export const MOCK_STANDARD_CLEARANCE_SECONDS = 35;
 export const MOCK_STANDARD_CROSSING_DISTANCE_M = 30;
 export const MOCK_ORDINARY_SPEED_LIMIT_MPS = 50 / 3.6;
+export const MOCK_STANDARD_MIN_ROLLING_SPEED_MPS = 10 / 3.6;
+export const MOCK_STANDARD_MAX_RED_LOSS_SECONDS = 15;
 
 /** Synthetic junctions projected at fixed fractions of each straight mock line. */
 export const MOCK_SAMPLE_INTERSECTIONS: ReadonlyArray<

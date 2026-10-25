@@ -80,6 +80,14 @@ describe("parseStartResponse", () => {
       (c: Record<string, unknown>) => (c.estimated_greenwave_time_sec = JSON.parse("1e999")),
     ],
     [
+      "a non-finite standard estimate",
+      (c: Record<string, unknown>) => (c.estimated_standard_time_sec = JSON.parse("1e999")),
+    ],
+    [
+      "a missing standard estimate",
+      (c: Record<string, unknown>) => delete c.estimated_standard_time_sec,
+    ],
+    [
       "a route intersection without a position",
       (c: Record<string, unknown>) =>
         delete record((c.route_intersections as unknown[])[0]).position,
@@ -359,6 +367,7 @@ describe("on-foot legs", () => {
           position: { lat: 50.05, lng: 19.9 },
         },
         greenwave_seconds: 140,
+        standard_seconds: 190,
         distance_m: 2000,
         ...(onFoot === undefined ? {} : { on_foot: onFoot }),
       },
@@ -366,10 +375,29 @@ describe("on-foot legs", () => {
     station_at_incident: null,
   });
 
+  it("defaults a missing candidate on_site to false and rejects a non-boolean one", () => {
+    expect(validateRank(wire(rank())).candidates[0].on_site).toBe(false);
+    const onSite = record(wire(rank()));
+    record((onSite.candidates as unknown[])[0]).on_site = true;
+    expect(validateRank(onSite).candidates[0].on_site).toBe(true);
+    record((onSite.candidates as unknown[])[0]).on_site = "yes";
+    expect(() => validateRank(onSite)).toThrow("candidates[0].on_site");
+  });
+
   it("accepts rank candidates with a missing, null or valid on_foot", () => {
     for (const leg of [undefined, null, LEG]) {
       expect(() => validateRank(wire(rank(leg)))).not.toThrow();
     }
+  });
+
+  it.each([
+    ["missing", undefined],
+    ["non-finite", JSON.parse("1e999")],
+    ["negative", -1],
+  ])("rejects a %s candidate standard_seconds", (_label, value) => {
+    const body = record(wire(rank()));
+    record((body.candidates as unknown[])[0]).standard_seconds = value;
+    expect(() => validateRank(body)).toThrow("candidates[0].standard_seconds");
   });
 
   it("rejects a negative candidate on_foot distance", () => {

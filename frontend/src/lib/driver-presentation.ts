@@ -57,7 +57,7 @@ export function nextSignalCopy(signal: NextSignal): string {
 export function etaSeconds(route: SimulationStartResponse, tick: SimulationTickEvent | null) {
   const estimate =
     route.green_wave_mode === "DISABLED"
-      ? route.estimated_normal_time_sec
+      ? route.estimated_standard_time_sec
       : route.estimated_greenwave_time_sec;
   return Math.max(0, estimate - (tick?.kpi_metrics.total_time_elapsed_sec ?? 0));
 }

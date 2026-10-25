@@ -52,6 +52,10 @@ class RouteTrack:
             _polyline_offsets_m=_polyline_offsets_m(route.polyline_wgs84),
         )
 
+    @property
+    def edge_count(self) -> int:
+        return len(self._edge_ends_m)
+
     def edge_at(self, distance_m: float) -> int:
         """The first edge whose end lies strictly beyond ``distance_m``, else the last edge."""
         return min(bisect_right(self._edge_ends_m, distance_m), len(self._edge_ends_m) - 1)
@@ -65,6 +69,18 @@ class RouteTrack:
     def speed_limit_mps(self, index: int) -> float:
         """The edge's ordinary (unboosted) speed limit."""
         return self._speed_limits_mps[index]
+
+    def open_road_seconds(self, from_m: float, to_m: float) -> float:
+        """Seconds to drive ``from_m`` to ``to_m`` at each edge's ambulance speed; 0 if behind."""
+        seconds, distance = 0.0, from_m
+        while distance < to_m:
+            edge = self.edge_at(distance)
+            end = min(self._edge_ends_m[edge], to_m)
+            if end <= distance:  # beyond the last edge end
+                break
+            seconds += (end - distance) / self._speeds_mps[edge]
+            distance = end
+        return seconds
 
     def position_at(self, distance_m: float) -> Position:
         """The point at the same share of polyline length as ``distance_m`` of route distance.

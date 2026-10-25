@@ -15,6 +15,12 @@ class SimulationSettings(BaseSettings):
     priority_green_tti_seconds: float = Field(default=25, ge=0)
     recovery_hold_seconds: float = Field(default=15, ge=0)
     min_intersection_delay_seconds: float = Field(default=3, ge=0)
+    # APPROVED 2026-10-23 (human): ER Green Wave spends D_min as a rolling slowdown over this
+    # approach to each intersection's first stop line instead of a stop (simulation/motion.py).
+    greenwave_approach_distance_m: float = Field(default=60, gt=0, allow_inf_nan=False)
+    # APPROVED 2026-10-23 (human): the slowdown never drops below this; any D_min it cannot absorb
+    # before the line is spent past it at this speed, so the vehicle never stops for D_min.
+    greenwave_min_rolling_speed_kmh: float = Field(default=15, gt=0, allow_inf_nan=False)
     ambulance_speed_factor: float = Field(default=1.3, gt=0)
     ambulance_min_speed_kmh: float = Field(default=30, ge=0)
     ambulance_max_speed_kmh: float = Field(default=90, gt=0)
@@ -68,6 +74,12 @@ class SimulationSettings(BaseSettings):
     # red-light entry, life-corridor forming). Not measured Kraków geometry.
     standard_clearance_factor: float = Field(default=1.0, ge=0, allow_inf_nan=False)
     standard_crossing_distance_m: float = Field(default=30, gt=0, allow_inf_nan=False)
+    # PLACEHOLDER 2026-10-25 (human: roll a red crossing, never crawl): the crossing extends past
+    # standard_crossing_distance_m so the vehicle never drops below this speed there.
+    standard_min_rolling_speed_kmh: float = Field(default=10, gt=0, allow_inf_nan=False)
+    # PLACEHOLDER 2026-10-25 (human: roll a red crossing, never crawl): the most a red or yellow
+    # route movement adds to one crossing, whatever the wait for green.
+    standard_max_red_loss_seconds: float = Field(default=15, ge=0, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def priority_precedes_clearing(self) -> Self:

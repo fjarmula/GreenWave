@@ -16,7 +16,8 @@ import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import { settingsSummary } from "@/lib/driver-presentation";
 import type { PreviousRun } from "@/lib/previous-run";
 import type { DispatchSettings } from "@/lib/start-request";
-import { selectedCandidate, type IncidentDispatch } from "@/lib/useIncidentDispatch";
+import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
+import { isOnSite, pageCandidate, timeModeFor } from "@/lib/station-choice";
 
 export function canStartDispatch(dispatch: IncidentDispatch) {
   return dispatch.rankStatus === "ready" && (dispatch.ranking?.candidates.length ?? 0) > 0;
@@ -89,7 +90,14 @@ export function DriverSetupCard({
         className={`hud-primary pressable mt-3 ${pending ? "disabled:cursor-wait" : "disabled:cursor-not-allowed"}`}
       >
         <Zap className="size-4" aria-hidden />
-        {pending ? "Computing route…" : replacement ? "Replace active simulation" : startLabel}
+        {pending
+          ? "Computing route…"
+          : canStartDispatch(dispatch) &&
+              isOnSite(pageCandidate(dispatch, timeModeFor(settings.greenWaveMode, "simulation")))
+            ? "Dispatch on foot"
+            : replacement
+              ? "Replace active simulation"
+              : startLabel}
         <ArrowUpRight className="ml-auto size-4" aria-hidden />
       </button>
       {errorMessage && (
@@ -122,6 +130,7 @@ export function DriverSetupDetails({
 }) {
   const update = (patch: Partial<DispatchSettings>) => onSettingsChange({ ...settings, ...patch });
   const isMockTransport = getFrontendConfig().transport === "mock";
+  const timeMode = timeModeFor(settings.greenWaveMode, "simulation");
   const { incident, ranking } = dispatch;
   return (
     <section aria-label="Dispatch settings" className="driver-setup-details">
@@ -130,6 +139,7 @@ export function DriverSetupDetails({
         rankStatus={dispatch.rankStatus}
         rankError={dispatch.rankError}
         roadTimeRanking={capabilities.roadTimeRanking}
+        timeMode={timeMode}
         selectedStationId={dispatch.selectedStationId}
         onSelect={dispatch.selectStation}
       />
@@ -173,16 +183,17 @@ export function DriverSetupDetails({
         trafficDensity={settings.trafficDensity}
         origin={
           canStartDispatch(dispatch)
-            ? (selectedCandidate(dispatch)?.station.position ?? null)
+            ? (pageCandidate(dispatch, timeMode)?.station.position ?? null)
             : null
         }
         incident={incident?.position ?? null}
+        candidate={canStartDispatch(dispatch) ? pageCandidate(dispatch, timeMode) : null}
       />
       <p className="mt-5 flex items-center gap-2 text-2xs leading-relaxed text-muted-foreground">
         <ShieldCheck className="size-4 shrink-0 text-go" aria-hidden />
         {isMockTransport
           ? "Demo uses synthetic route estimates and sample signal telemetry."
-          : "Route estimates come from the simulation backend after initialization. All signal states are simulated."}
+          : "Route estimates come from the simulation backend. All signal states are simulated."}
       </p>
     </section>
   );

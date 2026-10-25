@@ -10,7 +10,7 @@ from greenwave.places.address_index import AddressIndex
 from greenwave.routing.errors import DestinationOffNetwork, NoStationReachable
 from greenwave.routing.network_index import RoutingIndex
 from greenwave.routing.planner import node_position
-from greenwave.routing.station_ranking import StationNode, rank_stations
+from greenwave.routing.station_ranking import RankedStation, StationNode, rank_stations
 from greenwave.schemas import (
     DispatchRankRequest,
     DispatchRankResponse,
@@ -75,6 +75,7 @@ def rank(body: DispatchRankRequest, request: Request) -> DispatchRankResponse | 
             body.incident,
             body.vehicle_type,
             cast(SimulationSettings, request.app.state.simulation_settings),
+            body.traffic_density_multiplier,
         )
     except DestinationOffNetwork as error:
         return error_response(422, ErrorCode.DESTINATION_OFF_NETWORK, str(error))
@@ -91,20 +92,36 @@ def rank(body: DispatchRankRequest, request: Request) -> DispatchRankResponse | 
             position=ranking.incident_snap.position,
             snap_distance_m=ranking.incident_snap.snap_distance_m,
         ),
-        candidates=[
-            RankedCandidate(
-                station=c.station,
-                greenwave_seconds=c.greenwave_seconds,
-                distance_m=c.distance_m,
-                on_foot=OnFootLeg(
-                    access_point=node_position(index, c.on_foot.node_key),
-                    distance_m=c.on_foot.on_foot_m,
-                    seconds=c.on_foot.on_foot_seconds,
-                )
-                if c.on_foot
-                else None,
-            )
-            for c in ranking.candidates
-        ],
-        station_at_incident=ranking.station_at_incident,
+        candidates=[_candidate(index, c) for c in ranking.candidates],
+        station_at_incident=None,  # deprecated: on-site stations are candidates (ADR 0012)
+    )
+
+
+def _candidate(index: RoutingIndex, c: RankedStation) -> RankedCandidate:
+    if c.on_site:
+        # No drive: the crew walks from the station itself.
+        return RankedCandidate(
+            station=c.station,
+            greenwave_seconds=0.0,
+            standard_seconds=0.0,
+            distance_m=0.0,
+            on_foot=OnFootLeg(
+                access_point=c.station.position,
+                distance_m=c.walk_m or 0.0,
+                seconds=c.walk_seconds or 0.0,
+            ),
+            on_site=True,
+        )
+    return RankedCandidate(
+        station=c.station,
+        greenwave_seconds=c.greenwave_seconds,
+        standard_seconds=c.standard_seconds,
+        distance_m=c.distance_m,
+        on_foot=OnFootLeg(
+            access_point=node_position(index, c.on_foot.node_key),
+            distance_m=c.on_foot.on_foot_m,
+            seconds=c.on_foot.on_foot_seconds,
+        )
+        if c.on_foot
+        else None,
     )

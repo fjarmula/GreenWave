@@ -265,6 +265,11 @@ export interface components {
         /** DispatchRankRequest */
         DispatchRankRequest: {
             incident: components["schemas"]["Position"];
+            /**
+             * Traffic Density Multiplier
+             * @default 1
+             */
+            traffic_density_multiplier: number;
             vehicle_type: components["schemas"]["VehicleType"];
         };
         /** DispatchRankResponse */
@@ -557,6 +562,13 @@ export interface components {
             /** Greenwave Seconds */
             greenwave_seconds: number;
             on_foot?: components["schemas"]["OnFootLeg"] | null;
+            /**
+             * On Site
+             * @default false
+             */
+            on_site: boolean;
+            /** Standard Seconds */
+            standard_seconds: number;
             station: components["schemas"]["Station"];
         };
         /** RouteGeometry */
@@ -702,6 +714,8 @@ export interface components {
             estimated_greenwave_time_sec: number;
             /** Estimated Normal Time Sec */
             estimated_normal_time_sec: number;
+            /** Estimated Standard Time Sec */
+            estimated_standard_time_sec: number;
             /** @default ENABLED */
             green_wave_mode: components["schemas"]["GreenWaveMode"];
             /** Intersections On Route */

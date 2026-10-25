@@ -139,7 +139,8 @@ Input: incident `Position`, `vehicle_type`.
 6. A station that snaps to the same node as the incident cannot be routed (`plan_route` raises
    `NoRoute`). It is left out of the candidates, and the response sets
    `station_at_incident: Station | null` to it. The UI shows "A station of this type is at this
-   location; dispatching from the next fastest." *Builder's call.*
+   location; dispatching from the next fastest." *Builder's call.* Superseded by ADR 0012: such a
+   station is an on-site candidate (walk only) and `station_at_incident` is always `null`.
 
 The shortlist cutoff is a speed shortcut. Because the per-intersection delay can change the order,
 it is approximate by design; a size of 5 keeps the risk small. Tests pin that the winner equals the

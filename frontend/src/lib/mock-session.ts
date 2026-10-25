@@ -1,12 +1,17 @@
 import { MockItsController, routeMovementColor, type MockSignal } from "./mock-its-controller";
 import {
   MOCK_CLEARING_TTI_SECONDS,
+  MOCK_GREENWAVE_APPROACH_DISTANCE_M,
   MOCK_HOLD_BUFFER_SECONDS,
+  MOCK_MIN_INTERSECTION_DELAY_SECONDS,
+  MOCK_MIN_ROLLING_SPEED_MPS,
   MOCK_MIN_HOLD_SECONDS,
   MOCK_ORDINARY_SPEED_LIMIT_MPS,
   MOCK_SAMPLE_INTERSECTIONS,
   MOCK_STANDARD_CLEARANCE_SECONDS,
   MOCK_STANDARD_CROSSING_DISTANCE_M,
+  MOCK_STANDARD_MAX_RED_LOSS_SECONDS,
+  MOCK_STANDARD_MIN_ROLLING_SPEED_MPS,
 } from "@/lib/mock-simulation-config";
 import { estimateMockRoute, type MockRouteMetrics } from "@/lib/mock-route-metrics";
 import { SimulationAdapterError } from "@/lib/transport/errors";
@@ -41,7 +46,7 @@ export type MockSession = {
   intervalStartSeconds: number;
 };
 
-/** One stretch driven at constant speed; `crossing` marks a disabled controlled crossing. */
+/** One stretch driven at constant speed; `crossing` marks a controlled crossing or D_min slowdown. */
 type MockLeg = {
   startSeconds: number;
   startMeters: number;
@@ -136,7 +141,7 @@ function createMockRoute(
     };
   });
 
-  return {
+  const route: SimulationStartResponse = {
     schema_version: "1.0",
     is_simulated: true,
     simulation_id: request.simulation_id,
@@ -145,6 +150,7 @@ function createMockRoute(
     total_distance_m: metrics.distanceMeters,
     estimated_normal_time_sec: Math.round(metrics.normalSeconds),
     estimated_greenwave_time_sec: Math.round(metrics.greenwaveSeconds),
+    estimated_standard_time_sec: 0,
     intersections_on_route: routeIntersections.map((intersection) => intersection.id),
     route_intersections: routeIntersections,
     origin_snapped: { position: request.origin, snap_distance_m: 0 },
@@ -152,6 +158,14 @@ function createMockRoute(
     green_wave_mode: request.green_wave_mode,
     its_scenario: request.its_scenario,
   };
+  // The backend's dry run of disabled motion: the mock's exact disabled timeline.
+  const standard = mockTimeline(
+    route,
+    { ...request, green_wave_mode: "DISABLED" },
+    metrics.greenwaveSeconds,
+  );
+  route.estimated_standard_time_sec = Math.round(standard.tripSeconds);
+  return route;
 }
 
 /** Rolling cautious speed: the ordinary limit plus the remaining extra time per metre. */
@@ -160,9 +174,26 @@ function cautiousSpeedMps(limitMps: number, remainingMeters: number, extraSecond
 }
 
 /**
+ * `[length, extra]` of a standard red crossing, the backend's `standard_crossing` with the fixed
+ * delay as the wait: the loss is capped and the crossing extends so it never drops below the floor.
+ */
+function standardCrossing(limitMps: number, density: number): [number, number] {
+  const floor = MOCK_STANDARD_MIN_ROLLING_SPEED_MPS;
+  if (limitMps <= floor) return [MOCK_STANDARD_CROSSING_DISTANCE_M, 0];
+  const extra = Math.min(
+    MOCK_STANDARD_CLEARANCE_SECONDS * density,
+    MOCK_STANDARD_MAX_RED_LOSS_SECONDS,
+  );
+  return [Math.max(MOCK_STANDARD_CROSSING_DISTANCE_M, extra / (1 / floor - 1 / limitMps)), extra];
+}
+
+/**
  * The whole drive, precomputed: open road at the ambulance speed and, with ER Green Wave disabled,
  * a controlled crossing wherever the route movement is red or yellow on reaching a stop line. The
  * backend's rolling formula at contract level; a later stop line replaces an active crossing.
+ * Enabled spends each junction's D_min as the backend does: a rolling slowdown over the approach
+ * (never before the previous junction), extended past the line to respect the floor, so the trip
+ * still takes `greenwaveSeconds` and the vehicle never stops.
  */
 function mockTimeline(
   route: SimulationStartResponse,
@@ -170,23 +201,48 @@ function mockTimeline(
   greenwaveSeconds: number,
 ): MockTimeline {
   const total = route.total_distance_m;
-  // Keep subsecond precision internally; the public estimate contract uses whole seconds.
-  const ambulanceMps = total / greenwaveSeconds;
   const stops = route.route_intersections.map((item) => item.distance_along_route_m);
+  const enabled = request.green_wave_mode !== "DISABLED";
+  // The synthetic estimate includes D_min per junction; the open road is driven without it. A
+  // tiny synthetic route caps it so the open road keeps at least half the estimate.
+  const delay = stops.length
+    ? Math.min(MOCK_MIN_INTERSECTION_DELAY_SECONDS, greenwaveSeconds / (2 * stops.length))
+    : 0;
+  // Keep subsecond precision internally; the public estimate contract uses whole seconds.
+  const ambulanceMps = total / (greenwaveSeconds - stops.length * delay);
   const legs: MockLeg[] = [];
   const reachSeconds: number[] = [];
-  let [seconds, meters, crossing, cautious] = [0, 0, 0, 0];
+  let [seconds, meters, crossing, cautious, slowed] = [0, 0, 0, 0, 0];
   while (meters < total) {
     const next = stops[reachSeconds.length];
+    let windowStart = Infinity;
+    if (enabled && next !== undefined && slowed === reachSeconds.length) {
+      windowStart = Math.max(stops[slowed - 1] ?? 0, next - MOCK_GREENWAVE_APPROACH_DISTANCE_M);
+      if (meters >= windowStart) {
+        windowStart = Infinity;
+        slowed += 1;
+        const needed =
+          ambulanceMps > MOCK_MIN_ROLLING_SPEED_MPS
+            ? delay / (1 / MOCK_MIN_ROLLING_SPEED_MPS - 1 / ambulanceMps)
+            : 0;
+        crossing += Math.max(next - meters, needed);
+        cautious += delay;
+      }
+    }
     const speedMps =
       crossing > 0
         ? cautiousSpeedMps(
-            Math.min(ambulanceMps, MOCK_ORDINARY_SPEED_LIMIT_MPS),
+            enabled ? ambulanceMps : Math.min(ambulanceMps, MOCK_ORDINARY_SPEED_LIMIT_MPS),
             crossing,
             cautious,
           )
         : ambulanceMps;
-    const end = Math.min(total, next ?? Infinity, crossing > 0 ? meters + crossing : Infinity);
+    const end = Math.min(
+      total,
+      next ?? Infinity,
+      windowStart,
+      crossing > 0 ? meters + crossing : Infinity,
+    );
     const endSeconds = seconds + (end - meters) / speedMps;
     legs.push({
       startSeconds: seconds,
@@ -203,9 +259,15 @@ function mockTimeline(
     [seconds, meters] = [endSeconds, end];
     if (meters === next) {
       reachSeconds.push(seconds);
-      const red = request.green_wave_mode === "DISABLED" && routeMovementColor(seconds) !== "GREEN";
-      crossing = red ? MOCK_STANDARD_CROSSING_DISTANCE_M : 0;
-      cautious = red ? MOCK_STANDARD_CLEARANCE_SECONDS * request.traffic_density_multiplier : 0;
+      if (!enabled) {
+        const red = routeMovementColor(seconds) !== "GREEN";
+        [crossing, cautious] = red
+          ? standardCrossing(
+              Math.min(ambulanceMps, MOCK_ORDINARY_SPEED_LIMIT_MPS),
+              request.traffic_density_multiplier,
+            )
+          : [0, 0];
+      }
     }
   }
   return { legs, reachSeconds, tripSeconds: seconds };
