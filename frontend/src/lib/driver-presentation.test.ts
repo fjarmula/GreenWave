@@ -104,7 +104,7 @@ describe("copy", () => {
         playbackSpeed: 1,
         greenWaveMode: "ENABLED",
       }),
-    ).toBe("Traffic 1.5× · Cascade on · 1× speed");
+    ).toBe("Traffic 1.5× · Cascade on · 1× speed · ITS Nominal");
     expect(
       settingsSummary({
         trafficDensity: 1,
@@ -112,7 +112,7 @@ describe("copy", () => {
         playbackSpeed: 10,
         greenWaveMode: "ENABLED",
       }),
-    ).toBe("Traffic 1× · Cascade off · 10× speed");
+    ).toBe("Traffic 1× · Cascade off · 10× speed · ITS Nominal");
   });
 });
 

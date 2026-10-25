@@ -81,6 +81,7 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
   function rank(patch: Partial<IncidentDispatchState>) {
     inFlight?.abort();
     inFlight = null;
+    const current = ++sequence;
     const next = { ...state, ...patch };
     if (next.incident === null) {
       update({
@@ -92,7 +93,6 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
       });
       return;
     }
-    const current = ++sequence;
     const controller = new AbortController();
     inFlight = controller;
     update({

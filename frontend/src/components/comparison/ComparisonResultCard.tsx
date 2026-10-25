@@ -2,7 +2,8 @@ import { RotateCcw } from "lucide-react";
 import { formatMinutesSeconds } from "@/lib/format-duration";
 import type { LiveComparisonState } from "@/lib/comparison/live-comparison";
 import { comparisonResult, type ComparisonMode } from "@/lib/comparison/race";
-import { RUN_STATUS_LABELS, runStatusKey } from "@/lib/simulation-copy";
+import { formatSignalDistance } from "@/lib/driver-presentation";
+import { formatDuration, RUN_STATUS_LABELS, runStatusKey } from "@/lib/simulation-copy";
 import type { SimulationState } from "@/lib/simulation-state";
 import { MODE_LABELS, MODE_TONES } from "./ComparisonLivePane";
 
@@ -42,7 +43,11 @@ export function ComparisonResultCard({
       {state.reason && <p className="mt-1 text-sm text-muted-foreground">{state.reason}</p>}
       {result && (
         <p className={`comparison-delta mt-4 ${tone}`}>
-          <span className="hud-stat-label">Actual travel-time difference</span>
+          <span className="hud-stat-label">
+            {route?.destination_on_foot
+              ? "Actual drive-time difference"
+              : "Actual travel-time difference"}
+          </span>
           <span className="hud-value block text-4xl font-semibold">
             {formatMinutesSeconds(Math.abs(result.delta))}
           </span>
@@ -50,15 +55,30 @@ export function ComparisonResultCard({
         </p>
       )}
       <dl className="comparison-result-runs">
-        {(["ENABLED", "DISABLED"] as ComparisonMode[]).map((mode) => (
-          <div key={mode} className={MODE_TONES[mode]}>
-            <dt>
-              <span aria-hidden className="comparison-chip-dot" />
-              {MODE_LABELS[mode]}
-            </dt>
-            <dd className="hud-value">{outcome(state.runs[mode])}</dd>
-          </div>
-        ))}
+        {(["ENABLED", "DISABLED"] as ComparisonMode[]).map((mode) => {
+          const run = state.runs[mode];
+          const walk = run.completion ? run.routeData?.destination_on_foot : null;
+          return (
+            <div key={mode} className={MODE_TONES[mode]}>
+              <dt>
+                <span aria-hidden className="comparison-chip-dot" />
+                {MODE_LABELS[mode]}
+              </dt>
+              <dd className="hud-value">{outcome(run)}</dd>
+              {walk && (
+                <dd>
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    Drive to access point
+                    <span className="block">
+                      On foot to incident (estimate): {formatSignalDistance(walk.distance_m)} ·{" "}
+                      {formatDuration(walk.seconds)}
+                    </span>
+                  </span>
+                </dd>
+              )}
+            </div>
+          );
+        })}
       </dl>
       {result && (
         <p className="mt-3 text-sm">
