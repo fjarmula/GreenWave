@@ -29,10 +29,13 @@ Amends ADR 0008's "existing max-TTI-plus-buffer calculation stays"; no renewal o
 and expiry stays a failed run.
 
 ```
-release_i = (last_stop_line_m_i − distance) / v_avg  +  D_min × k_i
+release_i = open_road(distance → last_stop_line_m_i)  +  D_min × k_i
 k_i       = count of unpassed route intersections j with first_stop_line_m_j ≤ first_stop_line_m_i
 hold      = max(its_min_hold_seconds, ceil(max_i release_i) + its_hold_buffer_seconds)
 ```
+`open_road` drives each route edge at its ambulance speed (`RouteTrack.open_road_seconds`).
+Amended 2026-10-25 (human): the first cut divided by `v_avg`, which overestimates a slower road
+ahead and left 9/40 sampled runs expiring.
 `expected_arrival_utc` is unchanged (nearest member, open-road TTI). The mock already uses its
 exact timeline and is unchanged.
 
@@ -42,8 +45,10 @@ At a route stop line whose ordinary movement is not GREEN (unchanged sampling ru
   for an unknown movement (`None`) `wait_s = D_u`.
 - Extra time `C = min(standard_clearance_factor × wait_s × μ, standard_max_red_loss_seconds)`.
 - Crossing length `L = max(standard_crossing_distance_m, C / (1/floor − 1/limit))` where
-  `limit` is the edge's ordinary limit at the line and `floor = standard_min_rolling_speed_kmh/3.6`.
-  If `limit ≤ floor`, `C = 0` (drive at the limit; it is already slow).
+  `limit` is the lowest ordinary limit over the edges the crossing covers (recomputed until
+  stable) and `floor = standard_min_rolling_speed_kmh/3.6`. If `limit ≤ floor`, `C = 0` (drive at
+  the limit; it is already slow). Amended 2026-10-25 (human): the first cut used the limit at the
+  line only, and a crossing running onto a slower edge dropped to 9.46 km/h.
 - New settings: `standard_min_rolling_speed_kmh = 10` (gt 0), `standard_max_red_loss_seconds = 15`
   (ge 0). Both finite. PoC assumptions, not measured values.
 - Mock mirrors this with a fixed `wait_s = MOCK_STANDARD_CLEARANCE_SECONDS` (it has no

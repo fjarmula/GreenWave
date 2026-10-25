@@ -134,18 +134,20 @@ Where $V_{\mathrm{ambulance}}(e) = \min(\max(1.3 \cdot V_e \cdot b(e),\; 30\text
 
 One edge-time function (`backend/src/greenwave/routing/edge_times.py`) drives route choice (minimum ambulance edge time), both estimates and simulated motion: on each edge the simulated ambulance moves at the effective speed $L_e / t_a(e)$ with $t_a(e) = L_e / V_{\mathrm{ambulance}}(e) + n_e \cdot s_{\mathrm{ambulance}}$, so calming seconds are spread over the edge and the simulated trip matches $T_{\mathrm{greenwave}}$, including a route ending exactly on a stop line. All factors are `GREENWAVE_SIM_*` settings; 1.0 / 0 s makes an attribute neutral.
 
-In the simulation the ambulance dwells $D_{\min}$ at each intersection's first controlled stop line and then leaves only once every route vehicle light at that line was last **shown** green (section 4, signal phases). Priority normally turns green long before, so this hold changes nothing; it only matters when priority is requested too late (for example a route that starts just before a junction), where the ambulance waits at the line instead of driving through red.
+In the simulation the ambulance never stops for $D_{\min}$: it spends it as a rolling slowdown over the `greenwave_approach_distance_m` (60 m) before each intersection's first controlled stop line (never before the previous one), at a constant reduced speed that adds exactly $D_{\min}$, never below `greenwave_min_rolling_speed_kmh` (15 km/h); when the window is too short the slowdown continues past the line, and it is cut at the destination, so the trip still takes $T_{\mathrm{greenwave}}$. A safety hold remains: at the first stop line the ambulance leaves only once every route vehicle light there was last **shown** green (section 4, signal phases). Priority normally turns green long before, so this hold changes nothing; it only matters when priority is requested too late (for example a route that starts just before a junction), where the ambulance waits at the line instead of driving through red (ADR 0010).
 
 #### 3. Standard-traffic crossing (ER Green Wave disabled)
 
 With `green_wave_mode: "DISABLED"` the route and the open-road motion are exactly those of model 2; only signalised stop lines are crossed differently. At **every** controlled stop line of the route (including lines inside a junction), the engine samples the simulated route movement colour (section 4, signal phases) at the exact simulated time the vehicle reaches the line:
 
 1. **`GREEN`:** the vehicle drives on at $V_{\mathrm{ambulance}}(e)$; no penalty.
-2. **`RED`, `YELLOW`, or no supported route vehicle signal:** the vehicle rolls one controlled crossing of $L_c$ = `standard_crossing_distance_m` (default 30 m) without stopping. Its extra cautious time $C_u = c \cdot D_u \cdot \mu_{\mathrm{traffic}}$ (cautious red-light entry while traffic forms a life corridor, $c$ = `standard_clearance_factor`, default 1.0) is spread over that distance: a segment of length $d$ on an edge with ordinary limit $v = \min(V_{\mathrm{ambulance}}(e), V_e)$ takes
+2. **`RED`, `YELLOW`, or no supported route vehicle signal:** the vehicle rolls one controlled crossing without stopping. Its extra cautious time (cautious red-light entry while traffic forms a life corridor) scales with the wait $w$ until that movement is next green in the ordinary programme ($w = D_u$ for an unknown movement), and is capped:
+   $$C = \min(c \cdot w \cdot \mu_{\mathrm{traffic}},\; C_{\max})$$
+   with $c$ = `standard_clearance_factor` (default 1.0) and $C_{\max}$ = `standard_max_red_loss_seconds` (default 15 s). The crossing is at least $L_c$ = `standard_crossing_distance_m` (default 30 m) long and extends so its speed never drops below $v_f$ = `standard_min_rolling_speed_kmh` (default 10 km/h): $L = \max(L_c,\; C / (1/v_f - 1/v_{\min}))$, where $v_{\min}$ is the lowest ordinary limit $\min(V_{\mathrm{ambulance}}(e), V_e)$ over the edges the crossing covers (recomputed until stable). If $v_{\min} \le v_f$ the crossing adds no extra time. $C$ is spread over $L$: a segment of length $d$ on an edge with ordinary limit $v$ takes
    $$\frac{d}{v} + C_{\mathrm{remaining}} \cdot \frac{d}{L_{\mathrm{remaining}}},$$
-   so the speed is positive, never above $v$, and carries across edge ends.
+   so the speed is at least $v_f$, never above $v$, and carries across edge ends.
 
-A later stop line replaces an active crossing with its own decision (a fresh crossing if it is not green). Each intersection's route signals share one cycle phase, so the lines of one through movement show the same colour. The crossing is a modelling boundary (the ETL has no junction exit geometry), and $c$, $L_c$ are PoC assumptions, not measured Kraków values; $L_c$ is strictly positive and both are finite. There is no separate disabled-mode estimate: the run's `total_time_elapsed_sec` is the exact simulated arrival, and `current_time_saved_sec` compares it with $T_{\mathrm{normal}}$ in either mode. Implementation: `backend/src/greenwave/simulation/motion.py`.
+A later stop line replaces an active crossing with its own decision (a fresh crossing if it is not green). Each intersection's route signals share one cycle phase, so the lines of one through movement show the same colour. The crossing is a modelling boundary (the ETL has no junction exit geometry), and $c$, $L_c$, $C_{\max}$, $v_f$ are PoC assumptions, not measured Kraków values; $L_c$ and $v_f$ are strictly positive and all are finite (ADR 0010). There is no separate disabled-mode estimate: the run's `total_time_elapsed_sec` is the exact simulated arrival, and `current_time_saved_sec` compares it with $T_{\mathrm{normal}}$ in either mode. Implementation: `backend/src/greenwave/simulation/motion.py`.
 
 ---
 
@@ -407,8 +409,8 @@ never leaves the marker behind the lights. The offline mock transport
 follows the same one-tick-per-simulated-second rule and intervals.
 Ambulance `status` is an enum of
 `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`;
-`CROSSING_INTERSECTION` covers, in an enabled run, the $D_{\min}$ dwell
-and any hold at a stop line and, in a disabled run, the whole controlled
+`CROSSING_INTERSECTION` covers, in an enabled run, the $D_{\min}$ rolling
+slowdown and any safety hold at a stop line and, in a disabled run, the whole controlled
 crossing. `speed_kmh` is the distance
 actually driven in that simulated second, including the arrival tick.
 
@@ -614,9 +616,12 @@ expiry wins. Recovery lasts 15 simulated seconds. Duplicates are idempotent;
 conflicting duplicate submissions are rejected and invalid feedback cannot refresh
 the deadline or regress the ledger.
 
-`hold_duration_sec = max(40, ceil(largest first-stop TTI at submission) + 5)`
-is enforced from submission, without renewal. Long multi-stop-line crossings or
-controller waits can exceed that estimate. Rejection, acknowledgement timeout and
+`hold_duration_sec = max(40, ceil(largest release time at submission) + 5)`
+is enforced from submission, without renewal. A target's release time is the open
+road to its **last** stop line at each edge's ambulance speed plus $D_{\min}$ for every
+unpassed route intersection up to and including it (ADR 0010), so a nominal run
+outlasts its rolling slowdowns and multi-line crossings; controller waits can still
+exceed it. Rejection, acknowledgement timeout and
 active expiry emit a final diagnostic tick then exactly one cancellation:
 ITS_REJECTED, ITS_TIMEOUT or ITS_HOLD_EXPIRED. They never emit successful completion.
 Stop, supersession, server error and completion close the controller idempotently.
@@ -649,15 +654,16 @@ The payload remains an illustrative internal contract, not a city ITS protocol:
     "vehicle_type": "AMBULANCE",
     "intersections_group": ["INT-0361", "INT-0367"],
     "action": "FORCE_GREEN_PHASE",
-    "hold_duration_sec": 55,
+    "hold_duration_sec": 61,
     "expected_arrival_utc": "2026-10-25T14:32:38Z"
   }
 }
 ```
 
-Here INT-0361 has TTI 40 s and its cascaded neighbour INT-0367 has TTI
-50 s: the hold is `max(40, 50 + 5) = 55`. `hold_duration_sec` is never
-below 40.
+Here INT-0361 has TTI 40 s and its cascaded neighbour INT-0367 is 50 s
+of open road from its last stop line, with both unpassed: its release time
+is `50 + 2 x 3 = 56` s and the hold is `max(40, 56 + 5) = 61`.
+`hold_duration_sec` is never below 40.
 
 ---
 
@@ -690,7 +696,7 @@ physical traffic signal states.
 
 All previously open questions have been resolved and approved:
 
-1. **State machine:** Intersection `state` is strictly `NORMAL | CLEARING | PRIORITY_GREEN | RECOVERY`, with `is_cascade: bool` as a separate field. Transitions occur at $\mathrm{TTI} \le 40\text{ s}$ (`CLEARING`), $\mathrm{TTI} \le 25\text{ s}$ (`PRIORITY_GREEN`), $d_i \le 0\text{ m}$ once the vehicle has left the last stop line and the tick carrying it across has been shown (`RECOVERY`, section 4, rule 3), and $+15\text{ s}$ (`NORMAL`). Cascade is one hop only (section 4, rule 1). `CLEARING_CASCADE` is not a state. `hold_duration_sec = max(40, ceil(TTI at dispatch) + its_hold_buffer_seconds)` with `its_hold_buffer_seconds = 5` (section 4, Phase 3).
+1. **State machine:** Intersection `state` is strictly `NORMAL | CLEARING | PRIORITY_GREEN | RECOVERY`, with `is_cascade: bool` as a separate field. Transitions occur at $\mathrm{TTI} \le 40\text{ s}$ (`CLEARING`), $\mathrm{TTI} \le 25\text{ s}$ (`PRIORITY_GREEN`), $d_i \le 0\text{ m}$ once the vehicle has left the last stop line and the tick carrying it across has been shown (`RECOVERY`, section 4, rule 3), and $+15\text{ s}$ (`NORMAL`). Cascade is one hop only (section 4, rule 1). `CLEARING_CASCADE` is not a state. `hold_duration_sec = max(40, ceil(release time at dispatch) + its_hold_buffer_seconds)` with `its_hold_buffer_seconds = 5`; the release time covers the open road to the target's last stop line and every $D_{\min}$ up to it (section 4, Phase 3; ADR 0010).
 2. **Identifiers:** All endpoints, telemetry ticks, and mock ITS payloads use the ETL's `INT-0001`..`INT-0535` IDs (`intersection_ids.json`). No `MSIP-SIG-*` IDs are used.
 3. **Contract completeness:** `simulation_id`, `schema_version: "1.0"`, and `is_simulated: true` are included in all responses and ticks; streaming uses SSE (`GET /api/v1/simulation/{simulation_id}/stream`) with a cancel endpoint (`POST /api/v1/simulation/{simulation_id}/stop`); one active operation (a run or a lockstep comparison pair, ADR 0008) is supported at a time; ambulance `status` is `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`; `traffic_density_multiplier` is bounded to `[1.0, 3.0]`.
 4. **ITS feedback (Phase 3):** A per-run deterministic simulated controller owns decisions and reported phases. Dispatch alone never confirms green (proposed ADR 0008).
