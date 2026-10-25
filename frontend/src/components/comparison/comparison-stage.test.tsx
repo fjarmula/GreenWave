@@ -135,3 +135,34 @@ it("shows a failed member immediately while the baseline keeps running", () => {
   expect(html).not.toMatch(/Green Wave ahead by/);
   expect(html).toContain('data-testid="comparison-stop"');
 });
+
+it("does not claim a remaining run is pending after both members stopped", () => {
+  const html = render({
+    ...running,
+    status: "finished",
+    runs: {
+      ENABLED: { ...running.runs.ENABLED, simulationState: "CANCELLED", cancelReason: "STOPPED" },
+      DISABLED: { ...running.runs.DISABLED, simulationState: "CANCELLED", cancelReason: "STOPPED" },
+    },
+  });
+  expect(html).not.toContain("waiting for remaining run");
+  expect(html).toContain("Comparison stopped");
+});
+
+it("labels a physically arrived member while its signals are recovering", () => {
+  const on = running.runs.ENABLED;
+  const html = render({
+    ...running,
+    runs: {
+      ...running.runs,
+      ENABLED: {
+        ...on,
+        liveTelemetry: {
+          ...on.liveTelemetry!,
+          ambulance: { ...on.liveTelemetry!.ambulance, status: "ARRIVED" },
+        },
+      },
+    },
+  });
+  expect(html).toContain("Arrived");
+});

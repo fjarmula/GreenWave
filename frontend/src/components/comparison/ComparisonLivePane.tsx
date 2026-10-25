@@ -2,7 +2,7 @@ import { MapContainer } from "@/components/map/MapContainer";
 import { formatSignalDistance } from "@/lib/driver-presentation";
 import { cancelReasonLabel, vehicleSpeedPresentation } from "@/lib/simulation-copy";
 import { isTelemetryStale, type SimulationState } from "@/lib/simulation-state";
-import type { ComparisonMode } from "@/lib/comparison/race";
+import { arrivalTimeSeconds, type ComparisonMode } from "@/lib/comparison/race";
 
 export const MODE_LABELS: Record<ComparisonMode, string> = {
   ENABLED: "Green Wave",
@@ -68,7 +68,7 @@ export function ComparisonLivePane({
               ? cancelReasonLabel(run.cancelReason)
               : run.simulationState === "ERROR"
                 ? "Telemetry stopped"
-                : run.simulationState === "FINISHED"
+                : arrivalTimeSeconds(run) !== null
                   ? "Arrived"
                   : stale
                     ? "Reconnecting…"

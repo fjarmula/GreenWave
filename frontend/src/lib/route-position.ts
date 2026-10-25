@@ -58,6 +58,19 @@ function project(route: RouteGeometry, point: LngLat) {
   return best;
 }
 
+/** Sum every segment, including routes whose endpoint crosses an earlier segment. */
+export function routeLengthMeters(route: RouteGeometry): number {
+  if (route.coordinates.length < 2) return 0;
+  const { toMeters } = projector(route);
+  let total = 0;
+  for (let index = 1; index < route.coordinates.length; index += 1) {
+    const a = toMeters(route.coordinates[index - 1]);
+    const b = toMeters(route.coordinates[index]);
+    total += Math.hypot(b[0] - a[0], b[1] - a[1]);
+  }
+  return total;
+}
+
 /** Metres along the route to the point's projection, or null without a usable route. */
 export function distanceAlongRoute(route: RouteGeometry, point: LngLat): number | null {
   if (route.coordinates.length < 2) return null;
