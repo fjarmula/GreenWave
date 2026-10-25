@@ -108,3 +108,18 @@ Local backend + frontend (`NEXT_PUBLIC_SIMULATION_TRANSPORT=backend`), Chromium:
   `driver-presentation.test.ts`.
 
 Scripts (ignored): `.tmp/playwright/mode-estimates/`.
+
+### Review fix pass (opus reviewer, human-approved decision on the default pick)
+
+- `189c690`: the backend pre-flight reads "NO TIME SAVED" and `+{slower}` when the standard
+  run is the shorter one (it printed `−-1m -26s` in the "go" colour).
+- `312dd7f`: with no explicit pick, each page defaults to the station its own order marks
+  "Fastest" (list, map, pre-flight, start); spec D4 and ADR 0011 amended.
+- `13b21da`: a density change re-ranks 250 ms after the slider settles and keeps the pick.
+- Browser (Floriańska 1, standard page): the checked row is the "Fastest" row; twelve arrow-key
+  steps on the density slider sent one rank request (2.7) and kept the third-row pick.
+- Deferred minors: the ranking dry-runs all 5 shortlisted stations though 3 are returned; the
+  API density test is not density-sensitive at the default cap; the provider's density effect
+  has no unit test; the comparison on-foot copy is not named in ADR 0011.
+- Checks: frontend 933 passed (87 files), lint, typecheck, format, build; backend unchanged
+  (1,297 passed).
