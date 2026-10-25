@@ -5,7 +5,9 @@ import {
   candidateDriveSeconds,
   candidateTotalSeconds,
   orderCandidates,
+  pageCandidate,
   runnerUpIds,
+  timeModeFor,
 } from "@/lib/station-choice";
 import { selectedCandidate } from "@/lib/useIncidentDispatch";
 import type { DispatchRankResponse, RankedCandidate } from "@/types/telemetry";
@@ -65,6 +67,42 @@ describe("candidateTotalSeconds", () => {
     expect(candidateDriveSeconds(offRoad, "GREENWAVE")).toBe(140);
     expect(candidateDriveSeconds(offRoad, "STANDARD")).toBe(200);
     expect(candidateTotalSeconds({ ...offRoad, on_foot: leg }, "STANDARD")).toBe(664);
+  });
+});
+
+describe("pageCandidate", () => {
+  const fast = { ...candidate("A", 50.01), greenwave_seconds: 100, standard_seconds: 300 };
+  const slow = { ...candidate("B", 50.02), greenwave_seconds: 150, standard_seconds: 200 };
+  const twoModes: DispatchRankResponse = { ...ranking, candidates: [fast, slow] };
+
+  it("defaults to the page mode's fastest", () => {
+    const pick = (mode: "GREENWAVE" | "STANDARD" | "BOTH") =>
+      pageCandidate({ ranking: twoModes, selectedStationId: null }, mode)?.station.station_id;
+    expect(pick("STANDARD")).toBe("B");
+    expect(pick("GREENWAVE")).toBe("A");
+    expect(pick("BOTH")).toBe("A");
+  });
+
+  it("keeps an explicit pick and ignores an unknown one", () => {
+    expect(
+      pageCandidate({ ranking: twoModes, selectedStationId: "A" }, "STANDARD")?.station.station_id,
+    ).toBe("A");
+    expect(
+      pageCandidate({ ranking: twoModes, selectedStationId: "gone" }, "STANDARD")?.station
+        .station_id,
+    ).toBe("B");
+    expect(pageCandidate({ ranking: null, selectedStationId: null }, "STANDARD")).toBeNull();
+  });
+
+  it("leaves the page pick out of the runners-up", () => {
+    expect(runnerUpIds(twoModes, null, "STANDARD")).toEqual(["A"]);
+    expect(runnerUpIds(twoModes, null, "GREENWAVE")).toEqual(["B"]);
+  });
+
+  it("maps a page to its time mode", () => {
+    expect(timeModeFor("DISABLED", "simulation")).toBe("STANDARD");
+    expect(timeModeFor("ENABLED", "simulation")).toBe("GREENWAVE");
+    expect(timeModeFor("DISABLED", "comparison")).toBe("BOTH");
   });
 });
 

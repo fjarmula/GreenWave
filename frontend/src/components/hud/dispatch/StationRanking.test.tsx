@@ -173,6 +173,24 @@ describe("StationRanking", () => {
     expect(markup).toContain("+200 s");
   });
 
+  it("checks the standard-fastest by default on the standard page", () => {
+    const [a, b] = RANKING.candidates;
+    const markup = render({
+      timeMode: "STANDARD",
+      ranking: {
+        ...RANKING,
+        candidates: [
+          { ...a, greenwave_seconds: 200, standard_seconds: 500 },
+          { ...b, greenwave_seconds: 250, standard_seconds: 300 },
+        ],
+      },
+    });
+    const checked = [...markup.matchAll(/<input[^>]*type="radio"[^>]*>/g)]
+      .filter(([input]) => /\schecked=""/.test(input))
+      .map(([input]) => /value="([^"]+)"/.exec(input)?.[1]);
+    expect(checked).toEqual([b.station.station_id]);
+  });
+
   it("shows both times on the comparison page", () => {
     const markup = render({ ranking: twoModes(), timeMode: "BOTH" });
     expect(markup).toContain("GW");

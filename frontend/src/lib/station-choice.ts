@@ -1,8 +1,17 @@
-import { selectedCandidate } from "@/lib/useIncidentDispatch";
-import type { DispatchRankResponse, RankedCandidate } from "@/types/telemetry";
+import type { IncidentDispatchState } from "@/lib/useIncidentDispatch";
+import type { DispatchRankResponse, GreenWaveMode, RankedCandidate } from "@/types/telemetry";
 
 /** Which time a page shows: its own run's, or both on the comparison page. */
 export type TimeMode = "GREENWAVE" | "STANDARD" | "BOTH";
+
+/** The comparison shows both runs; a single-run page shows its own mode's time. */
+export function timeModeFor(
+  greenWaveMode: GreenWaveMode,
+  intent: "simulation" | "comparison",
+): TimeMode {
+  if (intent === "comparison") return "BOTH";
+  return greenWaveMode === "DISABLED" ? "STANDARD" : "GREENWAVE";
+}
 
 /** The drive estimate of one mode: the green-wave run or the standard-traffic run. */
 export function candidateDriveSeconds(
@@ -31,12 +40,29 @@ export function orderCandidates(candidates: RankedCandidate[], mode: TimeMode): 
   );
 }
 
+/**
+ * The candidate a page starts from: the dispatcher's pick, else the fastest in the page's order
+ * (the comparison keeps the backend's first).
+ */
+export function pageCandidate(
+  state: Pick<IncidentDispatchState, "ranking" | "selectedStationId">,
+  mode: TimeMode,
+): RankedCandidate | null {
+  const candidates = state.ranking?.candidates ?? [];
+  return (
+    candidates.find((candidate) => candidate.station.station_id === state.selectedStationId) ??
+    orderCandidates(candidates, mode)[0] ??
+    null
+  );
+}
+
 /** Candidate IDs other than the resolved selection (`null` → the fastest), in ranking order. */
 export function runnerUpIds(
   ranking: DispatchRankResponse | null,
   selectedId: string | null,
+  mode: TimeMode = "BOTH",
 ): string[] {
-  const selected = selectedCandidate({ ranking, selectedStationId: selectedId });
+  const selected = pageCandidate({ ranking, selectedStationId: selectedId }, mode);
   return (ranking?.candidates ?? [])
     .filter((candidate) => candidate !== selected)
     .map((candidate) => candidate.station.station_id);

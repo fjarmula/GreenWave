@@ -32,7 +32,8 @@ Additive to contract v1; `schema_version` stays `"1.0"`.
   disabled run the KPI is labelled "vs normal traffic".
 - Frontend: the station list's time, order and "Fastest" chip follow the page's mode
   (`/simulation/standard` standard, comparison both in backend order, otherwise green wave);
-  the pick itself is unchanged. The backend pre-flight shows the selected candidate's standard
+  with no explicit pick the default station is that order's first (the one marked "Fastest"),
+  for the list, the map, the pre-flight and the start. The backend pre-flight shows the selected candidate's standard
   and green-wave times. A density change re-ranks (stale responses discarded). The disabled ETA
   counts down `estimated_standard_time_sec`. An off-road candidate reads
   `{drive} drive + {walk} on foot · {distance}` under its total; the driver ETA with an on-foot
@@ -44,8 +45,8 @@ Additive to contract v1; `schema_version` stays `"1.0"`.
   sample, at most 5 per rank). A start costs one.
 - Standard and green-wave times can be equal (a route that meets no red light), and standard
   can be shorter (it spends no `D_min`); both are simulated estimates, not measured times.
-- On the standard page the default pick is still the backend's first (green-wave) candidate, so
-  it can differ from the standard "Fastest" chip until the dispatcher picks.
+- On the standard page the default station can differ from the green-wave page's for the same
+  incident; each page starts from its own fastest unless the dispatcher picks.
 - No real signal actuation; no new dependency.
 
 ## Alternatives considered

@@ -23,8 +23,8 @@ import { useScenario } from "@/components/scenario-provider";
 import { captureRunLabels, settingsForMode } from "@/lib/scenario-state";
 import { buildStartRequest } from "@/lib/start-request";
 import { createSimulationId } from "@/lib/simulation-id";
-import { runnerUpIds } from "@/lib/station-choice";
-import { pinnedIncident, selectedCandidate } from "@/lib/useIncidentDispatch";
+import { pageCandidate, runnerUpIds, timeModeFor } from "@/lib/station-choice";
+import { pinnedIncident } from "@/lib/useIncidentDispatch";
 import type { DashboardMode } from "@/components/dashboard/dashboard-mode";
 import { WorkspaceShell, type WorkspaceSheet } from "@/components/workspace/WorkspaceShell";
 import { MapContainer } from "@/components/map/MapContainer";
@@ -88,7 +88,8 @@ export function Dashboard({
   });
   const snap = sheetState.key === sheetKey ? sheetState.snap : "collapsed";
   const setSnap = (next: SheetSnap) => setSheetState({ key: sheetKey, snap: next });
-  const chosenStation = selectedCandidate(dispatch)?.station ?? null;
+  const timeMode = timeModeFor(selectedMode, "simulation");
+  const chosenStation = pageCandidate(dispatch, timeMode)?.station ?? null;
   const backToSetup = () => {
     retainResult(simulation);
     stopSimulation();
@@ -132,7 +133,7 @@ export function Dashboard({
     stations,
     selectedVehicleType: dispatch.vehicleType,
     chosenStationId: chosenStation?.station_id ?? null,
-    runnerUpIds: runnerUpIds(dispatch.ranking, dispatch.selectedStationId),
+    runnerUpIds: runnerUpIds(dispatch.ranking, dispatch.selectedStationId, timeMode),
     onMapClick,
   };
 

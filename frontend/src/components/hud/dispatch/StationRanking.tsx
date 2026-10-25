@@ -7,10 +7,11 @@ import {
   candidateDriveSeconds,
   candidateTotalSeconds,
   orderCandidates,
+  pageCandidate,
   type TimeMode,
 } from "@/lib/station-choice";
 import { SOURCE_KIND_LABELS } from "@/lib/station-copy";
-import { selectedCandidate, type RankStatus } from "@/lib/useIncidentDispatch";
+import type { RankStatus } from "@/lib/useIncidentDispatch";
 import type { DispatchRankResponse, RankedCandidate } from "@/types/telemetry";
 
 type StationRankingProps = {
@@ -61,7 +62,7 @@ export function StationRanking({
 
   const ordered = orderCandidates(ranking.candidates, timeMode);
   const [fastest] = ordered;
-  const selectedId = selectedCandidate({ ranking, selectedStationId })?.station.station_id;
+  const selectedId = pageCandidate({ ranking, selectedStationId }, timeMode)?.station.station_id;
   return (
     <div className="mt-4 space-y-2" aria-live="polite">
       {ranking.station_at_incident && (

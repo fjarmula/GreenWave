@@ -383,7 +383,7 @@ describe("mock preflight estimates", () => {
     expect(markup).toContain("NO TIME SAVED");
     expect(markup).toContain("+00m 26s");
     expect(markup).not.toMatch(/−-|m -|% TIME SAVED/);
-    expect(markup).not.toContain("text-go\"><svg");
+    expect(markup).not.toContain('text-go"><svg');
   });
 
   it("shows backend standard and green-wave estimates before start", () => {

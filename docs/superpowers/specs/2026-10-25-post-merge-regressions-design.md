@@ -71,7 +71,9 @@ mode; the programme is deterministic from t = 0). Measured cost ≤ 17 ms per ro
   (the product's normal-traffic baseline). The KPI header in DISABLED mode labels that number
   "vs normal traffic" instead of "Time saved".
 - Frontend: the station list, its "Fastest" chip and its order use the page's mode
-  (`/simulation/standard` → standard, otherwise green wave; comparison shows both). Backend
+  (`/simulation/standard` → standard, otherwise green wave; comparison shows both). Amended
+  2026-10-25 (human, review fix): with no explicit pick the default station is that page order's
+  first, so it is the one marked "Fastest". Backend
   pre-flight shows the selected candidate's standard and green-wave times (replaces "AFTER
   START"). `etaSeconds` uses `estimated_standard_time_sec` in DISABLED mode.
 
