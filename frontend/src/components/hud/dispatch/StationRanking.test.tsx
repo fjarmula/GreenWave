@@ -45,6 +45,7 @@ const render = (props: Partial<Parameters<typeof StationRanking>[0]> = {}) =>
       rankStatus="ready"
       rankError={null}
       roadTimeRanking
+      timeMode="GREENWAVE"
       selectedStationId={null}
       onSelect={() => {}}
       {...props}
@@ -135,7 +136,58 @@ describe("StationRanking", () => {
       },
     });
     expect(markup).toContain("10m 04s");
-    expect(markup).toContain("incl. 650 m on foot");
+    expect(markup).toContain("02m 20s drive + 07m 44s on foot · 650 m");
+  });
+
+  const twoModes = (patch: Partial<DispatchRankResponse["candidates"][number]> = {}) => ({
+    ...RANKING,
+    candidates: [
+      { ...RANKING.candidates[0], greenwave_seconds: 310, standard_seconds: 422, ...patch },
+    ],
+  });
+
+  it("shows the standard time on the standard page", () => {
+    const markup = render({ ranking: twoModes(), timeMode: "STANDARD" });
+    expect(markup).toContain("07m 02s");
+    expect(markup).not.toContain("05m 10s");
+  });
+
+  it("marks the standard-fastest candidate on the standard page", () => {
+    const [a, b, c] = RANKING.candidates;
+    const markup = render({
+      timeMode: "STANDARD",
+      ranking: {
+        ...RANKING,
+        candidates: [
+          { ...a, greenwave_seconds: 200, standard_seconds: 500 },
+          { ...b, greenwave_seconds: 250, standard_seconds: 300 },
+          { ...c, greenwave_seconds: 300, standard_seconds: 400 },
+        ],
+      },
+    });
+    const fastest = markup.indexOf("Fastest");
+    expect(markup.indexOf("5. Wojskowy")).toBeLessThan(fastest);
+    expect(markup.indexOf("KPR")).toBeGreaterThan(fastest);
+    expect(markup.indexOf("SP ZOZ MSW")).toBeGreaterThan(markup.indexOf("KPR"));
+    expect(markup).toContain("+100 s");
+    expect(markup).toContain("+200 s");
+  });
+
+  it("shows both times on the comparison page", () => {
+    const markup = render({ ranking: twoModes(), timeMode: "BOTH" });
+    expect(markup).toContain("GW");
+    expect(markup).toContain("05m 10s");
+    expect(markup).toContain("07m 02s");
+    expect(markup).toContain("Std");
+  });
+
+  it("splits drive and walk for an off-road candidate", () => {
+    const markup = render({
+      ranking: twoModes({ on_foot: { ...LEG, seconds: 550 } }),
+      timeMode: "STANDARD",
+    });
+    expect(markup).toContain("16m 12s");
+    expect(markup).toContain("07m 02s drive + 09m 10s on foot · 650 m");
   });
 
   it("measures deltas on the totals", () => {

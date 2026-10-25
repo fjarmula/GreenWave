@@ -55,6 +55,24 @@ it("names the access point and the walk when the incident is off the road", () =
   const html = renderToStaticMarkup(<DriverStatus state={finished(true)} onStop={() => {}} />);
   expect(html).toMatch(/Arrived at access point in [^<]+ · 650 m on foot/);
 });
+it('labels the ETA "to access point" with an on-foot leg', () => {
+  const running = (onFoot: boolean) => ({
+    ...initialSimulationState,
+    simulationState: "RUNNING" as const,
+    startRequest: request,
+    routeData: {
+      ...route(),
+      destination_on_foot: onFoot
+        ? { access_point: { lat: 50.06, lng: 19.91 }, distance_m: 650, seconds: 464 }
+        : null,
+    },
+    liveTelemetry: tick(2),
+  });
+  const html = (onFoot: boolean) =>
+    renderToStaticMarkup(<DriverStatus state={running(onFoot)} onStop={() => {}} />);
+  expect(html(true)).toContain("ETA to access point");
+  expect(html(false)).not.toContain("to access point");
+});
 it("keeps the plain arrival copy without an on-foot leg", () => {
   const html = renderToStaticMarkup(<DriverStatus state={finished(false)} onStop={() => {}} />);
   expect(html).toMatch(/Arrived in [^<]+</);

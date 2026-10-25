@@ -130,6 +130,7 @@ export function DriverSetupDetails({
         rankStatus={dispatch.rankStatus}
         rankError={dispatch.rankError}
         roadTimeRanking={capabilities.roadTimeRanking}
+        timeMode={settings.greenWaveMode === "DISABLED" ? "STANDARD" : "GREENWAVE"}
         selectedStationId={dispatch.selectedStationId}
         onSelect={dispatch.selectStation}
       />
@@ -177,12 +178,13 @@ export function DriverSetupDetails({
             : null
         }
         incident={incident?.position ?? null}
+        candidate={canStartDispatch(dispatch) ? selectedCandidate(dispatch) : null}
       />
       <p className="mt-5 flex items-center gap-2 text-2xs leading-relaxed text-muted-foreground">
         <ShieldCheck className="size-4 shrink-0 text-go" aria-hidden />
         {isMockTransport
           ? "Demo uses synthetic route estimates and sample signal telemetry."
-          : "Route estimates come from the simulation backend after initialization. All signal states are simulated."}
+          : "Route estimates come from the simulation backend. All signal states are simulated."}
       </p>
     </section>
   );

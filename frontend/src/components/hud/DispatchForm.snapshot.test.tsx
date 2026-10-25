@@ -369,12 +369,15 @@ describe("mock preflight estimates", () => {
     expect(markup).toContain("03m 10s");
   });
 
-  it("keeps backend estimates after start without mock claims", () => {
+  it("shows backend standard and green-wave estimates before start", () => {
     transport.current = "backend";
     const markup = render(dispatchState());
-    expect(markup).toContain("AFTER START");
-    expect(markup).not.toContain("TIME SAVED");
+    expect(markup).not.toContain("AFTER START");
     expect(markup).not.toContain("Mock pre-flight");
+    const preflight = markup.slice(markup.indexOf("Pre-flight estimation"));
+    expect(preflight).toContain("06m 12s"); // standard_seconds 372
+    expect(preflight).toContain("05m 09s"); // greenwave_seconds 309
+    expect(preflight).toContain("−01m 03s");
   });
 });
 

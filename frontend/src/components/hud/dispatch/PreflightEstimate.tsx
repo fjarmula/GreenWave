@@ -2,13 +2,15 @@ import { ArrowDownRight, TimerReset } from "lucide-react";
 
 import { formatMinutesSeconds } from "@/lib/format-duration";
 import { estimateMockRoute } from "@/lib/mock-route-metrics";
-import type { Position } from "@/types/telemetry";
+import type { Position, RankedCandidate } from "@/types/telemetry";
 
 type PreflightEstimateProps = {
   isMockTransport: boolean;
   trafficDensity: number;
   origin: Position | null;
   incident: Position | null;
+  /** Backend: the selected candidate, whose times are the runs' own pre-run estimates. */
+  candidate?: RankedCandidate | null;
 };
 
 export function PreflightEstimate({
@@ -16,15 +18,23 @@ export function PreflightEstimate({
   trafficDensity,
   origin,
   incident,
+  candidate = null,
 }: PreflightEstimateProps) {
   const metrics =
     isMockTransport && origin && incident
       ? estimateMockRoute(origin, incident, trafficDensity)
       : null;
-  const hasEstimate = metrics !== null && metrics.distanceMeters > 0;
-  const normalSeconds = metrics?.normalSeconds ?? 0;
-  const greenwaveSeconds = metrics?.greenwaveSeconds ?? 0;
+  const hasEstimate = isMockTransport
+    ? metrics !== null && metrics.distanceMeters > 0
+    : candidate !== null;
+  const normalSeconds = isMockTransport
+    ? (metrics?.normalSeconds ?? 0)
+    : (candidate?.standard_seconds ?? 0);
+  const greenwaveSeconds = isMockTransport
+    ? (metrics?.greenwaveSeconds ?? 0)
+    : (candidate?.greenwave_seconds ?? 0);
   const savedSeconds = normalSeconds - greenwaveSeconds;
+  const onFoot = isMockTransport ? null : (candidate?.on_foot ?? null);
 
   return (
     <div className="mt-5 rounded-xl border border-border bg-muted/40 p-4">
@@ -32,24 +42,26 @@ export function PreflightEstimate({
         <TimerReset className="size-4 text-beacon" aria-hidden />
         <span>{isMockTransport ? "Mock pre-flight estimation" : "Pre-flight estimation"}</span>
         <span className="hud-value ml-auto text-2xs font-semibold text-muted-foreground">
-          {isMockTransport ? (hasEstimate ? "READY" : "SELECT INCIDENT") : "AFTER START"}
+          {hasEstimate ? "READY" : "SELECT INCIDENT"}
         </span>
       </div>
-      {/* Backend estimates exist only once the route is planned; never show mock numbers as real. */}
-      {!isMockTransport ? (
+      {/* Never show mock numbers as backend ones, or backend ones as measured times. */}
+      {!hasEstimate ? (
         <p className="mt-3 text-2xs text-muted-foreground">
-          Standard and GreenWave travel times are computed by the simulation backend when the route
-          is initialized.
-        </p>
-      ) : !hasEstimate ? (
-        <p className="mt-3 text-2xs text-muted-foreground">
-          Select an incident and wait for a station selection to see approximate mock estimates.
+          {isMockTransport
+            ? "Select an incident and wait for a station selection to see approximate mock estimates."
+            : "Select an incident and wait for a station selection to see the simulated run times."}
         </p>
       ) : (
         <>
           <p className="mt-3 text-2xs text-muted-foreground">
-            Approximate (mock) · straight line, not a drivable route or a real response-time
-            prediction.
+            {isMockTransport
+              ? "Approximate (mock) · straight line, not a drivable route or a real response-time prediction."
+              : `Simulated runs from the selected station, without and with ER Green Wave${
+                  onFoot
+                    ? ` · drive only, plus ${formatMinutesSeconds(Math.round(onFoot.seconds))} on foot`
+                    : ""
+                }.`}
           </p>
           <div className="my-4 grid grid-cols-2 gap-3">
             <Estimate
@@ -65,7 +77,7 @@ export function PreflightEstimate({
           <div className="flex items-center gap-2 border-t border-border pt-3 text-go">
             <ArrowDownRight className="size-4" aria-hidden />
             <strong className="text-xs font-semibold">
-              {Math.round((savedSeconds / normalSeconds) * 100)}% TIME SAVED
+              {normalSeconds > 0 ? Math.round((savedSeconds / normalSeconds) * 100) : 0}% TIME SAVED
             </strong>
             <span className="hud-value ml-auto text-2xs text-muted-foreground">
               −{formatMinutesSeconds(Math.round(savedSeconds))}

@@ -145,7 +145,13 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
       </div>
 
       <div className="kpi-saved">
-        <span className="hud-stat-label">{failedIts ? "No completed savings" : "Time saved"}</span>
+        <span className="hud-stat-label">
+          {failedIts
+            ? "No completed savings"
+            : routeData?.green_wave_mode === "DISABLED"
+              ? "vs normal traffic"
+              : "Time saved"}
+        </span>
         <strong
           className={`kpi-value hud-value mt-0.5 text-3xl font-semibold ${TIME_SAVED_STYLES[failedIts ? "neutral" : timeSavedTone(saved)]}`}
         >

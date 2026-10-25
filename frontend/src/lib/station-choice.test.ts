@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { buildStartRequest, DEFAULT_DISPATCH_SETTINGS } from "@/lib/start-request";
-import { candidateTotalSeconds, runnerUpIds } from "@/lib/station-choice";
+import {
+  candidateDriveSeconds,
+  candidateTotalSeconds,
+  orderCandidates,
+  runnerUpIds,
+} from "@/lib/station-choice";
 import { selectedCandidate } from "@/lib/useIncidentDispatch";
 import type { DispatchRankResponse, RankedCandidate } from "@/types/telemetry";
 
@@ -48,11 +53,44 @@ it("starts the run from the selected station", () => {
 });
 
 describe("candidateTotalSeconds", () => {
+  const leg = { access_point: { lat: 50, lng: 19.9 }, distance_m: 650, seconds: 464 };
+  const offRoad = { ...candidate("A", 50.01), greenwave_seconds: 140, standard_seconds: 200 };
+
   it("adds the walk to the drive", () => {
-    const leg = { access_point: { lat: 50, lng: 19.9 }, distance_m: 650, seconds: 464 };
-    expect(candidateTotalSeconds({ ...candidate("A", 50.01), greenwave_seconds: 140 })).toBe(140);
-    expect(
-      candidateTotalSeconds({ ...candidate("A", 50.01), greenwave_seconds: 140, on_foot: leg }),
-    ).toBe(604);
+    expect(candidateTotalSeconds(offRoad, "GREENWAVE")).toBe(140);
+    expect(candidateTotalSeconds({ ...offRoad, on_foot: leg }, "GREENWAVE")).toBe(604);
+  });
+
+  it("uses the drive of the page's mode", () => {
+    expect(candidateDriveSeconds(offRoad, "GREENWAVE")).toBe(140);
+    expect(candidateDriveSeconds(offRoad, "STANDARD")).toBe(200);
+    expect(candidateTotalSeconds({ ...offRoad, on_foot: leg }, "STANDARD")).toBe(664);
+  });
+});
+
+describe("orderCandidates", () => {
+  const a = { ...candidate("A", 50.01), greenwave_seconds: 100, standard_seconds: 300 };
+  const b = { ...candidate("B", 50.02), greenwave_seconds: 150, standard_seconds: 200 };
+  const c = { ...candidate("C", 50.03), greenwave_seconds: 200, standard_seconds: 200 };
+
+  it("orders by the mode's total and keeps ties stable", () => {
+    expect(orderCandidates([a, b, c], "STANDARD").map((x) => x.station.station_id)).toEqual([
+      "B",
+      "C",
+      "A",
+    ]);
+    expect(orderCandidates([c, b, a], "GREENWAVE").map((x) => x.station.station_id)).toEqual([
+      "A",
+      "B",
+      "C",
+    ]);
+  });
+
+  it("keeps the backend order for the comparison page", () => {
+    expect(orderCandidates([c, a, b], "BOTH").map((x) => x.station.station_id)).toEqual([
+      "C",
+      "A",
+      "B",
+    ]);
   });
 });
