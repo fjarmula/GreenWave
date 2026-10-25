@@ -18,6 +18,14 @@ Branch `fix/post-merge-regressions`. Spec:
 - `aa83cde`: human-approved amendment after the first sampled run: the hold drives the route's
   edge speeds ahead (not the smoothed `v_avg`), and the crossing length comes from the lowest
   ordinary limit it covers.
+- Review fix pass (human-approved): `55d489b` ends a standard crossing where an edge at or below
+  the 10 km/h floor starts, keeping a capped extra time (before, any such edge inside the
+  would-be crossing made a red light free); `5f9ddae` makes the hold also count junctions whose
+  first line lies inside a multi-line target and the time an in-progress slowdown has left;
+  the next commit makes `test_priority_is_held_while_the_ambulance_waits_at_the_stop_line` use
+  a late-priority programme and assert that the ambulance waited (it was vacuous).
+  Deferred: the DISABLED crossing is not cut at the destination, a green line inside a crossing
+  drops its remaining extra time, and the mock ENABLED slowdown is not cut at the destination.
 
 ### Sampled acceptance
 
@@ -32,7 +40,7 @@ Kraków data, density 1.0, 0 routes skipped:
 | cascade | DISABLED | completed 40 | 10.0 km/h | 0 zero-speed ticks |
 
 Before this plan: 24/40 (no cascade) and 22/40 (cascade) `ITS_HOLD_EXPIRED`, 0.0 km/h
-junction stops, 2.9 km/h standard crawl. The first cut of D2/D3 (spec formulas with `v_avg` and
+junction stops, 2.9 km/h standard crawl. The review fix pass left every number in the table unchanged. The first cut of D2/D3 (spec formulas with `v_avg` and
 the limit at the line) gave 9/40 expiries and a 9.0 km/h minimum; see ADR 0010.
 
 ### Browser check
@@ -47,7 +55,7 @@ Evidence (ignored): `.tmp/playwright/post-merge-regressions/`.
 ### Checks
 
 - Backend: `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy`,
-  `uv run pytest -q` — 1,279 passed.
+  `uv run pytest -q` — 1,279 passed (1,282 after the review fix pass).
 - Frontend: `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm test`
-  (905 passed, 87 files), `npm run build`.
+  (905 passed, 87 files), `npm run build`. The review fix pass changed no frontend file.
 - No schema change; OpenAPI export produced no drift.
