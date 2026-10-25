@@ -143,9 +143,9 @@ With `green_wave_mode: "DISABLED"` the route and the open-road motion are exactl
 1. **`GREEN`:** the vehicle drives on at $V_{\mathrm{ambulance}}(e)$; no penalty.
 2. **`RED`, `YELLOW`, or no supported route vehicle signal:** the vehicle rolls one controlled crossing without stopping. Its extra cautious time (cautious red-light entry while traffic forms a life corridor) scales with the wait $w$ until that movement is next green in the ordinary programme ($w = D_u$ for an unknown movement), and is capped:
    $$C = \min(c \cdot w \cdot \mu_{\mathrm{traffic}},\; C_{\max})$$
-   with $c$ = `standard_clearance_factor` (default 1.0) and $C_{\max}$ = `standard_max_red_loss_seconds` (default 15 s). The crossing is at least $L_c$ = `standard_crossing_distance_m` (default 30 m) long and extends so its speed never drops below $v_f$ = `standard_min_rolling_speed_kmh` (default 10 km/h): $L = \max(L_c,\; C / (1/v_f - 1/v_{\min}))$, where $v_{\min}$ is the lowest ordinary limit $\min(V_{\mathrm{ambulance}}(e), V_e)$ over the edges the crossing covers (recomputed until stable). If $v_{\min} \le v_f$ the crossing adds no extra time. $C$ is spread over $L$: a segment of length $d$ on an edge with ordinary limit $v$ takes
+   with $c$ = `standard_clearance_factor` (default 1.0) and $C_{\max}$ = `standard_max_red_loss_seconds` (default 15 s). The crossing is at least $L_c$ = `standard_crossing_distance_m` (default 30 m) long and extends so its speed never drops below $v_f$ = `standard_min_rolling_speed_kmh` (default 10 km/h): $L = \max(L_c,\; C / (1/v_f - 1/v_{\min}))$, where $v_{\min}$ is the lowest ordinary limit $\min(V_{\mathrm{ambulance}}(e), V_e)$ over the edges the crossing covers (recomputed until stable). An edge at or below $v_f$ at the line gives $C = 0$; one further on ends the crossing where it starts, with $C$ capped at $(\text{slow start} - \text{line}) \cdot (1/v_f - 1/v_{\min})$ so the edges before it keep the floor. $C$ is spread over $L$: a segment of length $d$ on an edge with ordinary limit $v$ takes
    $$\frac{d}{v} + C_{\mathrm{remaining}} \cdot \frac{d}{L_{\mathrm{remaining}}},$$
-   so the speed is at least $v_f$, never above $v$, and carries across edge ends.
+   so the speed is at least $v_f$ (on edges whose limit is above it), never above $v$, and carries across edge ends.
 
 A later stop line replaces an active crossing with its own decision (a fresh crossing if it is not green). Each intersection's route signals share one cycle phase, so the lines of one through movement show the same colour. The crossing is a modelling boundary (the ETL has no junction exit geometry), and $c$, $L_c$, $C_{\max}$, $v_f$ are PoC assumptions, not measured Kraków values; $L_c$ and $v_f$ are strictly positive and all are finite (ADR 0010). The pre-run standard estimate is a dry run of this motion: `standard_run_seconds` drives `move_one_second` in disabled mode against the pure ordinary programme (deterministic from $t = 0$, no ITS) until arrival, so `estimated_standard_time_sec` (start response) and `standard_seconds` (each ranked candidate) equal the disabled run's arrival exactly before rounding (ADR 0011; at most about 12 ms per route on the Kraków sample). $T_{\mathrm{normal}}$ stays the product's normal-traffic baseline: `current_time_saved_sec` compares the run's elapsed time with it in either mode, and the dashboard labels that number "vs normal traffic" in a disabled run. Implementation: `backend/src/greenwave/simulation/motion.py`.
 
@@ -633,8 +633,9 @@ the deadline or regress the ledger.
 
 `hold_duration_sec = max(40, ceil(largest release time at submission) + 5)`
 is enforced from submission, without renewal. A target's release time is the open
-road to its **last** stop line at each edge's ambulance speed plus $D_{\min}$ for every
-unpassed route intersection up to and including it (ADR 0010), so a nominal run
+road to its **last** stop line at each edge's ambulance speed, plus $D_{\min}$ for every
+unpassed route intersection up to and including it or whose first stop line lies inside it,
+plus the extra time a slowdown in progress has still to spend (ADR 0010), so a nominal run
 outlasts its rolling slowdowns and multi-line crossings; controller waits can still
 exceed it. Rejection, acknowledgement timeout and
 active expiry emit a final diagnostic tick then exactly one cancellation:
@@ -676,7 +677,7 @@ The payload remains an illustrative internal contract, not a city ITS protocol:
 ```
 
 Here INT-0361 has TTI 40 s and its cascaded neighbour INT-0367 is 50 s
-of open road from its last stop line, with both unpassed: its release time
+of open road to its last stop line, with both unpassed: its release time
 is `50 + 2 x 3 = 56` s and the hold is `max(40, 56 + 5) = 61`.
 `hold_duration_sec` is never below 40.
 
@@ -711,7 +712,7 @@ physical traffic signal states.
 
 All previously open questions have been resolved and approved:
 
-1. **State machine:** Intersection `state` is strictly `NORMAL | CLEARING | PRIORITY_GREEN | RECOVERY`, with `is_cascade: bool` as a separate field. Transitions occur at $\mathrm{TTI} \le 40\text{ s}$ (`CLEARING`), $\mathrm{TTI} \le 25\text{ s}$ (`PRIORITY_GREEN`), $d_i \le 0\text{ m}$ once the vehicle has left the last stop line and the tick carrying it across has been shown (`RECOVERY`, section 4, rule 3), and $+15\text{ s}$ (`NORMAL`). Cascade is one hop only (section 4, rule 1). `CLEARING_CASCADE` is not a state. `hold_duration_sec = max(40, ceil(release time at dispatch) + its_hold_buffer_seconds)` with `its_hold_buffer_seconds = 5`; the release time covers the open road to the target's last stop line and every $D_{\min}$ up to it (section 4, Phase 3; ADR 0010).
+1. **State machine:** Intersection `state` is strictly `NORMAL | CLEARING | PRIORITY_GREEN | RECOVERY`, with `is_cascade: bool` as a separate field. Transitions occur at $\mathrm{TTI} \le 40\text{ s}$ (`CLEARING`), $\mathrm{TTI} \le 25\text{ s}$ (`PRIORITY_GREEN`), $d_i \le 0\text{ m}$ once the vehicle has left the last stop line and the tick carrying it across has been shown (`RECOVERY`, section 4, rule 3), and $+15\text{ s}$ (`NORMAL`). Cascade is one hop only (section 4, rule 1). `CLEARING_CASCADE` is not a state. `hold_duration_sec = max(40, ceil(release time at dispatch) + its_hold_buffer_seconds)` with `its_hold_buffer_seconds = 5`; the release time covers the open road to the target's last stop line, every $D_{\min}$ up to and inside it, and an in-progress slowdown (section 4, Phase 3; ADR 0010).
 2. **Identifiers:** All endpoints, telemetry ticks, and mock ITS payloads use the ETL's `INT-0001`..`INT-0535` IDs (`intersection_ids.json`). No `MSIP-SIG-*` IDs are used.
 3. **Contract completeness:** `simulation_id`, `schema_version: "1.0"`, and `is_simulated: true` are included in all responses and ticks; streaming uses SSE (`GET /api/v1/simulation/{simulation_id}/stream`) with a cancel endpoint (`POST /api/v1/simulation/{simulation_id}/stop`); one active operation (a run or a lockstep comparison pair, ADR 0008) is supported at a time; ambulance `status` is `EN_ROUTE | APPROACHING_INTERSECTION | CROSSING_INTERSECTION | ARRIVED`; `traffic_density_multiplier` is bounded to `[1.0, 3.0]`.
 4. **ITS feedback (Phase 3):** A per-run deterministic simulated controller owns decisions and reported phases. Dispatch alone never confirms green (proposed ADR 0008).
