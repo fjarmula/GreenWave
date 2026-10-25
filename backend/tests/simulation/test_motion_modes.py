@@ -381,6 +381,18 @@ def test_a_crossing_onto_a_slower_edge_keeps_the_floor() -> None:
     )
 
 
+def test_a_crossing_ends_at_a_slow_edge_and_keeps_its_capped_extra_time() -> None:
+    """A 9 km/h edge 10 m past the line ends the crossing there; the 10 m still cost time.
+
+    The slow edge is open road at the ambulance speed (its 30 km/h minimum).
+    """
+    states, _ = _run(_engine(GreenWaveMode.DISABLED, speeds_kmh=(36.0, 9.0)))
+    capped_s = 10.0 * (1 / _FLOOR_STD_MPS - 1 / _LIMIT_MPS)
+    assert states[-1].arrived_at_s == pytest.approx(
+        _STOP_M / _AMBULANCE_MPS + 10.0 / _LIMIT_MPS + capped_s + 100.0 / (30 / 3.6)
+    )
+
+
 def test_disabled_green_movement_has_no_penalty() -> None:
     states, ticks = _run(_engine(GreenWaveMode.DISABLED, phase=GREEN))
     assert states[-1].arrived_at_s == pytest.approx(200 / 13)

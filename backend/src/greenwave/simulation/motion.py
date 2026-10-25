@@ -118,8 +118,12 @@ def _sized_standard_crossing(
 
     The extra time is spread in proportion to distance, so the speed on every covered edge stays
     at or above the floor reached on the slowest one. A lower limit lengthens the crossing, which
-    can cover a further edge; the limit only falls, and the route has finitely many edges.
+    can cover a further edge; the limit only falls, and the route has finitely many edges. An
+    edge at or below the floor past the line ends the crossing where it starts, with the extra
+    time capped so the edges before it still hold the floor; only an edge at or below the floor
+    at the line itself adds no extra time.
     """
+    floor_mps = settings.standard_min_rolling_speed_kmh / 3.6
     first = track.edge_at(line_m)
     limit = _ordinary_limit_mps(track, first)
     while True:
@@ -127,8 +131,14 @@ def _sized_standard_crossing(
         end_m = line_m + length
         edge, lowest = first, limit
         while edge + 1 < track.edge_count and track.edge_end_m(edge) < end_m:
+            edge_limit = _ordinary_limit_mps(track, edge + 1)
+            if limit > floor_mps and edge_limit <= floor_mps:
+                slow_start_m = track.edge_end_m(edge)
+                return slow_start_m - line_m, min(
+                    extra, (slow_start_m - line_m) * (1 / floor_mps - 1 / lowest)
+                )
             edge += 1
-            lowest = min(lowest, _ordinary_limit_mps(track, edge))
+            lowest = min(lowest, edge_limit)
         if lowest >= limit:
             return length, extra
         limit = lowest

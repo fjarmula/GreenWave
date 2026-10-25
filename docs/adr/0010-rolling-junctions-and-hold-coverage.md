@@ -35,8 +35,10 @@ of about 2.9 km/h for about 37 s. Design: `docs/superpowers/specs/2026-10-25-pos
   ordinary programme turns that movement green (`D_u` when unknown);
   `C = min(standard_clearance_factor x wait_s x mu, standard_max_red_loss_seconds)`;
   `L = max(standard_crossing_distance_m, C / (1/floor - 1/v_min))`, `v_min` being the lowest
-  ordinary limit over the edges the crossing covers (recomputed until stable). `v_min <= floor`
-  gives `C = 0`. New settings `standard_min_rolling_speed_kmh = 10` (gt 0) and
+  ordinary limit over the edges the crossing covers (recomputed until stable). An edge at or
+  below the floor at the line gives `C = 0`; one further on ends the crossing where it starts,
+  with `C` capped at `(slow_start - line) x (1/floor - 1/v_min)` so the edges before it keep the
+  floor. New settings `standard_min_rolling_speed_kmh = 10` (gt 0) and
   `standard_max_red_loss_seconds = 15` (ge 0), both finite PoC placeholders. The mock mirrors
   this with the fixed `MOCK_STANDARD_CLEARANCE_SECONDS` as its wait (contract level).
 - Non-goals: hold renewal, recalibrating `D_u`, changing `T_normal`.

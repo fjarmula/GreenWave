@@ -48,7 +48,10 @@ At a route stop line whose ordinary movement is not GREEN (unchanged sampling ru
   `limit` is the lowest ordinary limit over the edges the crossing covers (recomputed until
   stable) and `floor = standard_min_rolling_speed_kmh/3.6`. If `limit ≤ floor`, `C = 0` (drive at
   the limit; it is already slow). Amended 2026-10-25 (human): the first cut used the limit at the
-  line only, and a crossing running onto a slower edge dropped to 9.46 km/h.
+  line only, and a crossing running onto a slower edge dropped to 9.46 km/h. Amended again
+  2026-10-25 (human, review fix): only an edge at or below the floor at the line gives `C = 0`;
+  a later one ends the crossing where it starts, with
+  `C ≤ (slow_start − line) × (1/floor − 1/limit_before)`.
 - New settings: `standard_min_rolling_speed_kmh = 10` (gt 0), `standard_max_red_loss_seconds = 15`
   (ge 0). Both finite. PoC assumptions, not measured values.
 - Mock mirrors this with a fixed `wait_s = MOCK_STANDARD_CLEARANCE_SECONDS` (it has no
