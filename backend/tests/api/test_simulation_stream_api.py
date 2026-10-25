@@ -75,15 +75,20 @@ def test_stream_sends_retry_then_ticks_and_closes_after_completion(client: TestC
     assert ticks == sorted(ticks)
 
 
-def test_stream_of_a_stopped_run_replays_only_the_cancelled_terminal(client: TestClient) -> None:
+def test_stream_of_a_stopped_run_replays_snapshot_then_cancelled_terminal(
+    client: TestClient,
+) -> None:
     assert client.post("/api/v1/simulation/start", json=_request()).status_code == 200
     assert client.post("/api/v1/simulation/SIM-stream/stop").status_code == 200
 
     _, frames = _frames(client, "SIM-stream")
 
     assert frames[0] == {"retry": "2000"}
-    assert len(frames) == 2
-    terminal = json.loads(frames[1]["data"])
+    assert len(frames) == 3
+    snapshot = json.loads(frames[1]["data"])
+    assert snapshot["event_type"] == "SIMULATION_TICK"
+    terminal = json.loads(frames[2]["data"])
+    assert snapshot["tick"] == terminal["tick"]
     assert terminal["event_type"] == "SIMULATION_CANCELLED"
     assert terminal["reason"] == "STOPPED"
 
@@ -113,11 +118,12 @@ def test_stream_of_a_crashed_run_ends_with_a_server_error_terminal(
     _, frames = _frames(client, "SIM-stream")
 
     assert frames[0] == {"retry": "2000"}
-    assert len(frames) == 2, "a finished run replays only its terminal"
-    assert frames[1]["event"] == "SIMULATION_CANCELLED"
-    terminal = json.loads(frames[1]["data"])
+    assert len(frames) == 3
+    assert frames[1]["event"] == "SIMULATION_TICK"
+    assert frames[2]["event"] == "SIMULATION_CANCELLED"
+    terminal = json.loads(frames[2]["data"])
     assert terminal["reason"] == "SERVER_ERROR"
-    assert frames[1]["id"] == str(terminal["tick"])
+    assert frames[1]["id"] == frames[2]["id"] == str(terminal["tick"])
 
 
 def test_stream_of_an_unknown_run_is_a_json_404(client: TestClient) -> None:

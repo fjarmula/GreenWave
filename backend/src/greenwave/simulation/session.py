@@ -166,14 +166,18 @@ class SessionManager:
 
     async def stop(self, simulation_id: str) -> StopResponse:
         """Stop a live operation through any of its runs; an ended run alone is a no-op."""
-        session = self._sessions.get(simulation_id)
-        if session is None:
-            raise SimulationNotFoundError(simulation_id)
-        if session in self._operation:
-            await self._cancel_operation(CancelReason.STOPPED, self._operation)
-        return StopResponse(
-            schema_version="1.0", is_simulated=True, simulation_id=simulation_id, status="STOPPED"
-        )
+        async with self._lock:
+            session = self._sessions.get(simulation_id)
+            if session is None:
+                raise SimulationNotFoundError(simulation_id)
+            if session in self._operation:
+                await self._cancel_operation(CancelReason.STOPPED, self._operation)
+            return StopResponse(
+                schema_version="1.0",
+                is_simulated=True,
+                simulation_id=simulation_id,
+                status="STOPPED",
+            )
 
     async def subscribe(self, simulation_id: str) -> AsyncIterator[SimulationEvent]:
         """Yield the current snapshot then live events, closing after a terminal event."""
@@ -181,6 +185,8 @@ class SessionManager:
         if session is None:
             raise SimulationNotFoundError(simulation_id)
         if session.terminal is not None:
+            if session.latest is not None:
+                yield session.latest
             yield session.terminal
             return
 
