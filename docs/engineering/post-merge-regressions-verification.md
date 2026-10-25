@@ -151,3 +151,26 @@ stations) still drives from KPR (02m 57s). Addresses beside a station (Łazarza 
 Jugowicka 10) snap to a neighbouring node and drive 7–9 s from that station: the nearby
 station wins, but on site only applies to its own node (spec D6). Scripts and screenshots
 (ignored): `.tmp/playwright/on-site/`.
+
+## Whole-branch review and final acceptance
+
+Opus reviewer over `d53334c..ab8bac9` (merge base with `main`): ready with fixes; no critical
+findings. Fixed test-first:
+
+- `0153e86`: the standard dry run is bounded by the route (every edge at its ordinary limit
+  plus `standard_max_red_loss_seconds` per route stop line); a valid
+  `speed_floor_meters_per_second = 0` divided by zero on every rank and start.
+- `1262601`: the pre-flight shows only the walk for an on-site pick (it described two
+  simulated runs of 00m 00s).
+- `8fb00ec`: `GreenWave_ARCHITECTURE.md` model 3 and the hold text match the amended rules.
+
+Deferred minors: the on-site-versus-drive choice and the top-3 cut use green-wave totals on
+the standard page too; the plan-named comparison test is replaced by helper tests plus the
+browser check; the all-on-site off-road `incident_snapped` path has no direct assertion.
+
+Final checks: backend `ruff`, `ruff format --check`, `mypy`, `pytest` (1,304 passed);
+frontend lint, typecheck, format, `npm test` (943 passed, 88 files), build; no OpenAPI or
+generated-type drift. `scripts/sample_runs.py --routes 40 --seed 11`, with and without
+`--cascade`, 0 skipped: ENABLED 40/40 completed, min 18.9 km/h, max
+|arrived_at − est_greenwave| 0.000 s; DISABLED 40/40 completed, min 10.0 km/h, max
+|arrived_at − est_standard| 0.000 s; slowest standard estimate 15.1 ms.
