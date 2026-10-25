@@ -123,3 +123,31 @@ Scripts (ignored): `.tmp/playwright/mode-estimates/`.
   has no unit test; the comparison on-foot copy is not named in ADR 0011.
 - Checks: frontend 933 passed (87 files), lint, typecheck, format, build; backend unchanged
   (1,297 passed).
+
+## Plan 3: on-site dispatch (D6, ADR 0012)
+
+### Changes
+
+- `9036e6d`: ranking makes a station on the incident's node (or, off-road, an access node
+  where walking beats driving) an on-site candidate; `RankedCandidate.on_site`;
+  `station_at_incident` always `null`; mock and validator; `sample_runs.py` starts from the
+  first driving candidate.
+- `77b57c7`: "On site" row, "Dispatch on foot", the on-site result card on the single-run
+  pages and the comparison; no simulation request.
+- `244d50c`: an on-site row shows one chip ("On site"), so the station name is not cut.
+- Next commit: ADR 0012, this record, `GreenWave_ARCHITECTURE.md` (dispatch section, item 10;
+  human informed of architecture edits on this branch) and a superseded note in
+  `docs/superpowers/specs/2026-10-19-incident-dispatch-design.md` step 6.
+
+### Browser check
+
+Local backend + frontend, Chromium; the incident pinned on Krakowskie Pogotowie Ratunkowe's own
+snapped node (50.0601, 19.9507, about 47 m from the station point) on `/simulation/green-wave`,
+`/simulation/standard` and `/compare`: KPR first, "On site", `00m 45s` with
+`on foot · 60 m`; the start read "Dispatch on foot"; starting showed "Incident at Krakowskie
+Pogotowie Ratunkowe · No drive needed. On foot about 00m 45s (60 m) · simulated estimate." and
+sent no simulation request; "Back to setup" returned to the form. Floriańska 1 (between
+stations) still drives from KPR (02m 57s). Addresses beside a station (Łazarza 14/16,
+Jugowicka 10) snap to a neighbouring node and drive 7–9 s from that station: the nearby
+station wins, but on site only applies to its own node (spec D6). Scripts and screenshots
+(ignored): `.tmp/playwright/on-site/`.
