@@ -4,8 +4,11 @@ import { buildStartRequest, DEFAULT_DISPATCH_SETTINGS } from "@/lib/start-reques
 import {
   candidateDriveSeconds,
   candidateTotalSeconds,
+  isOnSite,
+  onSiteResult,
   orderCandidates,
   pageCandidate,
+  shownOnSite,
   runnerUpIds,
   timeModeFor,
 } from "@/lib/station-choice";
@@ -131,5 +134,36 @@ describe("orderCandidates", () => {
       "A",
       "B",
     ]);
+  });
+});
+
+describe("on-site dispatch", () => {
+  const walk = { access_point: { lat: 50.01, lng: 19.9 }, distance_m: 120, seconds: 111 };
+  const onSite = { ...candidate("A", 50.01), on_site: true, on_foot: walk };
+  const here = { position: { lat: 50.01, lng: 19.9 }, label: "Pinned", source: "map" as const };
+
+  it("recognises an on-site candidate", () => {
+    expect(isOnSite(onSite)).toBe(true);
+    expect(isOnSite(candidate("B", 50.02))).toBe(false);
+    expect(isOnSite(null)).toBe(false);
+  });
+
+  it("starts an on-site result instead of a run", () => {
+    expect(onSiteResult(onSite, here, "AMBULANCE")).toEqual({
+      station: onSite.station,
+      walk,
+      incident: here,
+      vehicleType: "AMBULANCE",
+    });
+    expect(onSiteResult(candidate("B", 50.02), here, "AMBULANCE")).toBeNull();
+    expect(onSiteResult(onSite, null, "AMBULANCE")).toBeNull();
+  });
+
+  it("drops the result once the incident or vehicle changes", () => {
+    const result = onSiteResult(onSite, here, "AMBULANCE");
+    expect(shownOnSite(result, { incident: here, vehicleType: "AMBULANCE" })).toBe(result);
+    expect(shownOnSite(result, { incident: { ...here }, vehicleType: "AMBULANCE" })).toBeNull();
+    expect(shownOnSite(result, { incident: here, vehicleType: "FIRE_TRUCK" })).toBeNull();
+    expect(shownOnSite(null, { incident: here, vehicleType: "AMBULANCE" })).toBeNull();
   });
 });

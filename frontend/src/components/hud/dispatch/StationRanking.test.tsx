@@ -78,13 +78,31 @@ describe("StationRanking", () => {
     expect(render()).toContain("Ambulance base");
   });
 
-  it("explains a station at the incident", () => {
+  it("no longer shows the station-at-incident notice", () => {
     const markup = render({
       ranking: { ...RANKING, station_at_incident: station("STN-A-0001", "Here", "ambulance_base") },
     });
-    expect(markup).toContain(
-      "A station of this type is at this location; dispatching from the next fastest.",
-    );
+    expect(markup).not.toContain("A station of this type is at this location");
+  });
+
+  it('shows "On site" and the walk for an on-site candidate', () => {
+    const [a, b] = RANKING.candidates;
+    const onSite = {
+      ...a,
+      greenwave_seconds: 0,
+      standard_seconds: 0,
+      distance_m: 0,
+      on_foot: { access_point: a.station.position, distance_m: 120, seconds: 111 },
+      on_site: true,
+    };
+    for (const timeMode of ["GREENWAVE", "STANDARD", "BOTH"] as const) {
+      const markup = render({ ranking: { ...RANKING, candidates: [onSite, b] }, timeMode });
+      expect(markup).toContain("On site");
+      expect(markup).toContain("on foot · 120 m");
+      expect(markup).toContain("01m 51s");
+      expect(markup).not.toContain("drive +");
+      expect(markup).not.toContain("GW 01m 51s");
+    }
   });
 
   it("renders a radio per candidate", () => {

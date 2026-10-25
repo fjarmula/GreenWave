@@ -88,6 +88,9 @@ function render(
   );
 }
 
+const fullStartButton = (markup: string) =>
+  markup.match(/<button[^>]*data-testid="start-corridor"[^>]*>[\s\S]*?<\/button>/)?.[0] ?? "";
+
 const startButton = (markup: string) =>
   markup.match(/<button[^>]*data-testid="start-corridor"[^>]*>/)?.[0] ?? "";
 
@@ -125,14 +128,23 @@ describe("DispatchForm start button", () => {
     expect(startButton(render(dispatchState()))).not.toMatch(/ disabled=""/);
   });
 
-  it("stays enabled when a station sits at the incident and others exist", () => {
-    const dispatch = dispatchState({
-      ranking: {
-        ...RANKING,
-        station_at_incident: { ...RANKING.candidates[0].station, station_id: "STN-F-0001" },
+  it('labels the start "Dispatch on foot" for an on-site selection', () => {
+    const onSite = {
+      ...RANKING.candidates[0],
+      greenwave_seconds: 0,
+      standard_seconds: 0,
+      distance_m: 0,
+      on_foot: {
+        access_point: RANKING.candidates[0].station.position,
+        distance_m: 120,
+        seconds: 111,
       },
-    });
-    expect(startButton(render(dispatch))).not.toMatch(/ disabled=""/);
+      on_site: true,
+    };
+    const markup = render(dispatchState({ ranking: { ...RANKING, candidates: [onSite] } }));
+    expect(fullStartButton(markup)).toContain("Dispatch on foot");
+    expect(startButton(markup)).not.toMatch(/ disabled=""/);
+    expect(fullStartButton(render(dispatchState()))).not.toContain("Dispatch on foot");
   });
 
   it("offers the three vehicle types", () => {

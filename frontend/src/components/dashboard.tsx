@@ -23,7 +23,14 @@ import { useScenario } from "@/components/scenario-provider";
 import { captureRunLabels, settingsForMode } from "@/lib/scenario-state";
 import { buildStartRequest } from "@/lib/start-request";
 import { createSimulationId } from "@/lib/simulation-id";
-import { pageCandidate, runnerUpIds, timeModeFor } from "@/lib/station-choice";
+import {
+  onSiteResult,
+  pageCandidate,
+  runnerUpIds,
+  shownOnSite,
+  timeModeFor,
+  type OnSite,
+} from "@/lib/station-choice";
 import { pinnedIncident } from "@/lib/useIncidentDispatch";
 import type { DashboardMode } from "@/components/dashboard/dashboard-mode";
 import { WorkspaceShell, type WorkspaceSheet } from "@/components/workspace/WorkspaceShell";
@@ -33,6 +40,7 @@ import { RunSummary } from "@/components/hud/RunSummary";
 import { IntersectionList } from "@/components/hud/IntersectionList";
 import { ItsConsole } from "@/components/hud/ItsConsole";
 import { DispatchForm } from "@/components/hud/DispatchForm";
+import { OnSiteResult } from "@/components/hud/OnSiteResult";
 import type { MapEndpoint } from "@/components/map/EndpointMarkers";
 import type { GreenWaveMode, Position } from "@/types/telemetry";
 
@@ -77,6 +85,9 @@ export function Dashboard({
   );
   const mode: DashboardMode = routeData && policy.showRun ? "live" : "setup";
   const [mapFocusRequest, setMapFocusRequest] = useState(0);
+  // An on-site answer replaces setup until "Back to setup" or a new incident or vehicle.
+  const [onSiteAnswer, setOnSiteAnswer] = useState<OnSite | null>(null);
+  const onSite = mode === "setup" ? shownOnSite(onSiteAnswer, dispatch) : null;
   // The sheet starts collapsed for setup, for each run and again when the run ends.
   const sheetKey =
     mode === "live"
@@ -107,6 +118,13 @@ export function Dashboard({
         ? { label: dispatch.incident.label, position: dispatch.incident.position }
         : null;
   const initialize = (runSettings: DispatchSettings) => {
+    const answer = onSiteResult(
+      pageCandidate(dispatch, timeMode),
+      dispatch.incident,
+      dispatch.vehicleType,
+    );
+    setOnSiteAnswer(answer);
+    if (answer) return; // the crew walks: no simulation (ADR 0012)
     if (!chosenStation || !dispatch.incident) return;
     const request = buildStartRequest(
       chosenStation,
@@ -177,7 +195,13 @@ export function Dashboard({
           snap,
           onSnapChange: setSnap,
           phoneOnly: true,
-          collapsed: (
+          collapsed: onSite ? (
+            <OnSiteResult
+              station={onSite.station}
+              walk={onSite.walk}
+              onBackToSetup={() => setOnSiteAnswer(null)}
+            />
+          ) : (
             <DriverSetupCard
               dispatch={dispatch}
               capabilities={dispatchAdapter.capabilities}
@@ -228,7 +252,13 @@ export function Dashboard({
       ? {
           snap,
           onSnapChange: setSnap,
-          collapsed: (
+          collapsed: onSite ? (
+            <OnSiteResult
+              station={onSite.station}
+              walk={onSite.walk}
+              onBackToSetup={() => setOnSiteAnswer(null)}
+            />
+          ) : (
             <DriverSetupCard
               dispatch={dispatch}
               capabilities={dispatchAdapter.capabilities}
@@ -308,7 +338,15 @@ export function Dashboard({
       inspector={
         <>
           {notices}
-          {mode === "setup" ? (
+          {onSite ? (
+            <div className="p-4">
+              <OnSiteResult
+                station={onSite.station}
+                walk={onSite.walk}
+                onBackToSetup={() => setOnSiteAnswer(null)}
+              />
+            </div>
+          ) : mode === "setup" ? (
             <DispatchForm
               settings={settingsForMode(settings, selectedMode)}
               modeLocked

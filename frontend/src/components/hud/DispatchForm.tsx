@@ -18,7 +18,7 @@ import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import type { PreviousRun } from "@/lib/previous-run";
 import type { DispatchSettings } from "@/lib/start-request";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
-import { pageCandidate, timeModeFor } from "@/lib/station-choice";
+import { isOnSite, pageCandidate, timeModeFor } from "@/lib/station-choice";
 
 type DispatchFormProps = {
   /** Owned by the dashboard so the chosen settings outlive each run. */
@@ -190,15 +190,17 @@ export function DispatchForm({
         <Zap className="size-4" aria-hidden />
         {pending
           ? "Computing route…"
-          : intent === "comparison"
-            ? replacement
-              ? "Replace run & compare"
-              : "Start comparison"
-            : replacement
-              ? "Replace active simulation"
-              : greenWaveMode === "ENABLED"
-                ? "Initialize green corridor"
-                : "Start standard-traffic run"}
+          : canStart && isOnSite(pageCandidate(dispatch, timeMode))
+            ? "Dispatch on foot"
+            : intent === "comparison"
+              ? replacement
+                ? "Replace run & compare"
+                : "Start comparison"
+              : replacement
+                ? "Replace active simulation"
+                : greenWaveMode === "ENABLED"
+                  ? "Initialize green corridor"
+                  : "Start standard-traffic run"}
         <ArrowUpRight className="ml-auto size-4" aria-hidden />
       </button>
 

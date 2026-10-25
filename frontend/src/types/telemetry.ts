@@ -41,6 +41,7 @@ export type QualityStatus = Schemas["QualityStatus"];
 export type VehicleType = Schemas["VehicleType"];
 export type StationSourceKind = Schemas["StationSourceKind"];
 export type Station = Schemas["Station"];
+export type OnFootLeg = Schemas["OnFootLeg"];
 export type StationsResponse = Schemas["StationsResponse"];
 export type GeocodeResult = Schemas["GeocodeResult"];
 export type GeocodeResponse = Schemas["GeocodeResponse"];

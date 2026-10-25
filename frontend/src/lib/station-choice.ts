@@ -1,5 +1,12 @@
-import type { IncidentDispatchState } from "@/lib/useIncidentDispatch";
-import type { DispatchRankResponse, GreenWaveMode, RankedCandidate } from "@/types/telemetry";
+import type { Incident, IncidentDispatchState } from "@/lib/useIncidentDispatch";
+import type {
+  DispatchRankResponse,
+  GreenWaveMode,
+  OnFootLeg,
+  RankedCandidate,
+  Station,
+  VehicleType,
+} from "@/types/telemetry";
 
 /** Which time a page shows: its own run's, or both on the comparison page. */
 export type TimeMode = "GREENWAVE" | "STANDARD" | "BOTH";
@@ -66,4 +73,39 @@ export function runnerUpIds(
   return (ranking?.candidates ?? [])
     .filter((candidate) => candidate !== selected)
     .map((candidate) => candidate.station.station_id);
+}
+
+/** The incident is at the station (ADR 0012): no drive, only the walk; never a simulation. */
+export function isOnSite(candidate: RankedCandidate | null): boolean {
+  return candidate?.on_site === true;
+}
+
+/** An on-site answer, kept for the incident and vehicle type it was started for. */
+export type OnSite = {
+  station: Station;
+  walk: OnFootLeg;
+  incident: Incident;
+  vehicleType: VehicleType;
+};
+
+/** What starting `candidate` shows instead of a run, or `null` when it drives. */
+export function onSiteResult(
+  candidate: RankedCandidate | null,
+  incident: Incident | null,
+  vehicleType: VehicleType,
+): OnSite | null {
+  if (!candidate || !isOnSite(candidate) || !candidate.on_foot || !incident) return null;
+  return { station: candidate.station, walk: candidate.on_foot, incident, vehicleType };
+}
+
+/** The on-site answer while it still matches the setup; a new incident or vehicle drops it. */
+export function shownOnSite(
+  onSite: OnSite | null,
+  dispatch: Pick<IncidentDispatchState, "incident" | "vehicleType">,
+): OnSite | null {
+  return onSite &&
+    onSite.incident === dispatch.incident &&
+    onSite.vehicleType === dispatch.vehicleType
+    ? onSite
+    : null;
 }

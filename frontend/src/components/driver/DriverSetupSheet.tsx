@@ -17,7 +17,7 @@ import { settingsSummary } from "@/lib/driver-presentation";
 import type { PreviousRun } from "@/lib/previous-run";
 import type { DispatchSettings } from "@/lib/start-request";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
-import { pageCandidate, timeModeFor } from "@/lib/station-choice";
+import { isOnSite, pageCandidate, timeModeFor } from "@/lib/station-choice";
 
 export function canStartDispatch(dispatch: IncidentDispatch) {
   return dispatch.rankStatus === "ready" && (dispatch.ranking?.candidates.length ?? 0) > 0;
@@ -90,7 +90,14 @@ export function DriverSetupCard({
         className={`hud-primary pressable mt-3 ${pending ? "disabled:cursor-wait" : "disabled:cursor-not-allowed"}`}
       >
         <Zap className="size-4" aria-hidden />
-        {pending ? "Computing route…" : replacement ? "Replace active simulation" : startLabel}
+        {pending
+          ? "Computing route…"
+          : canStartDispatch(dispatch) &&
+              isOnSite(pageCandidate(dispatch, timeModeFor(settings.greenWaveMode, "simulation")))
+            ? "Dispatch on foot"
+            : replacement
+              ? "Replace active simulation"
+              : startLabel}
         <ArrowUpRight className="ml-auto size-4" aria-hidden />
       </button>
       {errorMessage && (
