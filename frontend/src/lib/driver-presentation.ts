@@ -2,6 +2,7 @@ import { distanceAlongRoute } from "@/lib/route-position";
 import type { DispatchSettings } from "@/lib/start-request";
 import type {
   IntersectionState,
+  ItsScenario,
   SimulationStartResponse,
   SimulationTickEvent,
 } from "@/types/telemetry";
@@ -67,6 +68,15 @@ export function savedPill(seconds: number): string {
   return `${Math.abs(whole)} s ${whole > 0 ? "faster" : "slower"} · simulated`;
 }
 
+export function itsScenarioLabel(scenario: ItsScenario): string {
+  return {
+    NOMINAL: "Nominal",
+    DELAYED: "Delayed",
+    REJECTED: "Rejected",
+    NO_FEEDBACK: "No feedback",
+  }[scenario];
+}
+
 export function settingsSummary(settings: DispatchSettings): string {
-  return `Traffic ${settings.trafficDensity}× · Cascade ${settings.cascadeEnabled ? "on" : "off"} · ${settings.playbackSpeed}× speed`;
+  return `Traffic ${settings.trafficDensity}× · Cascade ${settings.cascadeEnabled ? "on" : "off"} · ${settings.playbackSpeed}× speed · ITS ${itsScenarioLabel(settings.greenWaveMode === "DISABLED" ? "NOMINAL" : (settings.itsScenario ?? "NOMINAL"))}`;
 }

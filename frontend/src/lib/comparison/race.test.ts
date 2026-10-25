@@ -128,3 +128,42 @@ describe("comparisonResult", () => {
     expect(same?.label).toBe("same travel time");
   });
 });
+
+it("recognizes physical arrival before signal recovery completion", () => {
+  const early = at(3579, "ENABLED", 12);
+  early.liveTelemetry = {
+    ...early.liveTelemetry!,
+    ambulance: { ...early.liveTelemetry!.ambulance, status: "ARRIVED" },
+    kpi_metrics: { current_time_saved_sec: 1, total_time_elapsed_sec: 11 },
+  };
+  const result = standing(early, arrived("DISABLED", 12));
+  expect(result.arrived).toBe("ENABLED");
+  expect(result.bothArrived).toBe(true);
+  expect(raceReadout(result)).toBe("Both arrived");
+});
+
+it("does not truncate a route whose endpoint crosses an earlier segment", () => {
+  const geometry = {
+    type: "LineString" as const,
+    coordinates: [
+      [19, 50],
+      [19.002, 50],
+      [19.002, 50.001],
+      [19.001, 50.001],
+      [19.001, 50],
+    ] as [number, number][],
+  };
+  const run = at(0, "ENABLED");
+  run.liveTelemetry = {
+    ...run.liveTelemetry!,
+    ambulance: {
+      ...run.liveTelemetry!.ambulance,
+      position: { lng: 19.002, lat: 50.00067860619515 },
+    },
+  };
+  const result = raceStanding(
+    { ...line, route_geometry: geometry },
+    { ENABLED: run, DISABLED: initialSimulationState },
+  );
+  expect(result.positions.ENABLED).toBeCloseTo(0.5, 5);
+});

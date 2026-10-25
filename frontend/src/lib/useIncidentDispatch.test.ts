@@ -311,3 +311,19 @@ describe("describeRankError", () => {
     expect(describeRankError(error)).toBe("No vehicle access within 800 m of this location");
   });
 });
+
+it("discards a ranking resolved after the incident was cleared even if abort is ignored", async () => {
+  const { adapter, calls } = deferredAdapter();
+  const dispatch = createIncidentDispatch(adapter);
+  dispatch.setIncident(incident(50.01));
+  dispatch.setIncident(null);
+  expect(calls[0].signal?.aborted).toBe(true);
+  calls[0].resolve(ranking("STN-A-0001"));
+  await flush();
+  expect(dispatch.getState()).toMatchObject({
+    incident: null,
+    ranking: null,
+    rankStatus: "idle",
+    selectedStationId: null,
+  });
+});

@@ -59,7 +59,13 @@ export function ComparisonStage({
         {standing && (
           <RaceBar
             standing={standing}
-            readout={interrupted ? "Comparison interrupted · waiting for remaining run" : undefined}
+            readout={
+              interrupted
+                ? running
+                  ? "Comparison interrupted · waiting for remaining run"
+                  : "Comparison ended"
+                : undefined
+            }
             running={running}
             stopping={state.stopping}
             onStop={onStop}

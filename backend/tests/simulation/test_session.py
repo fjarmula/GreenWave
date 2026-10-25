@@ -1,5 +1,6 @@
 import asyncio
 from datetime import UTC, datetime
+from threading import Event
 from types import SimpleNamespace
 
 import pytest
@@ -231,17 +232,17 @@ async def test_engine_failure_publishes_a_server_error_terminal(manager: Session
 
 
 @pytest.mark.asyncio
-async def test_failed_run_replays_only_its_terminal_and_stops_as_a_no_op(
+async def test_failed_run_replays_latest_snapshot_then_terminal_and_stop_is_a_no_op(
     manager: SessionManager,
 ) -> None:
-    [*_, terminal] = await asyncio.wait_for(_failed_run(manager), timeout=1)
+    [*_, latest, terminal] = await asyncio.wait_for(_failed_run(manager), timeout=1)
     late = asyncio.Queue[object]()
 
     replay = [event async for event in manager.subscribe("first")]
     manager._sessions["first"].subscribers.add(late)  # type: ignore[arg-type]
     response = await manager.stop("first")
 
-    assert replay == [terminal]
+    assert replay == [latest, terminal]
     assert response.status == "STOPPED"
     assert late.empty(), "stop published a second terminal"
     assert manager._active is None
@@ -250,12 +251,12 @@ async def test_failed_run_replays_only_its_terminal_and_stops_as_a_no_op(
 
 @pytest.mark.asyncio
 async def test_start_after_a_failed_run_supersedes_nothing(manager: SessionManager) -> None:
-    [*_, terminal] = await asyncio.wait_for(_failed_run(manager), timeout=1)
+    [*_, latest, terminal] = await asyncio.wait_for(_failed_run(manager), timeout=1)
     manager._planner = _planner(_Engine)
 
     await manager.start(_request("second"))
 
-    assert [event async for event in manager.subscribe("first")] == [terminal]
+    assert [event async for event in manager.subscribe("first")] == [latest, terminal]
     assert manager._active is not None
     assert manager._active.simulation_id == "second"
     await manager.shutdown()
@@ -354,7 +355,9 @@ async def test_the_active_session_is_kept_at_a_limit_of_one(manager: SessionMana
 
 
 @pytest.mark.asyncio
-async def test_a_retained_finished_session_replays_its_terminal(manager: SessionManager) -> None:
+async def test_a_retained_finished_session_without_snapshot_replays_only_its_terminal(
+    manager: SessionManager,
+) -> None:
     _limited(manager, 2)
     manager._planner = _planner(_CompletingEngine)
     await manager.start(_request("first"))
@@ -781,5 +784,120 @@ async def test_real_engine_comparison_keeps_feedback_and_baseline_isolated(
         else:
             assert isinstance(on[-1], SimulationCompletedEvent)
         assert all(session.engine._closed for session in manager._sessions.values())
+    finally:
+        await manager.shutdown()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("blocked_member", ["single", "on", "off"])
+async def test_stop_during_planning_waits_then_stops_every_member(
+    manager: SessionManager, blocked_member: str
+) -> None:
+    entered = asyncio.Event()
+    release = Event()
+    loop = asyncio.get_running_loop()
+
+    def plan(_: object, request: SimulationStartRequest, *__: object) -> PlannedSimulation:
+        if request.simulation_id == blocked_member:
+            loop.call_soon_threadsafe(entered.set)
+            if not release.wait(timeout=5):
+                raise TimeoutError("test did not release planning")
+        return PlannedSimulation(_Engine(), _response(request.simulation_id))  # type: ignore[arg-type]
+
+    manager._planner = plan
+    start = asyncio.create_task(
+        manager.start(_request("single"))
+        if blocked_member == "single"
+        else manager.start_comparison(_comparison())
+    )
+    stop = None
+    try:
+        await asyncio.wait_for(entered.wait(), timeout=1)
+        stop = asyncio.create_task(manager.stop(blocked_member))
+        await asyncio.sleep(0)  # Stop reaches the lifecycle boundary before planning resumes.
+        release.set()
+        await asyncio.wait_for(start, timeout=1)
+        response = await asyncio.wait_for(stop, timeout=1)
+        assert response.status == "STOPPED"
+        for simulation_id in ("single",) if blocked_member == "single" else ("on", "off"):
+            terminal = _terminal(manager, simulation_id)
+            assert isinstance(terminal, SimulationCancelledEvent)
+            assert terminal.reason is CancelReason.STOPPED
+        assert manager._active is None
+    finally:
+        release.set()
+        await asyncio.gather(start, *([stop] if stop is not None else []), return_exceptions=True)
+        await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_stop_unknown_id_does_not_stop_the_active_operation(manager: SessionManager) -> None:
+    await manager.start(_request("first"))
+    try:
+        with pytest.raises(SimulationNotFoundError):
+            await manager.stop("unknown")
+        assert manager._active is not None
+        assert _terminal(manager, "first") is None
+    finally:
+        await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_completed_run_replays_last_snapshot_before_one_terminal(
+    manager: SessionManager,
+) -> None:
+    manager._planner = _pair_planner([], enabled_n=3, disabled_n=3)
+    manager._sleep = _yield
+    await manager.start(_request("first"))
+    task = manager._sessions["first"].task
+    assert task is not None
+    await asyncio.wait_for(task, timeout=1)
+
+    snapshot, terminal = [event async for event in manager.subscribe("first")]
+
+    assert snapshot.tick == 2
+    assert isinstance(terminal, SimulationCompletedEvent)
+    assert terminal.tick == 3
+    await manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_real_engine_finishing_before_subscription_replays_arrival_at_destination() -> None:
+    import networkx as nx
+    from tests.support.route_fixtures import _builders, _index, position_at
+
+    from greenwave.schemas import AmbulanceStatus, SimulationTickEvent
+
+    graph = nx.MultiDiGraph()
+    node, edge = _builders(graph, {})
+    node("origin", 7_424_000)
+    node("destination", 7_424_001)
+    edge("one-metre", "origin", "destination", 1, 36)
+    destination = position_at(7_424_001)
+    manager = SessionManager(_index(graph, {}, {}, None), SimulationSettings(), sleep=_yield)
+    try:
+        response = await manager.start(
+            SimulationStartRequest.model_validate(
+                {
+                    **_request("short-route").model_dump(),
+                    "origin": position_at(7_424_000),
+                    "destination": destination,
+                }
+            )
+        )
+        assert response.total_distance_m == 1
+        assert response.route_intersections == []
+        await asyncio.sleep(0)  # The signal-free metre completes in the first engine step.
+
+        snapshot, terminal = [event async for event in manager.subscribe("short-route")]
+
+        assert isinstance(snapshot, SimulationTickEvent)
+        assert snapshot.tick == 1
+        assert snapshot.ambulance.status is AmbulanceStatus.ARRIVED
+        assert snapshot.ambulance.position.lat == pytest.approx(destination.lat, abs=1e-9)
+        assert snapshot.ambulance.position.lng == pytest.approx(destination.lng, abs=1e-9)
+        assert isinstance(terminal, SimulationCompletedEvent)
+        assert terminal.tick == snapshot.tick
+        assert terminal.simulation_id == snapshot.simulation_id == "short-route"
     finally:
         await manager.shutdown()

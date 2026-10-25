@@ -157,7 +157,11 @@ export function FinishedRunSummary({
     <SummaryCard
       tone="success"
       title="Simulated run completed"
-      detail="The simulated vehicle arrived and every simulated signal is back to NORMAL. Simulated times, not a real-world measurement."
+      detail={
+        route.destination_on_foot
+          ? "The simulated vehicle arrived at the access point and every simulated signal is back to NORMAL. The remaining walk is an estimate. Simulated times, not a real-world measurement."
+          : "The simulated vehicle arrived and every simulated signal is back to NORMAL. Simulated times, not a real-world measurement."
+      }
       onBackToSetup={onBackToSetup}
     >
       <dl className="mt-3 grid grid-cols-2 gap-3">

@@ -119,13 +119,12 @@ describe("live comparison controller", () => {
   });
 
   it("stops through the Green Wave id and finishes with the live run cancelled", async () => {
-    const { controller, stream, cancel, adapter } = await running();
+    const { controller, stream, adapter } = await running();
     stream("pair-e").onTick(tick(1, "pair-e"));
     stream("pair-d").onTick(tick(1, "pair-d"));
     stream("pair-e").onTerminal(completed(1, "pair-e"));
     await controller.stop();
     expect(adapter.stop).toHaveBeenCalledWith("pair-e");
-    cancel("pair-d", "STOPPED", 1);
     const state = controller.getState();
     expect(state.status).toBe("finished");
     expect(state.runs.ENABLED.simulationState).toBe("FINISHED");
@@ -165,12 +164,10 @@ describe("live comparison controller", () => {
 
 describe("live comparison stop", () => {
   it("marks the pair as stopping until the stop is answered", async () => {
-    const { controller, cancel } = await running();
+    const { controller } = await running();
     const pending = controller.stop();
     expect(controller.getState().stopping).toBe(true);
     await pending;
-    cancel("pair-e", "STOPPED", 1);
-    cancel("pair-d", "STOPPED", 1);
     expect(controller.getState()).toMatchObject({ status: "finished", stopping: false });
   });
 
@@ -217,5 +214,49 @@ it("ignores an old stop failure after a new comparison starts", async () => {
   rejectStop(new Error("old request failed"));
   await pending;
   expect(controller.getState()).toMatchObject({ status: "running", reason: null, stopping: false });
+  controller.reset();
+});
+
+it("confirms a successful pair Stop without terminal SSE and releases the slot", async () => {
+  vi.useFakeTimers();
+  try {
+    const { controller, slot, streams } = await running();
+    await controller.stop();
+    expect(controller.getState()).toMatchObject({ status: "finished", stopping: false });
+    expect(controller.getState().runs.ENABLED.cancelReason).toBe("STOPPED");
+    expect(controller.getState().runs.DISABLED.cancelReason).toBe("STOPPED");
+    expect(slot.getOwner()).toBeNull();
+    expect(streams.size).toBe(0);
+    vi.advanceTimersByTime(15_000);
+    expect(controller.getState().status).toBe("finished");
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it("preserves a completed member when HTTP Stop confirms the remaining member", async () => {
+  const { controller, stream } = await running();
+  stream("pair-e").onTerminal(completed(2, "pair-e"));
+  await controller.stop();
+  expect(controller.getState().runs.ENABLED.simulationState).toBe("FINISHED");
+  expect(controller.getState().runs.DISABLED.cancelReason).toBe("STOPPED");
+  expect(controller.getState().status).toBe("finished");
+});
+
+it("ignores an old successful Stop after reset and a new comparison start", async () => {
+  const { controller, adapter } = await running();
+  let confirm!: () => void;
+  vi.mocked(adapter.stop).mockReturnValueOnce(
+    new Promise<void>((resolve) => {
+      confirm = resolve;
+    }),
+  );
+  const pending = controller.stop();
+  controller.reset();
+  await controller.start(request);
+  confirm();
+  await pending;
+  expect(controller.getState()).toMatchObject({ status: "running", stopping: false });
+  expect(controller.getState().runs.ENABLED.simulationState).toBe("RUNNING");
   controller.reset();
 });

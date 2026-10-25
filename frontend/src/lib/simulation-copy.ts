@@ -1,4 +1,5 @@
 /** User-facing English copy for simulation states and errors. */
+import { formatSignalDistance } from "@/lib/driver-presentation";
 import type { ConnectionStatus } from "@/lib/simulation-adapter";
 import type { SimulationPhase } from "@/lib/simulation-state";
 import type { SimulationErrorInfo } from "@/lib/transport/errors";
@@ -120,12 +121,24 @@ export function summarizeFinishedRun(
   route: Pick<
     SimulationStartResponse,
     "estimated_normal_time_sec" | "estimated_greenwave_time_sec" | "green_wave_mode"
-  >,
+  > &
+    Partial<Pick<SimulationStartResponse, "destination_on_foot">>,
   finalKpis: KpiMetrics,
 ): { label: string; value: string }[] {
   const enabled = route.green_wave_mode === "ENABLED";
   return [
-    { label: "Total travel time", value: formatDuration(finalKpis.total_time_elapsed_sec) },
+    {
+      label: route.destination_on_foot ? "Drive to access point" : "Total travel time",
+      value: formatDuration(finalKpis.total_time_elapsed_sec),
+    },
+    ...(route.destination_on_foot
+      ? [
+          {
+            label: "On foot to incident (estimate)",
+            value: `${formatSignalDistance(route.destination_on_foot.distance_m)} · ${formatDuration(route.destination_on_foot.seconds)}`,
+          },
+        ]
+      : []),
     { label: "ER Green Wave", value: enabled ? "Enabled" : "Disabled" },
     { label: "Normal-traffic estimate", value: formatDuration(route.estimated_normal_time_sec) },
     ...(enabled

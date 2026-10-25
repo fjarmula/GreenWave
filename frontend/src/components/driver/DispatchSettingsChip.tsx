@@ -1,6 +1,7 @@
 "use client";
 import { Settings2, X } from "lucide-react";
 import { useId, useRef, useState } from "react";
+import { itsScenarioLabel } from "@/lib/driver-presentation";
 import { VEHICLE_NAMES } from "@/lib/station-copy";
 import type { SimulationStartRequest } from "@/types/telemetry";
 
@@ -63,6 +64,14 @@ export function DispatchSettingsChip({ request }: { request: SimulationStartRequ
           <div>
             <dt>Cascade corridor mode</dt>
             <dd>{request.enable_cascade_mode ? "On" : "Off"}</dd>
+          </div>
+          <div>
+            <dt>Simulated ITS feedback</dt>
+            <dd>
+              {itsScenarioLabel(
+                request.green_wave_mode === "DISABLED" ? "NOMINAL" : request.its_scenario,
+              )}
+            </dd>
           </div>
           <div>
             <dt>Playback speed</dt>

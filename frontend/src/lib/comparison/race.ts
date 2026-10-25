@@ -1,5 +1,5 @@
 import { formatSignalDistance } from "@/lib/driver-presentation";
-import { distanceAlongRoute } from "@/lib/route-position";
+import { distanceAlongRoute, routeLengthMeters } from "@/lib/route-position";
 import type { SimulationState } from "@/lib/simulation-state";
 import type { SimulationStartResponse } from "@/types/telemetry";
 
@@ -14,19 +14,27 @@ export type RaceStanding = {
   arrived: ComparisonMode | null;
   /** Share of the route driven, 0–1. */
   positions: Record<ComparisonMode, number>;
-  /** Both runs completed; the result card takes over. */
+  /** Both vehicles arrived, even while signals are still recovering. */
   bothArrived: boolean;
 };
 
 /** Closer than this, the race reads as level. */
 const LEVEL_WITHIN_M = 10;
 
+/** Physical arrival is visible in ticks before the run's recovery terminal. */
+export function arrivalTimeSeconds(run: SimulationState): number | null {
+  if (run.completion) return run.completion.kpi_metrics.total_time_elapsed_sec;
+  return run.liveTelemetry?.ambulance.status === "ARRIVED"
+    ? run.liveTelemetry.kpi_metrics.total_time_elapsed_sec
+    : null;
+}
+
 /** Measured distance only, never a projected time. A stale run keeps its last position. */
 export function raceStanding(route: SimulationStartResponse, runs: ComparisonRuns): RaceStanding {
   const geometry = route.route_geometry;
-  const total = distanceAlongRoute(geometry, geometry.coordinates.at(-1) ?? [0, 0]) ?? 0;
+  const total = routeLengthMeters(geometry);
   const driven = (run: SimulationState) => {
-    if (run.simulationState === "FINISHED") return total;
+    if (arrivalTimeSeconds(run) !== null) return total;
     const position = run.liveTelemetry?.ambulance.position;
     if (!position) return 0;
     return Math.min(total, distanceAlongRoute(geometry, [position.lng, position.lat]) ?? 0);
@@ -34,25 +42,23 @@ export function raceStanding(route: SimulationStartResponse, runs: ComparisonRun
   const enabled = driven(runs.ENABLED);
   const disabled = driven(runs.DISABLED);
   const leadM = enabled - disabled;
-  const finished = (mode: ComparisonMode) => runs[mode].completion;
-  const enabledDone = finished("ENABLED");
-  const disabledDone = finished("DISABLED");
+  const enabledArrival = arrivalTimeSeconds(runs.ENABLED);
+  const disabledArrival = arrivalTimeSeconds(runs.DISABLED);
   const arrived: ComparisonMode | null =
-    enabledDone && disabledDone
-      ? enabledDone.kpi_metrics.total_time_elapsed_sec <=
-        disabledDone.kpi_metrics.total_time_elapsed_sec
+    enabledArrival !== null && disabledArrival !== null
+      ? enabledArrival <= disabledArrival
         ? "ENABLED"
         : "DISABLED"
-      : enabledDone
+      : enabledArrival !== null
         ? "ENABLED"
-        : disabledDone
+        : disabledArrival !== null
           ? "DISABLED"
           : null;
   return {
     leader: Math.abs(leadM) < LEVEL_WITHIN_M ? "LEVEL" : leadM > 0 ? "ENABLED" : "DISABLED",
     leadM,
     arrived,
-    bothArrived: !!enabledDone && !!disabledDone,
+    bothArrived: enabledArrival !== null && disabledArrival !== null,
     positions: {
       ENABLED: total > 0 ? enabled / total : 0,
       DISABLED: total > 0 ? disabled / total : 0,

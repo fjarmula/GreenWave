@@ -189,6 +189,11 @@ export function createLiveComparisonController(
       publish({ ...state, stopping: true, reason: null });
       try {
         await adapter.stop(request.enabled_simulation_id);
+        if (token !== generation || state.status !== "running") return;
+        for (const mode of MODES) {
+          const id = state.runs[mode].startRequest?.simulation_id;
+          if (id) dispatchFor(mode, token)({ type: "STOP_CONFIRMED", simulationId: id });
+        }
       } catch (error) {
         if (token !== generation || state.status !== "running") return;
         publish({

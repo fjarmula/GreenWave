@@ -3,6 +3,7 @@ import { ArrowUpRight, ChevronRight, ShieldCheck, Target, TriangleAlert, Zap } f
 import type { ReactNode } from "react";
 
 import { CascadeToggle } from "@/components/hud/dispatch/CascadeToggle";
+import { ItsScenarioControl } from "@/components/hud/dispatch/ItsScenarioControl";
 import { IncidentInput } from "@/components/hud/dispatch/IncidentInput";
 import { PlaybackSpeedSelector } from "@/components/hud/dispatch/PlaybackSpeedSelector";
 import { PreviousRunCard } from "@/components/hud/dispatch/PreviousRunCard";
@@ -75,7 +76,7 @@ export function DriverSetupCard({
         aria-expanded={detailsOpen}
         onClick={onToggleDetails}
       >
-        <span className="truncate">{settingsSummary(settings)}</span>
+        <span className="min-w-0 py-2 text-left">{settingsSummary(settings)}</span>
         <ChevronRight aria-hidden data-open={detailsOpen} />
       </button>
       {notices}
@@ -156,6 +157,11 @@ export function DriverSetupDetails({
         enabled={settings.cascadeEnabled}
         onToggle={() => update({ cascadeEnabled: !settings.cascadeEnabled })}
         disabled={settings.greenWaveMode === "DISABLED"}
+      />
+      <ItsScenarioControl
+        value={settings.itsScenario ?? "NOMINAL"}
+        disabled={settings.greenWaveMode === "DISABLED"}
+        onChange={(value) => update({ itsScenario: value })}
       />
       <PlaybackSpeedSelector
         value={settings.playbackSpeed}
