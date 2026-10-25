@@ -130,9 +130,10 @@ function CandidateRow({
           >
             {station.name}
           </span>
-          {isFastest && <span className="hud-chip tone-go shrink-0 text-2xs">Fastest</span>}
-          {candidate.on_site && (
+          {candidate.on_site ? (
             <span className="hud-chip tone-beacon shrink-0 text-2xs">On site</span>
+          ) : (
+            isFastest && <span className="hud-chip tone-go shrink-0 text-2xs">Fastest</span>
           )}
         </span>
         <span className="block text-2xs text-muted-foreground">

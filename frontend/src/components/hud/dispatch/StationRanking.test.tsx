@@ -98,6 +98,7 @@ describe("StationRanking", () => {
     for (const timeMode of ["GREENWAVE", "STANDARD", "BOTH"] as const) {
       const markup = render({ ranking: { ...RANKING, candidates: [onSite, b] }, timeMode });
       expect(markup).toContain("On site");
+      expect(markup).not.toContain("Fastest"); // one chip, so the name keeps its room
       expect(markup).toContain("on foot · 120 m");
       expect(markup).toContain("01m 51s");
       expect(markup).not.toContain("drive +");
