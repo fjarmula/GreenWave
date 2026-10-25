@@ -42,3 +42,15 @@ def test_standard_estimate_without_junctions_is_open_road_time() -> None:
     assert standard_run_seconds(
         engine.route, engine.route_model, _DENSITY, engine.settings
     ) == pytest.approx(200 / 13)
+
+
+def test_standard_estimate_works_with_a_zero_speed_floor() -> None:
+    """``speed_floor_meters_per_second`` only floors the smoothed speed; 0 is a valid setting."""
+    settings = {"speed_floor_meters_per_second": 0.0}
+    engine = _engine(GreenWaveMode.DISABLED, phase=RED, settings=settings)
+    states, _ = _run(engine)
+
+    assert (
+        standard_run_seconds(engine.route, engine.route_model, _DENSITY, engine.settings)
+        == states[-1].arrived_at_s
+    )

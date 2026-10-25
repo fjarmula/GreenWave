@@ -22,8 +22,9 @@ Additive to contract v1; `schema_version` stays `"1.0"`.
   DISABLED mode against an untouched controller's ordinary programme queries until arrival and
   returns `arrived_at_s`. A disabled run never requests priority and the programme is
   deterministic from t = 0, so this equals the engine's disabled arrival exactly. A run that
-  does not arrive within `ceil(distance / speed floor) + 10 000` s raises instead of returning a
-  made-up value.
+  does not arrive within its own upper bound (every edge at its ordinary limit plus
+  `standard_max_red_loss_seconds` per route stop line) raises instead of returning a made-up
+  value; so does a route with an edge of zero speed.
 - `SimulationStartResponse.estimated_standard_time_sec: int >= 0` (both modes, rounded).
 - `DispatchRankRequest.traffic_density_multiplier: float in [1.0, 3.0] = 1.0`;
   `RankedCandidate.standard_seconds: float >= 0` at that density. The backend order stays the

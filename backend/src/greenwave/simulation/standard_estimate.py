@@ -1,6 +1,6 @@
 """Exact pre-run standard-traffic estimate: a dry run of disabled motion (spec D4)."""
 
-from math import ceil
+from math import ceil, inf
 
 from greenwave.its.controller import SimulatedItsController
 from greenwave.routing.planner import PlannedRoute
@@ -41,7 +41,11 @@ def standard_run_seconds(
         arrived=False,
         completed=False,
     )
-    max_iterations = ceil(route.total_distance_m / settings.speed_floor_meters_per_second) + 10_000
+    stop_lines = sum(len(item.route_stop_lines_m) for item in route_model.intersections)
+    bound_s = _slowest_arrival_s(track, stop_lines, settings)
+    if bound_s == inf:
+        raise RuntimeError("standard run cannot arrive: a route edge has no positive speed")
+    max_iterations = ceil(bound_s) + 1
     for _ in range(max_iterations):
         state, _moved = move_one_second(
             state,
@@ -56,3 +60,17 @@ def standard_run_seconds(
         if state.arrived_at_s is not None:
             return state.arrived_at_s
     raise RuntimeError(f"standard run did not arrive within {max_iterations} simulated seconds")
+
+
+def _slowest_arrival_s(track: RouteTrack, stop_lines: int, settings: SimulationSettings) -> float:
+    """An upper bound on the disabled arrival: every edge at its ordinary limit (a crossing never
+    drives faster than its ambulance speed or slower than that limit plus its extra time), plus
+    the capped extra time at every stop line. Infinite when an edge cannot be driven."""
+    seconds = float(stop_lines) * settings.standard_max_red_loss_seconds
+    start = 0.0
+    for edge in range(track.edge_count):
+        end = track.edge_end_m(edge)
+        speed = min(track.speed_mps(edge), track.speed_limit_mps(edge))
+        seconds += (end - start) / speed if speed > 0 else inf
+        start = end
+    return seconds
