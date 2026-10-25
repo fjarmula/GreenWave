@@ -26,6 +26,8 @@ export type RankStatus = "idle" | "loading" | "ready" | "error";
 export type IncidentDispatchState = {
   vehicleType: VehicleType;
   incident: Incident | null;
+  /** The density the ranking's standard times are computed for (the run's own). */
+  trafficDensity: number;
   ranking: DispatchRankResponse | null;
   rankStatus: RankStatus;
   rankError: string | null;
@@ -56,7 +58,7 @@ export function describeRankError(error: unknown): string {
 }
 
 /**
- * Vehicle type + incident → station ranking, without React. Every change re-ranks:
+ * Vehicle type + incident + traffic density → station ranking, without React. Every change re-ranks:
  * the previous request is aborted and, should it still settle, discarded by its
  * sequence number, so an older response never overwrites a newer one.
  */
@@ -64,6 +66,7 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
   let state: IncidentDispatchState = {
     vehicleType: "AMBULANCE",
     incident: null,
+    trafficDensity: 1,
     ranking: null,
     rankStatus: "idle",
     rankError: null,
@@ -103,7 +106,14 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
       selectedStationId: null,
     });
     adapter
-      .rank({ incident: next.incident.position, vehicle_type: next.vehicleType }, controller.signal)
+      .rank(
+        {
+          incident: next.incident.position,
+          vehicle_type: next.vehicleType,
+          traffic_density_multiplier: next.trafficDensity,
+        },
+        controller.signal,
+      )
       .then(
         (ranking) => {
           if (current === sequence) update({ ranking, rankStatus: "ready" });
@@ -129,6 +139,10 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
     },
     setVehicleType: (vehicleType: VehicleType) => rank({ vehicleType }),
     setIncident: (incident: Incident | null) => rank({ incident }),
+    /** Re-ranks for a new density (standard times depend on it); the same value is a no-op. */
+    setTrafficDensity(trafficDensity: number) {
+      if (trafficDensity !== state.trafficDensity) rank({ trafficDensity });
+    },
     /** Picks a listed candidate; an ID outside the current ranking is ignored. */
     selectStation(stationId: string) {
       if (!state.ranking?.candidates.some((c) => c.station.station_id === stationId)) return;
@@ -146,6 +160,7 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
 export type IncidentDispatch = IncidentDispatchState & {
   setVehicleType: (vehicleType: VehicleType) => void;
   setIncident: (incident: Incident | null) => void;
+  setTrafficDensity: (trafficDensity: number) => void;
   selectStation: (stationId: string) => void;
 };
 
@@ -157,6 +172,7 @@ export function useIncidentDispatch(adapter: DispatchAdapter): IncidentDispatch 
     ...state,
     setVehicleType: dispatch.setVehicleType,
     setIncident: dispatch.setIncident,
+    setTrafficDensity: dispatch.setTrafficDensity,
     selectStation: dispatch.selectStation,
   };
 }

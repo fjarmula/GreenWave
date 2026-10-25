@@ -14,6 +14,7 @@ const candidate = (stationId: string, lat: number): RankedCandidate => ({
     position: { lat, lng: 19.9 },
   },
   greenwave_seconds: 100 * lat,
+  standard_seconds: 100 * lat + 60,
   distance_m: 900,
 });
 

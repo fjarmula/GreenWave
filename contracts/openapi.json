@@ -192,6 +192,13 @@
           "incident": {
             "$ref": "#/components/schemas/Position"
           },
+          "traffic_density_multiplier": {
+            "default": 1.0,
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Traffic Density Multiplier",
+            "type": "number"
+          },
           "vehicle_type": {
             "$ref": "#/components/schemas/VehicleType"
           }
@@ -892,6 +899,11 @@
               }
             ]
           },
+          "standard_seconds": {
+            "minimum": 0.0,
+            "title": "Standard Seconds",
+            "type": "number"
+          },
           "station": {
             "$ref": "#/components/schemas/Station"
           }
@@ -899,6 +911,7 @@
         "required": [
           "station",
           "greenwave_seconds",
+          "standard_seconds",
           "distance_m"
         ],
         "title": "RankedCandidate",

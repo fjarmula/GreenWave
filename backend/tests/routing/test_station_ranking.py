@@ -18,9 +18,10 @@ from greenwave.routing.estimates import estimate_times
 from greenwave.routing.network_index import RoutingIndex
 from greenwave.routing.planner import PlannedRoute, plan_route
 from greenwave.routing.station_ranking import StationNode, build_station_nodes, rank_stations
-from greenwave.schemas import Position, SimulationStartRequest, VehicleType
+from greenwave.schemas import GreenWaveMode, Position, SimulationStartRequest, VehicleType
 from greenwave.simulation.assembly import plan_simulation
 from greenwave.simulation.route_model import build_route_model
+from greenwave.simulation.standard_estimate import standard_run_seconds
 from greenwave.simulation_settings import SimulationSettings
 
 _X = 7_421_000.0
@@ -95,6 +96,59 @@ def test_displayed_time_matches_preflight() -> None:
 
     assert response.estimated_greenwave_time_sec == round(winner.greenwave_seconds)
     assert response.total_distance_m == pytest.approx(winner.distance_m)
+
+
+def test_displayed_standard_time_matches_the_standard_run() -> None:
+    index, nodes = _corridor()
+    incident = position_at(_X + 1_950.02)
+    winner = rank_stations(
+        index, nodes, incident, VehicleType.AMBULANCE, SETTINGS, traffic_density_multiplier=2.0
+    ).candidates[0]
+    request = SimulationStartRequest(
+        simulation_id="SIM-rank-standard",
+        origin=winner.station.position,
+        destination=incident,
+        traffic_density_multiplier=2.0,
+        enable_cascade_mode=False,
+        green_wave_mode=GreenWaveMode.DISABLED,
+    )
+
+    response = plan_simulation(index, request, SETTINGS, MockItsGateway()).response
+
+    assert response.estimated_standard_time_sec == round(winner.standard_seconds)
+
+
+def test_ranking_density_changes_only_the_standard_time() -> None:
+    index, nodes = _corridor()
+    incident = position_at(_X + 1_950.02)
+    # Uncapped red-light loss, so the density reaches the standard time on this corridor.
+    settings = SimulationSettings(standard_max_red_loss_seconds=600)
+
+    light, heavy = (
+        rank_stations(
+            index, nodes, incident, VehicleType.AMBULANCE, settings, traffic_density_multiplier=d
+        ).candidates
+        for d in (1.0, 3.0)
+    )
+
+    assert [c.station for c in light] == [c.station for c in heavy]
+    assert [c.greenwave_seconds for c in light] == [c.greenwave_seconds for c in heavy]
+    for light_c, heavy_c in zip(light, heavy, strict=True):
+        route = plan_route(index, light_c.station.position, incident, settings)
+        model = build_route_model(route, index, settings, False)
+        assert light_c.standard_seconds == standard_run_seconds(route, model, 1.0, settings)
+        assert heavy_c.standard_seconds == standard_run_seconds(route, model, 3.0, settings)
+    assert any(h.standard_seconds > c.standard_seconds for c, h in zip(light, heavy, strict=True))
+
+
+def test_total_seconds_for_adds_the_walk_to_each_mode_drive() -> None:
+    index, nodes = _corridor()
+    candidate = rank_stations(
+        index, nodes, position_at(_X + 1_950.02), VehicleType.AMBULANCE, SETTINGS
+    ).candidates[0]
+
+    assert candidate.total_seconds_for(GreenWaveMode.ENABLED) == candidate.greenwave_seconds
+    assert candidate.total_seconds_for(GreenWaveMode.DISABLED) == candidate.standard_seconds
 
 
 def test_filters_by_vehicle_type() -> None:

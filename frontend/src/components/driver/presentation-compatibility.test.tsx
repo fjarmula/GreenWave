@@ -12,12 +12,14 @@ import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
 const dispatch: IncidentDispatch = {
   vehicleType: "AMBULANCE",
   incident: null,
+  trafficDensity: 1,
   ranking: null,
   rankStatus: "idle",
   rankError: null,
   selectedStationId: null,
   setVehicleType: () => {},
   setIncident: () => {},
+  setTrafficDensity: () => {},
   selectStation: () => {},
 };
 const settings = { ...DEFAULT_DISPATCH_SETTINGS, itsScenario: "REJECTED" as const };

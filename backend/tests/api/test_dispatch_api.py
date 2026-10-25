@@ -72,6 +72,7 @@ def test_rank_returns_candidates(layout: Layout) -> None:
     assert body["schema_version"] == "1.0"
     assert [c["station"]["station_id"] for c in body["candidates"]] == ["STN-F-0001"]
     assert body["candidates"][0]["greenwave_seconds"] > 0
+    assert body["candidates"][0]["standard_seconds"] > 0
     assert body["incident_snapped"]["snap_distance_m"] >= 0
     assert body["station_at_incident"] is None
 
@@ -149,6 +150,39 @@ def test_rank_no_station_reachable_is_422(layout: Layout) -> None:
 
     assert response.status_code == 422
     assert response.json()["error_code"] == "NO_STATION_REACHABLE"
+
+
+def test_rank_rejects_a_density_above_the_range(layout: Layout) -> None:
+    with client(layout) as c:
+        response = c.post(
+            "/api/v1/dispatch/rank",
+            json={
+                "incident": _poprzeczna(c),
+                "vehicle_type": "FIRE_TRUCK",
+                "traffic_density_multiplier": 3.5,
+            },
+        )
+
+    assert response.status_code == 422
+
+
+def test_rank_density_raises_the_standard_time_only(layout: Layout) -> None:
+    with client(layout) as c:
+        incident = _poprzeczna(c)
+        light, heavy = (
+            c.post(
+                "/api/v1/dispatch/rank",
+                json={
+                    "incident": incident,
+                    "vehicle_type": "FIRE_TRUCK",
+                    "traffic_density_multiplier": density,
+                },
+            ).json()["candidates"][0]
+            for density in (1.0, 3.0)
+        )
+
+    assert heavy["greenwave_seconds"] == light["greenwave_seconds"]
+    assert heavy["standard_seconds"] >= light["standard_seconds"]
 
 
 def test_rank_rejects_unknown_vehicle_type(layout: Layout) -> None:

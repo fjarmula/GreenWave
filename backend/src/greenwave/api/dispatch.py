@@ -75,6 +75,7 @@ def rank(body: DispatchRankRequest, request: Request) -> DispatchRankResponse | 
             body.incident,
             body.vehicle_type,
             cast(SimulationSettings, request.app.state.simulation_settings),
+            body.traffic_density_multiplier,
         )
     except DestinationOffNetwork as error:
         return error_response(422, ErrorCode.DESTINATION_OFF_NETWORK, str(error))
@@ -95,6 +96,7 @@ def rank(body: DispatchRankRequest, request: Request) -> DispatchRankResponse | 
             RankedCandidate(
                 station=c.station,
                 greenwave_seconds=c.greenwave_seconds,
+                standard_seconds=c.standard_seconds,
                 distance_m=c.distance_m,
                 on_foot=OnFootLeg(
                     access_point=node_position(index, c.on_foot.node_key),

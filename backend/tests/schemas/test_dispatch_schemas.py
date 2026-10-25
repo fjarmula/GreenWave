@@ -4,8 +4,10 @@ import pytest
 from pydantic import ValidationError
 
 from greenwave.schemas import (
+    DispatchRankRequest,
     DispatchRankResponse,
     ErrorCode,
+    RankedCandidate,
     SimulationStartRequest,
     VehicleType,
 )
@@ -40,6 +42,7 @@ def _rank(candidates: int) -> dict[str, Any]:
             {
                 "station": _station(f"STN-A-000{i + 1}"),
                 "greenwave_seconds": 60.0 + i,
+                "standard_seconds": 75.0 + i,
                 "distance_m": 900.0,
             }
             for i in range(candidates)
@@ -86,7 +89,7 @@ def test_ranked_candidate_on_foot_defaults_to_none_and_rejects_negative() -> Non
         "position": {"lat": 50.0, "lng": 19.9},
     }
     candidate = RankedCandidate.model_validate(
-        {"station": station, "greenwave_seconds": 1.0, "distance_m": 1.0}
+        {"station": station, "greenwave_seconds": 1.0, "standard_seconds": 1.5, "distance_m": 1.0}
     )
     assert candidate.on_foot is None
     leg = {"access_point": {"lat": 50.0, "lng": 19.9}, "distance_m": 650.0, "seconds": 464.0}
@@ -95,3 +98,18 @@ def test_ranked_candidate_on_foot_defaults_to_none_and_rejects_negative() -> Non
         OnFootLeg.model_validate({**leg, "distance_m": -1})
     with pytest.raises(ValidationError):
         OnFootLeg.model_validate({**leg, "seconds": -1})
+
+
+def test_rank_request_density_defaults_to_one_and_is_bounded() -> None:
+    body = {"incident": {"lat": 50.0, "lng": 19.9}, "vehicle_type": "AMBULANCE"}
+    assert DispatchRankRequest.model_validate(body).traffic_density_multiplier == 1.0
+    for density in (0.9, 3.5, float("nan")):
+        with pytest.raises(ValidationError):
+            DispatchRankRequest.model_validate({**body, "traffic_density_multiplier": density})
+
+
+def test_ranked_candidate_requires_a_non_negative_standard_time() -> None:
+    candidate = _rank(1)["candidates"][0]
+    for standard in (None, -1.0):
+        with pytest.raises(ValidationError):
+            RankedCandidate.model_validate({**candidate, "standard_seconds": standard})

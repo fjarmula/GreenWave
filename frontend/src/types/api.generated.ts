@@ -265,6 +265,11 @@ export interface components {
         /** DispatchRankRequest */
         DispatchRankRequest: {
             incident: components["schemas"]["Position"];
+            /**
+             * Traffic Density Multiplier
+             * @default 1
+             */
+            traffic_density_multiplier: number;
             vehicle_type: components["schemas"]["VehicleType"];
         };
         /** DispatchRankResponse */
@@ -557,6 +562,8 @@ export interface components {
             /** Greenwave Seconds */
             greenwave_seconds: number;
             on_foot?: components["schemas"]["OnFootLeg"] | null;
+            /** Standard Seconds */
+            standard_seconds: number;
             station: components["schemas"]["Station"];
         };
         /** RouteGeometry */

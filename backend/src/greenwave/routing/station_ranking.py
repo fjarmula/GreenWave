@@ -2,7 +2,8 @@
 
 A reversed Dijkstra from the incident gives every station's motion time with the weight
 ``plan_route`` minimises; the best ``dispatch_shortlist_size`` then get the real pipeline
-(``plan_route``, route model, ``estimate_times``), so the displayed time is the preflight one.
+(``plan_route``, route model, ``estimate_times``, ``standard_run_seconds``), so the displayed
+times are the preflight ones.
 The shortlist is a speed cut: per-intersection delay can reorder stations beyond it.
 
 An incident off the network seeds that Dijkstra at every access node with its walking time, so
@@ -32,8 +33,9 @@ from greenwave.routing.planner import (
     plan_route,
     snap_endpoint,
 )
-from greenwave.schemas import Position, Station, VehicleType
+from greenwave.schemas import GreenWaveMode, Position, Station, VehicleType
 from greenwave.simulation.route_model import build_route_model
+from greenwave.simulation.standard_estimate import standard_run_seconds
 from greenwave.simulation_settings import SimulationSettings
 
 logger = logging.getLogger(__name__)
@@ -51,13 +53,19 @@ class StationNode:
 class RankedStation:
     station: Station
     greenwave_seconds: float
+    standard_seconds: float
     distance_m: float
     on_foot: AccessNode | None = None
 
     @property
     def total_seconds(self) -> float:
-        """Drive estimate plus the walk from the access node; the ranking order."""
-        return self.greenwave_seconds + (self.on_foot.on_foot_seconds if self.on_foot else 0.0)
+        """Green-wave drive estimate plus the walk from the access node; the ranking order."""
+        return self.total_seconds_for(GreenWaveMode.ENABLED)
+
+    def total_seconds_for(self, mode: GreenWaveMode) -> float:
+        """The drive estimate of ``mode`` plus the walk from the access node."""
+        drive = self.greenwave_seconds if mode is GreenWaveMode.ENABLED else self.standard_seconds
+        return drive + (self.on_foot.on_foot_seconds if self.on_foot else 0.0)
 
 
 @dataclass(frozen=True)
@@ -98,8 +106,13 @@ def rank_stations(
     incident: Position,
     vehicle_type: VehicleType,
     settings: SimulationSettings,
+    traffic_density_multiplier: float = 1.0,
 ) -> StationRanking:
-    """Raises ``DestinationOffNetwork`` or ``NoStationReachable``."""
+    """Raises ``DestinationOffNetwork`` or ``NoStationReachable``.
+
+    ``traffic_density_multiplier`` only changes each candidate's standard estimate; the order
+    stays the green-wave one.
+    """
     incident_snap: SnappedRouteEndpoint | None
     try:
         incident_snap = snap_endpoint(index, incident, origin=False)
@@ -131,9 +144,13 @@ def rank_stations(
         except NoRoute:
             continue
         model = build_route_model(route, index, settings, False)
-        estimates = estimate_times(route, model, 1.0, settings)
+        estimates = estimate_times(route, model, traffic_density_multiplier, settings)
         candidate = RankedStation(
-            node.station, estimates.greenwave_seconds, route.total_distance_m, route.on_foot
+            node.station,
+            estimates.greenwave_seconds,
+            standard_run_seconds(route, model, traffic_density_multiplier, settings),
+            route.total_distance_m,
+            route.on_foot,
         )
         ranked.append((candidate, route))
     if not ranked:

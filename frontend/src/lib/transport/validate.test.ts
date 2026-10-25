@@ -367,6 +367,7 @@ describe("on-foot legs", () => {
           position: { lat: 50.05, lng: 19.9 },
         },
         greenwave_seconds: 140,
+        standard_seconds: 190,
         distance_m: 2000,
         ...(onFoot === undefined ? {} : { on_foot: onFoot }),
       },
@@ -378,6 +379,16 @@ describe("on-foot legs", () => {
     for (const leg of [undefined, null, LEG]) {
       expect(() => validateRank(wire(rank(leg)))).not.toThrow();
     }
+  });
+
+  it.each([
+    ["missing", undefined],
+    ["non-finite", JSON.parse("1e999")],
+    ["negative", -1],
+  ])("rejects a %s candidate standard_seconds", (_label, value) => {
+    const body = record(wire(rank()));
+    record((body.candidates as unknown[])[0]).standard_seconds = value;
+    expect(() => validateRank(body)).toThrow("candidates[0].standard_seconds");
   });
 
   it("rejects a negative candidate on_foot distance", () => {

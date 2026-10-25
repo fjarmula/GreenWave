@@ -47,7 +47,12 @@ export function createMockDispatchAdapter(
         schema_version: "1.0",
         incident_snapped: { position: incident, snap_distance_m: 0 },
         candidates: [
-          { station: nearest.station, greenwave_seconds: 0, distance_m: nearest.distance },
+          {
+            station: nearest.station,
+            greenwave_seconds: 0,
+            standard_seconds: 0,
+            distance_m: nearest.distance,
+          },
         ],
         station_at_incident: stationAtIncident,
       };

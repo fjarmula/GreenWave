@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { dispatchAdapter } from "@/lib/dispatch-adapter";
 import { DEFAULT_DISPATCH_SETTINGS } from "@/lib/start-request";
 import { useIncidentDispatch } from "@/lib/useIncidentDispatch";
@@ -17,6 +17,12 @@ function useScenarioOwner() {
   const [settings, setSettings] = useState(DEFAULT_DISPATCH_SETTINGS);
   const [runLabels, setRunLabels] = useState<RunLabels | null>(null);
   const [previousRun, setPreviousRun] = useState<PreviousRun | null>(null);
+  // Standard times in the ranking are for the run's density: every page re-ranks on a change.
+  const { setTrafficDensity } = dispatch;
+  useEffect(
+    () => setTrafficDensity(settings.trafficDensity),
+    [setTrafficDensity, settings.trafficDensity],
+  );
   const retainResult = (simulation: SimulationState) => {
     setPreviousRun((current) =>
       nextPreviousRun(

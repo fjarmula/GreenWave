@@ -45,12 +45,21 @@ describe("createMockDispatchAdapter", () => {
   });
 
   it("picks the straight-line nearest station of the requested type", async () => {
-    const ambulance = await adapter.rank({ incident, vehicle_type: "AMBULANCE" });
-    const fire = await adapter.rank({ incident, vehicle_type: "FIRE_TRUCK" });
+    const ambulance = await adapter.rank({
+      incident,
+      vehicle_type: "AMBULANCE",
+      traffic_density_multiplier: 1,
+    });
+    const fire = await adapter.rank({
+      incident,
+      vehicle_type: "FIRE_TRUCK",
+      traffic_density_multiplier: 1,
+    });
 
     expect(ambulance.candidates.map((c) => c.station.station_id)).toEqual(["STN-A-0002"]);
     expect(fire.candidates.map((c) => c.station.station_id)).toEqual(["STN-F-0001"]);
     expect(ambulance.candidates[0].greenwave_seconds).toBe(0);
+    expect(ambulance.candidates[0].standard_seconds).toBe(0);
     expect(ambulance.candidates[0].distance_m).toBeCloseTo(
       haversineMeters(incident, STATIONS[1].position),
     );
@@ -60,7 +69,9 @@ describe("createMockDispatchAdapter", () => {
   });
 
   it("rejects with NO_STATION_REACHABLE when no station has the type", async () => {
-    const error = await adapter.rank({ incident, vehicle_type: "POLICE_CAR" }).catch((e) => e);
+    const error = await adapter
+      .rank({ incident, vehicle_type: "POLICE_CAR", traffic_density_multiplier: 1 })
+      .catch((e) => e);
     expect(error).toBeInstanceOf(SimulationAdapterError);
     expect(error.code).toBe("NO_STATION_REACHABLE");
   });
@@ -84,6 +95,7 @@ describe("coincident station dispatch", () => {
     const result = await adapter.rank({
       incident: STATIONS[1].position,
       vehicle_type: "AMBULANCE",
+      traffic_density_multiplier: 1,
     });
     expect(result.station_at_incident).toEqual(STATIONS[1]);
     expect(result.candidates.map((item) => item.station.station_id)).toEqual(["STN-A-0001"]);
@@ -93,7 +105,11 @@ describe("coincident station dispatch", () => {
   it("rejects when the only station is coincident", async () => {
     const adapter = createMockDispatchAdapter([STATIONS[0]]);
     await expect(
-      adapter.rank({ incident: STATIONS[0].position, vehicle_type: "AMBULANCE" }),
+      adapter.rank({
+        incident: STATIONS[0].position,
+        vehicle_type: "AMBULANCE",
+        traffic_density_multiplier: 1,
+      }),
     ).rejects.toMatchObject({ code: "NO_STATION_REACHABLE" });
   });
 
@@ -105,6 +121,7 @@ describe("coincident station dispatch", () => {
     const result = await adapter.rank({
       incident: { lat: 50.01, lng: 20 },
       vehicle_type: "AMBULANCE",
+      traffic_density_multiplier: 1,
     });
     expect(result.candidates[0].station.station_id).toBe("STN-A-0001");
   });

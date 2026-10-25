@@ -52,6 +52,7 @@ const ranking = (stationId: string): DispatchRankResponse => ({
         position: { lat: 50, lng: 19.9 },
       },
       greenwave_seconds: 120,
+      standard_seconds: 150,
       distance_m: 900,
     },
   ],
@@ -67,6 +68,7 @@ const candidate = (stationId: string, seconds: number) => ({
     position: { lat: 50, lng: 19.9 },
   },
   greenwave_seconds: seconds,
+  standard_seconds: seconds + 30,
   distance_m: 900,
 });
 
@@ -102,6 +104,7 @@ describe("createIncidentDispatch", () => {
     expect(calls[0].request).toEqual({
       incident: { lat: 50.01, lng: 19.94 },
       vehicle_type: "AMBULANCE",
+      traffic_density_multiplier: 1,
     });
     expect(dispatch.getState().rankStatus).toBe("ready");
     expect(dispatch.getState().ranking?.candidates[0].station.station_id).toBe("STN-A-0001");
@@ -153,6 +156,50 @@ describe("createIncidentDispatch", () => {
       rankStatus: "loading",
       ranking: null,
     });
+  });
+
+  it("ranks with the chosen traffic density, without ranking before an incident", () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+
+    dispatch.setTrafficDensity(2);
+    expect(calls).toHaveLength(0);
+    dispatch.setIncident(incident(50.01));
+
+    expect(calls[0].request.traffic_density_multiplier).toBe(2);
+  });
+
+  it("re-ranks on density change and ignores the stale response", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(ranking("STN-A-0001"));
+    await flush();
+
+    dispatch.setTrafficDensity(2.5);
+    dispatch.setTrafficDensity(3);
+    expect(calls.map((call) => call.request.traffic_density_multiplier)).toEqual([1, 2.5, 3]);
+    expect(calls[1].signal?.aborted).toBe(true);
+    calls[2].resolve(ranking("STN-A-0003"));
+    await flush();
+    calls[1].resolve(ranking("STN-A-0002"));
+    await flush();
+
+    expect(dispatch.getState().ranking?.candidates[0].station.station_id).toBe("STN-A-0003");
+    expect(dispatch.getState().trafficDensity).toBe(3);
+  });
+
+  it("does not re-rank when the density is unchanged", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter);
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(ranking("STN-A-0001"));
+    await flush();
+
+    dispatch.setTrafficDensity(1);
+
+    expect(calls).toHaveLength(1);
+    expect(dispatch.getState().rankStatus).toBe("ready");
   });
 
   it("does not rank on a vehicle type change without an incident", () => {

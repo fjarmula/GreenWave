@@ -514,6 +514,7 @@ export function validateRank(body: unknown): DispatchRankResponse {
     const candidate = record(value, path);
     station(candidate.station, `${path}.station`);
     nonNegative(candidate.greenwave_seconds, `${path}.greenwave_seconds`);
+    nonNegative(candidate.standard_seconds, `${path}.standard_seconds`);
     nonNegative(candidate.distance_m, `${path}.distance_m`);
     optionalOnFootLeg(candidate.on_foot, `${path}.on_foot`);
   });

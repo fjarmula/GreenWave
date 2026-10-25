@@ -19,16 +19,19 @@ const RANKING: DispatchRankResponse = {
     {
       station: station("STN-A-0006", "SP ZOZ MSW", "hospital_ed"),
       greenwave_seconds: 248.4,
+      standard_seconds: 301.2,
       distance_m: 2810,
     },
     {
       station: station("STN-A-0007", "5. Wojskowy", "hospital_ed"),
       greenwave_seconds: 289,
+      standard_seconds: 342,
       distance_m: 3403,
     },
     {
       station: station("STN-A-0004", "KPR", "ambulance_base"),
       greenwave_seconds: 349,
+      standard_seconds: 401,
       distance_m: 4592,
     },
   ],
