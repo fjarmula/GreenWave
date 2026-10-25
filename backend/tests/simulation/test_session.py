@@ -91,6 +91,7 @@ def _response(simulation_id: str) -> SimulationStartResponse:
             "total_distance_m": 1,
             "estimated_normal_time_sec": 1,
             "estimated_greenwave_time_sec": 1,
+            "estimated_standard_time_sec": 1,
             "intersections_on_route": [],
             "route_intersections": [],
             "origin_snapped": {

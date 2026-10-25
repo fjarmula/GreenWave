@@ -123,6 +123,17 @@ describe("ER Green Wave mode in the mock", () => {
     expect(createMockSession(modeRequest(mode)).route.green_wave_mode).toBe(mode);
   });
 
+  it.each(["ENABLED", "DISABLED"] as const)(
+    "reports the disabled timeline's trip time as the standard estimate (%s)",
+    (mode) => {
+      const disabled = createMockSession(modeRequest("DISABLED"));
+
+      expect(createMockSession(modeRequest(mode)).route.estimated_standard_time_sec).toBe(
+        Math.round(disabled.timeline.tripSeconds),
+      );
+    },
+  );
+
   it("never dispatches or activates a corridor when disabled, even with cascade", () => {
     const { ticks, dispatches } = runToCompletion(createMockSession(modeRequest("DISABLED")));
 

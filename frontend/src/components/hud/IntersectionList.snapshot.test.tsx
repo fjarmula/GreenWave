@@ -31,6 +31,7 @@ function reviewState(): SimulationState {
       total_distance_m: 1000,
       estimated_normal_time_sec: 100,
       estimated_greenwave_time_sec: 70,
+      estimated_standard_time_sec: 85,
       intersections_on_route: ["INT-REVIEW"],
       route_intersections: [
         {

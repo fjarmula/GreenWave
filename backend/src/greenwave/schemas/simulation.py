@@ -151,6 +151,8 @@ class SimulationStartResponse(BaseModel):
     total_distance_m: Annotated[float, Field(ge=0.0)]
     estimated_normal_time_sec: Annotated[int, Field(ge=0)]
     estimated_greenwave_time_sec: Annotated[int, Field(ge=0)]
+    # The ambulance-without-priority run (ER Green Wave disabled), exact before rounding.
+    estimated_standard_time_sec: Annotated[int, Field(ge=0)]
     intersections_on_route: list[str]
     route_intersections: list[RouteIntersection]  # route order; same ids as intersections_on_route
     origin_snapped: SnappedEndpoint

@@ -315,6 +315,7 @@ This supersedes the earlier 1 Hz batching (ADR 0003, D9).
   "total_distance_m": 5400,
   "estimated_normal_time_sec": 780,
   "estimated_greenwave_time_sec": 380,
+  "estimated_standard_time_sec": 455,
   "intersections_on_route": ["INT-0361", "INT-0367"],
   "route_intersections": [
     {
@@ -362,6 +363,8 @@ really starts / ends at and its distance from the requested point.
 `green_wave_mode` echoes the mode the run uses, so a result is never read as
 the other mode's. `estimated_greenwave_time_sec` is always the model 2
 baseline, also in a disabled run.
+`estimated_standard_time_sec` is the exact pre-run time of the same route
+with ER Green Wave disabled (a dry run of disabled motion), in both modes.
 
 **Errors** (body `ErrorResponse`):
 

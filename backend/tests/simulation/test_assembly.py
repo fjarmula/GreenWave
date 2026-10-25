@@ -1,4 +1,5 @@
 import logging
+from datetime import UTC, datetime
 
 import pytest
 from tests.support.route_fixtures import corridor_index, position_at
@@ -10,6 +11,7 @@ from greenwave.schemas import GreenWaveMode, SimulationStartRequest
 from greenwave.simulation.assembly import plan_simulation
 from greenwave.simulation.engine import SimulationEngine
 from greenwave.simulation.route_model import build_route_model, to_start_response
+from greenwave.simulation.standard_estimate import standard_run_seconds
 from greenwave.simulation_settings import SimulationSettings
 
 _X = 7_421_000.0
@@ -33,7 +35,10 @@ def test_plan_simulation_matches_start_response_of_parts() -> None:
     model = build_route_model(route, index, settings, True)
     estimates = estimate_times(route, model, 1.5, settings)
     engine = SimulationEngine("SIM-plan", route, model, estimates, 1.5, settings, gateway)
-    assert planned.response == to_start_response("SIM-plan", route, model, estimates, index)
+    standard = standard_run_seconds(route, model, 1.5, settings)
+    assert planned.response == to_start_response(
+        "SIM-plan", route, model, estimates, index, standard_seconds=standard
+    )
     assert planned.engine.initial_state() == engine.initial_state()
 
 
@@ -75,6 +80,26 @@ def _mode_request(**extra: object) -> SimulationStartRequest:
             **extra,
         }
     )
+
+
+@pytest.mark.parametrize("mode", ["ENABLED", "DISABLED"])
+def test_the_start_response_carries_the_standard_run_estimate(mode: str) -> None:
+    settings, index = SimulationSettings(), corridor_index()
+    request = _mode_request(green_wave_mode=mode)
+
+    planned = plan_simulation(index, request, settings, MockItsGateway())
+
+    route = plan_route(index, request.origin, request.destination, settings)
+    model = build_route_model(route, index, settings, False)
+    expected = standard_run_seconds(route, model, 1.5, settings)
+    assert planned.response.estimated_standard_time_sec == round(expected)
+    disabled = plan_simulation(
+        index, _mode_request(green_wave_mode="DISABLED"), settings, MockItsGateway()
+    )
+    state = disabled.engine.initial_state()
+    while not state.completed:
+        state, _ = disabled.engine.step(state, datetime(2026, 10, 25, tzinfo=UTC))
+    assert state.arrived_at_s == expected
 
 
 def test_a_legacy_request_plans_an_enabled_run_with_its_cascade() -> None:

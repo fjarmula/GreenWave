@@ -141,7 +141,7 @@ function createMockRoute(
     };
   });
 
-  return {
+  const route: SimulationStartResponse = {
     schema_version: "1.0",
     is_simulated: true,
     simulation_id: request.simulation_id,
@@ -150,6 +150,7 @@ function createMockRoute(
     total_distance_m: metrics.distanceMeters,
     estimated_normal_time_sec: Math.round(metrics.normalSeconds),
     estimated_greenwave_time_sec: Math.round(metrics.greenwaveSeconds),
+    estimated_standard_time_sec: 0,
     intersections_on_route: routeIntersections.map((intersection) => intersection.id),
     route_intersections: routeIntersections,
     origin_snapped: { position: request.origin, snap_distance_m: 0 },
@@ -157,6 +158,14 @@ function createMockRoute(
     green_wave_mode: request.green_wave_mode,
     its_scenario: request.its_scenario,
   };
+  // The backend's dry run of disabled motion: the mock's exact disabled timeline.
+  const standard = mockTimeline(
+    route,
+    { ...request, green_wave_mode: "DISABLED" },
+    metrics.greenwaveSeconds,
+  );
+  route.estimated_standard_time_sec = Math.round(standard.tripSeconds);
+  return route;
 }
 
 /** Rolling cautious speed: the ordinary limit plus the remaining extra time per metre. */

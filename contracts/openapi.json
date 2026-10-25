@@ -1230,6 +1230,11 @@
             "title": "Estimated Normal Time Sec",
             "type": "integer"
           },
+          "estimated_standard_time_sec": {
+            "minimum": 0.0,
+            "title": "Estimated Standard Time Sec",
+            "type": "integer"
+          },
           "green_wave_mode": {
             "$ref": "#/components/schemas/GreenWaveMode",
             "default": "ENABLED"
@@ -1293,6 +1298,7 @@
           "total_distance_m",
           "estimated_normal_time_sec",
           "estimated_greenwave_time_sec",
+          "estimated_standard_time_sec",
           "intersections_on_route",
           "route_intersections",
           "origin_snapped",

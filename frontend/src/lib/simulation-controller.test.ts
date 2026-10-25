@@ -58,6 +58,7 @@ function response(simulationId: string): SimulationStartResponse {
     total_distance_m: 1000,
     estimated_normal_time_sec: 200,
     estimated_greenwave_time_sec: 100,
+    estimated_standard_time_sec: 120,
     intersections_on_route: [],
     route_intersections: [],
     origin_snapped: { position: { lat: 50.06, lng: 19.95 }, snap_distance_m: 0 },

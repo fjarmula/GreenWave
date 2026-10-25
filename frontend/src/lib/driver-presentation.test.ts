@@ -121,8 +121,8 @@ describe("etaSeconds", () => {
     expect(etaSeconds(route, tickAt([], 80))).toBe(300);
     expect(etaSeconds(route, null)).toBe(380);
   });
-  it("uses the normal estimate for standard traffic and never goes negative", () => {
-    expect(etaSeconds({ ...route, green_wave_mode: "DISABLED" }, tickAt([], 80))).toBe(700);
+  it("uses the standard-run estimate for standard traffic and never goes negative", () => {
+    expect(etaSeconds({ ...route, green_wave_mode: "DISABLED" }, tickAt([], 80))).toBe(375);
     expect(etaSeconds(route, tickAt([], 999))).toBe(0);
   });
 });

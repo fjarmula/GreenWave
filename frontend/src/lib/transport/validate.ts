@@ -205,6 +205,7 @@ export function parseStartResponse(value: unknown): SimulationStartResponse {
   finite(body.total_distance_m, "total_distance_m");
   finite(body.estimated_normal_time_sec, "estimated_normal_time_sec");
   finite(body.estimated_greenwave_time_sec, "estimated_greenwave_time_sec");
+  finite(body.estimated_standard_time_sec, "estimated_standard_time_sec");
   list(body.intersections_on_route, "intersections_on_route").forEach((id, index) =>
     text(id, `intersections_on_route[${index}]`),
   );

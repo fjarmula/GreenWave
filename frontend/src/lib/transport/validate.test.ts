@@ -80,6 +80,14 @@ describe("parseStartResponse", () => {
       (c: Record<string, unknown>) => (c.estimated_greenwave_time_sec = JSON.parse("1e999")),
     ],
     [
+      "a non-finite standard estimate",
+      (c: Record<string, unknown>) => (c.estimated_standard_time_sec = JSON.parse("1e999")),
+    ],
+    [
+      "a missing standard estimate",
+      (c: Record<string, unknown>) => delete c.estimated_standard_time_sec,
+    ],
+    [
       "a route intersection without a position",
       (c: Record<string, unknown>) =>
         delete record((c.route_intersections as unknown[])[0]).position,

@@ -23,6 +23,7 @@
    "total_distance_m": 5349.288070039313,
    "estimated_normal_time_sec": 773,
    "estimated_greenwave_time_sec": 376,
+   "estimated_standard_time_sec": 401,
    "intersections_on_route": [
     "INT-9001",
     "INT-9002"
@@ -21914,6 +21915,7 @@
    "total_distance_m": 5349.288070039313,
    "estimated_normal_time_sec": 773,
    "estimated_greenwave_time_sec": 376,
+   "estimated_standard_time_sec": 401,
    "intersections_on_route": [
     "INT-9001",
     "INT-9002"
@@ -47152,6 +47154,7 @@
    "total_distance_m": 5349.288070039313,
    "estimated_normal_time_sec": 773,
    "estimated_greenwave_time_sec": 376,
+   "estimated_standard_time_sec": 401,
    "intersections_on_route": [
     "INT-9001",
     "INT-9002"
@@ -69043,6 +69046,7 @@
    "total_distance_m": 5349.288070039313,
    "estimated_normal_time_sec": 773,
    "estimated_greenwave_time_sec": 376,
+   "estimated_standard_time_sec": 401,
    "intersections_on_route": [
     "INT-9001",
     "INT-9002"
@@ -69231,6 +69235,7 @@
    "total_distance_m": 5349.288070039313,
    "estimated_normal_time_sec": 773,
    "estimated_greenwave_time_sec": 376,
+   "estimated_standard_time_sec": 401,
    "intersections_on_route": [
     "INT-9001",
     "INT-9002"

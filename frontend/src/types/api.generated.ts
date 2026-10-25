@@ -702,6 +702,8 @@ export interface components {
             estimated_greenwave_time_sec: number;
             /** Estimated Normal Time Sec */
             estimated_normal_time_sec: number;
+            /** Estimated Standard Time Sec */
+            estimated_standard_time_sec: number;
             /** @default ENABLED */
             green_wave_mode: components["schemas"]["GreenWaveMode"];
             /** Intersections On Route */
