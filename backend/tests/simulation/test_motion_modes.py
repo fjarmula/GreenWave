@@ -214,14 +214,15 @@ def test_safety_hold_still_waits_for_green() -> None:
 
 def test_a_tight_hold_still_outlasts_the_rolling_slowdowns() -> None:
     # The contract floors a hold at 40 s, so drive slowly enough (1.3 m/s) that reaching each
-    # line takes longer than that; no buffer, so only the D_min term keeps the hold alive.
+    # line takes longer than that. The 1 s buffer is the tick in which passage is observed after
+    # the line is crossed; without the D_min term the hold would still be the 40 s floor.
     engine = _engine(
         GreenWaveMode.ENABLED,
         stop_lines=(90.0, 150.0),
         speeds_kmh=(3.6, 3.6),
         phase=GREEN,
         settings={
-            "its_hold_buffer_seconds": 0,
+            "its_hold_buffer_seconds": 1,
             "ambulance_min_speed_kmh": 0,
             "speed_floor_meters_per_second": 0,
         },
@@ -364,6 +365,20 @@ def test_a_crossing_from_an_edge_end_uses_the_limit_beyond_the_line() -> None:
     engine = _engine(GreenWaveMode.DISABLED, stop_lines=(100.0,), speeds_kmh=(54.0, 36.0))
     states, _ = _run(engine)
     assert min(_moved_each_second(states)) >= _FLOOR_STD_MPS - 1e-9
+
+
+def test_a_crossing_onto_a_slower_edge_keeps_the_floor() -> None:
+    """Sized from the lowest limit it covers: 15 m/s at the line, 10 m/s past 100 m."""
+    states, _ = _run(_engine(GreenWaveMode.DISABLED, speeds_kmh=(54.0, 36.0)))
+    assert min(_moved_each_second(states)) >= _FLOOR_STD_MPS - 1e-9
+    # The 10 m/s edge sets the length, so it is driven exactly at the floor.
+    assert states[-1].arrived_at_s == pytest.approx(
+        _STOP_M / 19.5
+        + 10.0 / 15.0
+        + (_STD_L - 10.0) / 10.0
+        + _CAUTIOUS_S
+        + (110.0 - _STD_L) / _AMBULANCE_MPS
+    )
 
 
 def test_disabled_green_movement_has_no_penalty() -> None:

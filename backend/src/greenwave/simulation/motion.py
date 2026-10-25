@@ -102,6 +102,38 @@ def standard_crossing(
     return length_m, extra_s
 
 
+def _ordinary_limit_mps(track: RouteTrack, edge: int) -> float:
+    return min(track.speed_mps(edge), track.speed_limit_mps(edge))
+
+
+def _sized_standard_crossing(
+    track: RouteTrack,
+    line_m: float,
+    wait_s: float | None,
+    delay_s: float,
+    density: float,
+    settings: SimulationSettings,
+) -> tuple[float, float]:
+    """:func:`standard_crossing` sized from the lowest ordinary limit it covers past ``line_m``.
+
+    The extra time is spread in proportion to distance, so the speed on every covered edge stays
+    at or above the floor reached on the slowest one. A lower limit lengthens the crossing, which
+    can cover a further edge; the limit only falls, and the route has finitely many edges.
+    """
+    first = track.edge_at(line_m)
+    limit = _ordinary_limit_mps(track, first)
+    while True:
+        length, extra = standard_crossing(wait_s, delay_s, limit, density, settings)
+        end_m = line_m + length
+        edge, lowest = first, limit
+        while edge + 1 < track.edge_count and track.edge_end_m(edge) < end_m:
+            edge += 1
+            lowest = min(lowest, _ordinary_limit_mps(track, edge))
+        if lowest >= limit:
+            return length, extra
+        limit = lowest
+
+
 def _window_start_m(
     route_model: RouteModel, stop: RouteIntersection, settings: SimulationSettings
 ) -> float:
@@ -232,14 +264,11 @@ def move_one_second(
                     for item in facing
                     for wait in (route_seconds_until_green(item.id, at_s),)
                 ]
-                crossing, cautious = standard_crossing(
+                crossing, cautious = _sized_standard_crossing(
+                    track,
+                    distance,
                     max(waits),
                     max(item.delay_seconds for item in facing),
-                    # The crossing is driven beyond the line: on the next edge at an edge end.
-                    min(
-                        track.speed_mps(track.edge_at(distance)),
-                        track.speed_limit_mps(track.edge_at(distance)),
-                    ),
                     traffic_density_multiplier,
                     settings,
                 )

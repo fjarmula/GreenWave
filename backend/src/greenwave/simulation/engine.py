@@ -252,7 +252,7 @@ class SimulationEngine:
         self, state: EngineState, ids: tuple[str, ...], now: datetime
     ) -> tuple[EngineState, ItsDispatchEvent]:
         payload = build_dispatch_payload(
-            self.route_model, state, ids, now, self.settings, self.vehicle_type
+            self.route_model, self._track, state, ids, now, self.settings, self.vehicle_type
         )
         state = replace(state, message_sequence=state.message_sequence + 1)
         dispatch = dispatch_event(self.simulation_id, state, payload, now)

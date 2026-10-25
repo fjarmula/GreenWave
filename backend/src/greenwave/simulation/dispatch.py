@@ -6,18 +6,25 @@ from math import ceil
 from greenwave.schemas import ItsDispatchEvent, ItsDispatchPayload, VehicleType
 from greenwave.simulation.corridor import route_runtimes, time_to_intersection
 from greenwave.simulation.route_model import RouteModel
+from greenwave.simulation.route_track import RouteTrack
 from greenwave.simulation.state import EngineState
 from greenwave.simulation_settings import SimulationSettings
 
 
 def release_seconds(
-    route_model: RouteModel, state: EngineState, intersection_id: str, settings: SimulationSettings
+    route_model: RouteModel,
+    track: RouteTrack,
+    state: EngineState,
+    intersection_id: str,
+    settings: SimulationSettings,
 ) -> float:
-    """Seconds until the vehicle can clear ``intersection_id``: its last stop line at the smoothed
-    speed plus ``D_min`` for every unpassed route intersection up to and including it.
+    """Seconds until the vehicle can clear ``intersection_id``: the open road to its last stop
+    line at each edge's ambulance speed plus ``D_min`` for every unpassed route intersection up
+    to and including it.
 
     A hold shorter than this would expire while the vehicle is still spending the rolling
-    slowdowns of the intersections before the target, or crossing a multi-line target.
+    slowdowns of the intersections before the target, crossing a multi-line target, or driving
+    a slower road than the one it just drove (the smoothed speed is only the recent past).
     """
     runtimes = list(route_runtimes(route_model, state))
     target = next(item for item, _ in runtimes if item.id == intersection_id)
@@ -26,15 +33,15 @@ def release_seconds(
         for item, runtime in runtimes
         if not runtime.passed and item.first_stop_line_m <= target.first_stop_line_m
     )
-    remaining_m = max(0.0, target.last_stop_line_m - state.distance_travelled_m)
     return (
-        remaining_m / state.v_avg_meters_per_second
+        track.open_road_seconds(state.distance_travelled_m, target.last_stop_line_m)
         + settings.min_intersection_delay_seconds * junctions
     )
 
 
 def build_dispatch_payload(
     route_model: RouteModel,
+    track: RouteTrack,
     state: EngineState,
     intersection_ids: tuple[str, ...],
     now: datetime,
@@ -56,7 +63,7 @@ def build_dispatch_payload(
             settings.its_min_hold_seconds,
             ceil(
                 max(
-                    release_seconds(route_model, state, intersection_id, settings)
+                    release_seconds(route_model, track, state, intersection_id, settings)
                     for intersection_id in intersection_ids
                 )
             )

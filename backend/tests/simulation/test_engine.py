@@ -217,8 +217,9 @@ def test_own_clear_cascades_once_and_batches_its_dispatch() -> None:
     assert events[0].payload.hold_duration_sec == 40
 
 
-def test_calming_estimate_is_not_a_guarantee_for_multi_line_hold() -> None:
-    """Calming seconds reach the estimate and the simulated motion alike (one edge-time model)."""
+def test_calming_reaches_the_estimate_the_motion_and_the_hold_alike() -> None:
+    """Calming seconds reach the estimate, the simulated motion and the hold (one edge-time
+    model), so a multi-line junction behind calmed edges no longer outlives its hold."""
     settings = neutral_settings(ambulance_calming_seconds=2.0)
     index = corridor_index({"corridor-twin-1": {"calming_count": 3}})
     # Ends past INT-B: a route ending on a stop line arrives before that last D_min dwell.
@@ -235,8 +236,7 @@ def test_calming_estimate_is_not_a_guarantee_for_multi_line_hold() -> None:
 
     assert len(model.intersections) == 4  # D_min is part of both numbers
     assert estimates.greenwave_seconds == pytest.approx(neutral.greenwave_seconds + 6.0)
-    assert events[-1].event_type == "SIMULATION_CANCELLED"
-    assert events[-1].reason == "ITS_HOLD_EXPIRED"
+    assert events[-1].event_type == "SIMULATION_COMPLETED"
 
 
 def test_ticks_identify_the_dispatched_vehicle_type_not_the_simulation() -> None:

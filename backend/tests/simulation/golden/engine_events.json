@@ -15,7 +15,7 @@
    {
     "action": "FORCE_GREEN_PHASE",
     "expected_arrival_utc": "2026-10-17T00:00:38.045036Z",
-    "hold_duration_sec": 50,
+    "hold_duration_sec": 46,
     "intersections_group": [
      "INT-C"
     ],
@@ -25,7 +25,7 @@
    {
     "action": "FORCE_GREEN_PHASE",
     "expected_arrival_utc": "2026-10-17T00:00:38.578558Z",
-    "hold_duration_sec": 53,
+    "hold_duration_sec": 49,
     "intersections_group": [
      "INT-B"
     ],
@@ -1088,7 +1088,7 @@
     "payload": {
      "action": "FORCE_GREEN_PHASE",
      "expected_arrival_utc": "2026-10-17T00:00:38.045036Z",
-     "hold_duration_sec": 50,
+     "hold_duration_sec": 46,
      "intersections_group": [
       "INT-C"
      ],
@@ -2973,7 +2973,7 @@
     "payload": {
      "action": "FORCE_GREEN_PHASE",
      "expected_arrival_utc": "2026-10-17T00:00:38.578558Z",
-     "hold_duration_sec": 53,
+     "hold_duration_sec": 49,
      "intersections_group": [
       "INT-B"
      ],
@@ -8693,7 +8693,7 @@
    {
     "action": "FORCE_GREEN_PHASE",
     "expected_arrival_utc": "2026-10-17T00:00:38.045036Z",
-    "hold_duration_sec": 50,
+    "hold_duration_sec": 46,
     "intersections_group": [
      "INT-C"
     ],
@@ -8703,7 +8703,7 @@
    {
     "action": "FORCE_GREEN_PHASE",
     "expected_arrival_utc": "2026-10-17T00:00:38.578558Z",
-    "hold_duration_sec": 53,
+    "hold_duration_sec": 49,
     "intersections_group": [
      "INT-B"
     ],
@@ -9766,7 +9766,7 @@
     "payload": {
      "action": "FORCE_GREEN_PHASE",
      "expected_arrival_utc": "2026-10-17T00:00:38.045036Z",
-     "hold_duration_sec": 50,
+     "hold_duration_sec": 46,
      "intersections_group": [
       "INT-C"
      ],
@@ -11651,7 +11651,7 @@
     "payload": {
      "action": "FORCE_GREEN_PHASE",
      "expected_arrival_utc": "2026-10-17T00:00:38.578558Z",
-     "hold_duration_sec": 53,
+     "hold_duration_sec": 49,
      "intersections_group": [
       "INT-B"
      ],
@@ -17371,7 +17371,7 @@
    {
     "action": "FORCE_GREEN_PHASE",
     "expected_arrival_utc": "2026-10-17T00:00:38.045036Z",
-    "hold_duration_sec": 50,
+    "hold_duration_sec": 46,
     "intersections_group": [
      "INT-C"
     ],
@@ -17381,7 +17381,7 @@
    {
     "action": "FORCE_GREEN_PHASE",
     "expected_arrival_utc": "2026-10-17T00:00:38.578558Z",
-    "hold_duration_sec": 53,
+    "hold_duration_sec": 49,
     "intersections_group": [
      "INT-B"
     ],
@@ -18444,7 +18444,7 @@
     "payload": {
      "action": "FORCE_GREEN_PHASE",
      "expected_arrival_utc": "2026-10-17T00:00:38.045036Z",
-     "hold_duration_sec": 50,
+     "hold_duration_sec": 46,
      "intersections_group": [
       "INT-C"
      ],
@@ -20329,7 +20329,7 @@
     "payload": {
      "action": "FORCE_GREEN_PHASE",
      "expected_arrival_utc": "2026-10-17T00:00:38.578558Z",
-     "hold_duration_sec": 53,
+     "hold_duration_sec": 49,
      "intersections_group": [
       "INT-B"
      ],
