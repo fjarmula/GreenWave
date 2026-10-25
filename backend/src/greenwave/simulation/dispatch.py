@@ -10,6 +10,29 @@ from greenwave.simulation.state import EngineState
 from greenwave.simulation_settings import SimulationSettings
 
 
+def release_seconds(
+    route_model: RouteModel, state: EngineState, intersection_id: str, settings: SimulationSettings
+) -> float:
+    """Seconds until the vehicle can clear ``intersection_id``: its last stop line at the smoothed
+    speed plus ``D_min`` for every unpassed route intersection up to and including it.
+
+    A hold shorter than this would expire while the vehicle is still spending the rolling
+    slowdowns of the intersections before the target, or crossing a multi-line target.
+    """
+    runtimes = list(route_runtimes(route_model, state))
+    target = next(item for item, _ in runtimes if item.id == intersection_id)
+    junctions = sum(
+        1
+        for item, runtime in runtimes
+        if not runtime.passed and item.first_stop_line_m <= target.first_stop_line_m
+    )
+    remaining_m = max(0.0, target.last_stop_line_m - state.distance_travelled_m)
+    return (
+        remaining_m / state.v_avg_meters_per_second
+        + settings.min_intersection_delay_seconds * junctions
+    )
+
+
 def build_dispatch_payload(
     route_model: RouteModel,
     state: EngineState,
@@ -18,7 +41,7 @@ def build_dispatch_payload(
     settings: SimulationSettings,
     vehicle_type: VehicleType,
 ) -> ItsDispatchPayload:
-    """Hold green until the farthest member is reached plus a buffer; arrive at the nearest."""
+    """Hold green until the farthest member can be cleared plus a buffer; arrive at the nearest."""
     tti_by_id = {
         item.id: time_to_intersection(item.first_stop_line_m, runtime, state) or 0.0
         for item, runtime in route_runtimes(route_model, state)
@@ -30,7 +53,14 @@ def build_dispatch_payload(
         intersections_group=list(intersection_ids),
         action="FORCE_GREEN_PHASE",
         hold_duration_sec=max(
-            settings.its_min_hold_seconds, ceil(max(ttis)) + settings.its_hold_buffer_seconds
+            settings.its_min_hold_seconds,
+            ceil(
+                max(
+                    release_seconds(route_model, state, intersection_id, settings)
+                    for intersection_id in intersection_ids
+                )
+            )
+            + settings.its_hold_buffer_seconds,
         ),
         expected_arrival_utc=now + timedelta(seconds=min(ttis)),
     )

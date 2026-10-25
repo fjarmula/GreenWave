@@ -131,8 +131,8 @@ def test_priority_is_held_while_the_ambulance_waits_at_the_stop_line(origin_x: f
 def test_without_a_late_start_the_trip_still_takes_t_greenwave() -> None:
     """Holding never delays an ambulance whose priority was in place in time."""
     engine, ticks = _run(_X + 1_000, SimulationSettings(), cascade=False)
-    assert any(r.status == "EXPIRED" for r in engine.ledger.snapshots())
-    assert ticks[-1][1].kpi_metrics.total_time_elapsed_sec < round(
+    assert not any(r.status == "EXPIRED" for r in engine.ledger.snapshots())
+    assert ticks[-1][1].kpi_metrics.total_time_elapsed_sec == round(
         engine.estimates.greenwave_seconds
     )
 

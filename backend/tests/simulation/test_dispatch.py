@@ -1,6 +1,7 @@
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
+import pytest
 from tests.support.route_fixtures import corridor_index, position_at, route_edges
 
 from greenwave.its import MockItsGateway
@@ -17,7 +18,7 @@ from greenwave.schemas import (
 )
 from greenwave.simulation import dispatch
 from greenwave.simulation.assembly import plan_simulation
-from greenwave.simulation.dispatch import build_dispatch_payload, dispatch_event
+from greenwave.simulation.dispatch import build_dispatch_payload, dispatch_event, release_seconds
 from greenwave.simulation.engine import EngineEvent, SimulationEngine
 from greenwave.simulation.route_model import RouteIntersection, RouteModel
 from greenwave.simulation.state import EngineState
@@ -60,11 +61,100 @@ def test_payload_holds_until_last_member_plus_buffer() -> None:
         _model(), _state(), ("FAR", "NEAR"), _NOW, settings, VehicleType.AMBULANCE
     )
 
+    # FAR: 9.1 m at 1 m/s plus D_min (3 s) at NEAR and at FAR -> 15.1 s -> 16 s + buffer.
     assert payload.hold_duration_sec == max(
-        settings.its_min_hold_seconds, 10 + settings.its_hold_buffer_seconds
+        settings.its_min_hold_seconds, 16 + settings.its_hold_buffer_seconds
     )
     assert payload.expected_arrival_utc == _NOW + timedelta(seconds=4.2)
     assert payload.intersections_group == ["FAR", "NEAR"]
+
+
+def _three_junction_state(passed_first: bool = False) -> EngineState:
+    return replace(
+        _state(),
+        v_avg_meters_per_second=10.0,
+        intersection_runtimes=(
+            IntersectionRuntime(passed=passed_first),
+            IntersectionRuntime(),
+            IntersectionRuntime(),
+        ),
+    )
+
+
+def _three_junction_model() -> RouteModel:
+    return RouteModel(
+        intersections=(
+            RouteIntersection("FIRST", 50.0, 50.0, 10.0),
+            RouteIntersection("SECOND", 200.0, 200.0, 10.0),
+            RouteIntersection("THIRD", 380.0, 400.0, 10.0),
+        ),
+        _cascade_targets={},
+    )
+
+
+def test_hold_covers_every_d_min_up_to_the_farthest_target() -> None:
+    settings = SimulationSettings()
+
+    payload = build_dispatch_payload(
+        _three_junction_model(),
+        replace(_three_junction_state(), v_avg_meters_per_second=5.0),
+        ("SECOND", "THIRD"),
+        _NOW,
+        settings,
+        VehicleType.AMBULANCE,
+    )
+
+    # THIRD: last line 400 m at 5 m/s = 80 s, plus 3 junctions x D_min 3 s = 89 s.
+    assert payload.hold_duration_sec == 89 + settings.its_hold_buffer_seconds
+    # Arrival stays the open-road TTI to the nearest member's first line.
+    assert payload.expected_arrival_utc == _NOW + timedelta(seconds=40.0)
+
+
+def test_hold_is_floored_by_the_minimum_hold() -> None:
+    settings = SimulationSettings(its_min_hold_seconds=60)  # release 49 s + 5 s buffer < 60
+
+    payload = build_dispatch_payload(
+        _three_junction_model(),
+        _three_junction_state(),
+        ("SECOND", "THIRD"),
+        _NOW,
+        settings,
+        VehicleType.AMBULANCE,
+    )
+
+    assert payload.hold_duration_sec == 60
+
+
+def test_hold_reaches_the_last_stop_line_of_a_multi_line_target() -> None:
+    model = RouteModel(
+        intersections=(RouteIntersection("INT-1", 100.0, 160.0, 10.0),),
+        _cascade_targets={},
+    )
+    state = replace(
+        _state(), v_avg_meters_per_second=10.0, intersection_runtimes=(IntersectionRuntime(),)
+    )
+
+    assert release_seconds(model, state, "INT-1", SimulationSettings()) == pytest.approx(19.0)
+
+
+def test_passed_junctions_add_no_d_min() -> None:
+    model = _three_junction_model()
+    settings = SimulationSettings()
+
+    unpassed = release_seconds(model, _three_junction_state(), "SECOND", settings)
+    passed = release_seconds(model, _three_junction_state(passed_first=True), "SECOND", settings)
+
+    # 200 m at 10 m/s = 20 s; FIRST and SECOND each add D_min until FIRST is passed.
+    assert unpassed == pytest.approx(26.0)
+    assert passed == pytest.approx(23.0)
+
+
+def test_release_counts_only_the_distance_still_to_drive() -> None:
+    state = replace(_three_junction_state(passed_first=True), distance_travelled_m=120.0)
+
+    assert release_seconds(
+        _three_junction_model(), state, "THIRD", SimulationSettings()
+    ) == pytest.approx(28.0 + 2 * 3.0)
 
 
 def test_event_uses_the_state_message_sequence_and_tick() -> None:

@@ -261,7 +261,8 @@ class ItsDispatchPayload(BaseModel):
     vehicle_type: VehicleType  # the start request's; widened from "AMBULANCE" by ADR 0006
     intersections_group: Annotated[list[str], Field(min_length=1)]
     action: Literal["FORCE_GREEN_PHASE"]
-    # max(40, ceil(largest TTI in group at dispatch) + its_hold_buffer_seconds)
+    # max(40, ceil(largest release time in group at dispatch) + its_hold_buffer_seconds): the
+    # last stop line at the smoothed speed plus D_min per unpassed junction up to it (ADR 0010)
     hold_duration_sec: Annotated[int, Field(ge=HOLD_DURATION_FLOOR_SEC)]
     expected_arrival_utc: AwareDatetime  # emission time + smallest TTI in the group
 

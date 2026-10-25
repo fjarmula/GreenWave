@@ -748,8 +748,8 @@ def test_comparison_members_preserve_the_selected_its_scenario() -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("scenario", "failure"),
-    # This fixture's nominal request expires under main's unchanged hold policy.
-    [("NOMINAL", "ITS_HOLD_EXPIRED"), ("REJECTED", "ITS_REJECTED"), ("NO_FEEDBACK", "ITS_TIMEOUT")],
+    # A nominal request holds until the vehicle clears its farthest target (ADR 0010).
+    [("NOMINAL", None), ("REJECTED", "ITS_REJECTED"), ("NO_FEEDBACK", "ITS_TIMEOUT")],
 )
 async def test_real_engine_comparison_keeps_feedback_and_baseline_isolated(
     scenario: str, failure: str | None
