@@ -147,7 +147,7 @@ With `green_wave_mode: "DISABLED"` the route and the open-road motion are exactl
    $$\frac{d}{v} + C_{\mathrm{remaining}} \cdot \frac{d}{L_{\mathrm{remaining}}},$$
    so the speed is at least $v_f$, never above $v$, and carries across edge ends.
 
-A later stop line replaces an active crossing with its own decision (a fresh crossing if it is not green). Each intersection's route signals share one cycle phase, so the lines of one through movement show the same colour. The crossing is a modelling boundary (the ETL has no junction exit geometry), and $c$, $L_c$, $C_{\max}$, $v_f$ are PoC assumptions, not measured Kraków values; $L_c$ and $v_f$ are strictly positive and all are finite (ADR 0010). There is no separate disabled-mode estimate: the run's `total_time_elapsed_sec` is the exact simulated arrival, and `current_time_saved_sec` compares it with $T_{\mathrm{normal}}$ in either mode. Implementation: `backend/src/greenwave/simulation/motion.py`.
+A later stop line replaces an active crossing with its own decision (a fresh crossing if it is not green). Each intersection's route signals share one cycle phase, so the lines of one through movement show the same colour. The crossing is a modelling boundary (the ETL has no junction exit geometry), and $c$, $L_c$, $C_{\max}$, $v_f$ are PoC assumptions, not measured Kraków values; $L_c$ and $v_f$ are strictly positive and all are finite (ADR 0010). The pre-run standard estimate is a dry run of this motion: `standard_run_seconds` drives `move_one_second` in disabled mode against the pure ordinary programme (deterministic from $t = 0$, no ITS) until arrival, so `estimated_standard_time_sec` (start response) and `standard_seconds` (each ranked candidate) equal the disabled run's arrival exactly before rounding (ADR 0011; at most about 12 ms per route on the Kraków sample). $T_{\mathrm{normal}}$ stays the product's normal-traffic baseline: `current_time_saved_sec` compares the run's elapsed time with it in either mode, and the dashboard labels that number "vs normal traffic" in a disabled run. Implementation: `backend/src/greenwave/simulation/motion.py`.
 
 ---
 
@@ -222,7 +222,7 @@ incident (additive to contract v1, `docs/adr/0006-incident-dispatch-contract.md`
 GET  /api/v1/stations                    -> StationsResponse (all types, by station_id)
 GET  /api/v1/geocode?q=<2-100>&limit=<1-10, default 8>
                                          -> GeocodeResponse ({label, position} results)
-POST /api/v1/dispatch/rank {incident, vehicle_type}
+POST /api/v1/dispatch/rank {incident, vehicle_type, traffic_density_multiplier = 1.0}
                                          -> DispatchRankResponse (1-3 candidates, best first,
                                             incident_snapped, station_at_incident)
 ```
@@ -234,8 +234,13 @@ POST /api/v1/dispatch/rank {incident, vehicle_type}
 - **Ranking:** a reversed Dijkstra from the incident over the routing weight
   shortlists `dispatch_shortlist_size` (5) stations; each gets the real
   `plan_route` + route model + `estimate_times`, ranked by
-  `(greenwave_seconds + on_foot.seconds, station_id)`. The displayed time is
-  therefore the `estimated_greenwave_time_sec` the run reports, plus the walk.
+  `(greenwave_seconds + on_foot.seconds, station_id)`. Each candidate also
+  carries `standard_seconds`, the exact standard-run estimate at the request's
+  density (1.0-3.0). The displayed times are therefore the
+  `estimated_greenwave_time_sec` / `estimated_standard_time_sec` the run
+  reports, plus the walk. The frontend shows, orders and badges by the page's
+  mode (green wave, standard; the comparison shows both in backend order) and
+  splits an off-road total into `{drive} drive + {walk} on foot · {distance}`.
   A station on the incident's own node is returned as `station_at_incident`
   and skipped. Errors: `DESTINATION_OFF_NETWORK`, `NO_STATION_REACHABLE` (422).
 - **Off-road incidents** (ADR 0009, additive): when the incident is beyond the

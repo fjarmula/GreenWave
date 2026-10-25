@@ -6,16 +6,20 @@ Each incident is a random address (``addresses.sample(n, seed)``); its origin is
 ambulance station (``rank_stations``). Every pair is planned with ``plan_simulation`` and stepped
 with ``engine.step`` until the run completes. One row per (route, mode):
 
-    route mode est_normal est_greenwave arrived_at terminal min_kmh zero_ticks_outside_hold
-    intersections
+    route mode est_normal est_greenwave est_standard arrived_at terminal min_kmh
+    zero_ticks_outside_hold intersections
 
 then a summary per mode: terminal-reason counts, the minimum pre-arrival speed (the arrival tick
 excluded; ENABLED ticks that start or end held at a stop line, ``dwelling_intersection_id`` set,
 are safety holds and counted separately), and for completed ENABLED runs the largest
-``|arrived_at - est_greenwave|``. Measurements only: not collected by pytest, not run by CI.
+``|arrived_at - est_greenwave|``, for completed DISABLED runs the largest
+``|arrived_at - est_standard|`` (``standard_run_seconds``, the pre-run standard estimate) and
+the slowest standard estimate in milliseconds. Measurements only: not collected by pytest,
+not run by CI.
 """
 
 import argparse
+import time
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -35,6 +39,7 @@ from greenwave.schemas import (
     VehicleType,
 )
 from greenwave.simulation.assembly import plan_simulation
+from greenwave.simulation.standard_estimate import standard_run_seconds
 from greenwave.simulation_settings import SimulationSettings
 
 _START = datetime(2026, 10, 25, tzinfo=UTC)
@@ -46,6 +51,8 @@ class RunResult:
     mode: GreenWaveMode
     est_normal: float
     est_greenwave: float
+    est_standard: float
+    est_standard_ms: float
     arrived_at: float | None
     terminal: str
     min_kmh: float
@@ -61,6 +68,8 @@ class ModeSummary:
     hold_ticks: int = 0
     zero_ticks_outside_hold: int = 0
     max_greenwave_error_s: float = 0.0
+    max_standard_error_s: float = 0.0
+    max_standard_ms: float = 0.0
 
 
 def run_once(
@@ -69,7 +78,14 @@ def run_once(
     index: RoutingIndex,
     settings: SimulationSettings,
 ) -> RunResult:
-    engine = plan_simulation(index, request, settings).engine
+    planned = plan_simulation(index, request, settings)
+    engine = planned.engine
+    started = time.perf_counter()
+    est_standard = standard_run_seconds(
+        engine.route, engine.route_model, request.traffic_density_multiplier, settings
+    )
+    est_standard_ms = (time.perf_counter() - started) * 1000
+    assert planned.response.estimated_standard_time_sec == round(est_standard)
     state = engine.initial_state()
     terminal = "none"
     min_kmh, zero_ticks, hold_ticks = inf, 0, 0
@@ -100,6 +116,8 @@ def run_once(
         mode=request.green_wave_mode,
         est_normal=engine.estimates.normal_seconds,
         est_greenwave=engine.estimates.greenwave_seconds,
+        est_standard=est_standard,
+        est_standard_ms=est_standard_ms,
         arrived_at=state.arrived_at_s,
         terminal=terminal,
         min_kmh=min_kmh,
@@ -131,7 +149,9 @@ def main() -> int:
     for route, row in enumerate(sample.iter_rows(named=True)):
         incident = Position(lat=row["lat"], lng=row["lng"])
         try:
-            ranking = rank_stations(index, stations, incident, VehicleType.AMBULANCE, settings)
+            ranking = rank_stations(
+                index, stations, incident, VehicleType.AMBULANCE, settings, args.density
+            )
         except (DestinationOffNetwork, NoStationReachable) as error:
             print(f"{route:>3} skipped: {type(error).__name__}")
             skipped += 1
@@ -150,14 +170,15 @@ def main() -> int:
             results.append(run_once(route, request, index, settings))
 
     print(
-        "route mode     est_normal est_greenwave arrived_at terminal          min_kmh "
-        "zero_ticks_outside_hold intersections"
+        "route mode     est_normal est_greenwave est_standard arrived_at terminal          "
+        "min_kmh zero_ticks_outside_hold intersections"
     )
     for r in results:
         arrived = "-" if r.arrived_at is None else f"{r.arrived_at:.2f}"
         print(
             f"{r.route:>5} {r.mode.value:<8} {r.est_normal:>10.1f} {r.est_greenwave:>13.2f} "
-            f"{arrived:>10} {r.terminal:<17} {r.min_kmh:>7.1f} {r.zero_ticks_outside_hold:>23} "
+            f"{r.est_standard:>12.2f} {arrived:>10} {r.terminal:<17} {r.min_kmh:>7.1f} "
+            f"{r.zero_ticks_outside_hold:>23} "
             f"{r.intersections:>13}"
         )
 
@@ -175,6 +196,10 @@ def main() -> int:
             if mode is GreenWaveMode.ENABLED and r.terminal == "completed" and r.arrived_at:
                 error = abs(r.arrived_at - r.est_greenwave)
                 summary.max_greenwave_error_s = max(summary.max_greenwave_error_s, error)
+            if mode is GreenWaveMode.DISABLED and r.terminal == "completed" and r.arrived_at:
+                error = abs(r.arrived_at - r.est_standard)
+                summary.max_standard_error_s = max(summary.max_standard_error_s, error)
+            summary.max_standard_ms = max(summary.max_standard_ms, r.est_standard_ms)
         line = (
             f"{mode.value}: terminals {dict(summary.terminals)}; min pre-arrival "
             f"{summary.min_kmh:.1f} km/h; zero ticks outside holds "
@@ -185,6 +210,9 @@ def main() -> int:
                 f"; safety-hold ticks {summary.hold_ticks}; max |arrived_at - est_greenwave| "
                 f"{summary.max_greenwave_error_s:.3f} s"
             )
+        else:
+            line += f"; max |arrived_at - est_standard| {summary.max_standard_error_s:.3f} s"
+        line += f"; slowest standard estimate {summary.max_standard_ms:.1f} ms"
         print(line)
     return 0
 

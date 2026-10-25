@@ -59,3 +59,52 @@ Evidence (ignored): `.tmp/playwright/post-merge-regressions/`.
 - Frontend: `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm test`
   (905 passed, 87 files), `npm run build`. The review fix pass changed no frontend file.
 - No schema change; OpenAPI export produced no drift.
+
+## Plan 2: mode-specific estimates and walk breakdown (D4–D5, ADR 0011)
+
+### Changes
+
+- `28e5a2b`: `standard_run_seconds` (dry run of disabled motion) and
+  `SimulationStartResponse.estimated_standard_time_sec`; the disabled ETA counts it down; the
+  mock reports its own disabled timeline (mock snapshot: only the new field, 401 s).
+- `98ab13c`: `DispatchRankRequest.traffic_density_multiplier` and
+  `RankedCandidate.standard_seconds`; the frontend re-ranks on a density change.
+- `fcb5178`: each page shows, orders and badges its own time; the comparison shows both; the
+  backend pre-flight shows the candidate's two times; off-road rows split drive from walk; the
+  disabled KPI reads "vs normal traffic"; the driver ETA reads "ETA to access point" with a walk.
+- Next commit: `sample_runs.py` gains `est_standard`, `max |arrived_at - est_standard|` and the
+  slowest estimate; this record and ADR 0011; `GreenWave_ARCHITECTURE.md` §3 model 3 and the
+  dispatch section (human informed of architecture edits on this branch).
+
+### Sampled acceptance
+
+`uv run python scripts/sample_runs.py --routes 40 --seed 11` with `--density 1.0`,
+`--density 2.5` and `--cascade`, 0 routes skipped:
+
+| Run | ENABLED | DISABLED | Slowest standard estimate |
+|-----|---------|----------|---------------------------|
+| density 1.0 | completed 40, min 18.9 km/h, max \|arrived_at − est_greenwave\| 0.000 s | completed 40, min 10.0 km/h, max \|arrived_at − est_standard\| 0.000 s | 12.2 ms |
+| density 2.5 | completed 40, min 18.9 km/h, 0.000 s | completed 40, min 10.0 km/h, 0.000 s | 12.1 ms |
+| cascade | completed 40, min 18.9 km/h, 0.000 s | completed 40, min 10.0 km/h, 0.000 s | 12.0 ms |
+
+The script also asserts `estimated_standard_time_sec == round(est_standard)` for every run.
+
+### Browser check
+
+Local backend + frontend (`NEXT_PUBLIC_SIMULATION_TRANSPORT=backend`), Chromium:
+
+- Floriańska 1: green wave lists 02m 57s / 03m 20s / 04m 06s; standard lists 02m 57s /
+  03m 40s / 04m 00s (Narutowicza's standard time is shorter than its green-wave one: no
+  `D_min`); comparison lists `GW … Std …` for each. The winner meets no red light, so its two
+  times are equal (02m 57s).
+- Moving the density slider to 2.5 sent one rank request with
+  `traffic_density_multiplier: 2.5`.
+- Błonia (50.0597, 19.9091, pinned on the map), standard page: `05m 58s` with
+  `02m 55s drive + 03m 03s on foot · 260 m`; the pre-flight shows standard 02m 55s, green wave
+  02m 45s, "drive only, plus 03m 03s on foot".
+- A standard run from Floriańska 1 (10x) reported `estimated_standard_time_sec` 177 and
+  finished with elapsed 02:57; the KPI read "vs normal traffic". The driver page refuses
+  disabled runs, so the disabled ETA has no on-screen consumer; it is covered by
+  `driver-presentation.test.ts`.
+
+Scripts (ignored): `.tmp/playwright/mode-estimates/`.
