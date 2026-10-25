@@ -18,7 +18,13 @@ const RANK: DispatchRankResponse = {
   schema_version: "1.0",
   incident_snapped: { position: { lat: 50.0617, lng: 19.9373 }, snap_distance_m: 4.2 },
   candidates: [
-    { station: STATION, greenwave_seconds: 309.4, standard_seconds: 372.6, distance_m: 3290 },
+    {
+      station: STATION,
+      greenwave_seconds: 309.4,
+      standard_seconds: 372.6,
+      distance_m: 3290,
+      on_site: false,
+    },
   ],
   station_at_incident: null,
 };

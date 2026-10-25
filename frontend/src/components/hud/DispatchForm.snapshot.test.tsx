@@ -41,6 +41,7 @@ const RANKING: DispatchRankResponse = {
       greenwave_seconds: 309,
       standard_seconds: 372,
       distance_m: 3290,
+      on_site: false,
     },
   ],
   station_at_incident: null,

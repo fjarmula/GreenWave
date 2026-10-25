@@ -8,6 +8,7 @@ from greenwave.routing.access import (
     access_nodes,
     best_access,
     seeded_lengths,
+    walk_between,
 )
 from greenwave.routing.errors import DestinationOffNetwork
 from greenwave.routing.network_index import RoutingIndex
@@ -15,6 +16,18 @@ from greenwave.routing.planner import edge_weight
 from greenwave.simulation_settings import SimulationSettings
 
 SETTINGS = SimulationSettings()
+
+
+def test_walk_between_uses_projected_metres_and_detour() -> None:
+    settings = SimulationSettings()
+
+    metres, seconds = walk_between(
+        position_at(7_421_000), position_at(7_421_300, 5_541_400), settings
+    )
+
+    assert metres == pytest.approx(500 * 1.3, rel=1e-6)
+    assert seconds == pytest.approx(500 * 1.3 / 1.4, rel=1e-6)
+    assert walk_between(position_at(7_421_000), position_at(7_421_000), settings) == (0.0, 0.0)
 
 
 def test_access_nodes_carry_walk_cost() -> None:

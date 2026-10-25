@@ -375,6 +375,15 @@ describe("on-foot legs", () => {
     station_at_incident: null,
   });
 
+  it("defaults a missing candidate on_site to false and rejects a non-boolean one", () => {
+    expect(validateRank(wire(rank())).candidates[0].on_site).toBe(false);
+    const onSite = record(wire(rank()));
+    record((onSite.candidates as unknown[])[0]).on_site = true;
+    expect(validateRank(onSite).candidates[0].on_site).toBe(true);
+    record((onSite.candidates as unknown[])[0]).on_site = "yes";
+    expect(() => validateRank(onSite)).toThrow("candidates[0].on_site");
+  });
+
   it("accepts rank candidates with a missing, null or valid on_foot", () => {
     for (const leg of [undefined, null, LEG]) {
       expect(() => validateRank(wire(rank(leg)))).not.toThrow();

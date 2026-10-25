@@ -3,7 +3,8 @@
     uv run python scripts/sample_runs.py --routes 40 --seed 11 [--cascade] [--density 1.5]
 
 Each incident is a random address (``addresses.sample(n, seed)``); its origin is the best-ranked
-ambulance station (``rank_stations``). Every pair is planned with ``plan_simulation`` and stepped
+ambulance station (``rank_stations``) that drives; an on-site station is passed over.
+Every pair is planned with ``plan_simulation`` and stepped
 with ``engine.step`` until the run completes. One row per (route, mode):
 
     route mode est_normal est_greenwave est_standard arrived_at terminal min_kmh
@@ -156,7 +157,12 @@ def main() -> int:
             print(f"{route:>3} skipped: {type(error).__name__}")
             skipped += 1
             continue
-        origin = ranking.candidates[0].station.position
+        driven = [c for c in ranking.candidates if not c.on_site]
+        if not driven:  # an on-site answer has no drive to simulate (ADR 0012)
+            print(f"{route:>3} skipped: on site")
+            skipped += 1
+            continue
+        origin = driven[0].station.position
         for mode in (GreenWaveMode.ENABLED, GreenWaveMode.DISABLED):
             request = SimulationStartRequest(
                 simulation_id=f"SIM-sample-{route}-{mode.value.lower()}",

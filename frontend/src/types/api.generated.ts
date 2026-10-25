@@ -562,6 +562,11 @@ export interface components {
             /** Greenwave Seconds */
             greenwave_seconds: number;
             on_foot?: components["schemas"]["OnFootLeg"] | null;
+            /**
+             * On Site
+             * @default false
+             */
+            on_site: boolean;
             /** Standard Seconds */
             standard_seconds: number;
             station: components["schemas"]["Station"];

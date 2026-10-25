@@ -517,6 +517,9 @@ export function validateRank(body: unknown): DispatchRankResponse {
     nonNegative(candidate.standard_seconds, `${path}.standard_seconds`);
     nonNegative(candidate.distance_m, `${path}.distance_m`);
     optionalOnFootLeg(candidate.on_foot, `${path}.on_foot`);
+    // Additive (ADR 0012): an older backend omits it; its candidates always drive.
+    if (candidate.on_site === undefined) candidate.on_site = false;
+    bool(candidate.on_site, `${path}.on_site`);
   });
   if (response.station_at_incident !== null) {
     station(response.station_at_incident, "station_at_incident");

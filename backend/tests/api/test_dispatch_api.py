@@ -77,6 +77,29 @@ def test_rank_returns_candidates(layout: Layout) -> None:
     assert body["station_at_incident"] is None
 
 
+def test_rank_at_a_station_returns_it_on_site(layout: Layout) -> None:
+    with client(layout) as c:
+        station = next(
+            s
+            for s in c.get("/api/v1/stations").json()["stations"]
+            if s["vehicle_type"] == "FIRE_TRUCK"
+        )
+        response = c.post(
+            "/api/v1/dispatch/rank",
+            json={"incident": station["position"], "vehicle_type": "FIRE_TRUCK"},
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    first = body["candidates"][0]
+    assert first["on_site"] is True
+    assert first["station"]["station_id"] == station["station_id"]
+    assert first["on_foot"]["access_point"] == station["position"]
+    assert first["on_foot"]["distance_m"] == 0
+    assert first["greenwave_seconds"] == first["standard_seconds"] == first["distance_m"] == 0
+    assert body["station_at_incident"] is None
+
+
 def test_rank_off_network_is_422(layout: Layout) -> None:
     with client(layout) as c:
         response = c.post(

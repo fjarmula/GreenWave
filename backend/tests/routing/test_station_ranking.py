@@ -13,10 +13,11 @@ from tests.support.route_fixtures import (
 )
 
 from greenwave.its import MockItsGateway
+from greenwave.routing.access import walk_between
 from greenwave.routing.errors import DestinationOffNetwork, NoRoute, NoStationReachable
 from greenwave.routing.estimates import estimate_times
 from greenwave.routing.network_index import RoutingIndex
-from greenwave.routing.planner import PlannedRoute, plan_route
+from greenwave.routing.planner import PlannedRoute, plan_route, snap_endpoint
 from greenwave.routing.station_ranking import StationNode, build_station_nodes, rank_stations
 from greenwave.schemas import GreenWaveMode, Position, SimulationStartRequest, VehicleType
 from greenwave.simulation.assembly import plan_simulation
@@ -41,8 +42,15 @@ def _brute_force_best(
     vehicle_type: VehicleType,
 ) -> str:
     best: tuple[float, str] | None = None
+    incident_node = snap_endpoint(index, incident, origin=False).node_key
     for node in nodes:
         if node.station.vehicle_type != vehicle_type:
+            continue
+        if node.node_key == incident_node:  # on site: the walk alone (ADR 0012)
+            seconds = walk_between(node.station.position, incident, SETTINGS)[1]
+            best = min(
+                best or (seconds, node.station.station_id), (seconds, node.station.station_id)
+            )
             continue
         try:
             route = plan_route(index, node.station.position, incident, SETTINGS)
@@ -161,17 +169,84 @@ def test_filters_by_vehicle_type() -> None:
     assert [c.station.station_id for c in ranking.candidates] == ["STN-F-0001"]
 
 
-def test_station_at_incident_reported_and_skipped() -> None:
+def test_station_on_the_incident_node_is_an_on_site_candidate() -> None:
     index, nodes = _corridor()
+
+    ranking = rank_stations(
+        index, nodes, position_at(_X + 1_850.02, _Y + 20), VehicleType.AMBULANCE, SETTINGS
+    )
+
+    first = ranking.candidates[0]
+    assert first.on_site and first.station.station_id == "STN-A-0004"
+    assert first.greenwave_seconds == first.standard_seconds == first.distance_m == 0.0
+    assert first.walk_m == pytest.approx(20 * 1.3, rel=1e-6)
+    assert first.total_seconds == pytest.approx(20 * 1.3 / 1.4, rel=1e-6)
+    assert not any(c.on_site for c in ranking.candidates[1:])
+    assert ranking.incident_snap.node_key == "corridor-4"
+
+
+def test_incident_on_the_station_point_walks_zero_metres() -> None:
+    index, nodes = _corridor()
+
+    first = rank_stations(
+        index, nodes, position_at(_X + 1_850.02), VehicleType.AMBULANCE, SETTINGS
+    ).candidates[0]
+
+    assert first.on_site and first.station.station_id == "STN-A-0004"
+    assert first.walk_m == 0.0 and first.total_seconds == 0.0
+
+
+def test_two_on_site_stations_tie_break_by_id() -> None:
+    index = corridor_index()
+    nodes = build_station_nodes(
+        stations_frame(
+            ("STN-A-0009", "AMBULANCE", _X + 1_850.02, _Y),
+            ("STN-A-0004", "AMBULANCE", _X + 1_850.02, _Y),
+            ("STN-A-0003", "AMBULANCE", _X + 1_600.01, _Y),
+        ),
+        index,
+    )
 
     ranking = rank_stations(
         index, nodes, position_at(_X + 1_850.02), VehicleType.AMBULANCE, SETTINGS
     )
 
-    assert ranking.station_at_incident is not None
-    assert ranking.station_at_incident.station_id == "STN-A-0004"
-    assert "STN-A-0004" not in [c.station.station_id for c in ranking.candidates]
-    assert ranking.candidates[0].station.station_id == "STN-A-0003"
+    assert [(c.station.station_id, c.on_site) for c in ranking.candidates] == [
+        ("STN-A-0004", True),
+        ("STN-A-0009", True),
+        ("STN-A-0003", False),
+    ]
+
+
+def test_off_road_only_access_is_the_station_node() -> None:
+    # 200 m south of the park centre: only s-mid (200 m) is within walking reach.
+    index = park_index()
+    stations = park_stations().vstack(stations_frame(("STN-A-0009", "AMBULANCE", _X + 500, _Y)))
+    nodes = build_station_nodes(stations, index)
+
+    ranking = rank_stations(
+        index, nodes, position_at(_X + 500, _Y + 200), VehicleType.AMBULANCE, SETTINGS
+    )
+
+    first = ranking.candidates[0]
+    assert first.on_site and first.station.station_id == "STN-A-0009"
+    assert first.total_seconds == pytest.approx(200 * 1.3 / 1.4, rel=1e-6)
+    assert all(not c.on_site for c in ranking.candidates[1:])
+
+
+def test_off_road_prefers_driving_when_faster() -> None:
+    # 600 m north of s-mid (walk 557 s) but 300 m south of n-mid, reached by road from s-mid.
+    index = park_index()
+    stations = stations_frame(("STN-A-0009", "AMBULANCE", _X + 500, _Y))
+    nodes = build_station_nodes(stations, index)
+
+    ranking = rank_stations(
+        index, nodes, position_at(_X + 500, _Y + 600), VehicleType.AMBULANCE, SETTINGS
+    )
+
+    [only] = ranking.candidates
+    assert not only.on_site and only.on_foot is not None
+    assert only.total_seconds < 600 * 1.3 / 1.4
 
 
 def test_off_network_incident_raises() -> None:
@@ -259,7 +334,6 @@ def test_off_road_orders_by_total() -> None:
     assert [c.station.station_id for c in ranking.candidates] == ["STN-A-0002", "STN-A-0001"]
     assert [c.on_foot.node_key for c in ranking.candidates if c.on_foot] == ["s-mid", "n-mid"]
     assert ranking.incident_snap.node_key == "s-mid"
-    assert ranking.station_at_incident is None
     totals = [
         c.greenwave_seconds + c.on_foot.on_foot_seconds for c in ranking.candidates if c.on_foot
     ]

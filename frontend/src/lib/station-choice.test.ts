@@ -23,6 +23,7 @@ const candidate = (stationId: string, lat: number): RankedCandidate => ({
   greenwave_seconds: 100 * lat,
   standard_seconds: 100 * lat + 60,
   distance_m: 900,
+  on_site: false,
 });
 
 const ranking: DispatchRankResponse = {

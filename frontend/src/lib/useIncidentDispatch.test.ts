@@ -55,6 +55,7 @@ const ranking = (stationId: string): DispatchRankResponse => ({
       greenwave_seconds: 120,
       standard_seconds: 150,
       distance_m: 900,
+      on_site: false,
     },
   ],
   station_at_incident: null,
@@ -71,6 +72,7 @@ const candidate = (stationId: string, seconds: number) => ({
   greenwave_seconds: seconds,
   standard_seconds: seconds + 30,
   distance_m: 900,
+  on_site: false,
 });
 
 const threeStations: DispatchRankResponse = {

@@ -899,6 +899,11 @@
               }
             ]
           },
+          "on_site": {
+            "default": false,
+            "title": "On Site",
+            "type": "boolean"
+          },
           "standard_seconds": {
             "minimum": 0.0,
             "title": "Standard Seconds",
