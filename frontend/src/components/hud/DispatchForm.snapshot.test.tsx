@@ -369,6 +369,23 @@ describe("mock preflight estimates", () => {
     expect(markup).toContain("03m 10s");
   });
 
+  it("shows no time saved when the standard run is the shorter one", () => {
+    const candidate = { ...RANKING.candidates[0], standard_seconds: 220, greenwave_seconds: 246 };
+    const markup = renderToStaticMarkup(
+      <PreflightEstimate
+        isMockTransport={false}
+        trafficDensity={1}
+        origin={null}
+        incident={null}
+        candidate={candidate}
+      />,
+    );
+    expect(markup).toContain("NO TIME SAVED");
+    expect(markup).toContain("+00m 26s");
+    expect(markup).not.toMatch(/−-|m -|% TIME SAVED/);
+    expect(markup).not.toContain("text-go\"><svg");
+  });
+
   it("shows backend standard and green-wave estimates before start", () => {
     transport.current = "backend";
     const markup = render(dispatchState());

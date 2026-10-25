@@ -33,7 +33,7 @@ export function PreflightEstimate({
   const greenwaveSeconds = isMockTransport
     ? (metrics?.greenwaveSeconds ?? 0)
     : (candidate?.greenwave_seconds ?? 0);
-  const savedSeconds = normalSeconds - greenwaveSeconds;
+  const saved = Math.round(normalSeconds - greenwaveSeconds);
   const onFoot = isMockTransport ? null : (candidate?.on_foot ?? null);
 
   return (
@@ -74,15 +74,25 @@ export function PreflightEstimate({
               highlighted
             />
           </div>
-          <div className="flex items-center gap-2 border-t border-border pt-3 text-go">
-            <ArrowDownRight className="size-4" aria-hidden />
-            <strong className="text-xs font-semibold">
-              {normalSeconds > 0 ? Math.round((savedSeconds / normalSeconds) * 100) : 0}% TIME SAVED
-            </strong>
-            <span className="hud-value ml-auto text-2xs text-muted-foreground">
-              −{formatMinutesSeconds(Math.round(savedSeconds))}
-            </span>
-          </div>
+          {/* Standard can be the shorter run (it spends no D_min); never claim a saving then. */}
+          {saved > 0 ? (
+            <div className="flex items-center gap-2 border-t border-border pt-3 text-go">
+              <ArrowDownRight className="size-4" aria-hidden />
+              <strong className="text-xs font-semibold">
+                {Math.round((saved / normalSeconds) * 100)}% TIME SAVED
+              </strong>
+              <span className="hud-value ml-auto text-2xs text-muted-foreground">
+                −{formatMinutesSeconds(saved)}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 border-t border-border pt-3 text-muted-foreground">
+              <strong className="text-xs font-semibold">NO TIME SAVED</strong>
+              <span className="hud-value ml-auto text-2xs">
+                {saved === 0 ? formatMinutesSeconds(0) : `+${formatMinutesSeconds(-saved)}`}
+              </span>
+            </div>
+          )}
         </>
       )}
     </div>
