@@ -1,0 +1,95 @@
+name: greenwave
+
+x-service: &service
+  restart: unless-stopped
+  init: true
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  backend:
+    <<: *service
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.production
+    environment:
+      GREENWAVE_CORS_ORIGINS: https://${DOMAIN:?Set DOMAIN in deploy/.env}
+      GREENWAVE_PROCESSED_DIR: /data/processed
+      GREENWAVE_RAW_MANIFEST_PATH: /data/MANIFEST.json
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - type: bind
+        source: ./backend/data/processed
+        target: /data/processed
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./backend/data/raw/MANIFEST.json
+        target: /data/MANIFEST.json
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3).read()",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
+
+  frontend:
+    <<: *service
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.production
+      args:
+        NEXT_PUBLIC_API_BASE_URL: https://${DOMAIN:?Set DOMAIN in deploy/.env}
+        NEXT_PUBLIC_CARTO_API_KEY: ${CARTO_API_KEY:?Set CARTO_API_KEY in deploy/.env}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  proxy:
+    <<: *service
+    image: caddy:2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in deploy/.env}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in deploy/.env}
+      DEMO_USERNAME: ${DEMO_USERNAME:?Set DEMO_USERNAME in deploy/.env}
+      DEMO_PASSWORD_HASH: ${DEMO_PASSWORD_HASH:?Set DEMO_PASSWORD_HASH in deploy/.env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -4,6 +4,10 @@ Simulation-only proof of concept for emergency-vehicle green corridors in Krakó
 
 ## Getting Started
 
+For public HTTPS hosting on a free Oracle VM, follow the
+[production deployment guide](deploy/README.md). It covers accounts, free DNS, the GIS data
+transfer, a shared demo password, and the separate production Compose stack.
+
 ### Prerequisites
 
 - Git
