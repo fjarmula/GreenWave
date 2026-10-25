@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import { SimulationAdapterError } from "@/lib/transport/errors";
 import {
   createIncidentDispatch,
+  DENSITY_RERANK_DELAY_MS,
   describeRankError,
   pinnedIncident,
   selectedCandidate,
@@ -169,24 +170,80 @@ describe("createIncidentDispatch", () => {
     expect(calls[0].request.traffic_density_multiplier).toBe(2);
   });
 
-  it("re-ranks on density change and ignores the stale response", async () => {
-    const { adapter, calls } = deferredAdapter();
-    const dispatch = createIncidentDispatch(adapter);
-    dispatch.setIncident(incident(50.01));
-    calls[0].resolve(ranking("STN-A-0001"));
-    await flush();
+  describe("density re-rank", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+    const settle = (ms = 0) => vi.advanceTimersByTimeAsync(ms);
 
-    dispatch.setTrafficDensity(2.5);
-    dispatch.setTrafficDensity(3);
-    expect(calls.map((call) => call.request.traffic_density_multiplier)).toEqual([1, 2.5, 3]);
-    expect(calls[1].signal?.aborted).toBe(true);
-    calls[2].resolve(ranking("STN-A-0003"));
-    await flush();
-    calls[1].resolve(ranking("STN-A-0002"));
-    await flush();
+    it("re-ranks on density change and ignores the stale response", async () => {
+      const { adapter, calls } = deferredAdapter();
+      const dispatch = createIncidentDispatch(adapter);
+      dispatch.setIncident(incident(50.01));
+      calls[0].resolve(ranking("STN-A-0001"));
+      await settle();
 
-    expect(dispatch.getState().ranking?.candidates[0].station.station_id).toBe("STN-A-0003");
-    expect(dispatch.getState().trafficDensity).toBe(3);
+      dispatch.setTrafficDensity(2.5);
+      await settle(DENSITY_RERANK_DELAY_MS);
+      dispatch.setTrafficDensity(3);
+      await settle(DENSITY_RERANK_DELAY_MS);
+      expect(calls.map((call) => call.request.traffic_density_multiplier)).toEqual([1, 2.5, 3]);
+      expect(calls[1].signal?.aborted).toBe(true);
+      calls[2].resolve(ranking("STN-A-0003"));
+      await settle();
+      calls[1].resolve(ranking("STN-A-0002"));
+      await settle();
+
+      expect(dispatch.getState().ranking?.candidates[0].station.station_id).toBe("STN-A-0003");
+      expect(dispatch.getState().trafficDensity).toBe(3);
+    });
+
+    it("ranks once for a slider drag, with the last density", async () => {
+      const { adapter, calls } = deferredAdapter();
+      const dispatch = createIncidentDispatch(adapter);
+      dispatch.setIncident(incident(50.01));
+      calls[0].resolve(ranking("STN-A-0001"));
+      await settle();
+
+      for (let tenths = 11; tenths <= 30; tenths += 1) {
+        dispatch.setTrafficDensity(tenths / 10);
+        await settle(16);
+      }
+      expect(calls).toHaveLength(1);
+      await settle(DENSITY_RERANK_DELAY_MS);
+
+      expect(calls.map((call) => call.request.traffic_density_multiplier)).toEqual([1, 3]);
+      expect(dispatch.getState().trafficDensity).toBe(3);
+    });
+
+    it("keeps the dispatcher's pick through a density re-rank", async () => {
+      const { adapter, calls } = deferredAdapter();
+      const dispatch = createIncidentDispatch(adapter);
+      dispatch.setIncident(incident(50.01));
+      calls[0].resolve(threeStations);
+      await settle();
+      dispatch.selectStation("B");
+
+      dispatch.setTrafficDensity(2);
+      await settle(DENSITY_RERANK_DELAY_MS);
+      expect(dispatch.getState().selectedStationId).toBe("B");
+      calls[1].resolve(threeStations);
+      await settle();
+
+      expect(dispatch.getState().selectedStationId).toBe("B");
+    });
+
+    it("drops a pending density re-rank when the incident changes", async () => {
+      const { adapter, calls } = deferredAdapter();
+      const dispatch = createIncidentDispatch(adapter);
+      dispatch.setIncident(incident(50.01));
+
+      dispatch.setTrafficDensity(2);
+      dispatch.setIncident(incident(50.02));
+      await settle(DENSITY_RERANK_DELAY_MS);
+
+      expect(calls.map((call) => call.request.traffic_density_multiplier)).toEqual([1, 2]);
+      expect(calls[1].request.incident.lat).toBe(50.02);
+    });
   });
 
   it("does not re-rank when the density is unchanged", async () => {

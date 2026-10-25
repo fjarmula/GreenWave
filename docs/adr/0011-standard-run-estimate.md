@@ -34,7 +34,8 @@ Additive to contract v1; `schema_version` stays `"1.0"`.
   (`/simulation/standard` standard, comparison both in backend order, otherwise green wave);
   with no explicit pick the default station is that order's first (the one marked "Fastest"),
   for the list, the map, the pre-flight and the start. The backend pre-flight shows the selected candidate's standard
-  and green-wave times. A density change re-ranks (stale responses discarded). The disabled ETA
+  and green-wave times. A density change re-ranks 250 ms after the slider settles, keeps the
+  pick, and discards stale responses. The disabled ETA
   counts down `estimated_standard_time_sec`. An off-road candidate reads
   `{drive} drive + {walk} on foot · {distance}` under its total; the driver ETA with an on-foot
   leg reads "ETA to access point".
