@@ -60,3 +60,35 @@ it("renders the shared header with map variant", () => {
   expect(html).toContain('data-variant="map"');
   expect(html).toContain('class="workspace-actions"');
 });
+
+const minimizableShell = (snap: "minimized" | "collapsed", minimizable = true) =>
+  renderToStaticMarkup(
+    <WorkspaceShell
+      map={<div />}
+      header={<h1>Driver</h1>}
+      sheet={{
+        snap,
+        onSnapChange: () => {},
+        minimizable,
+        minimizedLabel: "Driver setup · no incident",
+        collapsed: <p>Where’s the incident?</p>,
+        expanded: <p>Settings</p>,
+      }}
+    />,
+  );
+
+it("shrinks a minimized desktop card to a pill that restores it", () => {
+  const html = minimizableShell("minimized");
+  expect(html).toMatch(/class="sheet-pill[^"]*"[^>]*>Driver setup · no incident/);
+  expect(html).not.toContain("Where’s the incident?");
+});
+
+it("offers to minimize the desktop card", () => {
+  expect(minimizableShell("collapsed")).toContain('aria-label="Minimize setup"');
+});
+
+it("keeps other desktop cards without minimize controls", () => {
+  const html = minimizableShell("collapsed", false);
+  expect(html).not.toContain("Minimize setup");
+  expect(html).not.toContain("sheet-pill");
+});

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, Maximize2, Minimize2, PanelRight } from "lucide-react";
+import { ChevronDown, ChevronUp, Maximize2, Minimize2, PanelRight } from "lucide-react";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { BottomSheet } from "@/components/workspace/BottomSheet";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
@@ -75,6 +75,7 @@ export function WorkspaceShell({
   const hasPanel = !!sheet || inspector !== undefined;
   const panelHidden = focus || !details;
   const desktopSheet = sheet && !sheet.phoneOnly ? sheet : undefined;
+  const desktopMinimized = !!desktopSheet?.minimizable && desktopSheet.snap === "minimized";
   return (
     <FollowProvider>
       <main
@@ -133,6 +134,7 @@ export function WorkspaceShell({
             className="workspace-inspector surface-glass"
             data-map-occluder
             data-compact={desktopSheet ? true : undefined}
+            data-minimized={desktopMinimized || undefined}
             hidden={panelHidden}
             inert={panelHidden}
             onKeyDown={(event) => {
@@ -143,8 +145,27 @@ export function WorkspaceShell({
               desktopSheet.onSnapChange("collapsed");
             }}
           >
-            {desktopSheet ? (
+            {desktopSheet && desktopMinimized ? (
+              <button
+                type="button"
+                className="sheet-pill surface-glass pressable"
+                onClick={() => desktopSheet.onSnapChange("collapsed")}
+              >
+                {desktopSheet.minimizedLabel}
+                <ChevronUp aria-hidden />
+              </button>
+            ) : desktopSheet ? (
               <>
+                {desktopSheet.minimizable && (
+                  <button
+                    type="button"
+                    className="sheet-minimize pressable"
+                    aria-label="Minimize setup"
+                    onClick={() => desktopSheet.onSnapChange("minimized")}
+                  >
+                    <ChevronDown aria-hidden />
+                  </button>
+                )}
                 {desktopSheet.collapsed}
                 {desktopSheet.detailsLabel && (
                   <button

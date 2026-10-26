@@ -1223,6 +1223,64 @@ button,
   max-height: calc(100% - 4.5rem - var(--shell-gap) - env(safe-area-inset-top));
   padding-top: 1.25rem;
 }
+/* Driver setup on desktop: a corner button folds the card into a pill that restores it. */
+.sheet-minimize {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--muted-foreground);
+}
+.sheet-minimize svg,
+.sheet-pill svg {
+  width: 1rem;
+  height: 1rem;
+}
+.workspace-inspector[data-minimized] {
+  left: auto;
+  width: auto;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.sheet-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0 0.875rem 0 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transform-origin: top right;
+  transition:
+    opacity var(--dur-enter) var(--ease-out),
+    transform var(--dur-enter) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .sheet-minimize:hover {
+    color: var(--foreground);
+    background: var(--tile);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet-pill {
+    @starting-style {
+      transform: none;
+    }
+  }
+}
 .sheet-disclosure {
   display: flex;
   width: 100%;

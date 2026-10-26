@@ -46,6 +46,8 @@ type MapContainerProps = {
   runnerUpIds: string[];
   /** Setup only: a click picks the incident. Ignored while a run is live. */
   onMapClick: (position: Position) => void;
+  /** Called when the user pans, zooms or rotates the setup map by hand. */
+  onUserMove?: () => void;
   /** Driver mode labels only the next junctions, by street; other workspaces label every one. */
   signalLabels?: "full" | "driver";
 };
@@ -61,6 +63,7 @@ export function MapContainer({
   chosenStationId,
   runnerUpIds,
   onMapClick,
+  onUserMove,
   signalLabels = "full",
 }: MapContainerProps) {
   const liveState = useSimulationState();
@@ -101,6 +104,22 @@ export function MapContainer({
     },
     [display, showWake],
   );
+
+  useEffect(() => {
+    if (!map || live || !onUserMove) return;
+    // Programmatic camera moves (fits, focus requests) carry no originalEvent.
+    const moved = (event: { originalEvent?: unknown }) => {
+      if (event.originalEvent) onUserMove();
+    };
+    map.on("dragstart", moved);
+    map.on("zoomstart", moved);
+    map.on("rotatestart", moved);
+    return () => {
+      map.off("dragstart", moved);
+      map.off("zoomstart", moved);
+      map.off("rotatestart", moved);
+    };
+  }, [live, map, onUserMove]);
 
   useEffect(() => {
     if (!map || live) return;
