@@ -62,6 +62,8 @@ if 'config' in args:
 elif 'build' in args:
     sys.exit(int(os.environ.get('DEPLOY_TEST_BUILD_FAILURE', '0')))
 elif 'run' in args:
+    if os.environ.get('DEPLOY_TEST_DRAIN_STDIN'):
+        sys.stdin.read()
     nodes = pathlib.Path(os.environ['DEPLOY_TEST_ROOT']) / 'backend/data/processed/network_nodes.parquet'
     sys.exit(0 if nodes.exists() else 1)
 elif 'up' in args:
@@ -238,6 +240,43 @@ elif 'up' in args:
         result = self.deploy(DEPLOY_TEST_LOCK_FAILURE="1")
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.state.read_text(), str(self.root))
+
+    def test_streamed_ssh_script_reaches_activation_when_preflight_reads_stdin(
+        self,
+    ) -> None:
+        result = subprocess.run(
+            ["bash", "-s", "--", str(self.root), REVISION],
+            input=SCRIPT.read_text(),
+            env={**self.env, "DEPLOY_TEST_DRAIN_STDIN": "1"},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.state.read_text(), str(self.root / "releases" / REVISION))
+        self.assertEqual(
+            (self.root / "current").resolve(), self.root / "releases" / REVISION
+        )
+        self.assertIn("Deployed", result.stdout)
+
+    def test_streamed_ssh_script_propagates_activation_failure_and_rolls_back(
+        self,
+    ) -> None:
+        result = subprocess.run(
+            ["bash", "-s", "--", str(self.root), REVISION],
+            input=SCRIPT.read_text(),
+            env={
+                **self.env,
+                "DEPLOY_TEST_DRAIN_STDIN": "1",
+                "DEPLOY_TEST_ACTIVATION_FAILURE": "1",
+            },
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.state.read_text(), str(self.root))
+        self.assertIn("Rollback restored", result.stderr)
 
 
 if __name__ == "__main__":

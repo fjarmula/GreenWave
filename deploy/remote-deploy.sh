@@ -43,8 +43,9 @@ compose() {
   if [[ -f $directory/deploy/images.env ]]; then
     env_args+=(--env-file "$directory/deploy/images.env")
   fi
+  # Compose run attaches stdin even with -T; never let it consume a streamed SSH script.
   sudo -n docker compose --project-name greenwave --project-directory "$directory" \
-    "${env_args[@]}" -f "$directory/compose.production.yaml" "$@"
+    "${env_args[@]}" -f "$directory/compose.production.yaml" "$@" < /dev/null
 }
 
 probe_https() {

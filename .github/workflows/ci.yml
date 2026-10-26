@@ -251,8 +251,10 @@ jobs:
           ssh -F "$RUNNER_TEMP/oci-ssh/config" greenwave-oci "mkdir -p -- '$OCI_DEPLOY_ROOT/incoming'"
           scp -F "$RUNNER_TEMP/oci-ssh/config" "$RUNNER_TEMP/source.tar.gz" \
             "greenwave-oci:$OCI_DEPLOY_ROOT/incoming/$GITHUB_SHA.tar.gz"
-          ssh -F "$RUNNER_TEMP/oci-ssh/config" greenwave-oci \
-            "bash -s -- '$OCI_DEPLOY_ROOT' '$GITHUB_SHA'" < deploy/remote-deploy.sh
+          scp -F "$RUNNER_TEMP/oci-ssh/config" deploy/remote-deploy.sh \
+            "greenwave-oci:$OCI_DEPLOY_ROOT/incoming/$GITHUB_SHA.sh"
+          ssh -n -F "$RUNNER_TEMP/oci-ssh/config" greenwave-oci \
+            "bash '$OCI_DEPLOY_ROOT/incoming/$GITHUB_SHA.sh' '$OCI_DEPLOY_ROOT' '$GITHUB_SHA'"
 
       - name: Remove runner SSH credentials
         if: always()

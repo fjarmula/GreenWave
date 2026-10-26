@@ -12,6 +12,8 @@ This guide uses your confirmed `ubuntu` account and `/home/ubuntu/GreenWave` ins
 1. Commit policy, graph generation, backend, frontend, contract drift, and deployment tests run.
 2. After all pass, one deployment job connects through SSH with a dedicated key and pinned host key.
 3. It uploads a Git archive of the tested commit. It never uploads an environment file or GIS data.
+   The deployment script is uploaded separately and executed from a file with SSH stdin closed,
+   so a container preflight cannot consume the remaining deployment commands.
 4. The VM creates `~/GreenWave/releases/<commit-sha>/` and links its existing config and dataset.
 5. It builds ARM64 images on the VM, using distinct commit tags, and validates the new backend's
    dataset and routing startup against the real mounts before replacing any container.
