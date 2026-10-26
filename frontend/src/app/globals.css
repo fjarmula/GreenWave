@@ -75,6 +75,8 @@
   --map-building: #e4e8ee;
   /* Neutral scale: near-neutral cool greys. Elevation is a lightness step plus a hairline. */
   --bg: oklch(0.965 0.005 255);
+  --home-road-ink: oklch(0.2 0.01 260 / 22%);
+  --home-signal-idle: oklch(0.2 0.01 260 / 22%);
   --surface-1: oklch(1 0 0);
   --surface-2: oklch(1 0 0);
   --surface-3: oklch(0.955 0.003 260);
@@ -154,6 +156,8 @@
   --map-street-casing: #24272c;
   --map-building: #23262b;
   --bg: oklch(0.17 0.004 260);
+  --home-road-ink: oklch(1 0 0 / 16%);
+  --home-signal-idle: oklch(1 0 0 / 22%);
   --surface-1: oklch(0.185 0.008 260);
   --surface-2: oklch(0.215 0.009 260);
   --surface-3: oklch(0.25 0.01 260);
@@ -1448,6 +1452,57 @@ button,
 }
 
 /* Home: first-load reveal, corridor illustration and destination cards. */
+/* Home background: a simulated green wave on a real Kraków corridor (see home-corridor.ts). */
+.home-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.home-backdrop-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.home-roads {
+  fill: var(--home-road-ink);
+}
+.home-corridor-base,
+.home-corridor-trail {
+  fill: none;
+  stroke: var(--go);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.home-corridor-base {
+  stroke-opacity: 0.22;
+}
+.home-signal {
+  fill: var(--home-signal-idle);
+  stroke: var(--go);
+  stroke-width: 0;
+  stroke-opacity: 0.45;
+  transition:
+    fill 300ms ease,
+    stroke-width 300ms ease;
+}
+.home-signal[data-state="ahead"] {
+  fill: var(--emergency);
+}
+.home-signal[data-state="green"] {
+  fill: var(--go);
+  stroke-width: 6;
+}
+.home-vehicle {
+  fill: var(--emergency);
+}
+.home-vehicle-halo {
+  fill: var(--emergency);
+  opacity: 0.22;
+}
 .home-main {
   position: relative;
   isolation: isolate;
