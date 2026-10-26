@@ -28,9 +28,12 @@ export function WorkspaceShell({
   defaultFocus = false,
   defaultDetails = true,
   provenance = "Simulated · all signal states",
+  statusAlign = "start",
 }: {
   map: ReactNode;
   status?: ReactNode;
+  /** Which top corner the status overlay floats in. */
+  statusAlign?: "start" | "end";
   /** Shown when there is no `sheet` (or it is phone-only, on desktop). */
   inspector?: ReactNode;
   /** Phone: a draggable bottom sheet. Desktop: a compact floating card that expands. */
@@ -165,7 +168,13 @@ export function WorkspaceShell({
           </aside>
         )}
         {status && (
-          <div className="workspace-driver-status" data-map-occluder hidden={focus} inert={focus}>
+          <div
+            className="workspace-status"
+            data-align={statusAlign}
+            data-map-occluder
+            hidden={focus}
+            inert={focus}
+          >
             {status}
           </div>
         )}

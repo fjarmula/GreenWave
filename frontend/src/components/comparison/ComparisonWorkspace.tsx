@@ -7,6 +7,7 @@ import { useScenario } from "@/components/scenario-provider";
 import { useSimulationActions } from "@/components/simulation-runtime";
 import { useSimulationState } from "@/components/simulation-provider";
 import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation";
+import { DispatchSettingsChip } from "@/components/driver/DispatchSettingsChip";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import { OnSiteResult } from "@/components/hud/OnSiteResult";
@@ -49,6 +50,11 @@ export function ComparisonWorkspace() {
   const starting = state.status === "starting";
   const live = state.status !== "idle" && !starting && !!state.runs.ENABLED.routeData;
   // A start that failed before any route exists is reported on the setup form.
+  const running =
+    live &&
+    (state.runs.ENABLED.simulationState === "RUNNING" ||
+      state.runs.DISABLED.simulationState === "RUNNING");
+  const runRequest = state.runs.ENABLED.startRequest;
   const setupError = !live && state.status === "error" ? state.reason : null;
 
   const start = async (runSettings: DispatchSettings) => {
@@ -84,6 +90,14 @@ export function ComparisonWorkspace() {
       key={live ? "live" : "setup"}
       defaultDetails={!live}
       provenance={`${config.transport === "mock" ? "Synthetic mock" : "Backend simulation"} · ${live ? "Both runs live on one simulated clock" : "Comparison scenario"}`}
+      statusAlign="end"
+      status={
+        running && runRequest ? (
+          <div className="driver-overlay">
+            <DispatchSettingsChip request={runRequest} />
+          </div>
+        ) : undefined
+      }
       header={
         <div className="min-w-0 flex-1">
           <WorkspaceNavigation current="/compare" />

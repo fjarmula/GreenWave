@@ -14,13 +14,20 @@ export function nextCameraMode(current: CameraMode, event: CameraEvent): CameraM
   if (event.zoom > 16.5 && current === "overview") return "following";
   return current;
 }
+/** Street level: resuming from an overview zoom lands here so the vehicle is readable. */
+const FOLLOW_ZOOM = 16.5;
 type InputEvent = { originalEvent?: unknown };
 type CameraMap = {
   on(name: "zoomend" | "dragstart" | "resize", listener: (event: InputEvent) => void): unknown;
   off(name: "zoomend" | "dragstart" | "resize", listener: (event: InputEvent) => void): unknown;
   getZoom(): number;
   getContainer(): { clientWidth: number; clientHeight: number };
-  jumpTo(options: { center: [number, number]; bearing: number; pitch: number }): unknown;
+  jumpTo(options: {
+    center: [number, number];
+    bearing: number;
+    pitch: number;
+    zoom?: number;
+  }): unknown;
 };
 /** One writer; receives the marker's displayed point, never creates a second frame loop. */
 export function createMapCamera(
@@ -35,10 +42,11 @@ export function createMapCamera(
     userMoved = false;
   let last: [number, number] | null = null;
   let fresh = false;
-  const update = (event: CameraEvent) => {
+  const update = (event: CameraEvent, zoom?: number) => {
     mode = nextCameraMode(mode, event);
     changed(mode);
-    if (mode === "following" && fresh && last) map.jumpTo({ center: last, bearing: 0, pitch: 0 });
+    if (mode === "following" && fresh && last)
+      map.jumpTo({ center: last, bearing: 0, pitch: 0, ...(zoom === undefined ? {} : { zoom }) });
   };
   const fitOnce = () => {
     const { clientWidth: w, clientHeight: h } = map.getContainer();
@@ -69,7 +77,7 @@ export function createMapCamera(
       if (active && mode === "following") map.jumpTo({ center: point, bearing: 0, pitch: 0 });
     },
     resume() {
-      update({ type: "resume" });
+      update({ type: "resume" }, map.getZoom() < FOLLOW_ZOOM ? FOLLOW_ZOOM : undefined);
     },
     showRoute() {
       update({ type: "show-route" });

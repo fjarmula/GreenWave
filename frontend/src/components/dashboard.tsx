@@ -303,9 +303,9 @@ export function Dashboard({
     <WorkspaceShell
       sheet={workspaceSheet}
       status={
-        driver && mode === "live" && simulationState === "RUNNING" ? (
+        mode === "live" && simulationState === "RUNNING" ? (
           <div className="driver-overlay">
-            {signal && <NextSignalCard signal={signal} />}
+            {driver && signal && <NextSignalCard signal={signal} />}
             {simulation.startRequest && <DispatchSettingsChip request={simulation.startRequest} />}
           </div>
         ) : undefined

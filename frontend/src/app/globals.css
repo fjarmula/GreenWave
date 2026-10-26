@@ -918,8 +918,8 @@ button,
 .workspace-shell[data-focus="true"] .workspace-camera-controls {
   display: none;
 }
-/* Driver overlay: the next-signal card and the settings chip float under the header. */
-.workspace-driver-status {
+/* Live-run overlay: the settings chip (and the driver next-signal card) float under the header. */
+.workspace-status {
   position: absolute;
   z-index: 7;
   top: calc(6.25rem + env(safe-area-inset-top));
@@ -927,17 +927,24 @@ button,
   width: min(340px, calc(100% - 2 * var(--shell-gap)));
   pointer-events: none;
 }
-.workspace-driver-status > * {
+.workspace-status > * {
   pointer-events: auto;
 }
+.workspace-status[data-align="end"] {
+  left: auto;
+  right: calc(var(--shell-gap) + env(safe-area-inset-right));
+}
+.workspace-status[data-align="end"] .driver-overlay {
+  align-items: flex-end;
+}
 @media (max-width: 767px) {
-  .workspace-driver-status {
+  .workspace-status {
     top: calc(8rem + env(safe-area-inset-top));
     right: calc(var(--shell-gap) + env(safe-area-inset-right));
     width: auto;
   }
   /* The expanded sheet owns the screen; the overlay would sit on its content. */
-  .workspace-shell[data-sheet="expanded"] .workspace-driver-status {
+  .workspace-shell[data-sheet="expanded"] .workspace-status {
     display: none;
   }
 }
@@ -1039,6 +1046,35 @@ button,
     right: 0;
     transform-origin: top right;
   }
+}
+.workspace-status[data-align="end"] .settings-popover {
+  left: auto;
+  right: 0;
+  transform-origin: top right;
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-popover {
+    @starting-style {
+      transform: none;
+    }
+  }
+}
+/* Follow vehicle: the one live control in the read-only settings popover. */
+.settings-follow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-control);
+  background: var(--tile);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.settings-follow > svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--go);
 }
 .settings-popover-close {
   display: grid;
