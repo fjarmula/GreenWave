@@ -5,9 +5,10 @@ import type { GeoJSONSource, Map } from "maplibre-gl";
 import { useMaplibreMap } from "@/components/map/useMaplibreMap";
 import { mapPalette } from "@/components/map/map-palette";
 import { useCorridorLoop } from "@/components/workspace/useCorridorLoop";
+import { hasBasemap } from "@/lib/home-backdrop";
 import { corridor, pointAlong, signalState, type SignalState } from "@/lib/home-corridor";
 
-/** No basemap within this long: the page falls back to the drawing. */
+/** No basemap within this long (offline, CARTO down): the page falls back to the drawing. */
 const LOAD_TIMEOUT_MS = 8000;
 const ROUTE = corridor.route.lonLat;
 const BOUNDS: [[number, number], [number, number]] = [
@@ -56,11 +57,22 @@ export default function HomeLiveBackdrop({ onFail }: { onFail: () => void }) {
   });
   const states = useRef<SignalState[]>(corridor.signals.map(() => "ahead"));
 
+  // The ground style loads at once, so readiness means a basemap source arrived in time.
+  const mapRef = useRef(map);
   useEffect(() => {
-    if (map) return;
-    const timer = setTimeout(onFail, LOAD_TIMEOUT_MS);
+    mapRef.current = map;
+  }, [map]);
+  const failRef = useRef(onFail);
+  useEffect(() => {
+    failRef.current = onFail;
+  }, [onFail]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const current = mapRef.current;
+      if (!current || !hasBasemap(Object.keys(current.getStyle().sources))) failRef.current();
+    }, LOAD_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [map, onFail]);
+  }, []);
 
   // A theme switch replaces the style and drops these layers; each style load re-adds them.
   useEffect(() => {

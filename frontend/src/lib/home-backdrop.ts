@@ -24,3 +24,8 @@ export function hasWebGL(): boolean {
     return false;
   }
 }
+
+/** The ground-only style (initial, and the fallback after a basemap error) has no sources. */
+export function hasBasemap(sourceIds: string[]): boolean {
+  return sourceIds.some((id) => !id.startsWith("home-"));
+}
