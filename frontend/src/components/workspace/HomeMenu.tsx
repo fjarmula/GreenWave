@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import { Activity, ArrowRight, ArrowUpRight, Info, Smartphone } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
+import { ResponsiveNavigation } from "@/components/workspace/ResponsiveNavigation";
 import { HomeBackdrop } from "@/components/workspace/HomeBackdrop";
 import { GreenWaveMark } from "@/components/workspace/GreenWaveMark";
 import {
@@ -43,53 +44,67 @@ export function HomeMenu() {
         <span>{corridor.signals.length} traffic signals · real geometry</span>
         <span className="flex gap-3">
           <span className="home-legend">
-            <i className="bg-emergency" /> Vehicle
+            <i className="bg-[var(--signal-red)]" /> Vehicle
           </span>
           <span className="home-legend">
-            <i className="bg-go" /> Priority green
+            <i className="bg-[var(--signal-green)]" /> Priority green
           </span>
         </span>
         <span>Simulated</span>
       </p>
 
       <div className="home-content">
-        <header className="flex items-center justify-between">
-          <p className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-            <GreenWaveMark className="size-6" />
-            ER–GreenWave
-            <span className="font-normal text-muted-foreground">/ Kraków</span>
-          </p>
-          <ThemeToggle />
-        </header>
+        <div className="home-header">
+          <header className="flex flex-wrap items-center justify-between gap-2">
+            <p className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+              <GreenWaveMark className="size-6" />
+              ER–GreenWave
+              <span className="font-normal text-muted-foreground">/ Kraków</span>
+            </p>
+            <ThemeToggle />
+          </header>
+          <div className="mt-4">
+            {" "}
+            <ResponsiveNavigation
+              current="/"
+              title="Home"
+              detail="Workspace"
+              heading={false}
+              themeInMenu={false}
+            />
+          </div>
+        </div>
 
-        <section className="home-hero">
-          <p className="home-reveal home-eyebrow" style={reveal(0)}>
-            <span aria-hidden className="size-1.5 rounded-full bg-go" />
-            Emergency corridor simulation
-          </p>
-          <h1 className="home-reveal home-title" style={reveal(1)}>
-            A clearer path to the incident.
-          </h1>
-          <p className="home-reveal home-lede" style={reveal(2)}>
-            Explore simulated emergency response, compare recorded runs and follow the data behind
-            the corridor.
-          </p>
-          {startRequest && (
-            <Link
-              className="home-reveal home-return pressable"
-              style={reveal(3)}
-              href={routeForMode(startRequest.green_wave_mode)}
-            >
-              <span
-                aria-hidden
-                className="home-return-dot"
-                data-live={simulationState === "RUNNING" || undefined}
-              />
-              Return to {simulationState.toLowerCase()} simulation
-              <ArrowRight className="size-3.5" aria-hidden />
-            </Link>
-          )}
-        </section>
+        <div className="home-hero">
+          <section>
+            <p className="home-reveal home-eyebrow" style={reveal(0)}>
+              <span aria-hidden className="size-1.5 rounded-full bg-go" />
+              Emergency corridor simulation
+            </p>
+            <h1 className="home-reveal home-title" style={reveal(1)}>
+              A clearer path to the incident.
+            </h1>
+            <p className="home-reveal home-lede" style={reveal(2)}>
+              Explore simulated emergency response, compare recorded runs and follow the data behind
+              the corridor.
+            </p>
+            {startRequest && (
+              <Link
+                className="home-reveal home-return pressable"
+                style={reveal(3)}
+                href={routeForMode(startRequest.green_wave_mode)}
+              >
+                <span
+                  aria-hidden
+                  className="home-return-dot"
+                  data-live={simulationState === "RUNNING" || undefined}
+                />
+                Return to {simulationState.toLowerCase()} simulation
+                <ArrowRight className="size-3.5" aria-hidden />
+              </Link>
+            )}
+          </section>
+        </div>
 
         <div className="home-bottom">
           <div className="home-cards">

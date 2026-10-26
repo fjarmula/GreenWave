@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, ChevronUp, Maximize2, Minimize2, PanelRight } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Maximize2, Minimize2, PanelRight } from "lucide-react";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { BottomSheet } from "@/components/workspace/BottomSheet";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
@@ -13,13 +13,8 @@ export type WorkspaceSheet = {
   onSnapChange: (snap: SheetSnap) => void;
   collapsed: ReactNode;
   expanded: ReactNode;
-  /** Desktop disclosure label for the expanded content; omitted when the card toggles it. */
-  detailsLabel?: string;
-  /** Desktop keeps the full `inspector` instead of the compact card. */
-  phoneOnly?: boolean;
-  /** Adds the minimized snap (phone: the peek row; desktop: a pill with `minimizedLabel`). */
+  /** Adds the phone-only minimized peek snap. */
   minimizable?: boolean;
-  minimizedLabel?: string;
 };
 
 export function WorkspaceShell({
@@ -32,17 +27,14 @@ export function WorkspaceShell({
   defaultDetails = true,
   provenance = "Simulated · all signal states",
   statusAlign = "start",
-  compactHeader = false,
 }: {
   map: ReactNode;
   status?: ReactNode;
   /** Which top corner the status overlay floats in. */
   statusAlign?: "start" | "end";
-  /** One-row header (Driver): the page menu replaces the tab strip and Details goes away. */
-  compactHeader?: boolean;
-  /** Shown when there is no `sheet` (or it is phone-only, on desktop). */
+  /** Full desktop panel; also used on phones without a sheet. */
   inspector?: ReactNode;
-  /** Phone: a draggable bottom sheet. Desktop: a compact floating card that expands. */
+  /** Phone-only draggable bottom sheet, independent of simulation mode. */
   sheet?: WorkspaceSheet;
   header: ReactNode;
   defaultFocus?: boolean;
@@ -54,7 +46,6 @@ export function WorkspaceShell({
   const trigger = useRef<HTMLButtonElement>(null);
   const exit = useRef<HTMLButtonElement>(null);
   const phone = useIsPhone();
-  const sheetDetailsId = useId();
   const changeFocus = (next: boolean) => {
     setFocus(next);
     requestAnimationFrame(() => (next ? exit : trigger).current?.focus());
@@ -77,8 +68,6 @@ export function WorkspaceShell({
   }, [focus]);
   const hasPanel = !!sheet || inspector !== undefined;
   const panelHidden = focus || !details;
-  const desktopSheet = sheet && !sheet.phoneOnly ? sheet : undefined;
-  const desktopMinimized = !!desktopSheet?.minimizable && desktopSheet.snap === "minimized";
   return (
     <FollowProvider>
       <main
@@ -86,7 +75,7 @@ export function WorkspaceShell({
         data-layout="map-first"
         data-focus={focus}
         data-details={details}
-        data-sheet={sheet && (phone || !sheet.phoneOnly) ? sheet.snap : undefined}
+        data-sheet={sheet && phone && !panelHidden ? sheet.snap : undefined}
       >
         <div className="workspace-map-slot" data-map-slot>
           {map}
@@ -96,11 +85,11 @@ export function WorkspaceShell({
         </div>
         <WorkspaceHeader
           hidden={focus}
-          compact={compactHeader}
+          compact={phone}
           actions={
             <>
-              <ThemeToggle />
-              {hasPanel && !compactHeader && (
+              {!phone && <ThemeToggle />}
+              {hasPanel && (
                 <button
                   className="workspace-button"
                   aria-expanded={details}
@@ -137,63 +126,10 @@ export function WorkspaceShell({
             aria-label="Simulation details"
             className="workspace-inspector surface-glass"
             data-map-occluder
-            data-compact={desktopSheet ? true : undefined}
-            data-minimized={desktopMinimized || undefined}
             hidden={panelHidden}
             inert={panelHidden}
-            onKeyDown={(event) => {
-              if (!desktopSheet || event.key !== "Escape" || desktopSheet.snap !== "expanded")
-                return;
-              event.preventDefault();
-              event.stopPropagation();
-              desktopSheet.onSnapChange("collapsed");
-            }}
           >
-            {desktopSheet && desktopMinimized ? (
-              <button
-                type="button"
-                className="sheet-pill surface-glass pressable"
-                onClick={() => desktopSheet.onSnapChange("collapsed")}
-              >
-                {desktopSheet.minimizedLabel}
-                <ChevronUp aria-hidden />
-              </button>
-            ) : desktopSheet ? (
-              <>
-                {desktopSheet.minimizable && (
-                  <button
-                    type="button"
-                    className="sheet-minimize pressable"
-                    aria-label="Minimize setup"
-                    onClick={() => desktopSheet.onSnapChange("minimized")}
-                  >
-                    <ChevronDown aria-hidden />
-                  </button>
-                )}
-                {desktopSheet.collapsed}
-                {desktopSheet.detailsLabel && (
-                  <button
-                    type="button"
-                    className="sheet-disclosure"
-                    aria-expanded={desktopSheet.snap === "expanded"}
-                    aria-controls={sheetDetailsId}
-                    onClick={() =>
-                      desktopSheet.onSnapChange(
-                        desktopSheet.snap === "expanded" ? "collapsed" : "expanded",
-                      )
-                    }
-                  >
-                    {desktopSheet.detailsLabel}
-                    <ChevronDown aria-hidden />
-                  </button>
-                )}
-                <div id={sheetDetailsId} hidden={desktopSheet.snap !== "expanded"}>
-                  {desktopSheet.snap === "expanded" && desktopSheet.expanded}
-                </div>
-              </>
-            ) : (
-              inspector
-            )}
+            {inspector}
           </aside>
         )}
         {status && (

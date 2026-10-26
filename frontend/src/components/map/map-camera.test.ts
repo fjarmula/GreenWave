@@ -14,6 +14,8 @@ it("follows the displayed point, freezes stale updates and removes listeners", (
     getZoom: () => 17,
     getContainer: () => ({ clientWidth: width, clientHeight: 200 }),
     jumpTo,
+    easeTo: vi.fn(),
+    stop: vi.fn(),
   };
   const fit = vi.fn();
   const camera = createMapCamera(map, fit, () => {});
@@ -35,7 +37,7 @@ it("follows the displayed point, freezes stale updates and removes listeners", (
   expect(jumpTo).toHaveBeenCalledTimes(1);
 });
 
-function sizedCamera(zoom = 12) {
+function sizedCamera(zoom = 12, reduceMotion = false) {
   const listeners = new Map<string, (e: { originalEvent?: unknown }) => void>();
   let currentZoom = zoom;
   const map = {
@@ -48,14 +50,17 @@ function sizedCamera(zoom = 12) {
     getZoom: () => currentZoom,
     getContainer: () => ({ clientWidth: 320, clientHeight: 200 }),
     jumpTo: vi.fn(),
+    easeTo: vi.fn(),
+    stop: vi.fn(),
   };
   const fit = vi.fn();
-  const camera = createMapCamera(map, fit, () => {});
+  const changed = vi.fn();
+  const camera = createMapCamera(map, fit, changed, () => reduceMotion);
   const emit = (name: string, event: { originalEvent?: unknown }) => listeners.get(name)!(event);
   const setZoom = (next: number) => {
     currentZoom = next;
   };
-  return { camera, fit, emit, setZoom, jumpTo: map.jumpTo };
+  return { camera, map, changed, fit, emit, setZoom, jumpTo: map.jumpTo };
 }
 
 it("reframe refits in overview", () => {
@@ -102,16 +107,100 @@ it("reframe is ignored while following", () => {
   expect(fit).toHaveBeenCalledTimes(1);
 });
 
-it("resume zooms in to street level from an overview zoom", () => {
-  const { camera, jumpTo } = sizedCamera(12);
+it("Follow vehicle eases to street level without displayed frames cancelling the zoom", () => {
+  const { camera, map, emit } = sizedCamera();
   camera.display([19, 50], true);
   camera.resume();
-  expect(jumpTo).toHaveBeenLastCalledWith({ center: [19, 50], bearing: 0, pitch: 0, zoom: 16.5 });
+  expect(map.easeTo).toHaveBeenCalledWith(
+    { center: [19, 50], zoom: 17, bearing: 0, pitch: 0, duration: 280 },
+    expect.any(Object),
+  );
+  camera.display([20, 51], true);
+  emit("zoomend", {});
+  emit("moveend", {}); // a preceding route-fit or user gesture, not our transition
+  expect(map.jumpTo).not.toHaveBeenCalled();
+  emit("moveend", map.easeTo.mock.calls[0][1]);
+  camera.display([20, 51], true);
+  expect(map.jumpTo).toHaveBeenLastCalledWith({ center: [20, 51], bearing: 0, pitch: 0 });
+});
+it("preserves a closer zoom and respects reduced motion", () => {
+  const { camera, map } = sizedCamera(18, true);
+  camera.display([19, 50], true);
+  camera.resume();
+  expect(map.easeTo).toHaveBeenCalledWith(
+    expect.objectContaining({ zoom: 18, duration: 0 }),
+    expect.any(Object),
+  );
+});
+it("ignores late completion after a user pan", () => {
+  const { camera, map, emit, changed } = sizedCamera();
+  camera.display([19, 50], true);
+  camera.resume();
+  emit("dragstart", { originalEvent: {} });
+  emit("moveend", map.easeTo.mock.calls[0][1]);
+  camera.display([20, 51], true);
+  expect(changed).toHaveBeenLastCalledWith("suspended");
+  expect(map.jumpTo).not.toHaveBeenCalled();
+});
+it("does not write centers during user zoom and leaves follow below zoom 16", () => {
+  const { camera, map, emit, setZoom } = sizedCamera();
+  camera.display([19, 50], true);
+  camera.resume();
+  emit("zoomstart", { originalEvent: {} });
+  camera.display([20, 51], true);
+  setZoom(15);
+  emit("zoomend", { originalEvent: {} });
+  camera.display([21, 52], true);
+  expect(map.jumpTo).not.toHaveBeenCalled();
+});
+it("wheel entry into detail survives the gesture's trailing moveend", () => {
+  const { camera, map, emit, setZoom } = sizedCamera();
+  camera.display([19, 50], true);
+  setZoom(16.7);
+  emit("zoomend", { originalEvent: {} });
+  emit("moveend", { originalEvent: {} });
+  camera.display([20, 51], true);
+  expect(map.easeTo).toHaveBeenCalledWith(
+    expect.objectContaining({ zoom: 16.7 }),
+    expect.any(Object),
+  );
+  expect(map.jumpTo).not.toHaveBeenCalled();
+});
+it("does not follow stale or ended points and freezes a transition on pause", () => {
+  const { camera, map, emit } = sizedCamera();
+  camera.display([19, 50], false);
+  camera.resume();
+  expect(map.easeTo).not.toHaveBeenCalled();
+  camera.display([19, 50], true);
+  camera.resume();
+  camera.pause();
+  emit("moveend", map.easeTo.mock.calls[0][1]);
+  expect(map.stop).toHaveBeenCalled();
+  expect(map.jumpTo).not.toHaveBeenCalled();
+});
+it("Show route and dispose prevent pending transitions from resuming follow", () => {
+  const { camera, map, fit, emit } = sizedCamera();
+  camera.display([19, 50], true);
+  camera.resume();
+  camera.showRoute();
+  emit("moveend", map.easeTo.mock.calls[0][1]);
+  expect(map.jumpTo).not.toHaveBeenCalled();
+  expect(fit).toHaveBeenCalledTimes(2);
+  camera.dispose();
+  camera.resume();
+  camera.showRoute();
+  expect(map.easeTo).toHaveBeenCalledTimes(1);
+  expect(fit).toHaveBeenCalledTimes(2);
 });
 
-it("resume keeps a street-level zoom the user chose", () => {
-  const { camera, jumpTo } = sizedCamera(17);
+it("a gesture interrupting an ease does not snap to its destination before dragstart", () => {
+  const { camera, map, emit } = sizedCamera();
   camera.display([19, 50], true);
   camera.resume();
-  expect(jumpTo).toHaveBeenLastCalledWith({ center: [19, 50], bearing: 0, pitch: 0 });
+  // MapLibre stops the ease and emits its moveend before announcing the user gesture.
+  emit("moveend", map.easeTo.mock.calls[0][1]);
+  expect(map.jumpTo).not.toHaveBeenCalled();
+  emit("dragstart", { originalEvent: {} });
+  camera.display([20, 51], true);
+  expect(map.jumpTo).not.toHaveBeenCalled();
 });

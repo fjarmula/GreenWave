@@ -61,34 +61,22 @@ it("renders the shared header with map variant", () => {
   expect(html).toContain('class="workspace-actions"');
 });
 
-const minimizableShell = (snap: "minimized" | "collapsed", minimizable = true) =>
-  renderToStaticMarkup(
+it("uses the full inspector on desktop regardless of phone sheet state", () => {
+  const html = renderToStaticMarkup(
     <WorkspaceShell
       map={<div />}
       header={<h1>Driver</h1>}
+      inspector={<p>Desktop dispatch form</p>}
       sheet={{
-        snap,
+        snap: "minimized",
+        minimizable: true,
         onSnapChange: () => {},
-        minimizable,
-        minimizedLabel: "Driver setup · no incident",
-        collapsed: <p>Where’s the incident?</p>,
-        expanded: <p>Settings</p>,
+        collapsed: <p>Phone card</p>,
+        expanded: <p>Phone details</p>,
       }}
     />,
   );
-
-it("shrinks a minimized desktop card to a pill that restores it", () => {
-  const html = minimizableShell("minimized");
-  expect(html).toMatch(/class="sheet-pill[^"]*"[^>]*>Driver setup · no incident/);
-  expect(html).not.toContain("Where’s the incident?");
-});
-
-it("offers to minimize the desktop card", () => {
-  expect(minimizableShell("collapsed")).toContain('aria-label="Minimize setup"');
-});
-
-it("keeps other desktop cards without minimize controls", () => {
-  const html = minimizableShell("collapsed", false);
-  expect(html).not.toContain("Minimize setup");
+  expect(html).toContain("Desktop dispatch form");
+  expect(html).not.toContain("Phone card");
   expect(html).not.toContain("sheet-pill");
 });

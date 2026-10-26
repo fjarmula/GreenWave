@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { DriverSetupDetails } from "./DriverSetupSheet";
+import { DriverSetupCard, DriverSetupDetails } from "./DriverSetupSheet";
 import { DispatchSettingsChip } from "./DispatchSettingsChip";
 import { FinishedRunSummary } from "@/components/hud/RunSummary";
 import { ComparisonResultCard } from "@/components/comparison/ComparisonResultCard";
@@ -119,4 +119,23 @@ describe("off-road completed summaries", () => {
     expect(html).not.toContain("Actual drive-time difference");
     expect(html.match(/Drive to access point/g)).toHaveLength(1);
   });
+});
+
+it("shows the configured comparison feedback after visiting standard traffic", () => {
+  const html = renderToStaticMarkup(
+    <DriverSetupCard
+      intent="comparison"
+      dispatch={dispatch}
+      capabilities={{ geocode: false, roadTimeRanking: false }}
+      geocode={async () => []}
+      settings={{ ...settings, greenWaveMode: "DISABLED" }}
+      detailsOpen={false}
+      onToggleDetails={() => {}}
+      pending={false}
+      replacement={false}
+      errorMessage={null}
+      onInitialize={() => {}}
+    />,
+  );
+  expect(html).toContain("ITS Rejected");
 });

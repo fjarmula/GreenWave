@@ -119,14 +119,14 @@ export default function HomeLiveBackdrop({ onFail }: { onFail: () => void }) {
         type: "line",
         source: "home-route",
         layout: round,
-        paint: { "line-color": palette.wake, "line-opacity": 0.25, "line-width": 5 },
+        paint: { "line-color": "#22c55e", "line-opacity": 0.25, "line-width": 5 },
       });
       map.addLayer({
         id: "home-trail",
         type: "line",
         source: "home-trail",
         layout: round,
-        paint: { "line-color": palette.wake, "line-width": 5 },
+        paint: { "line-color": "#22c55e", "line-width": 5 },
       });
       map.addLayer({
         id: "home-signals",
@@ -138,9 +138,9 @@ export default function HomeLiveBackdrop({ onFail }: { onFail: () => void }) {
             "match",
             ["get", "state"],
             "green",
-            palette.signal.PRIORITY_GREEN,
+            "#22c55e",
             "ahead",
-            palette.signal.NORMAL,
+            "#ef4444",
             palette.routeStandard,
           ],
         },
@@ -151,7 +151,7 @@ export default function HomeLiveBackdrop({ onFail }: { onFail: () => void }) {
         source: "home-vehicle",
         paint: {
           "circle-radius": 14,
-          "circle-color": palette.signal.NORMAL,
+          "circle-color": "#ef4444",
           "circle-opacity": 0.22,
         },
       });
@@ -159,7 +159,7 @@ export default function HomeLiveBackdrop({ onFail }: { onFail: () => void }) {
         id: "home-vehicle",
         type: "circle",
         source: "home-vehicle",
-        paint: { "circle-radius": 6, "circle-color": palette.signal.NORMAL },
+        paint: { "circle-radius": 6, "circle-color": "#ef4444" },
       });
       frame(map);
     } catch {

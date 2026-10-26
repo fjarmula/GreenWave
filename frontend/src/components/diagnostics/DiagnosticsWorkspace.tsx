@@ -6,13 +6,15 @@ import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { diagnosticStore } from "@/lib/diagnostics/store";
 import { useSimulationState } from "@/components/simulation-provider";
 import { routeForMode } from "@/lib/workspace-routes";
-import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation";
+import { ResponsiveNavigation } from "@/components/workspace/ResponsiveNavigation";
+import { useIsPhone } from "@/lib/useIsPhone";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { DataQualityPanel } from "@/components/hud/DataQualityPanel";
 import { EndpointActivity } from "./EndpointActivity";
 import { DataFlowView } from "./DataFlowView";
 import { getFrontendConfig } from "@/lib/config";
 export function DiagnosticsWorkspace() {
+  const phone = useIsPhone();
   const entries = useSyncExternalStore(
     diagnosticStore.subscribe,
     diagnosticStore.getSnapshot,
@@ -21,12 +23,13 @@ export function DiagnosticsWorkspace() {
   const { startRequest } = useSimulationState();
   const config = getFrontendConfig();
   return (
-    <main className="home-main mx-auto w-full max-w-5xl px-5 pt-32 pb-10 sm:px-10 sm:pt-36">
+    <main className="home-main content-page pt-32 pb-10 sm:pt-36">
       <WorkspaceHeader
         variant="page"
+        compact={phone}
         actions={
           <>
-            <ThemeToggle />
+            {!phone && <ThemeToggle />}
             {startRequest && (
               <Link className="workspace-button" href={routeForMode(startRequest.green_wave_mode)}>
                 <ArrowRight aria-hidden />
@@ -40,10 +43,12 @@ export function DiagnosticsWorkspace() {
           </>
         }
       >
-        <div className="min-w-0 flex-1">
-          <WorkspaceNavigation current="/diagnostics" />
-          <p className="workspace-title">Developer view</p>
-        </div>
+        <ResponsiveNavigation
+          current="/diagnostics"
+          title="Diagnostics"
+          detail="Developer view"
+          heading={false}
+        />
       </WorkspaceHeader>
       <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Endpoint diagnostics</h1>
       <p className="mt-3 mb-8 text-muted-foreground">
