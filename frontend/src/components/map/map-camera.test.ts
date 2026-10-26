@@ -153,13 +153,14 @@ it("does not write centers during user zoom and leaves follow below zoom 16", ()
   camera.display([21, 52], true);
   expect(map.jumpTo).not.toHaveBeenCalled();
 });
-it("wheel entry into detail survives the gesture's trailing moveend", () => {
+it("wheel entry into detail survives the gesture's trailing moveend", async () => {
   const { camera, map, emit, setZoom } = sizedCamera();
   camera.display([19, 50], true);
   setZoom(16.7);
   emit("zoomend", { originalEvent: {} });
   emit("moveend", { originalEvent: {} });
   camera.display([20, 51], true);
+  await Promise.resolve();
   expect(map.easeTo).toHaveBeenCalledWith(
     expect.objectContaining({ zoom: 16.7 }),
     expect.any(Object),
@@ -203,4 +204,16 @@ it("a gesture interrupting an ease does not snap to its destination before drags
   emit("dragstart", { originalEvent: {} });
   camera.display([20, 51], true);
   expect(map.jumpTo).not.toHaveBeenCalled();
+});
+
+it("waits for the wheel handler to return before starting an ease", async () => {
+  const { camera, map, emit, setZoom } = sizedCamera();
+  camera.display([19, 50], true);
+  setZoom(17);
+  emit("zoomend", { originalEvent: {} });
+  expect(map.easeTo).not.toHaveBeenCalled();
+  camera.display([20, 51], true);
+  expect(map.jumpTo).not.toHaveBeenCalled();
+  await Promise.resolve();
+  expect(map.easeTo).toHaveBeenCalledOnce();
 });

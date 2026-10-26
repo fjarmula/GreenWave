@@ -84,7 +84,7 @@ or interrupted route fit cannot cancel the new transition.
 - Current-main baseline: 103 files, 1,024 tests passed.
 - Responsive navigation/desktop inspector tests and camera transition tests observed RED,
   then GREEN. Camera completion is tagged; interrupted eases never snap back before dragstart.
-- All frontend checks pass: lint, typecheck, format:check, 104 files / 1,034 tests, production build.
+- All frontend checks pass: lint, typecheck, format:check, 104 files / 1,035 tests, production build.
 - Browser: 30 light route/width cases (1920,768,767,390,320px) and 18 dark cases
   (1440,390,320px), no page overflow. Current home backdrop, rather than stale illustration, retained.
 - Live driver: follow, overview, Focus restore, Details restore, ended follow disabled,
@@ -107,3 +107,12 @@ remains native; minimized peek/tap and keyboard alternatives are preserved.
 
 Final browser wheel check: repeated wheel steps enter follow; a manual pan suspends it;
 reduced-motion resume works. Final full quality gate repeated after all source changes: green.
+
+
+### Final wheel-event regression
+
+Final console inspection exposed MapLibre `_onEaseFrame is not a function` when a wheel
+completion listener synchronously started another ease. Added a test proving no ease starts
+until that handler returns; observed RED then GREEN. Wheel-entry transitions now queue one
+microtask and reject superseded/disposed requests. Fresh browser wheel/pan/reduced-motion
+checks explicitly captured zero page errors. Full quality gate repeated: 1,035 tests pass.

@@ -94,7 +94,16 @@ export function createMapCamera(
     userZooming = false;
     const previous = mode;
     update({ type: "zoom", zoom: map.getZoom(), user: true });
-    if (mode === "following" && previous === "overview") approach(map.getZoom());
+    if (mode === "following" && previous === "overview" && fresh && last) {
+      // MapLibre is still finishing the wheel gesture here. Starting easeTo in this
+      // event stack can leave its render callback scheduled after its frame was deleted.
+      const pending = ++sequence;
+      transition = pending;
+      const zoom = map.getZoom();
+      queueMicrotask(() => {
+        if (!disposed && mode === "following" && transition === pending) approach(zoom);
+      });
+    }
   };
   const pan = (event: InputEvent) => {
     if (!event.originalEvent) return;
