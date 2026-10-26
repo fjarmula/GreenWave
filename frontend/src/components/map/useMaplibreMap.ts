@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import type { Map } from "maplibre-gl";
 
-import { collapseCompactAttribution } from "@/components/map/attribution";
+import {
+  attributionOptions,
+  collapseCompactAttribution,
+  peekAttributionOnHover,
+} from "@/components/map/attribution";
 import { createBasemapLoader, groundOnlyStyle } from "@/components/map/basemap-style";
 import { createMapThemeSwap } from "@/components/map/map-theme-swap";
 import { registerThemeBarrier, type ResolvedTheme } from "@/lib/theme-transition";
@@ -17,13 +21,7 @@ const MAPLIBRE_WORKER_URL = new URL(
 ).toString();
 
 const KRAKOW_CENTER: [number, number] = [19.945, 50.064];
-// Data attribution (architecture §5); the basemap's own OSM attribution is added by its style.
-// The simulation disclaimer lives in the always-visible provenance chip, not here.
-export const DATA_ATTRIBUTION = [
-  '<a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre</a>',
-  'Road network &amp; signals © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL)',
-  "Street registry © City of Kraków (MSIP)",
-];
+export { DATA_ATTRIBUTION } from "@/components/map/attribution";
 
 /**
  * Owns the MapLibre instance for one container: creates it once, swaps the basemap
@@ -55,10 +53,7 @@ export function useMaplibreMap(theme: ResolvedTheme) {
       maxPitch: 0,
       attributionControl: false,
     });
-    instance.addControl(
-      new maplibregl.AttributionControl({ customAttribution: DATA_ATTRIBUTION }),
-      "bottom-right",
-    );
+    instance.addControl(new maplibregl.AttributionControl(attributionOptions()), "bottom-right");
 
     instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     const setStyle = createBasemapLoader(instance);
@@ -90,12 +85,14 @@ export function useMaplibreMap(theme: ResolvedTheme) {
     };
     instance.on("style.load", onStyleLoad);
     instance.once("load", () => collapseCompactAttribution(container));
+    const stopPeek = peekAttributionOnHover(container);
     const resize = new ResizeObserver(() => instance.resize());
     resize.observe(container);
     mapRef.current = instance;
 
     return () => {
       unregisterBarrier();
+      stopPeek();
       swap.dispose();
       swapRef.current = null;
       resize.disconnect();

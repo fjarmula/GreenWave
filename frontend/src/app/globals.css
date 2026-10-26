@@ -362,9 +362,12 @@
   font-size: 10px;
   backdrop-filter: blur(8px);
 }
-.dashboard-map .maplibregl-ctrl-attrib:not(.maplibregl-compact) {
-  border-width: 1px 0 0 1px;
-  border-top-left-radius: 0.5rem;
+/* Attribution is always the round info button; a mouse hover previews it (see attribution.ts). */
+.dashboard-map .maplibregl-ctrl-attrib.maplibregl-compact.attrib-peek {
+  padding: 2px 28px 2px 8px;
+}
+.dashboard-map .maplibregl-ctrl-attrib.attrib-peek .maplibregl-ctrl-attrib-inner {
+  display: block;
 }
 
 .dashboard-map .maplibregl-ctrl-group button + button {
@@ -720,9 +723,16 @@
   pointer-events: none;
   transition: transform 200ms var(--ease-out);
 }
-/* Narrow maps open MapLibre's compact attribution expanded; step above it until it closes. */
-.workspace-map-slot:has(.maplibregl-compact-show) .workspace-provenance {
+/* An open attribution can reach the chip on narrow maps; step above it until it closes. */
+.workspace-map-slot:has(.maplibregl-compact-show) .workspace-provenance,
+.workspace-map-slot:has(.attrib-peek) .workspace-provenance {
   transform: translateY(-3.5rem);
+}
+/* Phone: the open attribution wraps to three lines. */
+@media (max-width: 767px) {
+  .workspace-map-slot:has(.maplibregl-compact-show) .workspace-provenance {
+    transform: translateY(-4.5rem);
+  }
 }
 .workspace-provenance::before {
   flex-shrink: 0;
