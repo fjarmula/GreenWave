@@ -482,6 +482,10 @@
 .workspace-header[data-variant="page"] {
   position: fixed;
 }
+/* Focus and anchor scrolling stop below the pinned header. */
+:root:has(.workspace-header[data-variant="page"]) {
+  scroll-padding-top: calc(var(--shell-gap) + 7.5rem);
+}
 /* The page's own header content (navigation and title) is one glass bar. */
 .workspace-header > :first-child {
   @apply surface-glass;

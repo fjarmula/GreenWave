@@ -62,7 +62,7 @@ describe("attributionOptions", () => {
 
 function fakeDetails() {
   const classes = new Set(["maplibregl-ctrl-attrib", "maplibregl-compact"]);
-  const listeners = new Map<string, (event: { pointerType?: string }) => void>();
+  const listeners = new Map<string, (event: { pointerType?: string; target?: unknown }) => void>();
   const element = {
     open: false,
     classList: {
@@ -76,14 +76,21 @@ function fakeDetails() {
     removeAttribute: (name: string) => {
       if (name === "open") element.open = false;
     },
-    addEventListener: (name: string, listener: (event: { pointerType?: string }) => void) =>
-      listeners.set(name, listener),
+    addEventListener: (
+      name: string,
+      listener: (event: { pointerType?: string; target?: unknown }) => void,
+    ) => listeners.set(name, listener),
     removeEventListener: (name: string) => listeners.delete(name),
   };
   const root = {
     querySelector: (selector: string) => (selector === ".maplibregl-ctrl-attrib" ? element : null),
   };
-  const fire = (name: string, pointerType = "mouse") => listeners.get(name)?.({ pointerType });
+  const target = (summary: boolean) => ({
+    closest: (selector: string) =>
+      summary && selector === ".maplibregl-ctrl-attrib-button" ? {} : null,
+  });
+  const fire = (name: string, pointerType = "mouse", summary = true) =>
+    listeners.get(name)?.({ pointerType, target: target(summary) });
   return { root, element, classes, listeners, fire };
 }
 
@@ -115,6 +122,15 @@ describe("peekAttributionOnHover", () => {
     fire("pointerleave");
     expect(element.open).toBe(true);
     expect(classes.has("attrib-peek")).toBe(false);
+  });
+
+  it("keeps the preview open when the click lands in the text, not the button", () => {
+    const { root, element, classes, fire } = fakeDetails();
+    peekAttributionOnHover(root);
+    fire("pointerenter");
+    fire("click", "mouse", false);
+    expect(classes.has("attrib-peek")).toBe(true);
+    expect(element.open).toBe(true);
   });
 
   it("leaves an already pinned attribution alone on hover", () => {

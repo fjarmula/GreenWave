@@ -30,12 +30,23 @@ export function collapseCompactAttribution(root: {
 }
 
 const PEEK = "attrib-peek";
+// Only the summary button pins; a click on a link or the text inside the preview must not.
+const onButton = (target: unknown) =>
+  !!(target as { closest?: (selector: string) => unknown } | null)?.closest?.(
+    ".maplibregl-ctrl-attrib-button",
+  );
 
 type PeekElement = AttributionElement & {
   classList: { add(name: string): void };
   setAttribute(name: string, value: string): void;
-  addEventListener(name: string, listener: (event: { pointerType?: string }) => void): void;
-  removeEventListener(name: string, listener: (event: { pointerType?: string }) => void): void;
+  addEventListener(
+    name: string,
+    listener: (event: { pointerType?: string; target?: unknown }) => void,
+  ): void;
+  removeEventListener(
+    name: string,
+    listener: (event: { pointerType?: string; target?: unknown }) => void,
+  ): void;
 };
 
 /**
@@ -47,7 +58,7 @@ export function peekAttributionOnHover(root: {
 }): () => void {
   const attribution = root.querySelector(".maplibregl-ctrl-attrib");
   if (!attribution) return () => {};
-  const enter = (event: { pointerType?: string }) => {
+  const enter = (event: { pointerType?: string; target?: unknown }) => {
     if (event.pointerType !== "mouse" || attribution.classList.contains("maplibregl-compact-show"))
       return;
     attribution.classList.add(PEEK);
@@ -58,8 +69,10 @@ export function peekAttributionOnHover(root: {
     attribution.classList.remove(PEEK);
     attribution.removeAttribute("open");
   };
-  // A click pins it: MapLibre's toggle takes over, the preview must not close it on leave.
-  const pin = () => attribution.classList.remove(PEEK);
+  // A click on the button pins it: MapLibre's toggle takes over, leave must not close it.
+  const pin = (event: { target?: unknown }) => {
+    if (onButton(event.target)) attribution.classList.remove(PEEK);
+  };
   attribution.addEventListener("pointerenter", enter);
   attribution.addEventListener("pointerleave", leave);
   attribution.addEventListener("click", pin);

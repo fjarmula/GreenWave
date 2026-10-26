@@ -18,4 +18,4 @@ Items 6–9 are trial changes; the human may revert any of them after review.
 
 ## Non-goals
 
-No real signal actuation, no new dependencies, no change to camera policy rules in `lib/camera-policy.ts`.
+No real signal actuation, no new dependencies, no change to camera mode rules in `lib/camera-policy.ts`. Exception (human request "zoom on the vehicle"): resuming follow below zoom 16.5 jumps to 16.5.
