@@ -37,6 +37,7 @@ export function DriverSetupCard({
   errorMessage,
   onInitialize,
   startLabel = "Initialize green corridor",
+  intent = "simulation",
 }: {
   dispatch: IncidentDispatch;
   capabilities: DispatchAdapter["capabilities"];
@@ -51,6 +52,7 @@ export function DriverSetupCard({
   errorMessage: string | null;
   onInitialize: () => void;
   startLabel?: string;
+  intent?: "simulation" | "comparison";
 }) {
   const { incident } = dispatch;
   const incidentKey = incident
@@ -81,7 +83,11 @@ export function DriverSetupCard({
         aria-expanded={detailsOpen}
         onClick={onToggleDetails}
       >
-        <span className="min-w-0 py-2 text-left">{settingsSummary(settings)}</span>
+        <span className="min-w-0 py-2 text-left">
+          {settingsSummary(
+            intent === "comparison" ? { ...settings, greenWaveMode: "ENABLED" } : settings,
+          )}
+        </span>
         <ChevronRight aria-hidden data-open={detailsOpen} />
       </button>
       {notices}
@@ -97,7 +103,7 @@ export function DriverSetupCard({
         {pending
           ? "Computing route…"
           : canStartDispatch(dispatch) &&
-              isOnSite(pageCandidate(dispatch, timeModeFor(settings.greenWaveMode, "simulation")))
+              isOnSite(pageCandidate(dispatch, timeModeFor(settings.greenWaveMode, intent)))
             ? "Dispatch on foot"
             : replacement
               ? "Replace active simulation"
@@ -123,6 +129,7 @@ export function DriverSetupDetails({
   stationsError,
   onFocusMap,
   previousRun = null,
+  intent = "simulation",
 }: {
   dispatch: IncidentDispatch;
   capabilities: DispatchAdapter["capabilities"];
@@ -131,10 +138,11 @@ export function DriverSetupDetails({
   stationsError: string | null;
   onFocusMap: () => void;
   previousRun?: PreviousRun | null;
+  intent?: "simulation" | "comparison";
 }) {
   const update = (patch: Partial<DispatchSettings>) => onSettingsChange({ ...settings, ...patch });
   const isMockTransport = getFrontendConfig().transport === "mock";
-  const timeMode = timeModeFor(settings.greenWaveMode, "simulation");
+  const timeMode = timeModeFor(settings.greenWaveMode, intent);
   const { incident, ranking } = dispatch;
   return (
     <section aria-label="Dispatch settings" className="driver-setup-details">
@@ -167,14 +175,17 @@ export function DriverSetupDetails({
         value={settings.trafficDensity}
         onChange={(value) => update({ trafficDensity: value })}
       />
+      {intent === "comparison" && (
+        <p className="mt-5 text-sm font-medium">Green Wave and standard traffic · same scenario</p>
+      )}
       <CascadeToggle
         enabled={settings.cascadeEnabled}
         onToggle={() => update({ cascadeEnabled: !settings.cascadeEnabled })}
-        disabled={settings.greenWaveMode === "DISABLED"}
+        disabled={intent !== "comparison" && settings.greenWaveMode === "DISABLED"}
       />
       <ItsScenarioControl
         value={settings.itsScenario ?? "NOMINAL"}
-        disabled={settings.greenWaveMode === "DISABLED"}
+        disabled={intent !== "comparison" && settings.greenWaveMode === "DISABLED"}
         onChange={(value) => update({ itsScenario: value })}
       />
       <PlaybackSpeedSelector

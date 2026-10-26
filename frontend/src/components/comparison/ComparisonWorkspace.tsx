@@ -6,7 +6,9 @@ import { ComparisonStage } from "./ComparisonStage";
 import { useScenario } from "@/components/scenario-provider";
 import { useSimulationActions } from "@/components/simulation-runtime";
 import { useSimulationState } from "@/components/simulation-provider";
-import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation";
+import { ResponsiveNavigation } from "@/components/workspace/ResponsiveNavigation";
+import { DriverSetupCard, DriverSetupDetails } from "@/components/driver/DriverSetupSheet";
+import type { SheetSnap } from "@/lib/sheet-physics";
 import { DispatchSettingsChip } from "@/components/driver/DispatchSettingsChip";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import { DispatchForm } from "@/components/hud/DispatchForm";
@@ -33,6 +35,7 @@ export function ComparisonWorkspace() {
   } = useScenario();
   const simulation = useSimulationState();
   const { prepareComparison } = useSimulationActions();
+  const [snap, setSnap] = useState<SheetSnap>("collapsed");
   const [pane, setPane] = useState<ComparisonMode>("ENABLED");
   const [mapFocusRequest, setMapFocusRequest] = useState(0);
   // An on-site answer never starts a pair (ADR 0012); it replaces setup until dismissed.
@@ -99,12 +102,11 @@ export function ComparisonWorkspace() {
         ) : undefined
       }
       header={
-        <div className="min-w-0 flex-1">
-          <WorkspaceNavigation current="/compare" />
-          <h1 className="workspace-title">
-            {live ? "Green Wave vs standard traffic" : "Comparison setup"}
-          </h1>
-        </div>
+        <ResponsiveNavigation
+          current="/compare"
+          title="Comparison"
+          detail={live ? "Green Wave vs standard traffic" : "Setup"}
+        />
       }
       map={
         live ? (
@@ -138,6 +140,48 @@ export function ComparisonWorkspace() {
             />
           </div>
         )
+      }
+      sheet={
+        !live
+          ? {
+              snap,
+              onSnapChange: setSnap,
+              minimizable: !onSite,
+              collapsed: onSite ? (
+                <OnSiteResult
+                  station={onSite.station}
+                  walk={onSite.walk}
+                  onBackToSetup={() => setOnSiteAnswer(null)}
+                />
+              ) : (
+                <DriverSetupCard
+                  intent="comparison"
+                  dispatch={dispatch}
+                  capabilities={dispatchAdapter.capabilities}
+                  geocode={dispatchAdapter.geocode}
+                  settings={settings}
+                  detailsOpen={snap === "expanded"}
+                  onToggleDetails={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
+                  pending={starting}
+                  replacement={active}
+                  errorMessage={setupError}
+                  onInitialize={() => void start(settings)}
+                  startLabel="Start live comparison"
+                />
+              ),
+              expanded: (
+                <DriverSetupDetails
+                  intent="comparison"
+                  dispatch={dispatch}
+                  capabilities={dispatchAdapter.capabilities}
+                  settings={settings}
+                  onSettingsChange={setSettings}
+                  stationsError={stationsError}
+                  onFocusMap={() => setMapFocusRequest((v) => v + 1)}
+                />
+              ),
+            }
+          : undefined
       }
       inspector={
         live ? undefined : (

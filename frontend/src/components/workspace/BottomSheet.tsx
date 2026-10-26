@@ -13,7 +13,6 @@ import {
   dampedOffset,
   settleSnap,
   sheetTravel,
-  shouldDragSheet,
   type SheetSnap,
   type SnapStop,
 } from "@/lib/sheet-physics";
@@ -39,7 +38,6 @@ type Drag = {
   pointerId: number;
   startY: number;
   startTranslate: number;
-  fromContent: boolean;
   active: boolean;
   samples: { y: number; t: number }[];
 };
@@ -78,6 +76,7 @@ export function BottomSheet({
   const details = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const suppressClick = useRef(false);
+  const finishDrag = useRef<(() => void) | null>(null);
   const [travel, setTravel] = useState<number | null>(null);
   // Minimized: translate and the height still visible (the peek row).
   const [peek, setPeek] = useState<{ translate: number; visible: number } | null>(null);
@@ -109,6 +108,7 @@ export function BottomSheet({
       if (element) observer.observe(element);
     return () => {
       observer.disconnect();
+      finishDrag.current?.();
       if (container instanceof HTMLElement) container.style.removeProperty("--sheet-visible");
     };
   }, [measure]);
@@ -147,7 +147,6 @@ export function BottomSheet({
       pointerId: event.pointerId,
       startY: event.clientY,
       startTranslate: currentTranslate(element),
-      fromContent: details.current?.contains(target) ?? false,
       active: false,
       samples: [{ y: event.clientY, t: event.timeStamp }],
     };
@@ -161,10 +160,6 @@ export function BottomSheet({
       const delta = moveEvent.clientY - state.startY;
       if (!state.active) {
         if (Math.abs(delta) < DRAG_SLOP_PX) return;
-        if (!shouldDragSheet(details.current?.scrollTop ?? 0, delta, state.fromContent)) {
-          finish();
-          return;
-        }
         state.active = true;
         element.setPointerCapture(state.pointerId);
         element.dataset.dragging = "true";
@@ -196,6 +191,7 @@ export function BottomSheet({
       if (settled !== snap) onSnapChange(settled);
     };
     const finish = () => {
+      finishDrag.current = null;
       drag.current = null;
       delete element.dataset.dragging;
       if (element.hasPointerCapture(state.pointerId))
@@ -204,6 +200,7 @@ export function BottomSheet({
       window.removeEventListener("pointerup", release);
       window.removeEventListener("pointercancel", release);
     };
+    finishDrag.current = finish;
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", release);
     window.addEventListener("pointercancel", release);
@@ -225,7 +222,6 @@ export function BottomSheet({
       data-snap={snap}
       data-measured={travel !== null}
       style={{ transform: `translate3d(0, ${translateFor(snap)}px, 0)` }}
-      onPointerDown={onPointerDown}
       onClickCapture={(event) => {
         if (!suppressClick.current) return;
         suppressClick.current = false;
@@ -241,6 +237,7 @@ export function BottomSheet({
       <button
         type="button"
         className="bottom-sheet-grabber"
+        onPointerDown={onPointerDown}
         aria-expanded={snap === "expanded"}
         aria-controls={detailsId}
         aria-label={GRABBER_LABEL[snap]}

@@ -9,8 +9,7 @@ import { nextSignal } from "@/lib/driver-presentation";
 import type { SheetSnap } from "@/lib/sheet-physics";
 import { isTelemetryStale } from "@/lib/simulation-state";
 import type { DispatchSettings } from "@/lib/start-request";
-import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation";
-import { PageMenu } from "@/components/workspace/PageMenu";
+import { ResponsiveNavigation } from "@/components/workspace/ResponsiveNavigation";
 import { routeForMode, viewRunPolicy } from "@/lib/workspace-routes";
 import { Fragment, useCallback, useState, useSyncExternalStore, type ReactNode } from "react";
 import { simulationOperationSlot } from "@/lib/operation-slot";
@@ -102,7 +101,11 @@ export function Dashboard({
   });
   const snap = sheetState.key === sheetKey ? sheetState.snap : "collapsed";
   const phone = useIsPhone();
-  const minimizable = setupSheetMinimizable({ driver, setup: mode === "setup", onSite: !!onSite });
+  const minimizable = setupSheetMinimizable({
+    driver: true,
+    setup: mode === "setup",
+    onSite: !!onSite,
+  });
   const setSnap = (next: SheetSnap) => setSheetState({ key: sheetKey, snap: next });
   const timeMode = timeModeFor(selectedMode, "simulation");
   const chosenStation = pageCandidate(dispatch, timeMode)?.station ?? null;
@@ -157,14 +160,15 @@ export function Dashboard({
     selectedVehicleType: dispatch.vehicleType,
     chosenStationId: chosenStation?.station_id ?? null,
     runnerUpIds: runnerUpIds(dispatch.ranking, dispatch.selectedStationId, timeMode),
-    // Driver: picking the incident on the map brings the setup card back up.
-    onMapClick: driver
-      ? (position: Position) => {
-          onMapClick(position);
-          setSnap("collapsed");
-        }
-      : onMapClick,
-    // Driver on a phone: using the map folds the setup sheet down to its peek row.
+    // Picking an incident restores the phone setup card in every simulation mode.
+    onMapClick:
+      mode === "setup"
+        ? (position: Position) => {
+            onMapClick(position);
+            setSnap("collapsed");
+          }
+        : onMapClick,
+    // On phones, using the map folds setup down to its peek row in every mode.
     onUserMove:
       minimizable && phone && snap !== "minimized" ? () => setSnap("minimized") : undefined,
   };
@@ -208,7 +212,7 @@ export function Dashboard({
       ? {
           snap,
           onSnapChange: setSnap,
-          phoneOnly: true,
+          minimizable,
           collapsed: onSite ? (
             <OnSiteResult
               station={onSite.station}
@@ -246,7 +250,6 @@ export function Dashboard({
       : {
           snap,
           onSnapChange: setSnap,
-          phoneOnly: true,
           // Running: telemetry and the one Stop. Ended: the outcome and the way back to setup.
           collapsed:
             simulationState === "RUNNING" ? (
@@ -267,7 +270,6 @@ export function Dashboard({
           snap,
           onSnapChange: setSnap,
           minimizable,
-          minimizedLabel: `Driver setup · ${dispatch.incident?.label ?? "no incident"}`,
           collapsed: onSite ? (
             <OnSiteResult
               station={onSite.station}
@@ -303,7 +305,6 @@ export function Dashboard({
       : {
           snap,
           onSnapChange: setSnap,
-          detailsLabel: "Route signals",
           collapsed: (
             <DriverStatus state={simulation} onStop={stopRun} onBackToSetup={backToSetup} />
           ),
@@ -326,25 +327,18 @@ export function Dashboard({
           </div>
         ) : undefined
       }
-      compactHeader={driver}
       header={
-        driver ? (
-          <PageMenu
-            current="/driver"
-            title="Driver"
-            detail={mode === "live" ? "Simulation" : "Setup"}
-          />
-        ) : (
-          <div className="min-w-0 flex-1">
-            <WorkspaceNavigation current={routeForMode(selectedMode)} />
-            <h1 className="workspace-title">
-              {selectedMode === "ENABLED" ? "Green Wave" : "Standard traffic"}{" "}
-              <span className="text-muted-foreground">
-                / {mode === "live" ? "Simulation" : "Setup"}
-              </span>
-            </h1>
-          </div>
-        )
+        <ResponsiveNavigation
+          current={driver ? "/driver" : routeForMode(selectedMode)}
+          title={
+            driver
+              ? "Driver simulation"
+              : selectedMode === "ENABLED"
+                ? "Green Wave"
+                : "Standard traffic"
+          }
+          detail={mode === "live" ? "Simulation" : "Setup"}
+        />
       }
       map={
         <MapContainer

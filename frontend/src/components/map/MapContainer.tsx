@@ -76,10 +76,11 @@ export function MapContainer({
   const { resolvedTheme } = useTheme();
   const theme = resolvedTheme === "dark" ? "dark" : "light";
   const { mapElement, map, styleRevision } = useMaplibreMap(theme);
+  const canFollow = live && simulationState === "RUNNING" && !telemetryStale && !!vehiclePosition;
   const camera = useMapCamera(
     map,
     live ? routeData : null,
-    live && simulationState === "RUNNING" && !telemetryStale,
+    canFollow,
     startRequest?.destination ?? null,
   );
   const showWake = useVehicleWake(
@@ -90,7 +91,7 @@ export function MapContainer({
     theme,
   );
   const { display, mode: cameraMode, resume, showRoute } = camera;
-  const followable = live && !!routeData;
+  const followable = canFollow && !!routeData;
   useFollowTarget(
     useMemo(
       () => (followable ? { following: cameraMode === "following", resume, showRoute } : null),
@@ -209,11 +210,13 @@ export function MapContainer({
           </button>
           <button
             className="workspace-button workspace-float"
-            data-active={camera.mode === "following" || undefined}
+            data-active={(canFollow && camera.mode === "following") || undefined}
+            aria-pressed={canFollow && camera.mode === "following"}
+            disabled={!canFollow}
             onClick={camera.resume}
           >
             <LocateFixed aria-hidden />
-            {camera.mode === "following" ? "Following vehicle" : "Resume following"}
+            {canFollow && camera.mode === "following" ? "Following vehicle" : "Follow vehicle"}
           </button>
         </div>
       )}

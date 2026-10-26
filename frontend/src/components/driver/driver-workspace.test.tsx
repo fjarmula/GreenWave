@@ -13,6 +13,9 @@ vi.mock("@/components/map/MapContainer", () => ({
   MapContainer: ({ live }: { live: boolean }) => <div data-testid="map" data-live={String(live)} />,
 }));
 
+const phone = vi.hoisted(() => ({ current: true }));
+vi.mock("@/lib/useIsPhone", () => ({ useIsPhone: () => phone.current }));
+
 const base = route();
 const [first, second] = base.route_intersections;
 // A straight route starting at the vehicle, so the next signal is 184 m ahead.
@@ -105,4 +108,13 @@ describe("driver workspace", () => {
     expect(html).toContain("Back to setup");
     expect(html).not.toContain("Dispatch settings");
   });
+});
+
+it("renders the full Driver inspector and standard menu on desktop", () => {
+  phone.current = false;
+  const html = render(initialSimulationState);
+  expect(html).toContain("Traffic density");
+  expect(html).not.toContain("bottom-sheet");
+  expect(html).not.toContain("page-menu-trigger");
+  phone.current = true;
 });

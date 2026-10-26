@@ -31,3 +31,18 @@ it("names the real corridor and keeps the simulation disclaimer", () => {
 it("credits the map data", () => {
   expect(html()).toContain('href="https://www.openstreetmap.org/copyright"');
 });
+
+it("uses the mode cards and tool links without a duplicate workspace menu", () => {
+  const markup = html();
+  expect(markup).not.toContain('aria-label="Workspace navigation"');
+  expect(markup).not.toContain("page-menu-trigger");
+  for (const href of [
+    "/simulation/green-wave",
+    "/simulation/standard",
+    "/compare",
+    "/driver",
+    "/diagnostics",
+  ]) {
+    expect(markup).toContain(`href="${href}"`);
+  }
+});

@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+"use client";
+import { useEffect, useRef, type ReactNode } from "react";
 
 /** One pinned glass header for every workspace: page content left, actions right. */
 export function WorkspaceHeader({
@@ -13,11 +14,29 @@ export function WorkspaceHeader({
   /** `map` floats over a full-screen map; `page` stays pinned over scrolling content. */
   variant?: "map" | "page";
   hidden?: boolean;
-  /** One row at every width (Driver's page menu). */
+  /** Compact phone header paired with the shared page menu. */
   compact?: boolean;
 }) {
+  const element = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const header = element.current;
+    const shell = header?.closest<HTMLElement>(".workspace-shell");
+    if (!header || !shell) return;
+    const measure = () => {
+      if (!header.hidden)
+        shell.style.setProperty(
+          "--workspace-header-bottom",
+          `${header.offsetTop + header.offsetHeight}px`,
+        );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
   return (
     <header
+      ref={element}
       className="workspace-header"
       data-variant={variant}
       data-compact={compact || undefined}

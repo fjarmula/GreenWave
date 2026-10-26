@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { Activity, ArrowRight, ArrowUpRight, Info, Smartphone } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
@@ -29,9 +28,6 @@ const MODES = [
 ];
 const TOOL_ICONS = [Activity, Smartphone];
 
-/** Entrance order for the first-load reveal (40ms apart). */
-const reveal = (step: number) => ({ "--reveal-step": step }) as CSSProperties;
-
 export function HomeMenu() {
   const { startRequest, simulationState } = useSimulationState();
   return (
@@ -43,65 +39,61 @@ export function HomeMenu() {
         <span>{corridor.signals.length} traffic signals · real geometry</span>
         <span className="flex gap-3">
           <span className="home-legend">
-            <i className="bg-emergency" /> Vehicle
+            <i className="bg-[var(--signal-red)]" /> Vehicle
           </span>
           <span className="home-legend">
-            <i className="bg-go" /> Priority green
+            <i className="bg-[var(--signal-green)]" /> Priority green
           </span>
         </span>
         <span>Simulated</span>
       </p>
 
       <div className="home-content">
-        <header className="flex items-center justify-between">
-          <p className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-            <GreenWaveMark className="size-6" />
-            ER–GreenWave
-            <span className="font-normal text-muted-foreground">/ Kraków</span>
-          </p>
-          <ThemeToggle />
-        </header>
+        <div className="home-header">
+          <header className="flex flex-wrap items-center justify-between gap-2">
+            <p className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+              <GreenWaveMark className="size-6" />
+              ER–GreenWave
+              <span className="font-normal text-muted-foreground">/ Kraków</span>
+            </p>
+            <ThemeToggle />
+          </header>
+        </div>
 
-        <section className="home-hero">
-          <p className="home-reveal home-eyebrow" style={reveal(0)}>
-            <span aria-hidden className="size-1.5 rounded-full bg-go" />
-            Emergency corridor simulation
-          </p>
-          <h1 className="home-reveal home-title" style={reveal(1)}>
-            A clearer path to the incident.
-          </h1>
-          <p className="home-reveal home-lede" style={reveal(2)}>
-            Explore simulated emergency response, compare recorded runs and follow the data behind
-            the corridor.
-          </p>
-          {startRequest && (
-            <Link
-              className="home-reveal home-return pressable"
-              style={reveal(3)}
-              href={routeForMode(startRequest.green_wave_mode)}
-            >
-              <span
-                aria-hidden
-                className="home-return-dot"
-                data-live={simulationState === "RUNNING" || undefined}
-              />
-              Return to {simulationState.toLowerCase()} simulation
-              <ArrowRight className="size-3.5" aria-hidden />
-            </Link>
-          )}
-        </section>
+        <div className="home-hero">
+          <section>
+            <p className="home-eyebrow">
+              <span aria-hidden className="size-1.5 rounded-full bg-go" />
+              Emergency corridor simulation
+            </p>
+            <h1 className="home-title">A clearer path to the incident.</h1>
+            <p className="home-lede">
+              Explore simulated emergency response, compare recorded runs and follow the data behind
+              the corridor.
+            </p>
+            {startRequest && (
+              <Link
+                className="home-return pressable"
+                href={routeForMode(startRequest.green_wave_mode)}
+              >
+                <span
+                  aria-hidden
+                  className="home-return-dot"
+                  data-live={simulationState === "RUNNING" || undefined}
+                />
+                Return to {simulationState.toLowerCase()} simulation
+                <ArrowRight className="size-3.5" aria-hidden />
+              </Link>
+            )}
+          </section>
+        </div>
 
         <div className="home-bottom">
           <div className="home-cards">
             {destinations.slice(1, 4).map((d, i) => {
               const { icon: Icon, tone, copy } = MODES[i];
               return (
-                <Link
-                  className="home-reveal home-card pressable"
-                  style={reveal(4 + i)}
-                  key={d.href}
-                  href={d.href}
-                >
+                <Link className="home-card pressable" key={d.href} href={d.href}>
                   <span className={`home-card-icon ${tone}`}>
                     <Icon className="size-[18px]" />
                   </span>
@@ -118,7 +110,7 @@ export function HomeMenu() {
             })}
           </div>
 
-          <div className="home-reveal home-foot" style={reveal(7)}>
+          <div className="home-foot">
             <nav className="flex flex-wrap gap-2" aria-label="Tools">
               {destinations.slice(4).map((d, i) => {
                 const Icon = TOOL_ICONS[i];

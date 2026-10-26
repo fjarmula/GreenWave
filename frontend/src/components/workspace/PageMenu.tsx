@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, Menu } from "lucide-react";
 import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation";
 
@@ -11,11 +11,16 @@ export function PageMenu({
   current,
   title,
   detail,
+  tools,
+  heading = true,
 }: {
   current: string;
   title: string;
   detail: string;
+  tools?: ReactNode;
+  heading?: boolean;
 }) {
+  const Heading = heading ? "h1" : "p";
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -41,11 +46,14 @@ export function PageMenu({
         setOpen(false);
         trigger.current?.focus();
       }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+      }}
       onClick={(event) => {
         if ((event.target as HTMLElement).closest(".page-menu a")) setOpen(false);
       }}
     >
-      <h1 className="workspace-title page-menu-heading">
+      <Heading className="workspace-title page-menu-heading">
         <button
           ref={trigger}
           type="button"
@@ -59,9 +67,10 @@ export function PageMenu({
           <span className="text-muted-foreground">/ {detail}</span>
           <ChevronDown aria-hidden className="page-menu-chevron" />
         </button>
-      </h1>
+      </Heading>
       <div id={menuId} className="page-menu surface-glass" hidden={!open}>
         <WorkspaceNavigation current={current} />
+        {tools && <div className="page-menu-tools">{tools}</div>}
       </div>
     </div>
   );

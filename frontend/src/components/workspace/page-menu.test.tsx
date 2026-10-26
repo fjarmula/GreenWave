@@ -15,12 +15,12 @@ it("names the current page and keeps the destinations behind a closed menu", () 
   expect(html).toContain("/ Setup");
 });
 
-it("drops the Details button from a compact header", () => {
+it("keeps Details available regardless of simulation mode", () => {
   const html = renderToStaticMarkup(
-    <WorkspaceShell compactHeader map={<div />} header={<p>Driver</p>} inspector={<p>Setup</p>} />,
+    <WorkspaceShell map={<div />} header={<p>Driver</p>} inspector={<p>Setup</p>} />,
   );
-  expect(html).toContain("data-compact");
-  expect(html).not.toContain('aria-controls="workspace-inspector"');
+  expect(html).not.toContain("data-compact");
+  expect(html).toContain('aria-controls="workspace-inspector"');
 });
 
 it("keeps the Details button on the other workspaces", () => {
