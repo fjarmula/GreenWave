@@ -1402,12 +1402,15 @@ button,
   position: relative;
   isolation: isolate;
 }
-.home-mark {
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: 3px;
-  background: var(--go);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--go) 22%, transparent);
+.brand-mark {
+  --brand-ink: #fff;
+  flex: none;
+  border-radius: 8px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--go) 18%, transparent);
+}
+/* Dark --go is a light mint: draw the wave in the page ink instead of white. */
+.dark .brand-mark {
+  --brand-ink: var(--bg);
 }
 .home-eyebrow {
   display: inline-flex;

@@ -14,6 +14,7 @@ import {
 import { useSimulationState } from "@/components/simulation-provider";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { GreenWaveIllustration } from "@/components/workspace/GreenWaveIllustration";
+import { GreenWaveMark } from "@/components/workspace/GreenWaveMark";
 import { destinations, routeForMode } from "@/lib/workspace-routes";
 
 const MODES = [
@@ -36,7 +37,7 @@ export function HomeMenu() {
     <main className="home-main mx-auto w-full max-w-5xl px-6 py-10 sm:py-16">
       <header className="flex items-center justify-between">
         <p className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-          <span aria-hidden className="home-mark" />
+          <GreenWaveMark className="size-6" />
           ER–GreenWave
           <span className="font-normal text-muted-foreground">/ Kraków</span>
         </p>
