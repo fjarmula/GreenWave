@@ -1466,9 +1466,10 @@ button,
   width: 100%;
   height: 100%;
 }
+/* Sized, not inset: MapLibre sets .maplibregl-map to position: relative. */
 .home-live-map {
-  position: absolute;
-  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 .home-live-map .maplibregl-canvas {
   filter: saturate(0.5);
@@ -1479,8 +1480,9 @@ button,
 .dark .home-backdrop[data-kind="live"] {
   opacity: 0.85;
 }
-.home-live-map .maplibregl-ctrl-bottom-right {
-  pointer-events: auto;
+/* The backdrop sits under the content; the home footer carries the full map credit instead. */
+.home-live-map .maplibregl-ctrl-attrib {
+  display: none;
 }
 .home-roads {
   fill: var(--home-road-ink);
@@ -1519,9 +1521,161 @@ button,
   fill: var(--emergency);
   opacity: 0.22;
 }
+/* One screen: background, scrim, then header / hero / cards. Short screens scroll instead. */
 .home-main {
   position: relative;
   isolation: isolate;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+.home-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      var(--bg) 0%,
+      color-mix(in oklch, var(--bg) 88%, transparent) 34%,
+      transparent 62%
+    ),
+    linear-gradient(0deg, color-mix(in oklch, var(--bg) 92%, transparent) 0%, transparent 38%);
+}
+.home-content {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  width: min(70rem, 100%);
+  height: 100%;
+  margin: 0 auto;
+  padding: 1.75rem 2.5rem 1.5rem;
+}
+.home-hero {
+  align-self: center;
+  max-width: 36rem;
+}
+.home-title {
+  margin-top: 1.25rem;
+  font-size: 3.75rem;
+  line-height: 1.02;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.home-lede {
+  margin-top: 1.125rem;
+  max-width: 30rem;
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  text-wrap: pretty;
+}
+.home-corridor-caption {
+  position: absolute;
+  top: 50%;
+  right: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--muted-foreground);
+  text-align: right;
+  pointer-events: none;
+}
+.home-corridor-caption strong {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.home-bottom {
+  display: grid;
+  gap: 0.875rem;
+}
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.875rem;
+}
+.home-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+.home-disclaimer {
+  display: flex;
+  flex: 1 1 22rem;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  text-align: right;
+}
+.home-disclaimer svg {
+  margin-top: 0.125rem;
+}
+.home-disclaimer a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+@media (max-width: 767px) {
+  .home-scrim {
+    background:
+      linear-gradient(
+        90deg,
+        color-mix(in oklch, var(--bg) 82%, transparent) 0%,
+        color-mix(in oklch, var(--bg) 55%, transparent) 55%,
+        transparent 85%
+      ),
+      linear-gradient(180deg, color-mix(in oklch, var(--bg) 70%, transparent) 0%, transparent 18%),
+      linear-gradient(
+        0deg,
+        var(--bg) 0%,
+        color-mix(in oklch, var(--bg) 94%, transparent) 52%,
+        transparent 78%
+      );
+  }
+  .home-content {
+    padding: 1.125rem 1rem 1rem;
+  }
+  .home-hero {
+    align-self: end;
+    padding-bottom: 1.125rem;
+  }
+  .home-title {
+    margin-top: 0.875rem;
+    font-size: 2.25rem;
+  }
+  .home-lede {
+    margin-top: 0.625rem;
+    font-size: 0.9375rem;
+  }
+  .home-corridor-caption {
+    display: none;
+  }
+  .home-cards {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .home-disclaimer {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    font-size: 0.6875rem;
+    text-align: left;
+  }
+}
+@media (max-height: 699px) {
+  .home-main {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .home-content {
+    min-height: 100dvh;
+  }
 }
 .brand-mark {
   --brand-ink: #fff;
@@ -1578,24 +1732,6 @@ button,
   animation: home-live 1.6s var(--ease-out) infinite;
   content: "";
 }
-.home-art {
-  margin-top: 3.5rem;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sheet);
-  background: var(--map-surface);
-}
-.home-art-caption {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-  padding: 0.75rem 1.25rem;
-  border-top: 1px solid var(--border);
-  background: var(--surface-1);
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-}
 .home-legend {
   display: inline-flex;
   align-items: center;
@@ -1606,13 +1742,60 @@ button,
   height: 0.5rem;
   border-radius: 999px;
 }
+/* Glass over the background. Desktop: icon and number, then the text; phone: one compact row. */
 .home-card {
-  display: flex;
-  flex-direction: column;
-  padding: 1.25rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "icon number"
+    "text text";
+  align-items: center;
+  row-gap: 1.625rem;
+  padding: 1.125rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sheet);
-  background: var(--surface-1);
+  background: color-mix(in oklch, var(--surface-1) 72%, transparent);
+  backdrop-filter: blur(14px) saturate(1.3);
+}
+.home-card-icon {
+  grid-area: icon;
+}
+.home-card-number {
+  grid-area: number;
+  justify-self: end;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.home-card-text {
+  grid-area: text;
+}
+.home-card-text h2 {
+  font-size: 1.125rem;
+}
+.home-card-copy {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+@media (max-width: 767px) {
+  .home-card {
+    grid-template-areas: "icon text";
+    column-gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: var(--radius-card);
+  }
+  .home-card-number {
+    display: none;
+  }
+  .home-card-text h2 {
+    font-size: 0.9375rem;
+  }
+  .home-card-copy {
+    margin-top: 0.125rem;
+    font-size: 0.8125rem;
+  }
 }
 .home-card-icon {
   display: grid;
@@ -1646,7 +1829,8 @@ button,
   padding: 0 0.875rem;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: var(--card);
+  background: color-mix(in oklch, var(--card) 72%, transparent);
+  backdrop-filter: blur(12px);
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -1671,66 +1855,6 @@ button,
   }
 }
 
-.corridor-art {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-/* The basemap's own palette: building blocks, white streets with a faint casing. */
-.corridor-block {
-  fill: var(--map-building);
-}
-.corridor-cross {
-  stroke: var(--map-street);
-  stroke-width: 12;
-}
-.corridor-road {
-  stroke: var(--map-street);
-  stroke-width: 22;
-}
-.corridor-lane {
-  stroke: var(--map-street-casing);
-  stroke-width: 1.5;
-  stroke-dasharray: 10 12;
-}
-.corridor-post {
-  stroke: color-mix(in srgb, var(--muted-foreground) 45%, transparent);
-  stroke-width: 2;
-}
-.corridor-lamp-stop {
-  fill: var(--emergency);
-  opacity: 0.85;
-}
-.corridor-lamp-go {
-  fill: var(--go);
-  filter: drop-shadow(0 0 6px var(--go));
-  opacity: 0;
-  animation: corridor-signal 8s linear infinite;
-}
-.corridor-label {
-  fill: var(--muted-foreground);
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-}
-.corridor-vehicle {
-  animation: corridor-drive 8s linear infinite;
-}
-/* The map's vehicle: a red dot in a white ring. */
-.corridor-vehicle-dot {
-  fill: var(--emergency);
-  stroke: #fff;
-  stroke-width: 3.5;
-}
-.corridor-vehicle-pulse {
-  fill: none;
-  stroke: var(--emergency);
-  stroke-width: 2;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: corridor-pulse 1.2s var(--ease-out) infinite;
-}
-
 @keyframes home-reveal {
   from {
     opacity: 0;
@@ -1748,71 +1872,14 @@ button,
     opacity: 0;
   }
 }
-@keyframes corridor-drive {
-  0% {
-    transform: translateX(0);
-    opacity: 0;
-  }
-  3% {
-    opacity: 1;
-  }
-  85% {
-    transform: translateX(720px);
-    opacity: 1;
-  }
-  90%,
-  100% {
-    transform: translateX(720px);
-    opacity: 0;
-  }
-}
-/* Signals snap like real lamps: ~60ms switches, green ~1.5s before arrival. */
-@keyframes corridor-signal {
-  0%,
-  6% {
-    opacity: 0;
-  }
-  6.8%,
-  30% {
-    opacity: 1;
-  }
-  30.8%,
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes corridor-pulse {
-  from {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-  to {
-    transform: scale(2.4);
-    opacity: 0;
-  }
-}
 
-@media (max-width: 639px) {
-  .corridor-label {
-    display: none;
-  }
-}
-
-/* Reduced motion: fades only; the corridor freezes on its mid-run frame. */
+/* Reduced motion: fades only. */
 @media (prefers-reduced-motion: reduce) {
   .home-reveal {
     animation-name: home-reveal-fade;
   }
   .home-return-dot[data-live]::after {
     animation: none;
-  }
-  .corridor-vehicle,
-  .corridor-lamp-go {
-    animation-play-state: paused;
-  }
-  .corridor-vehicle-pulse {
-    animation: none;
-    opacity: 0;
   }
 }
 

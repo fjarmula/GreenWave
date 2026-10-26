@@ -5,6 +5,9 @@ import { TRAIL, corridor, signalState } from "@/lib/home-corridor";
 
 const [, , WIDTH, HEIGHT] = corridor.viewBox;
 const [START_X, START_Y] = corridor.route.path.slice(1).split("L")[0].split(",").map(Number);
+// Phones stack the text over the whole width: keep the corridor near the right edge.
+const [PX, PY, PW, PH] = corridor.phoneViewBox;
+const PHONE_VIEW_BOX = [PX - PW * 0.3, PY, PW, PH].join(" ");
 
 /**
  * The home corridor drawn over Kraków's real roads (a baked alpha mask coloured per theme).
@@ -34,7 +37,7 @@ export function HomeStaticBackdrop({ phone }: { phone: boolean }) {
   return (
     <svg
       className="home-backdrop-svg"
-      viewBox={(phone ? corridor.phoneViewBox : corridor.viewBox).join(" ")}
+      viewBox={phone ? PHONE_VIEW_BOX : corridor.viewBox.join(" ")}
       preserveAspectRatio="xMidYMid slice"
       aria-hidden
     >

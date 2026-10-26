@@ -5,7 +5,9 @@ import { corridor } from "@/lib/home-corridor";
 
 it("draws the corridor over the masked road drawing, cropped for phones", () => {
   const html = renderToStaticMarkup(<HomeStaticBackdrop phone />);
-  expect(html).toContain(`viewBox="${corridor.phoneViewBox.join(" ")}"`);
+  const [x, y, w, h] = corridor.phoneViewBox;
+  // Shifted so the corridor runs along the right edge, clear of the stacked text.
+  expect(html).toContain(`viewBox="${[x - w * 0.3, y, w, h].join(" ")}"`);
   expect(html).toContain('href="/home/krakow-roads.svg"');
   expect(html.match(/data-signal=/g)).toHaveLength(corridor.signals.length);
   expect(html).toContain('aria-hidden="true"');
