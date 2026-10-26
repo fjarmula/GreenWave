@@ -12,6 +12,7 @@ x-service: &service
 services:
   backend:
     <<: *service
+    image: ${GREENWAVE_BACKEND_IMAGE:-greenwave-backend:latest}
     build:
       context: ./backend
       dockerfile: Dockerfile.production
@@ -50,6 +51,7 @@ services:
 
   frontend:
     <<: *service
+    image: ${GREENWAVE_FRONTEND_IMAGE:-greenwave-frontend:latest}
     build:
       context: ./frontend
       dockerfile: Dockerfile.production

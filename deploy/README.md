@@ -4,6 +4,9 @@ This runs the full simulation-only application on one VM: Caddy (HTTPS and a sha
 password), Next.js, and one FastAPI worker. No database or paid domain is required.
 `compose.production.yaml` is independent of the development `compose.yaml`.
 
+After the first manual launch, follow [GitHub Actions deployment setup](CI.md) to deploy
+successful `main` pushes automatically.
+
 ## 1. Create the accounts
 
 1. Sign up at [Oracle Cloud Free Tier](https://www.oracle.com/cloud/free/). Use your real

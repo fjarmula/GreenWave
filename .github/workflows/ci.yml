@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   commit-message:
@@ -158,3 +158,102 @@ jobs:
         run: |
           git add --intent-to-add contracts frontend/src/types
           git diff --exit-code -- contracts frontend/src/types
+
+  deployment-quality:
+    name: Deployment Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate shell syntax and deployment behavior
+        run: |
+          bash -n deploy/remote-deploy.sh
+          shellcheck deploy/remote-deploy.sh
+          python3 tests/scripts/test_oci_deploy.py
+
+  deploy:
+    name: Deploy to Oracle
+    needs: [commit-message, graphify-build, backend-quality, frontend-quality, contract-drift, deployment-quality]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.OCI_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    concurrency:
+      group: oracle-production
+      queue: max
+      cancel-in-progress: false
+    env:
+      OCI_HOST: ${{ vars.OCI_HOST }}
+      OCI_USER: ${{ vars.OCI_USER || 'ubuntu' }}
+      OCI_DEPLOY_ROOT: ${{ vars.OCI_DEPLOY_ROOT || '/home/ubuntu/GreenWave' }}
+      OCI_SSH_PORT: ${{ vars.OCI_SSH_PORT || '22' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Skip superseded revisions
+        id: revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest=$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/ref/heads/main" | \
+            python3 -c 'import json,sys; print(json.load(sys.stdin)["object"]["sha"])')
+          if [[ "$latest" == "$GITHUB_SHA" ]]; then
+            echo 'deploy=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'deploy=false' >> "$GITHUB_OUTPUT"
+            echo 'Main advanced; the newer revision will be deployed after its CI passes.'
+          fi
+
+      - name: Configure pinned SSH access
+        if: steps.revision.outputs.deploy == 'true'
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.OCI_SSH_KNOWN_HOSTS }}
+        run: |
+          [[ "$OCI_HOST" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*$ ]] || { echo 'Set OCI_HOST to an IPv4 address or hostname'; exit 1; }
+          [[ "$OCI_USER" =~ ^[a-z_][a-z0-9_-]*$ ]] || { echo 'Invalid OCI_USER'; exit 1; }
+          [[ "$OCI_DEPLOY_ROOT" =~ ^/[A-Za-z0-9_./-]+$ ]] || { echo 'OCI_DEPLOY_ROOT must be an absolute path without spaces'; exit 1; }
+          if [[ ! "$OCI_SSH_PORT" =~ ^[0-9]{1,5}$ ]]; then echo 'Invalid SSH port'; exit 1; fi
+          if (( 10#$OCI_SSH_PORT < 1 || 10#$OCI_SSH_PORT > 65535 )); then echo 'Invalid SSH port'; exit 1; fi
+          [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]] || { echo 'Set both OCI SSH secrets in the production environment'; exit 1; }
+          ssh_dir="$RUNNER_TEMP/oci-ssh"
+          install -d -m 700 "$ssh_dir"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          chmod 600 "$ssh_dir/key" "$ssh_dir/known_hosts"
+          ssh-keygen -y -P '' -f "$ssh_dir/key" > /dev/null
+          known_host="$OCI_HOST"
+          if [[ "$OCI_SSH_PORT" != 22 ]]; then known_host="[$OCI_HOST]:$OCI_SSH_PORT"; fi
+          ssh-keygen -F "$known_host" -f "$ssh_dir/known_hosts" > /dev/null
+          cat > "$ssh_dir/config" <<EOF
+          Host greenwave-oci
+            HostName $OCI_HOST
+            User $OCI_USER
+            Port $OCI_SSH_PORT
+            IdentityFile $ssh_dir/key
+            UserKnownHostsFile $ssh_dir/known_hosts
+            StrictHostKeyChecking yes
+            BatchMode yes
+            IdentitiesOnly yes
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 4
+          EOF
+
+      - name: Upload and deploy the tested revision
+        if: steps.revision.outputs.deploy == 'true'
+        run: |
+          git archive --format=tar.gz --output="$RUNNER_TEMP/source.tar.gz" "$GITHUB_SHA"
+          ssh -F "$RUNNER_TEMP/oci-ssh/config" greenwave-oci "mkdir -p -- '$OCI_DEPLOY_ROOT/incoming'"
+          scp -F "$RUNNER_TEMP/oci-ssh/config" "$RUNNER_TEMP/source.tar.gz" \
+            "greenwave-oci:$OCI_DEPLOY_ROOT/incoming/$GITHUB_SHA.tar.gz"
+          ssh -F "$RUNNER_TEMP/oci-ssh/config" greenwave-oci \
+            "bash -s -- '$OCI_DEPLOY_ROOT' '$GITHUB_SHA'" < deploy/remote-deploy.sh
+
+      - name: Remove runner SSH credentials
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/oci-ssh"
