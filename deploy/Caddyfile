@@ -3,10 +3,6 @@
 }
 
 {$DOMAIN} {
-	# basic_auth {
-	# 	{$DEMO_USERNAME} {$DEMO_PASSWORD_HASH}
-	# }
-
 	@api path /api /api/*
 	handle @api {
 		reverse_proxy backend:8000 {

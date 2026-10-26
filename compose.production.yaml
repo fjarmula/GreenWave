@@ -76,8 +76,6 @@ services:
     environment:
       DOMAIN: ${DOMAIN:?Set DOMAIN in deploy/.env}
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in deploy/.env}
-      DEMO_USERNAME: ${DEMO_USERNAME:?Set DEMO_USERNAME in deploy/.env}
-      DEMO_PASSWORD_HASH: ${DEMO_PASSWORD_HASH:?Set DEMO_PASSWORD_HASH in deploy/.env}
     ports:
       - "80:80"
       - "443:443"

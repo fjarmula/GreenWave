@@ -43,7 +43,14 @@ class DeploymentTests(unittest.TestCase):
         }
         self.executable("sudo", '#!/bin/sh\n[ "$1" = -n ] && shift\nexec "$@"\n')
         self.executable(
-            "curl", '#!/bin/sh\nprintf "%s" "${DEPLOY_TEST_HTTP_STATUS:-401}"\n'
+            "curl",
+            """#!/usr/bin/env python3
+import os, sys
+if '--write-out' in sys.argv:
+    print(os.environ.get('DEPLOY_TEST_HTTP_STATUS', '200'), end='')
+else:
+    print(os.environ.get('DEPLOY_TEST_HEALTH_BODY', '{"status":"ok"}'), end='')
+""",
         )
         self.executable("flock", '#!/bin/sh\nexit "${DEPLOY_TEST_LOCK_FAILURE:-0}"\n')
         self.executable(
@@ -162,11 +169,27 @@ elif 'up' in args:
             (self.root / "current").resolve(), self.root / "releases" / REVISION
         )
 
-    def test_https_authentication_failure_rolls_back(self) -> None:
-        result = self.deploy(DEPLOY_TEST_HTTP_STATUS="200")
+    def test_https_service_failure_rolls_back(self) -> None:
+        result = self.deploy(DEPLOY_TEST_HTTP_STATUS="503")
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.state.read_text(), str(self.root))
         self.assertIn("Rollback restored", result.stderr)
+
+    def test_login_challenge_is_rejected_for_public_app(self) -> None:
+        result = self.deploy(DEPLOY_TEST_HTTP_STATUS="401")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.state.read_text(), str(self.root))
+        self.assertIn("Rollback restored", result.stderr)
+
+    def test_health_html_with_status_200_is_rejected(self) -> None:
+        result = self.deploy(DEPLOY_TEST_HEALTH_BODY="<html>not the API</html>")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.state.read_text(), str(self.root))
+
+    def test_health_json_must_report_ok(self) -> None:
+        result = self.deploy(DEPLOY_TEST_HEALTH_BODY='{"status":"starting"}')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.state.read_text(), str(self.root))
 
     def test_failure_restores_a_previous_automated_release(self) -> None:
         previous = self.root / "releases" / PREVIOUS_REVISION

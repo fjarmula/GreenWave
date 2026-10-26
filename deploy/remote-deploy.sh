@@ -55,11 +55,14 @@ probe_https() {
   for path in / /api/v1/health; do
     status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
       --connect-timeout 10 --max-time 30 "https://$domain$path")
-    if [[ $status != 401 ]]; then
-      echo "HTTPS authentication probe failed for $path (expected 401, got $status)." >&2
+    if [[ $status != 200 ]]; then
+      echo "Public HTTPS probe failed for $path (expected 200, got $status)." >&2
       return 1
     fi
   done
+  curl --fail --silent --show-error --connect-timeout 10 --max-time 30 \
+    "https://$domain/api/v1/health" | python3 -c \
+    'import json,sys; assert json.load(sys.stdin).get("status") == "ok", "HTTPS health must report status=ok"'
 }
 
 finish() {

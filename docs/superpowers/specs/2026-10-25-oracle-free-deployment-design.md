@@ -2,6 +2,7 @@
 
 > The standalone-output and map-key changes below were superseded by
 > `2026-10-26-preserve-reference-app-design.md`. They remain here as historical design decisions.
+> App login was subsequently removed by `2026-10-26-public-deployment-design.md`.
 
 ## Intent and acceptance
 

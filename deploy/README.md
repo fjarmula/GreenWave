@@ -1,7 +1,7 @@
 # Deploy GreenWave on an Oracle Always Free VM
 
-This runs the full simulation-only application on one VM: Caddy (HTTPS and a shared demo
-password), Next.js, and one FastAPI worker. No database or paid domain is required.
+This runs the full simulation-only application on one VM: Caddy (public HTTPS), Next.js,
+and one FastAPI worker. No app login, database or paid domain is required.
 `compose.production.yaml` is independent of the development `compose.yaml`.
 
 After the first manual launch, follow [GitHub Actions deployment setup](CI.md) to deploy
@@ -133,21 +133,16 @@ If the local dataset is missing, follow [the backend ETL guide](../backend/READM
 cd ~/GreenWave
 cp deploy/.env.example deploy/.env
 chmod 600 deploy/.env
-sudo docker run --rm -it caddy:2-alpine caddy hash-password
 ```
 
-The last command prompts for a new shared demo password and prints a bcrypt hash. Store the
-plaintext password in your password manager. Edit `deploy/.env` with `nano deploy/.env`:
+Edit `deploy/.env` with `nano deploy/.env`:
 
 ```dotenv
 DOMAIN=your-greenwave-name.duckdns.org
 ACME_EMAIL=your-real-email@example.com
-DEMO_USERNAME=demo
-DEMO_PASSWORD_HASH='PASTE_THE_GENERATED_HASH_HERE'
 ```
 
-Keep the hash in **single quotes** so Compose preserves its dollar signs. Use a hostname only
-for `DOMAIN`, without `https://`, a path, or trailing slash. The real environment file is
+Use a hostname only for `DOMAIN`, without `https://`, a path, or trailing slash. The real environment file is
 gitignored; don't commit or share it. The containers read the dataset as UID 10001, so ensure
 uploaded files are readable and their parent directories traversable (ordinary 644 files / 755
 directories work; do not use 777).
@@ -167,7 +162,7 @@ healthchecks must pass before Caddy starts. Caddy obtains and renews the public 
 automatically once DNS and ports 80/443 work. Certificate issuance can continue after `--wait`
 returns; inspect proxy logs if HTTPS is not ready yet.
 
-Open **`https://your-greenwave-name.duckdns.org`** and enter the demo username and password.
+Open **`https://your-greenwave-name.duckdns.org`**. The app is public and has no login prompt.
 HTTP redirects to HTTPS. Don't expose the plain frontend/backend ports as a workaround.
 
 `NEXT_PUBLIC_*` settings are built into the frontend image. The production Compose file always
@@ -176,18 +171,17 @@ API origin requires rebuilding the frontend with `up -d --build`.
 
 ## 7. Verify the public app
 
-From your computer (curl prompts for the password without putting it in shell history):
+From your computer, without credentials:
 
 ```bash
-curl --fail --user demo https://your-greenwave-name.duckdns.org/api/v1/health
+curl --fail https://your-greenwave-name.duckdns.org/api/v1/health
 # Expected: {"status":"ok"}
 
-curl --fail --user demo https://your-greenwave-name.duckdns.org/api/v1/stations
+curl --fail https://your-greenwave-name.duckdns.org/api/v1/stations
 # Expected: a nonempty stations array
 
 curl -I https://your-greenwave-name.duckdns.org/
-curl -I https://your-greenwave-name.duckdns.org/api/v1/health
-# Expected without credentials: 401 for both
+# Expected: 200. The health GET above must return status=ok.
 ```
 
 In the browser:
@@ -202,8 +196,8 @@ In the browser:
 
 The app has **one shared active operation**, not independent visitor sessions. A new run can
 supersede another visitor's run. Keep a single backend container and **one Uvicorn worker**.
-Restarts/deployments lose in-memory sessions; this is the existing PoC behavior. The shared
-password limits access; it does not create separate users or session storage.
+Restarts/deployments lose in-memory sessions; this is the existing PoC behavior. Visitors share
+the public simulation; there are no separate users or session storage.
 
 ## Logs and common failures
 
@@ -217,7 +211,6 @@ df -h
   instruction. Re-upload a complete matching dataset; there is no mock fallback.
 - **HTTPS unavailable:** check DNS (including stale AAAA records), the VM's public IP, OCI rules,
   the host firewall, and Caddy logs. Don't repeatedly request certificates while DNS is wrong.
-- **Password rejected:** regenerate the hash and preserve single quotes in `deploy/.env`.
 - **Map unavailable:** inspect failed basemap requests and provider availability. The app uses
   the reference commit's existing map requests; deployment does not add map authentication.
 - **Backend unreachable in UI:** rebuild after `DOMAIN` changes. The browser must call your

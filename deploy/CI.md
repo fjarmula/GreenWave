@@ -17,7 +17,8 @@ This guide uses your confirmed `ubuntu` account and `/home/ubuntu/GreenWave` ins
 4. The VM creates `~/GreenWave/releases/<commit-sha>/` and links its existing config and dataset.
 5. It builds ARM64 images on the VM, using distinct commit tags, and validates the new backend's
    dataset and routing startup against the real mounts before replacing any container.
-6. Compose waits for application health; HTTPS probes must show password protection on UI/API.
+6. Compose waits for application health; public homepage/API probes must return 200 and health
+   JSON must report `status=ok`. A 401 login challenge is a deployment failure.
 7. If activation fails, the script tries to restore the previous release without rebuilding it.
    The Actions job remains failed so you know the new release did not go live.
 
@@ -143,7 +144,7 @@ Open [repository settings](https://github.com/fjarmula/GreenWave/settings/enviro
 | `OCI_DEPLOY_ROOT` | `/home/ubuntu/GreenWave` (also the default; absolute path, no spaces) |
 | `OCI_SSH_PORT` | `22` (also the default) |
 
-The demo password hash, hostname and dataset remain in the existing server installation;
+The hostname, certificate email and dataset remain in the existing server installation;
 they do not need GitHub secrets. Don't paste the whole server `.env` into GitHub.
 
 Finally, under **Settings → Secrets and variables → Actions → Variables**, add a
@@ -182,7 +183,7 @@ sudo docker compose --env-file ~/GreenWave/current/deploy/.env \
 ```
 
 Then test the public site as in [the manual verification steps](README.md#7-verify-the-public-app).
-A green Actions run verifies service health and HTTPS access control; you should still check
+A green Actions run verifies service health and public HTTPS access; you should still check
 map loading and a short simulation on the first deployment.
 
 Every later push or merge to main repeats this automatically after successful checks.
