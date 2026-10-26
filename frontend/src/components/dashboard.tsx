@@ -10,6 +10,7 @@ import type { SheetSnap } from "@/lib/sheet-physics";
 import { isTelemetryStale } from "@/lib/simulation-state";
 import type { DispatchSettings } from "@/lib/start-request";
 import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation";
+import { PageMenu } from "@/components/workspace/PageMenu";
 import { routeForMode, viewRunPolicy } from "@/lib/workspace-routes";
 import { Fragment, useCallback, useState, useSyncExternalStore, type ReactNode } from "react";
 import { simulationOperationSlot } from "@/lib/operation-slot";
@@ -325,20 +326,25 @@ export function Dashboard({
           </div>
         ) : undefined
       }
+      compactHeader={driver}
       header={
-        <div className="min-w-0 flex-1">
-          <WorkspaceNavigation current={driver ? "/driver" : routeForMode(selectedMode)} />
-          <h1 className="workspace-title">
-            {driver
-              ? "Driver simulation"
-              : selectedMode === "ENABLED"
-                ? "Green Wave"
-                : "Standard traffic"}{" "}
-            <span className="text-muted-foreground">
-              / {mode === "live" ? "Simulation" : "Setup"}
-            </span>
-          </h1>
-        </div>
+        driver ? (
+          <PageMenu
+            current="/driver"
+            title="Driver"
+            detail={mode === "live" ? "Simulation" : "Setup"}
+          />
+        ) : (
+          <div className="min-w-0 flex-1">
+            <WorkspaceNavigation current={routeForMode(selectedMode)} />
+            <h1 className="workspace-title">
+              {selectedMode === "ENABLED" ? "Green Wave" : "Standard traffic"}{" "}
+              <span className="text-muted-foreground">
+                / {mode === "live" ? "Simulation" : "Setup"}
+              </span>
+            </h1>
+          </div>
+        )
       }
       map={
         <MapContainer

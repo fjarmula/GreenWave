@@ -569,6 +569,83 @@
   background: var(--thumb);
   box-shadow: var(--thumb-shadow);
 }
+/* Driver: one-row header; the page menu opens the destinations in a popover. */
+.workspace-header[data-compact] {
+  align-items: center;
+}
+.page-menu-root {
+  position: relative;
+}
+.workspace-title.page-menu-heading {
+  margin: 0;
+  padding: 0;
+}
+.page-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0 0.625rem;
+  border-radius: var(--radius-control);
+  font: inherit;
+  white-space: nowrap;
+}
+.page-menu-trigger svg {
+  width: 1rem;
+  height: 1rem;
+}
+.page-menu-chevron {
+  color: var(--muted-foreground);
+  transition: transform var(--dur-hover) var(--ease-out);
+}
+.page-menu-trigger[aria-expanded="true"] .page-menu-chevron {
+  transform: rotate(180deg);
+}
+.page-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.75rem);
+  left: -0.375rem;
+  min-width: 13rem;
+  padding: 0.375rem;
+  border-radius: var(--radius-card);
+  transform-origin: top left;
+  transition:
+    opacity var(--dur-enter) var(--ease-out),
+    transform var(--dur-enter) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+.page-menu .workspace-navigation {
+  display: grid;
+  max-width: none;
+  padding: 0;
+  overflow: visible;
+  border-radius: var(--radius-control);
+  background: none;
+  font-size: 0.875rem;
+  animation: none;
+  mask-image: none;
+}
+.page-menu .workspace-navigation a {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-control);
+}
+@media (hover: hover) and (pointer: fine) {
+  .page-menu-trigger:hover,
+  .page-menu .workspace-navigation a:hover {
+    background: var(--tile);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-menu {
+    @starting-style {
+      transform: none;
+    }
+  }
+}
 .workspace-actions {
   @apply surface-glass;
   display: flex;
@@ -772,6 +849,18 @@
   }
   .workspace-header > :first-child {
     display: contents;
+  }
+  .workspace-header[data-compact] {
+    display: flex;
+  }
+  /* The header itself is the glass bar on phones; the page menu sits in it plainly. */
+  .workspace-header[data-compact] > :first-child {
+    display: block;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
   }
   .workspace-actions {
     padding: 0;

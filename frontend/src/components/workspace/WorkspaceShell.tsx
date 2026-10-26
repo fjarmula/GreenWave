@@ -32,11 +32,14 @@ export function WorkspaceShell({
   defaultDetails = true,
   provenance = "Simulated · all signal states",
   statusAlign = "start",
+  compactHeader = false,
 }: {
   map: ReactNode;
   status?: ReactNode;
   /** Which top corner the status overlay floats in. */
   statusAlign?: "start" | "end";
+  /** One-row header (Driver): the page menu replaces the tab strip and Details goes away. */
+  compactHeader?: boolean;
   /** Shown when there is no `sheet` (or it is phone-only, on desktop). */
   inspector?: ReactNode;
   /** Phone: a draggable bottom sheet. Desktop: a compact floating card that expands. */
@@ -93,10 +96,11 @@ export function WorkspaceShell({
         </div>
         <WorkspaceHeader
           hidden={focus}
+          compact={compactHeader}
           actions={
             <>
               <ThemeToggle />
-              {hasPanel && (
+              {hasPanel && !compactHeader && (
                 <button
                   className="workspace-button"
                   aria-expanded={details}

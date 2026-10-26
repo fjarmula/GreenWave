@@ -6,17 +6,21 @@ export function WorkspaceHeader({
   actions,
   variant = "map",
   hidden = false,
+  compact = false,
 }: {
   children: ReactNode;
   actions: ReactNode;
   /** `map` floats over a full-screen map; `page` stays pinned over scrolling content. */
   variant?: "map" | "page";
   hidden?: boolean;
+  /** One row at every width (Driver's page menu). */
+  compact?: boolean;
 }) {
   return (
     <header
       className="workspace-header"
       data-variant={variant}
+      data-compact={compact || undefined}
       data-map-occluder
       hidden={hidden}
       inert={hidden}
