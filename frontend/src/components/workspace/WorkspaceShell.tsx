@@ -17,6 +17,9 @@ export type WorkspaceSheet = {
   detailsLabel?: string;
   /** Desktop keeps the full `inspector` instead of the compact card. */
   phoneOnly?: boolean;
+  /** Adds the minimized snap (phone: the peek row; desktop: a pill with `minimizedLabel`). */
+  minimizable?: boolean;
+  minimizedLabel?: string;
 };
 
 export function WorkspaceShell({
@@ -120,6 +123,7 @@ export function WorkspaceShell({
               onSnapChange={sheet.onSnapChange}
               collapsed={sheet.collapsed}
               expanded={sheet.expanded}
+              minimizable={sheet.minimizable}
             />
           </div>
         ) : !hasPanel ? null : (

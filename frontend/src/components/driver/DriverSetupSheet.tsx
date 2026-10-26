@@ -58,8 +58,12 @@ export function DriverSetupCard({
     : "none";
   return (
     <section aria-labelledby="driver-setup-title" className="driver-setup">
-      <h2 id="driver-setup-title" className="driver-setup-title">
+      <h2 id="driver-setup-title" className="driver-setup-title" data-sheet-peek>
         Where’s the incident?
+        {incident && (
+          // Shown only on the minimized sheet, where the input below is out of view.
+          <span className="driver-setup-peek-incident"> · {incident.label}</span>
+        )}
       </h2>
       <div className="mt-3 space-y-4">
         <IncidentInput

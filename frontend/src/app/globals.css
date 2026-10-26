@@ -823,6 +823,17 @@
   }
 }
 /* Phone bottom sheet: two snaps, moved only by transform; the drawer curve settles it. */
+.driver-setup-peek-incident {
+  display: none;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.bottom-sheet[data-snap="minimized"] .driver-setup-peek-incident {
+  display: inline;
+}
+.bottom-sheet[data-snap="minimized"] {
+  cursor: pointer;
+}
 .bottom-sheet {
   position: absolute;
   z-index: 6;
