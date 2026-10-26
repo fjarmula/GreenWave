@@ -1,5 +1,8 @@
 # Oracle Always Free deployment
 
+> The standalone-output and map-key changes below were superseded by
+> `2026-10-26-preserve-reference-app-design.md`. They remain here as historical design decisions.
+
 ## Intent and acceptance
 
 Prepare the existing simulation-only PoC for a single Ubuntu VM, preserving backend routing,

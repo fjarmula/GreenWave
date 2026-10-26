@@ -4,7 +4,6 @@ import type { Map } from "maplibre-gl";
 
 import { collapseCompactAttribution } from "@/components/map/attribution";
 import { createBasemapLoader, groundOnlyStyle } from "@/components/map/basemap-style";
-import { cartoRequestUrl } from "@/components/map/carto";
 import { createMapThemeSwap } from "@/components/map/map-theme-swap";
 import { registerThemeBarrier, type ResolvedTheme } from "@/lib/theme-transition";
 
@@ -22,7 +21,6 @@ const KRAKOW_CENTER: [number, number] = [19.945, 50.064];
 // The simulation disclaimer lives in the always-visible provenance chip, not here.
 export const DATA_ATTRIBUTION = [
   '<a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre</a>',
-  'Basemap © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>',
   'Road network &amp; signals © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL)',
   "Street registry © City of Kraków (MSIP)",
 ];
@@ -43,11 +41,6 @@ export function useMaplibreMap(theme: ResolvedTheme) {
   useEffect(() => {
     if (!mapElement.current || mapRef.current) return;
 
-    const apiKey = process.env.NEXT_PUBLIC_CARTO_API_KEY?.trim() ?? "";
-    const styles = {
-      light: cartoRequestUrl(MAP_STYLES.light, apiKey),
-      dark: cartoRequestUrl(MAP_STYLES.dark, apiKey),
-    };
     maplibregl.setWorkerUrl(MAPLIBRE_WORKER_URL);
     const instance = new maplibregl.Map({
       container: mapElement.current,
@@ -61,7 +54,6 @@ export function useMaplibreMap(theme: ResolvedTheme) {
       pitchWithRotate: false,
       maxPitch: 0,
       attributionControl: false,
-      transformRequest: (url) => ({ url: cartoRequestUrl(url, apiKey) }),
     });
     instance.addControl(
       new maplibregl.AttributionControl({ customAttribution: DATA_ATTRIBUTION }),
@@ -77,12 +69,12 @@ export function useMaplibreMap(theme: ResolvedTheme) {
         tilesReady: () => instance.areTilesLoaded(),
         paint: () => instance.redraw(),
       },
-      styles,
+      MAP_STYLES,
       initialTheme.current,
     );
     swapRef.current = swap;
     // Every basemap, the first one included, goes through the same recolouring path.
-    setStyle(styles[initialTheme.current], initialTheme.current);
+    setStyle(MAP_STYLES[initialTheme.current], initialTheme.current);
     const unregisterBarrier = registerThemeBarrier((next) => swap.to(next));
     const container = mapElement.current;
     let prefetched = false;
@@ -94,7 +86,7 @@ export function useMaplibreMap(theme: ResolvedTheme) {
       prefetched = true;
       // Warm the other style so a theme switch waits on tiles, not on the network.
       const other = swap.applied() === "dark" ? "light" : "dark";
-      void fetch(styles[other], { cache: "force-cache" }).catch(() => undefined);
+      void fetch(MAP_STYLES[other], { cache: "force-cache" }).catch(() => undefined);
     };
     instance.on("style.load", onStyleLoad);
     instance.once("load", () => collapseCompactAttribution(container));

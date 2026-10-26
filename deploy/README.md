@@ -17,9 +17,9 @@ successful `main` pushes automatically.
    if provisioning reports no capacity, try another availability domain in the same region or retry later.
 3. Sign in to [DuckDNS](https://www.duckdns.org/) and reserve a free, unique hostname such as
    `your-greenwave-name.duckdns.org`. An existing domain you control also works.
-4. Request a [CARTO basemap browser key](https://www.carto.com/basemaps/apikey/index.html).
-   Register this application and restrict the key to your chosen hostname in the CARTO dashboard.
-   This key is deliberately public in browser JavaScript; your demo password is not.
+
+Application source and map behavior are preserved from reference commit `0b7729f`.
+Deployment adds no map-provider credentials or request/attribution changes.
 
 Oracle's documentation checked on 2026-10-25 lists an A1 free allowance equivalent to **2 OCPUs
 and 12 GB RAM**, plus **200 GB combined boot/block storage**. Use the current console's free
@@ -29,9 +29,6 @@ Free VMs can be reclaimed when idle, so retain your local source, dataset, and S
 See [Always Free limits](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm)
 and [signup requirements](https://www.oracle.com/cloud/free/faq/).
 
-CARTO currently offers 5 million monthly requests for noncommercial use and 1 million for
-commercial use at no charge. Stay within the applicable tier and keep the map attribution
-visible. See [CARTO's current offering](https://www.carto.com/basemaps/apikey/index.html).
 DuckDNS is a [free DNS service](https://www.duckdns.org/faqs.jsp).
 
 ## 2. Create the VM in Oracle
@@ -100,7 +97,7 @@ its matching manifest; it does **not** need the 299 MB raw-data bundle just to r
 
 ```bash
 git branch --show-current
-# Expected: codex/oracle-free-deployment
+# Use main with the deployment commits, or the deployment revision you intend to release.
 ```
 
 Upload the source without credentials, caches, agent state or large input data:
@@ -147,7 +144,6 @@ DOMAIN=your-greenwave-name.duckdns.org
 ACME_EMAIL=your-real-email@example.com
 DEMO_USERNAME=demo
 DEMO_PASSWORD_HASH='PASTE_THE_GENERATED_HASH_HERE'
-CARTO_API_KEY=PASTE_YOUR_PUBLIC_BROWSER_KEY_HERE
 ```
 
 Keep the hash in **single quotes** so Compose preserves its dollar signs. Use a hostname only
@@ -176,7 +172,7 @@ HTTP redirects to HTTPS. Don't expose the plain frontend/backend ports as a work
 
 `NEXT_PUBLIC_*` settings are built into the frontend image. The production Compose file always
 selects backend transport and derives the API origin from `DOMAIN`. Changing the hostname or
-CARTO key requires rebuilding the frontend with `up -d --build`.
+API origin requires rebuilding the frontend with `up -d --build`.
 
 ## 7. Verify the public app
 
@@ -222,8 +218,8 @@ df -h
 - **HTTPS unavailable:** check DNS (including stale AAAA records), the VM's public IP, OCI rules,
   the host firewall, and Caddy logs. Don't repeatedly request certificates while DNS is wrong.
 - **Password rejected:** regenerate the hash and preserve single quotes in `deploy/.env`.
-- **Map blank or watermarked:** check CARTO key validity, allowed website restriction, usage limits,
-  and failed basemap requests. Rebuild after changing the key.
+- **Map unavailable:** inspect failed basemap requests and provider availability. The app uses
+  the reference commit's existing map requests; deployment does not add map authentication.
 - **Backend unreachable in UI:** rebuild after `DOMAIN` changes. The browser must call your
   public HTTPS hostname, never `localhost:8000` or a Compose service name.
 - **Disk fills after updates:** inspect `sudo docker system df`; remove only identified unused
@@ -283,7 +279,7 @@ Avoid `down --volumes` for routine updates. Keep Ubuntu and container base image
 
 ## Boundary of local verification
 
-Container checks cannot prove Oracle capacity, public DNS, ACME issuance, your CARTO key, or
+Container checks cannot prove Oracle capacity, public DNS, ACME issuance, map-provider availability, or
 phone connectivity before those resources exist. Run step 7 after provisioning. Hosting the
 app does not connect it to real signals: all routes, signal states, ITS feedback, and priority
 commands remain simulated.

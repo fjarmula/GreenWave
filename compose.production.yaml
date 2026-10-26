@@ -57,7 +57,6 @@ services:
       dockerfile: Dockerfile.production
       args:
         NEXT_PUBLIC_API_BASE_URL: https://${DOMAIN:?Set DOMAIN in deploy/.env}
-        NEXT_PUBLIC_CARTO_API_KEY: ${CARTO_API_KEY:?Set CARTO_API_KEY in deploy/.env}
     healthcheck:
       test:
         [

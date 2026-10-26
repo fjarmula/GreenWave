@@ -141,7 +141,7 @@ Open [repository settings](https://github.com/fjarmula/GreenWave/settings/enviro
 | `OCI_DEPLOY_ROOT` | `/home/ubuntu/GreenWave` (also the default; absolute path, no spaces) |
 | `OCI_SSH_PORT` | `22` (also the default) |
 
-The demo password hash, CARTO key, hostname and dataset remain in the existing server installation;
+The demo password hash, hostname and dataset remain in the existing server installation;
 they do not need GitHub secrets. Don't paste the whole server `.env` into GitHub.
 
 Finally, under **Settings → Secrets and variables → Actions → Variables**, add a
@@ -223,7 +223,9 @@ next successful main push will deploy that main version again.
 The original `~/GreenWave/deploy/.env`, `backend/data/processed/` and raw manifest are shared
 inputs. Keep that directory even when the active source moves into `releases/`. Replacing data
 remains a deliberate manual task: validate a matching complete dataset before restarting.
-Changing `DOMAIN` or `CARTO_API_KEY` needs a new frontend build, triggered by a new main commit.
+Changing `DOMAIN` needs a new frontend build, triggered by a new main commit.
+Application source, configuration and map requests match reference commit `0b7729f`;
+the production Dockerfile packages it with Next's standard server without changing app source.
 
 Each successful deployment retains its source archive, release directory and uniquely tagged
 images so rollback works. Monitor `df -h` and `sudo docker system df`. After verification,

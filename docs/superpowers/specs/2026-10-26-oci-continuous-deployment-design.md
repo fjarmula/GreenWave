@@ -4,7 +4,9 @@
 
 After every successful CI run for a push/merge to main, deploy the exact tested commit to
 the existing Ubuntu VM. The existing app is installed under `/home/ubuntu/GreenWave`.
-Keep the processed dataset, raw manifest, demo credentials, map key and Caddy certificate volumes.
+Keep the processed dataset, raw manifest, demo credentials and Caddy certificate volumes.
+Application source/config must match reference `0b7729f`; see
+`2026-10-26-preserve-reference-app-design.md` for the packaging-only correction.
 
 ## Design and acceptance
 
