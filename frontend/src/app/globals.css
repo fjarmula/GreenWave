@@ -447,8 +447,10 @@
 
 /* Workspace controls stay out of the map gesture surface. Panels alone scroll. */
 /* Map-first: the map fills the viewport and every piece of chrome floats over it as glass. */
-.workspace-shell {
+:root {
   --shell-gap: 0.75rem;
+}
+.workspace-shell {
   --inspector-width: 380px;
   height: 100vh;
   height: 100dvh;
@@ -472,6 +474,10 @@
 }
 .workspace-header > * {
   pointer-events: auto;
+}
+/* Page workspaces (diagnostics) pin the same header over scrolling content. */
+.workspace-header[data-variant="page"] {
+  position: fixed;
 }
 /* The page's own header content (navigation and title) is one glass bar. */
 .workspace-header > :first-child {
@@ -694,7 +700,7 @@
   min-height: 44px;
 }
 @media (max-width: 767px) {
-  .workspace-shell {
+  :root {
     --shell-gap: 0.5rem;
   }
   /* One glass bar. Row 1: scrolling nav. Row 2: title beside icon-only actions. */

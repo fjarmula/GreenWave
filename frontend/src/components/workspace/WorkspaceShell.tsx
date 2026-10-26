@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, Maximize2, Minimize2, PanelRight } from "lucide-react";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { BottomSheet } from "@/components/workspace/BottomSheet";
+import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import type { SheetSnap } from "@/lib/sheet-physics";
 import { useIsPhone } from "@/lib/useIsPhone";
 
@@ -81,27 +82,31 @@ export function WorkspaceShell({
           {provenance}
         </span>
       </div>
-      <header className="workspace-header" data-map-occluder hidden={focus} inert={focus}>
-        {header}
-        <div className="workspace-actions">
-          <ThemeToggle />
-          {hasPanel && (
-            <button
-              className="workspace-button"
-              aria-expanded={details}
-              aria-controls="workspace-inspector"
-              onClick={() => setDetails(!details)}
-            >
-              <PanelRight aria-hidden />
-              <span className="workspace-button-label">Details</span>
+      <WorkspaceHeader
+        hidden={focus}
+        actions={
+          <>
+            <ThemeToggle />
+            {hasPanel && (
+              <button
+                className="workspace-button"
+                aria-expanded={details}
+                aria-controls="workspace-inspector"
+                onClick={() => setDetails(!details)}
+              >
+                <PanelRight aria-hidden />
+                <span className="workspace-button-label">Details</span>
+              </button>
+            )}
+            <button ref={trigger} className="workspace-button" onClick={() => changeFocus(true)}>
+              <Maximize2 aria-hidden />
+              <span className="workspace-button-label">Enter Focus</span>
             </button>
-          )}
-          <button ref={trigger} className="workspace-button" onClick={() => changeFocus(true)}>
-            <Maximize2 aria-hidden />
-            <span className="workspace-button-label">Enter Focus</span>
-          </button>
-        </div>
-      </header>
+          </>
+        }
+      >
+        {header}
+      </WorkspaceHeader>
       {sheet && phone ? (
         <div id="workspace-inspector" hidden={panelHidden} inert={panelHidden}>
           <BottomSheet

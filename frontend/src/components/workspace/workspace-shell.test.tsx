@@ -53,3 +53,10 @@ it("renders the map slot beneath floating header and inspector", () => {
   expect(slot).toBeLessThan(html.indexOf('aria-label="Simulation details"'));
   expect(html).toMatch(/class="workspace-inspector surface-glass"/);
 });
+it("renders the shared header with map variant", () => {
+  const html = renderToStaticMarkup(
+    <WorkspaceShell map={<div>Map</div>} header={<h1>Simulation</h1>} />,
+  );
+  expect(html).toContain('data-variant="map"');
+  expect(html).toContain('class="workspace-actions"');
+});
