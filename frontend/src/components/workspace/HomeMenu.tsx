@@ -1,27 +1,27 @@
 "use client";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import {
-  Activity,
-  ArrowRight,
-  ArrowUpRight,
-  GitCompareArrows,
-  Info,
-  Smartphone,
-  TrafficCone,
-  Waves,
-} from "lucide-react";
+import { Activity, ArrowRight, ArrowUpRight, Info, Smartphone } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { GreenWaveIllustration } from "@/components/workspace/GreenWaveIllustration";
 import { GreenWaveMark } from "@/components/workspace/GreenWaveMark";
+import {
+  ComparisonGlyph,
+  GreenWaveGlyph,
+  StandardTrafficGlyph,
+} from "@/components/workspace/ModeGlyphs";
 import { destinations, routeForMode } from "@/lib/workspace-routes";
 
 const MODES = [
-  { icon: Waves, tone: "home-card-icon--go", copy: "Simulate a priority corridor." },
-  { icon: TrafficCone, tone: "home-card-icon--caution", copy: "Use standard signal crossings." },
+  { icon: GreenWaveGlyph, tone: "home-card-icon--go", copy: "Simulate a priority corridor." },
   {
-    icon: GitCompareArrows,
+    icon: StandardTrafficGlyph,
+    tone: "home-card-icon--caution",
+    copy: "Use standard signal crossings.",
+  },
+  {
+    icon: ComparisonGlyph,
     tone: "home-card-icon--beacon",
     copy: "Record both modes. Replay together.",
   },
@@ -106,7 +106,7 @@ export function HomeMenu() {
             >
               <span className="flex items-center justify-between">
                 <span className={`home-card-icon ${tone}`}>
-                  <Icon className="size-4" aria-hidden />
+                  <Icon className="size-[18px]" />
                 </span>
                 <span className="font-mono text-xs text-muted-foreground tabular-nums">
                   0{i + 1}
