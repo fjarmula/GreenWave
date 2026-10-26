@@ -11,6 +11,8 @@ import { corridor, pointAlong, signalState, type SignalState } from "@/lib/home-
 /** No basemap within this long (offline, CARTO down): the page falls back to the drawing. */
 const LOAD_TIMEOUT_MS = 8000;
 const ROUTE = corridor.route.lonLat;
+const SOURCES = ["home-route", "home-trail", "home-signals", "home-vehicle"];
+const LAYERS = ["home-vehicle", "home-vehicle-halo", "home-signals", "home-trail", "home-route"];
 const BOUNDS: [[number, number], [number, number]] = [
   [Math.min(...ROUTE.map((c) => c[0])), Math.min(...ROUTE.map((c) => c[1]))],
   [Math.max(...ROUTE.map((c) => c[0])), Math.max(...ROUTE.map((c) => c[1]))],
@@ -40,9 +42,13 @@ function signalFeatures(states: SignalState[]) {
     })),
   };
 }
+/** The route in the right half, clear of the hero text and the cards. */
 function frame(map: Map) {
+  const { clientWidth: width, clientHeight: height } = map.getContainer();
+  // Padding wider than the map makes fitBounds produce NaN; a hidden or tiny map waits.
+  if (width < 480 || height < 400) return;
   map.fitBounds(BOUNDS, {
-    padding: { left: map.getContainer().clientWidth / 2, right: 160, top: 80, bottom: 220 },
+    padding: { left: width / 2, right: 160, top: 80, bottom: 220 },
     duration: 0,
   });
 }
@@ -74,59 +80,73 @@ export default function HomeLiveBackdrop({ onFail }: { onFail: () => void }) {
     return () => clearTimeout(timer);
   }, []);
 
-  // A theme switch replaces the style and drops these layers; each style load re-adds them.
+  // Every style load (first basemap, theme swap) drops these layers; re-add them each time.
   useEffect(() => {
-    if (!map || map.getSource("home-route")) return;
+    if (!map) return;
     const palette = mapPalette(theme);
-    map.addSource("home-route", { type: "geojson", data: line(ROUTE) });
-    map.addSource("home-trail", { type: "geojson", data: line(ROUTE.slice(0, 2)) });
-    map.addSource("home-signals", { type: "geojson", data: signalFeatures(states.current) });
-    map.addSource("home-vehicle", { type: "geojson", data: point(ROUTE[0]) });
-    const round = { "line-cap": "round", "line-join": "round" } as const;
-    map.addLayer({
-      id: "home-route",
-      type: "line",
-      source: "home-route",
-      layout: round,
-      paint: { "line-color": palette.wake, "line-opacity": 0.25, "line-width": 5 },
-    });
-    map.addLayer({
-      id: "home-trail",
-      type: "line",
-      source: "home-trail",
-      layout: round,
-      paint: { "line-color": palette.wake, "line-width": 5 },
-    });
-    map.addLayer({
-      id: "home-signals",
-      type: "circle",
-      source: "home-signals",
-      paint: {
-        "circle-radius": 5,
-        "circle-color": [
-          "match",
-          ["get", "state"],
-          "green",
-          palette.signal.PRIORITY_GREEN,
-          "ahead",
-          palette.signal.NORMAL,
-          palette.routeStandard,
-        ],
-      },
-    });
-    map.addLayer({
-      id: "home-vehicle-halo",
-      type: "circle",
-      source: "home-vehicle",
-      paint: { "circle-radius": 14, "circle-color": palette.signal.NORMAL, "circle-opacity": 0.22 },
-    });
-    map.addLayer({
-      id: "home-vehicle",
-      type: "circle",
-      source: "home-vehicle",
-      paint: { "circle-radius": 6, "circle-color": palette.signal.NORMAL },
-    });
-    frame(map);
+    try {
+      map.addSource("home-route", { type: "geojson", data: line(ROUTE) });
+      map.addSource("home-trail", { type: "geojson", data: line(ROUTE.slice(0, 2)) });
+      map.addSource("home-signals", { type: "geojson", data: signalFeatures(states.current) });
+      map.addSource("home-vehicle", { type: "geojson", data: point(ROUTE[0]) });
+      const round = { "line-cap": "round", "line-join": "round" } as const;
+      map.addLayer({
+        id: "home-route",
+        type: "line",
+        source: "home-route",
+        layout: round,
+        paint: { "line-color": palette.wake, "line-opacity": 0.25, "line-width": 5 },
+      });
+      map.addLayer({
+        id: "home-trail",
+        type: "line",
+        source: "home-trail",
+        layout: round,
+        paint: { "line-color": palette.wake, "line-width": 5 },
+      });
+      map.addLayer({
+        id: "home-signals",
+        type: "circle",
+        source: "home-signals",
+        paint: {
+          "circle-radius": 5,
+          "circle-color": [
+            "match",
+            ["get", "state"],
+            "green",
+            palette.signal.PRIORITY_GREEN,
+            "ahead",
+            palette.signal.NORMAL,
+            palette.routeStandard,
+          ],
+        },
+      });
+      map.addLayer({
+        id: "home-vehicle-halo",
+        type: "circle",
+        source: "home-vehicle",
+        paint: {
+          "circle-radius": 14,
+          "circle-color": palette.signal.NORMAL,
+          "circle-opacity": 0.22,
+        },
+      });
+      map.addLayer({
+        id: "home-vehicle",
+        type: "circle",
+        source: "home-vehicle",
+        paint: { "circle-radius": 6, "circle-color": palette.signal.NORMAL },
+      });
+      frame(map);
+    } catch {
+      // Mid theme swap the next style is still loading; its style.load re-runs this effect.
+    }
+    return () => {
+      // On unmount the map may already be removed (its style is gone): nothing to clean.
+      if (!map.style) return;
+      for (const id of LAYERS) if (map.getLayer(id)) map.removeLayer(id);
+      for (const id of SOURCES) if (map.getSource(id)) map.removeSource(id);
+    };
   }, [map, styleRevision, theme]);
 
   useEffect(() => {
