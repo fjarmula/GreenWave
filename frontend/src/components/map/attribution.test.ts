@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { collapseCompactAttribution } from "@/components/map/attribution";
+import {
+  attributionOptions,
+  collapseCompactAttribution,
+  peekAttributionOnHover,
+} from "@/components/map/attribution";
 import { DATA_ATTRIBUTION } from "@/components/map/useMaplibreMap";
 
 function fakeAttribution(classes: string[], open: boolean) {
@@ -47,5 +51,99 @@ describe("collapseCompactAttribution", () => {
 describe("DATA_ATTRIBUTION", () => {
   it("leaves the simulation disclaimer to the provenance chip", () => {
     expect(DATA_ATTRIBUTION.join(" ").toLowerCase()).not.toContain("simulated");
+  });
+});
+
+describe("attributionOptions", () => {
+  it("always collapses the attribution behind the info button", () => {
+    expect(attributionOptions()).toEqual({ compact: true, customAttribution: DATA_ATTRIBUTION });
+  });
+});
+
+function fakeDetails() {
+  const classes = new Set(["maplibregl-ctrl-attrib", "maplibregl-compact"]);
+  const listeners = new Map<string, (event: { pointerType?: string; target?: unknown }) => void>();
+  const element = {
+    open: false,
+    classList: {
+      contains: (name: string) => classes.has(name),
+      add: (name: string) => classes.add(name),
+      remove: (name: string) => classes.delete(name),
+    },
+    setAttribute: (name: string) => {
+      if (name === "open") element.open = true;
+    },
+    removeAttribute: (name: string) => {
+      if (name === "open") element.open = false;
+    },
+    addEventListener: (
+      name: string,
+      listener: (event: { pointerType?: string; target?: unknown }) => void,
+    ) => listeners.set(name, listener),
+    removeEventListener: (name: string) => listeners.delete(name),
+  };
+  const root = {
+    querySelector: (selector: string) => (selector === ".maplibregl-ctrl-attrib" ? element : null),
+  };
+  const target = (summary: boolean) => ({
+    closest: (selector: string) =>
+      summary && selector === ".maplibregl-ctrl-attrib-button" ? {} : null,
+  });
+  const fire = (name: string, pointerType = "mouse", summary = true) =>
+    listeners.get(name)?.({ pointerType, target: target(summary) });
+  return { root, element, classes, listeners, fire };
+}
+
+describe("peekAttributionOnHover", () => {
+  it("opens on mouse enter and closes on leave", () => {
+    const { root, element, classes, fire } = fakeDetails();
+    peekAttributionOnHover(root);
+    fire("pointerenter");
+    expect(element.open).toBe(true);
+    expect(classes.has("attrib-peek")).toBe(true);
+    fire("pointerleave");
+    expect(element.open).toBe(false);
+    expect(classes.has("attrib-peek")).toBe(false);
+  });
+
+  it("ignores touch so a tap toggles through the button alone", () => {
+    const { root, element, fire } = fakeDetails();
+    peekAttributionOnHover(root);
+    fire("pointerenter", "touch");
+    expect(element.open).toBe(false);
+  });
+
+  it("keeps a clicked (pinned) attribution open after the pointer leaves", () => {
+    const { root, element, classes, fire } = fakeDetails();
+    peekAttributionOnHover(root);
+    fire("pointerenter");
+    fire("click");
+    classes.add("maplibregl-compact-show");
+    fire("pointerleave");
+    expect(element.open).toBe(true);
+    expect(classes.has("attrib-peek")).toBe(false);
+  });
+
+  it("keeps the preview open when the click lands in the text, not the button", () => {
+    const { root, element, classes, fire } = fakeDetails();
+    peekAttributionOnHover(root);
+    fire("pointerenter");
+    fire("click", "mouse", false);
+    expect(classes.has("attrib-peek")).toBe(true);
+    expect(element.open).toBe(true);
+  });
+
+  it("leaves an already pinned attribution alone on hover", () => {
+    const { root, classes, fire } = fakeDetails();
+    classes.add("maplibregl-compact-show");
+    peekAttributionOnHover(root);
+    fire("pointerenter");
+    expect(classes.has("attrib-peek")).toBe(false);
+  });
+
+  it("removes its listeners on cleanup", () => {
+    const { root, listeners } = fakeDetails();
+    peekAttributionOnHover(root)();
+    expect(listeners.size).toBe(0);
   });
 });

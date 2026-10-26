@@ -11,16 +11,29 @@ import {
 } from "react";
 import {
   dampedOffset,
-  nextSnap,
+  settleSnap,
   sheetTravel,
   shouldDragSheet,
   type SheetSnap,
+  type SnapStop,
 } from "@/lib/sheet-physics";
 
 /** Movement before a press becomes a drag, so taps on buttons inside the sheet stay taps. */
 const DRAG_SLOP_PX = 8;
 /** Release velocity is measured over this trailing window. */
 const VELOCITY_WINDOW_MS = 100;
+/** Space kept under the peek row when minimized. */
+const PEEK_GAP_PX = 12;
+const GRABBER_LABEL: Record<SheetSnap, string> = {
+  minimized: "Show setup",
+  collapsed: "Show more",
+  expanded: "Show less",
+};
+const GRABBER_NEXT: Record<SheetSnap, SheetSnap> = {
+  minimized: "collapsed",
+  collapsed: "expanded",
+  expanded: "collapsed",
+};
 
 type Drag = {
   pointerId: number;
@@ -38,9 +51,10 @@ function currentTranslate(element: HTMLElement): number {
 }
 
 /**
- * Phone bottom sheet with two snaps. The collapsed slot is always visible; the expanded
- * slot sits below it and is inert while collapsed. Dragging writes `transform` directly
- * (no React state per frame); releases settle with the drawer curve.
+ * Phone bottom sheet with two snaps, or three when `minimizable`. The collapsed slot is always
+ * visible; the expanded slot sits below it and is inert while collapsed. Minimized shows only
+ * the collapsed slot's `[data-sheet-peek]` row and makes the rest inert. Dragging writes
+ * `transform` directly (no React state per frame); releases settle with the drawer curve.
  */
 export function BottomSheet({
   snap,
@@ -48,12 +62,15 @@ export function BottomSheet({
   collapsed,
   expanded,
   label,
+  minimizable = false,
 }: {
   snap: SheetSnap;
   onSnapChange: (snap: SheetSnap) => void;
   collapsed: ReactNode;
   expanded: ReactNode;
   label: string;
+  /** Adds the minimized snap: only the `[data-sheet-peek]` row of the collapsed slot shows. */
+  minimizable?: boolean;
 }) {
   const detailsId = useId();
   const sheet = useRef<HTMLElement>(null);
@@ -62,6 +79,8 @@ export function BottomSheet({
   const drag = useRef<Drag | null>(null);
   const suppressClick = useRef(false);
   const [travel, setTravel] = useState<number | null>(null);
+  // Minimized: translate and the height still visible (the peek row).
+  const [peek, setPeek] = useState<{ translate: number; visible: number } | null>(null);
 
   const measure = useCallback(() => {
     const element = sheet.current;
@@ -70,10 +89,15 @@ export function BottomSheet({
     const inset = parseFloat(getComputedStyle(element).paddingBottom) || 0;
     const visible = slot.offsetTop + slot.offsetHeight + inset;
     setTravel(sheetTravel(element.offsetHeight, visible));
-    // Map controls and attribution stay above the collapsed sheet (CSS reads this).
-    if (element.offsetParent instanceof HTMLElement)
-      element.offsetParent.style.setProperty("--sheet-visible", `${visible}px`);
-  }, []);
+    const peekRow = minimizable ? slot.querySelector("[data-sheet-peek]") : null;
+    if (peekRow) {
+      // Rects share the sheet's current transform, so their difference is layout-only.
+      const top = element.getBoundingClientRect().top;
+      const peekVisible = peekRow.getBoundingClientRect().bottom - top + PEEK_GAP_PX + inset;
+      setPeek({ translate: sheetTravel(element.offsetHeight, peekVisible), visible: peekVisible });
+    } else setPeek(null);
+    element.dataset.collapsedVisible = `${visible}`;
+  }, [minimizable]);
 
   // The container rotates or resizes and slot content changes height: both move the snaps.
   useLayoutEffect(() => {
@@ -89,7 +113,29 @@ export function BottomSheet({
     };
   }, [measure]);
 
-  const translateFor = (target: SheetSnap) => (target === "collapsed" ? (travel ?? 0) : 0);
+  const stops: SnapStop[] = [
+    { snap: "expanded", translate: 0 },
+    { snap: "collapsed", translate: travel ?? 0 },
+    ...(peek ? [{ snap: "minimized" as const, translate: peek.translate }] : []),
+  ];
+  const translateFor = (target: SheetSnap) =>
+    stops.find((stop) => stop.snap === target)?.translate ?? travel ?? 0;
+  const lowest = Math.max(...stops.map((stop) => stop.translate));
+
+  // Minimized without a peek row to show would hide the card behind an inert slot: restore it.
+  useLayoutEffect(() => {
+    if (snap === "minimized" && travel !== null && !peek) onSnapChange("collapsed");
+  }, [snap, travel, peek, onSnapChange]);
+
+  // Map controls and attribution stay above the visible part of the sheet (CSS reads this).
+  useLayoutEffect(() => {
+    const element = sheet.current;
+    const container = element?.offsetParent;
+    if (!element || !(container instanceof HTMLElement) || travel === null) return;
+    const collapsedVisible = Number(element.dataset.collapsedVisible) || 0;
+    const visible = snap === "minimized" && peek ? peek.visible : collapsedVisible;
+    container.style.setProperty("--sheet-visible", `${visible}px`);
+  }, [snap, peek, travel]);
 
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
     const element = sheet.current;
@@ -106,7 +152,7 @@ export function BottomSheet({
       samples: [{ y: event.clientY, t: event.timeStamp }],
     };
     drag.current = state;
-    const travelPx = travel;
+    const lowestPx = lowest;
 
     // Until the slop is passed the pointer is not captured and may leave the sheet, so the
     // gesture is followed on the window, not on the sheet.
@@ -129,7 +175,7 @@ export function BottomSheet({
         moveEvent.timeStamp - state.samples[0].t > VELOCITY_WINDOW_MS
       )
         state.samples.shift();
-      const offset = dampedOffset(delta, -state.startTranslate, travelPx - state.startTranslate);
+      const offset = dampedOffset(delta, -state.startTranslate, lowestPx - state.startTranslate);
       element.style.transform = `translate3d(0, ${state.startTranslate + offset}px, 0)`;
     };
     const release = (endEvent: globalThis.PointerEvent) => {
@@ -142,12 +188,11 @@ export function BottomSheet({
       const first = state.samples[0];
       const elapsed = endEvent.timeStamp - first.t;
       const velocity = cancelled || elapsed <= 0 ? 0 : (endEvent.clientY - first.y) / elapsed;
-      const startSnap: SheetSnap = state.startTranslate > travelPx / 2 ? "collapsed" : "expanded";
       const settled = cancelled
         ? snap
-        : nextSnap(startSnap, endEvent.clientY - state.startY, velocity, travelPx);
+        : settleSnap(stops, state.startTranslate, endEvent.clientY - state.startY, velocity);
       // React may not re-render when the snap is unchanged; settle the element ourselves.
-      element.style.transform = `translate3d(0, ${settled === "collapsed" ? travelPx : 0}px, 0)`;
+      element.style.transform = `translate3d(0, ${translateFor(settled)}px, 0)`;
       if (settled !== snap) onSnapChange(settled);
     };
     const finish = () => {
@@ -188,18 +233,25 @@ export function BottomSheet({
         event.stopPropagation();
       }}
       onKeyDown={onKeyDown}
+      onClick={() => {
+        // A tap anywhere on the minimized bar brings the card back.
+        if (snap === "minimized") onSnapChange("collapsed");
+      }}
     >
       <button
         type="button"
         className="bottom-sheet-grabber"
         aria-expanded={snap === "expanded"}
         aria-controls={detailsId}
-        aria-label={snap === "expanded" ? "Show less" : "Show more"}
-        onClick={() => onSnapChange(snap === "expanded" ? "collapsed" : "expanded")}
+        aria-label={GRABBER_LABEL[snap]}
+        onClick={(event) => {
+          event.stopPropagation();
+          onSnapChange(GRABBER_NEXT[snap]);
+        }}
       >
         <span aria-hidden />
       </button>
-      <div ref={collapsedSlot} className="bottom-sheet-collapsed">
+      <div ref={collapsedSlot} className="bottom-sheet-collapsed" inert={snap === "minimized"}>
         {collapsed}
       </div>
       <div

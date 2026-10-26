@@ -10,6 +10,7 @@ import type { SheetSnap } from "@/lib/sheet-physics";
 import { isTelemetryStale } from "@/lib/simulation-state";
 import type { DispatchSettings } from "@/lib/start-request";
 import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation";
+import { PageMenu } from "@/components/workspace/PageMenu";
 import { routeForMode, viewRunPolicy } from "@/lib/workspace-routes";
 import { Fragment, useCallback, useState, useSyncExternalStore, type ReactNode } from "react";
 import { simulationOperationSlot } from "@/lib/operation-slot";
@@ -35,6 +36,8 @@ import { pinnedIncident } from "@/lib/useIncidentDispatch";
 import type { DashboardMode } from "@/components/dashboard/dashboard-mode";
 import { WorkspaceShell, type WorkspaceSheet } from "@/components/workspace/WorkspaceShell";
 import { MapContainer } from "@/components/map/MapContainer";
+import { useIsPhone } from "@/lib/useIsPhone";
+import { setupSheetMinimizable } from "@/lib/driver-setup-sheet";
 import { KpiHeader } from "@/components/hud/KpiHeader";
 import { RunSummary } from "@/components/hud/RunSummary";
 import { IntersectionList } from "@/components/hud/IntersectionList";
@@ -98,6 +101,8 @@ export function Dashboard({
     snap: "collapsed",
   });
   const snap = sheetState.key === sheetKey ? sheetState.snap : "collapsed";
+  const phone = useIsPhone();
+  const minimizable = setupSheetMinimizable({ driver, setup: mode === "setup", onSite: !!onSite });
   const setSnap = (next: SheetSnap) => setSheetState({ key: sheetKey, snap: next });
   const timeMode = timeModeFor(selectedMode, "simulation");
   const chosenStation = pageCandidate(dispatch, timeMode)?.station ?? null;
@@ -152,7 +157,16 @@ export function Dashboard({
     selectedVehicleType: dispatch.vehicleType,
     chosenStationId: chosenStation?.station_id ?? null,
     runnerUpIds: runnerUpIds(dispatch.ranking, dispatch.selectedStationId, timeMode),
-    onMapClick,
+    // Driver: picking the incident on the map brings the setup card back up.
+    onMapClick: driver
+      ? (position: Position) => {
+          onMapClick(position);
+          setSnap("collapsed");
+        }
+      : onMapClick,
+    // Driver on a phone: using the map folds the setup sheet down to its peek row.
+    onUserMove:
+      minimizable && phone && snap !== "minimized" ? () => setSnap("minimized") : undefined,
   };
 
   const notices = (
@@ -252,6 +266,8 @@ export function Dashboard({
       ? {
           snap,
           onSnapChange: setSnap,
+          minimizable,
+          minimizedLabel: `Driver setup · ${dispatch.incident?.label ?? "no incident"}`,
           collapsed: onSite ? (
             <OnSiteResult
               station={onSite.station}
@@ -303,27 +319,32 @@ export function Dashboard({
     <WorkspaceShell
       sheet={workspaceSheet}
       status={
-        driver && mode === "live" && simulationState === "RUNNING" ? (
+        mode === "live" && simulationState === "RUNNING" ? (
           <div className="driver-overlay">
-            {signal && <NextSignalCard signal={signal} />}
+            {driver && signal && <NextSignalCard signal={signal} />}
             {simulation.startRequest && <DispatchSettingsChip request={simulation.startRequest} />}
           </div>
         ) : undefined
       }
+      compactHeader={driver}
       header={
-        <div className="min-w-0 flex-1">
-          <WorkspaceNavigation current={driver ? "/driver" : routeForMode(selectedMode)} />
-          <h1 className="workspace-title">
-            {driver
-              ? "Driver simulation"
-              : selectedMode === "ENABLED"
-                ? "Green Wave"
-                : "Standard traffic"}{" "}
-            <span className="text-muted-foreground">
-              / {mode === "live" ? "Simulation" : "Setup"}
-            </span>
-          </h1>
-        </div>
+        driver ? (
+          <PageMenu
+            current="/driver"
+            title="Driver"
+            detail={mode === "live" ? "Simulation" : "Setup"}
+          />
+        ) : (
+          <div className="min-w-0 flex-1">
+            <WorkspaceNavigation current={routeForMode(selectedMode)} />
+            <h1 className="workspace-title">
+              {selectedMode === "ENABLED" ? "Green Wave" : "Standard traffic"}{" "}
+              <span className="text-muted-foreground">
+                / {mode === "live" ? "Simulation" : "Setup"}
+              </span>
+            </h1>
+          </div>
+        )
       }
       map={
         <MapContainer

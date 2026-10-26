@@ -55,7 +55,7 @@ function sizedCamera(zoom = 12) {
   const setZoom = (next: number) => {
     currentZoom = next;
   };
-  return { camera, fit, emit, setZoom };
+  return { camera, fit, emit, setZoom, jumpTo: map.jumpTo };
 }
 
 it("reframe refits in overview", () => {
@@ -100,4 +100,18 @@ it("reframe is ignored while following", () => {
   emit("zoomend", { originalEvent: {} });
   camera.reframe();
   expect(fit).toHaveBeenCalledTimes(1);
+});
+
+it("resume zooms in to street level from an overview zoom", () => {
+  const { camera, jumpTo } = sizedCamera(12);
+  camera.display([19, 50], true);
+  camera.resume();
+  expect(jumpTo).toHaveBeenLastCalledWith({ center: [19, 50], bearing: 0, pitch: 0, zoom: 16.5 });
+});
+
+it("resume keeps a street-level zoom the user chose", () => {
+  const { camera, jumpTo } = sizedCamera(17);
+  camera.display([19, 50], true);
+  camera.resume();
+  expect(jumpTo).toHaveBeenLastCalledWith({ center: [19, 50], bearing: 0, pitch: 0 });
 });

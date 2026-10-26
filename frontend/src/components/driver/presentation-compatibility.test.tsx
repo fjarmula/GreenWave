@@ -45,9 +45,12 @@ describe("dispatch scenario visibility", () => {
       />,
     );
     expect(html).toContain('aria-label="Simulated ITS feedback"');
-    const select = html.match(/<select[^>]*>.*?<\/select>/)?.[0];
-    expect(select).toContain(`value="${mode === "DISABLED" ? "NOMINAL" : "REJECTED"}" selected=""`);
-    expect(select?.includes('disabled=""')).toBe(mode === "DISABLED");
+    const its = html.match(
+      /<div role="radiogroup" aria-label="Simulated ITS feedback".*?<\/div>/,
+    )?.[0];
+    const checked = its?.match(/<button[^>]*aria-checked="true"[^>]*>.*?<\/button>/)?.[0];
+    expect(checked).toContain(mode === "DISABLED" ? "Nominal" : "Rejected");
+    expect(its?.includes('disabled=""')).toBe(mode === "DISABLED");
     expect(settingsSummary(effective)).toContain(
       mode === "DISABLED" ? "ITS Nominal" : "ITS Rejected",
     );

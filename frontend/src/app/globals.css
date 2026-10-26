@@ -75,6 +75,8 @@
   --map-building: #e4e8ee;
   /* Neutral scale: near-neutral cool greys. Elevation is a lightness step plus a hairline. */
   --bg: oklch(0.965 0.005 255);
+  --home-road-ink: oklch(0.2 0.01 260 / 22%);
+  --home-signal-idle: oklch(0.2 0.01 260 / 22%);
   --surface-1: oklch(1 0 0);
   --surface-2: oklch(1 0 0);
   --surface-3: oklch(0.955 0.003 260);
@@ -154,6 +156,8 @@
   --map-street-casing: #24272c;
   --map-building: #23262b;
   --bg: oklch(0.17 0.004 260);
+  --home-road-ink: oklch(1 0 0 / 16%);
+  --home-signal-idle: oklch(1 0 0 / 22%);
   --surface-1: oklch(0.185 0.008 260);
   --surface-2: oklch(0.215 0.009 260);
   --surface-3: oklch(0.25 0.01 260);
@@ -362,9 +366,12 @@
   font-size: 10px;
   backdrop-filter: blur(8px);
 }
-.dashboard-map .maplibregl-ctrl-attrib:not(.maplibregl-compact) {
-  border-width: 1px 0 0 1px;
-  border-top-left-radius: 0.5rem;
+/* Attribution is always the round info button; a mouse hover previews it (see attribution.ts). */
+.dashboard-map .maplibregl-ctrl-attrib.maplibregl-compact.attrib-peek {
+  padding: 2px 28px 2px 8px;
+}
+.dashboard-map .maplibregl-ctrl-attrib.attrib-peek .maplibregl-ctrl-attrib-inner {
+  display: block;
 }
 
 .dashboard-map .maplibregl-ctrl-group button + button {
@@ -447,8 +454,10 @@
 
 /* Workspace controls stay out of the map gesture surface. Panels alone scroll. */
 /* Map-first: the map fills the viewport and every piece of chrome floats over it as glass. */
-.workspace-shell {
+:root {
   --shell-gap: 0.75rem;
+}
+.workspace-shell {
   --inspector-width: 380px;
   height: 100vh;
   height: 100dvh;
@@ -472,6 +481,14 @@
 }
 .workspace-header > * {
   pointer-events: auto;
+}
+/* Page workspaces (diagnostics) pin the same header over scrolling content. */
+.workspace-header[data-variant="page"] {
+  position: fixed;
+}
+/* Focus and anchor scrolling stop below the pinned header. */
+:root:has(.workspace-header[data-variant="page"]) {
+  scroll-padding-top: calc(var(--shell-gap) + 7.5rem);
 }
 /* The page's own header content (navigation and title) is one glass bar. */
 .workspace-header > :first-child {
@@ -502,6 +519,46 @@
   white-space: nowrap;
   color: var(--muted-foreground);
 }
+/* Fade the edge that has more tabs; the timeline is inactive (no mask) when nothing scrolls. */
+@property --nav-fade-start {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --nav-fade-end {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@keyframes nav-fade {
+  0% {
+    --nav-fade-start: 0px;
+    --nav-fade-end: 1.5rem;
+  }
+  15% {
+    --nav-fade-start: 1.5rem;
+  }
+  85% {
+    --nav-fade-end: 1.5rem;
+  }
+  100% {
+    --nav-fade-start: 1.5rem;
+    --nav-fade-end: 0px;
+  }
+}
+@supports (animation-timeline: scroll()) {
+  .workspace-navigation {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--nav-fade-start),
+      #000 calc(100% - var(--nav-fade-end)),
+      transparent
+    );
+    animation: nav-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
 .workspace-navigation a {
   padding: 0.3125rem 0.75rem;
   border-radius: 999px;
@@ -511,6 +568,83 @@
   color: var(--foreground);
   background: var(--thumb);
   box-shadow: var(--thumb-shadow);
+}
+/* Driver: one-row header; the page menu opens the destinations in a popover. */
+.workspace-header[data-compact] {
+  align-items: center;
+}
+.page-menu-root {
+  position: relative;
+}
+.workspace-title.page-menu-heading {
+  margin: 0;
+  padding: 0;
+}
+.page-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0 0.625rem;
+  border-radius: var(--radius-control);
+  font: inherit;
+  white-space: nowrap;
+}
+.page-menu-trigger svg {
+  width: 1rem;
+  height: 1rem;
+}
+.page-menu-chevron {
+  color: var(--muted-foreground);
+  transition: transform var(--dur-hover) var(--ease-out);
+}
+.page-menu-trigger[aria-expanded="true"] .page-menu-chevron {
+  transform: rotate(180deg);
+}
+.page-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.75rem);
+  left: -0.375rem;
+  min-width: 13rem;
+  padding: 0.375rem;
+  border-radius: var(--radius-card);
+  transform-origin: top left;
+  transition:
+    opacity var(--dur-enter) var(--ease-out),
+    transform var(--dur-enter) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+.page-menu .workspace-navigation {
+  display: grid;
+  max-width: none;
+  padding: 0;
+  overflow: visible;
+  border-radius: var(--radius-control);
+  background: none;
+  font-size: 0.875rem;
+  animation: none;
+  mask-image: none;
+}
+.page-menu .workspace-navigation a {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-control);
+}
+@media (hover: hover) and (pointer: fine) {
+  .page-menu-trigger:hover,
+  .page-menu .workspace-navigation a:hover {
+    background: var(--tile);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-menu {
+    @starting-style {
+      transform: none;
+    }
+  }
 }
 .workspace-actions {
   @apply surface-glass;
@@ -674,9 +808,16 @@
   pointer-events: none;
   transition: transform 200ms var(--ease-out);
 }
-/* Narrow maps open MapLibre's compact attribution expanded; step above it until it closes. */
-.workspace-map-slot:has(.maplibregl-compact-show) .workspace-provenance {
+/* An open attribution can reach the chip on narrow maps; step above it until it closes. */
+.workspace-map-slot:has(.maplibregl-compact-show) .workspace-provenance,
+.workspace-map-slot:has(.attrib-peek) .workspace-provenance {
   transform: translateY(-3.5rem);
+}
+/* Phone: the open attribution wraps to three lines. */
+@media (max-width: 767px) {
+  .workspace-map-slot:has(.maplibregl-compact-show) .workspace-provenance {
+    transform: translateY(-4.5rem);
+  }
 }
 .workspace-provenance::before {
   flex-shrink: 0;
@@ -694,7 +835,7 @@
   min-height: 44px;
 }
 @media (max-width: 767px) {
-  .workspace-shell {
+  :root {
     --shell-gap: 0.5rem;
   }
   /* One glass bar. Row 1: scrolling nav. Row 2: title beside icon-only actions. */
@@ -708,6 +849,18 @@
   }
   .workspace-header > :first-child {
     display: contents;
+  }
+  .workspace-header[data-compact] {
+    display: flex;
+  }
+  /* The header itself is the glass bar on phones; the page menu sits in it plainly. */
+  .workspace-header[data-compact] > :first-child {
+    display: block;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
   }
   .workspace-actions {
     padding: 0;
@@ -759,6 +912,17 @@
   }
 }
 /* Phone bottom sheet: two snaps, moved only by transform; the drawer curve settles it. */
+.driver-setup-peek-incident {
+  display: none;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.bottom-sheet[data-snap="minimized"] .driver-setup-peek-incident {
+  display: inline;
+}
+.bottom-sheet[data-snap="minimized"] {
+  cursor: pointer;
+}
 .bottom-sheet {
   position: absolute;
   z-index: 6;
@@ -862,8 +1026,8 @@ button,
 .workspace-shell[data-focus="true"] .workspace-camera-controls {
   display: none;
 }
-/* Driver overlay: the next-signal card and the settings chip float under the header. */
-.workspace-driver-status {
+/* Live-run overlay: the settings chip (and the driver next-signal card) float under the header. */
+.workspace-status {
   position: absolute;
   z-index: 7;
   top: calc(6.25rem + env(safe-area-inset-top));
@@ -871,17 +1035,24 @@ button,
   width: min(340px, calc(100% - 2 * var(--shell-gap)));
   pointer-events: none;
 }
-.workspace-driver-status > * {
+.workspace-status > * {
   pointer-events: auto;
 }
+.workspace-status[data-align="end"] {
+  left: auto;
+  right: calc(var(--shell-gap) + env(safe-area-inset-right));
+}
+.workspace-status[data-align="end"] .driver-overlay {
+  align-items: flex-end;
+}
 @media (max-width: 767px) {
-  .workspace-driver-status {
+  .workspace-status {
     top: calc(8rem + env(safe-area-inset-top));
     right: calc(var(--shell-gap) + env(safe-area-inset-right));
     width: auto;
   }
   /* The expanded sheet owns the screen; the overlay would sit on its content. */
-  .workspace-shell[data-sheet="expanded"] .workspace-driver-status {
+  .workspace-shell[data-sheet="expanded"] .workspace-status {
     display: none;
   }
 }
@@ -983,6 +1154,35 @@ button,
     right: 0;
     transform-origin: top right;
   }
+}
+.workspace-status[data-align="end"] .settings-popover {
+  left: auto;
+  right: 0;
+  transform-origin: top right;
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-popover {
+    @starting-style {
+      transform: none;
+    }
+  }
+}
+/* Follow vehicle: the one live control in the read-only settings popover. */
+.settings-follow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-control);
+  background: var(--tile);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.settings-follow > svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--go);
 }
 .settings-popover-close {
   display: grid;
@@ -1111,6 +1311,64 @@ button,
   bottom: auto;
   max-height: calc(100% - 4.5rem - var(--shell-gap) - env(safe-area-inset-top));
   padding-top: 1.25rem;
+}
+/* Driver setup on desktop: a corner button folds the card into a pill that restores it. */
+.sheet-minimize {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--muted-foreground);
+}
+.sheet-minimize svg,
+.sheet-pill svg {
+  width: 1rem;
+  height: 1rem;
+}
+.workspace-inspector[data-minimized] {
+  left: auto;
+  width: auto;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.sheet-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0 0.875rem 0 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transform-origin: top right;
+  transition:
+    opacity var(--dur-enter) var(--ease-out),
+    transform var(--dur-enter) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .sheet-minimize:hover {
+    color: var(--foreground);
+    background: var(--tile);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet-pill {
+    @starting-style {
+      transform: none;
+    }
+  }
 }
 .sheet-disclosure {
   display: flex;
@@ -1352,16 +1610,230 @@ button,
 }
 
 /* Home: first-load reveal, corridor illustration and destination cards. */
+/* Home background: a simulated green wave on a real Kraków corridor (see home-corridor.ts). */
+.home-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.home-backdrop-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* Sized, not inset: MapLibre sets .maplibregl-map to position: relative. */
+.home-live-map {
+  width: 100%;
+  height: 100%;
+}
+.home-live-map .maplibregl-canvas {
+  filter: saturate(0.5);
+}
+.home-backdrop[data-kind="live"] {
+  opacity: 0.7;
+}
+.dark .home-backdrop[data-kind="live"] {
+  opacity: 0.85;
+}
+/* The backdrop sits under the content; the home footer carries the full map credit instead. */
+.home-live-map .maplibregl-ctrl-attrib {
+  display: none;
+}
+.home-roads {
+  fill: var(--home-road-ink);
+}
+.home-corridor-base,
+.home-corridor-trail {
+  fill: none;
+  stroke: var(--go);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.home-corridor-base {
+  stroke-opacity: 0.22;
+}
+.home-signal {
+  fill: var(--home-signal-idle);
+  stroke: var(--go);
+  stroke-width: 0;
+  stroke-opacity: 0.45;
+  transition:
+    fill 300ms ease,
+    stroke-width 300ms ease;
+}
+.home-signal[data-state="ahead"] {
+  fill: var(--emergency);
+}
+.home-signal[data-state="green"] {
+  fill: var(--go);
+  stroke-width: 6;
+}
+.home-vehicle {
+  fill: var(--emergency);
+}
+.home-vehicle-halo {
+  fill: var(--emergency);
+  opacity: 0.22;
+}
+/* One screen: background, scrim, then header / hero / cards. Taller content scrolls instead. */
 .home-main {
   position: relative;
   isolation: isolate;
+  overflow-x: clip;
 }
-.home-mark {
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: 3px;
-  background: var(--go);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--go) 22%, transparent);
+.home-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      var(--bg) 0%,
+      color-mix(in oklch, var(--bg) 88%, transparent) 34%,
+      transparent 62%
+    ),
+    linear-gradient(0deg, color-mix(in oklch, var(--bg) 92%, transparent) 0%, transparent 38%);
+}
+.home-content {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  width: min(70rem, 100%);
+  /* Exactly one screen while the content fits; it grows (and the page scrolls) when it does not. */
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 1.75rem 2.5rem 1.5rem;
+}
+.home-hero {
+  align-self: center;
+  max-width: 36rem;
+}
+.home-title {
+  margin-top: 1.25rem;
+  font-size: 3.75rem;
+  line-height: 1.02;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.home-lede {
+  margin-top: 1.125rem;
+  max-width: 30rem;
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  text-wrap: pretty;
+}
+.home-corridor-caption {
+  position: absolute;
+  top: 50%;
+  right: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--muted-foreground);
+  text-align: right;
+  pointer-events: none;
+}
+.home-corridor-caption strong {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.home-bottom {
+  display: grid;
+  gap: 0.875rem;
+}
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.875rem;
+}
+.home-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+.home-disclaimer {
+  display: flex;
+  flex: 1 1 22rem;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  text-align: right;
+}
+.home-disclaimer svg {
+  margin-top: 0.125rem;
+}
+.home-disclaimer a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+@media (max-width: 767px) {
+  .home-scrim {
+    background:
+      linear-gradient(
+        90deg,
+        color-mix(in oklch, var(--bg) 82%, transparent) 0%,
+        color-mix(in oklch, var(--bg) 55%, transparent) 55%,
+        transparent 85%
+      ),
+      linear-gradient(180deg, color-mix(in oklch, var(--bg) 70%, transparent) 0%, transparent 18%),
+      linear-gradient(
+        0deg,
+        var(--bg) 0%,
+        color-mix(in oklch, var(--bg) 94%, transparent) 52%,
+        transparent 78%
+      );
+  }
+  .home-content {
+    padding: 1.125rem 1rem 1rem;
+  }
+  .home-hero {
+    align-self: end;
+    padding-bottom: 1.125rem;
+  }
+  .home-title {
+    margin-top: 0.875rem;
+    font-size: 2.25rem;
+  }
+  .home-lede {
+    margin-top: 0.625rem;
+    font-size: 0.9375rem;
+  }
+  .home-corridor-caption {
+    display: none;
+  }
+  .home-cards {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .home-disclaimer {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    font-size: 0.6875rem;
+    text-align: left;
+  }
+}
+.brand-mark {
+  --brand-ink: #fff;
+  flex: none;
+  border-radius: 8px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--go) 18%, transparent);
+}
+/* Dark --go is a light mint: draw the wave in the page ink instead of white. */
+.dark .brand-mark {
+  --brand-ink: var(--bg);
 }
 .home-eyebrow {
   display: inline-flex;
@@ -1408,24 +1880,6 @@ button,
   animation: home-live 1.6s var(--ease-out) infinite;
   content: "";
 }
-.home-art {
-  margin-top: 3.5rem;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sheet);
-  background: var(--map-surface);
-}
-.home-art-caption {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-  padding: 0.75rem 1.25rem;
-  border-top: 1px solid var(--border);
-  background: var(--surface-1);
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-}
 .home-legend {
   display: inline-flex;
   align-items: center;
@@ -1436,13 +1890,60 @@ button,
   height: 0.5rem;
   border-radius: 999px;
 }
+/* Glass over the background. Desktop: icon and number, then the text; phone: one compact row. */
 .home-card {
-  display: flex;
-  flex-direction: column;
-  padding: 1.25rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "icon number"
+    "text text";
+  align-items: center;
+  row-gap: 1.625rem;
+  padding: 1.125rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sheet);
-  background: var(--surface-1);
+  background: color-mix(in oklch, var(--surface-1) 72%, transparent);
+  backdrop-filter: blur(14px) saturate(1.3);
+}
+.home-card-icon {
+  grid-area: icon;
+}
+.home-card-number {
+  grid-area: number;
+  justify-self: end;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.home-card-text {
+  grid-area: text;
+}
+.home-card-text h2 {
+  font-size: 1.125rem;
+}
+.home-card-copy {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+@media (max-width: 767px) {
+  .home-card {
+    grid-template-areas: "icon text";
+    column-gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: var(--radius-card);
+  }
+  .home-card-number {
+    display: none;
+  }
+  .home-card-text h2 {
+    font-size: 0.9375rem;
+  }
+  .home-card-copy {
+    margin-top: 0.125rem;
+    font-size: 0.8125rem;
+  }
 }
 .home-card-icon {
   display: grid;
@@ -1476,7 +1977,8 @@ button,
   padding: 0 0.875rem;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: var(--card);
+  background: color-mix(in oklch, var(--card) 72%, transparent);
+  backdrop-filter: blur(12px);
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -1501,66 +2003,6 @@ button,
   }
 }
 
-.corridor-art {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-/* The basemap's own palette: building blocks, white streets with a faint casing. */
-.corridor-block {
-  fill: var(--map-building);
-}
-.corridor-cross {
-  stroke: var(--map-street);
-  stroke-width: 12;
-}
-.corridor-road {
-  stroke: var(--map-street);
-  stroke-width: 22;
-}
-.corridor-lane {
-  stroke: var(--map-street-casing);
-  stroke-width: 1.5;
-  stroke-dasharray: 10 12;
-}
-.corridor-post {
-  stroke: color-mix(in srgb, var(--muted-foreground) 45%, transparent);
-  stroke-width: 2;
-}
-.corridor-lamp-stop {
-  fill: var(--emergency);
-  opacity: 0.85;
-}
-.corridor-lamp-go {
-  fill: var(--go);
-  filter: drop-shadow(0 0 6px var(--go));
-  opacity: 0;
-  animation: corridor-signal 8s linear infinite;
-}
-.corridor-label {
-  fill: var(--muted-foreground);
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-}
-.corridor-vehicle {
-  animation: corridor-drive 8s linear infinite;
-}
-/* The map's vehicle: a red dot in a white ring. */
-.corridor-vehicle-dot {
-  fill: var(--emergency);
-  stroke: #fff;
-  stroke-width: 3.5;
-}
-.corridor-vehicle-pulse {
-  fill: none;
-  stroke: var(--emergency);
-  stroke-width: 2;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: corridor-pulse 1.2s var(--ease-out) infinite;
-}
-
 @keyframes home-reveal {
   from {
     opacity: 0;
@@ -1578,71 +2020,14 @@ button,
     opacity: 0;
   }
 }
-@keyframes corridor-drive {
-  0% {
-    transform: translateX(0);
-    opacity: 0;
-  }
-  3% {
-    opacity: 1;
-  }
-  85% {
-    transform: translateX(720px);
-    opacity: 1;
-  }
-  90%,
-  100% {
-    transform: translateX(720px);
-    opacity: 0;
-  }
-}
-/* Signals snap like real lamps: ~60ms switches, green ~1.5s before arrival. */
-@keyframes corridor-signal {
-  0%,
-  6% {
-    opacity: 0;
-  }
-  6.8%,
-  30% {
-    opacity: 1;
-  }
-  30.8%,
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes corridor-pulse {
-  from {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-  to {
-    transform: scale(2.4);
-    opacity: 0;
-  }
-}
 
-@media (max-width: 639px) {
-  .corridor-label {
-    display: none;
-  }
-}
-
-/* Reduced motion: fades only; the corridor freezes on its mid-run frame. */
+/* Reduced motion: fades only. */
 @media (prefers-reduced-motion: reduce) {
   .home-reveal {
     animation-name: home-reveal-fade;
   }
   .home-return-dot[data-live]::after {
     animation: none;
-  }
-  .corridor-vehicle,
-  .corridor-lamp-go {
-    animation-play-state: paused;
-  }
-  .corridor-vehicle-pulse {
-    animation: none;
-    opacity: 0;
   }
 }
 
@@ -1662,6 +2047,9 @@ button,
   }
   .tone-beacon {
     --tone: var(--beacon);
+  }
+  .tone-muted {
+    --tone: var(--muted-foreground);
   }
   .hud-panel {
     padding: 1rem;
@@ -1740,6 +2128,52 @@ button,
     color: var(--tone, var(--foreground));
     background: var(--thumb);
     box-shadow: var(--thumb-shadow);
+  }
+  /* ITS feedback: the segmented track as a 2×2 grid of cards; transitions come from pressable. */
+  .its-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px;
+    padding: 3px;
+    border-radius: var(--radius-control);
+    background: var(--track);
+  }
+  .its-option {
+    display: flex;
+    min-height: 3.25rem;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.125rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: var(--radius-thumb);
+    text-align: left;
+    color: var(--muted-foreground);
+  }
+  .its-option-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4375rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+  .its-option .hud-dot {
+    background: var(--tone);
+  }
+  .its-option-caption {
+    padding-left: 0.8125rem;
+    font-size: 0.6875rem;
+  }
+  .its-option[aria-checked="true"] {
+    color: var(--foreground);
+    background: var(--thumb);
+    box-shadow: var(--thumb-shadow);
+  }
+  .its-option[aria-checked="true"] .its-option-caption {
+    color: var(--muted-foreground);
+  }
+  .its-option:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
   .hud-input {
     width: 100%;
@@ -1948,6 +2382,9 @@ button,
   }
   @media (hover: hover) and (pointer: fine) {
     .hud-segment:hover {
+      color: var(--foreground);
+    }
+    .its-option:not(:disabled):hover {
       color: var(--foreground);
     }
     .hud-primary:not(:disabled):hover {

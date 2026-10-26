@@ -1,4 +1,6 @@
-export type SheetSnap = "collapsed" | "expanded";
+export type SheetSnap = "minimized" | "collapsed" | "expanded";
+/** A snap and how far below its expanded position the sheet sits there. */
+export type SnapStop = { snap: SheetSnap; translate: number };
 
 /** A release faster than this (px/ms) is a flick: its direction decides the snap. */
 const FLICK_VELOCITY = 0.11;
@@ -6,19 +8,49 @@ const FLICK_VELOCITY = 0.11;
 const OVERSHOOT_FOLLOW = 0.25;
 
 /**
- * The snap a released drag settles on. `offsetPx` is the drag delta (negative = up),
- * `velocityPxPerMs` its release velocity (same sign), `travelPx` the distance between snaps.
+ * The snap a released drag settles on. A flick moves one stop from where the drag began, in
+ * its direction; a slow release settles on the stop nearest the release point. `offsetPx` and
+ * `velocityPxPerMs` are positive downward (towards larger translates).
  */
+export function settleSnap(
+  stops: SnapStop[],
+  startTranslate: number,
+  offsetPx: number,
+  velocityPxPerMs: number,
+): SheetSnap {
+  const sorted = [...stops].sort((a, b) => a.translate - b.translate);
+  const nearest = (translate: number) =>
+    sorted.reduce(
+      (best, stop, i) =>
+        Math.abs(stop.translate - translate) < Math.abs(sorted[best].translate - translate)
+          ? i
+          : best,
+      0,
+    );
+  if (Math.abs(velocityPxPerMs) > FLICK_VELOCITY) {
+    const step = velocityPxPerMs > 0 ? 1 : -1;
+    const index = Math.max(0, Math.min(sorted.length - 1, nearest(startTranslate) + step));
+    return sorted[index].snap;
+  }
+  return sorted[nearest(startTranslate + offsetPx)].snap;
+}
+
+/** The two-snap sheet: `travelPx` between expanded and collapsed. */
 export function nextSnap(
   current: SheetSnap,
   offsetPx: number,
   velocityPxPerMs: number,
   travelPx: number,
 ): SheetSnap {
-  if (Math.abs(velocityPxPerMs) > FLICK_VELOCITY)
-    return velocityPxPerMs < 0 ? "expanded" : "collapsed";
-  if (current === "collapsed") return offsetPx <= -travelPx / 2 ? "expanded" : "collapsed";
-  return offsetPx >= travelPx / 2 ? "collapsed" : "expanded";
+  return settleSnap(
+    [
+      { snap: "expanded", translate: 0 },
+      { snap: "collapsed", translate: travelPx },
+    ],
+    current === "expanded" ? 0 : travelPx,
+    offsetPx,
+    velocityPxPerMs,
+  );
 }
 
 /** Inside the bounds the sheet follows 1:1; past them it resists instead of stopping hard. */

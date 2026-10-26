@@ -32,7 +32,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "ER-GreenWave",
+  title: { default: "ER-GreenWave", template: "%s · ER-GreenWave" },
   description:
     "Proof-of-concept dispatcher dashboard for emergency-vehicle green corridors in Kraków (simulated).",
 };

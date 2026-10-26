@@ -30,3 +30,39 @@ it("exposes the details once expanded", () => {
   expect(html).not.toContain('inert=""');
   expect(html).toContain('data-snap="expanded"');
 });
+
+const renderMinimizable = (snap: "minimized" | "collapsed") =>
+  renderToStaticMarkup(
+    <BottomSheet
+      minimizable
+      snap={snap}
+      onSnapChange={() => {}}
+      label="Driver setup"
+      collapsed={
+        <>
+          <h2 data-sheet-peek>Where’s the incident?</h2>
+          <button>Initialize green corridor</button>
+        </>
+      }
+      expanded={<p>Settings</p>}
+    />,
+  );
+
+it("minimizes to its peek row with everything below it out of reach", () => {
+  const html = renderMinimizable("minimized");
+  expect(html).toContain('data-snap="minimized"');
+  expect(html).toMatch(/class="bottom-sheet-collapsed"[^>]*inert=""/);
+  expect(html).toContain('aria-label="Show setup"');
+  expect(html).toContain('aria-expanded="false"');
+});
+
+it("restores the collapsed card to full reach", () => {
+  const html = renderMinimizable("collapsed");
+  expect(html).not.toMatch(/class="bottom-sheet-collapsed"[^>]*inert=""/);
+  expect(html).toContain('aria-label="Show more"');
+});
+
+it("keeps the two-snap labels without minimizable", () => {
+  expect(render("collapsed")).toContain('aria-label="Show more"');
+  expect(render("expanded")).toContain('aria-label="Show less"');
+});
