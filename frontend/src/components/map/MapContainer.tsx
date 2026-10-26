@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useTheme } from "next-themes";
 import { LocateFixed, Route } from "lucide-react";
 
@@ -12,6 +12,7 @@ import { SignalMarkers } from "@/components/map/SignalMarkers";
 import { StationLayer } from "@/components/map/StationLayer";
 import { useMaplibreMap } from "@/components/map/useMaplibreMap";
 import { useMapCamera } from "@/components/map/useMapCamera";
+import { useFollowTarget } from "@/components/map/follow-context";
 import { useVehicleWake } from "@/components/map/useVehicleWake";
 import { VehicleMarker } from "@/components/map/VehicleMarker";
 import { tickIntervalMilliseconds } from "@/lib/playback-speed";
@@ -85,7 +86,14 @@ export function MapContainer({
     styleRevision,
     theme,
   );
-  const { display } = camera;
+  const { display, mode: cameraMode, resume, showRoute } = camera;
+  const followable = live && !!routeData;
+  useFollowTarget(
+    useMemo(
+      () => (followable ? { following: cameraMode === "following", resume, showRoute } : null),
+      [followable, cameraMode, resume, showRoute],
+    ),
+  );
   const displayVehicle = useCallback(
     (position: [number, number]) => {
       display(position);

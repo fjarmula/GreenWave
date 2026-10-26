@@ -4,6 +4,7 @@ import { ChevronDown, Maximize2, Minimize2, PanelRight } from "lucide-react";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { BottomSheet } from "@/components/workspace/BottomSheet";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
+import { FollowProvider } from "@/components/map/follow-context";
 import type { SheetSnap } from "@/lib/sheet-physics";
 import { useIsPhone } from "@/lib/useIsPhone";
 
@@ -69,114 +70,117 @@ export function WorkspaceShell({
   const panelHidden = focus || !details;
   const desktopSheet = sheet && !sheet.phoneOnly ? sheet : undefined;
   return (
-    <main
-      className="workspace-shell"
-      data-layout="map-first"
-      data-focus={focus}
-      data-details={details}
-      data-sheet={sheet && (phone || !sheet.phoneOnly) ? sheet.snap : undefined}
-    >
-      <div className="workspace-map-slot" data-map-slot>
-        {map}
-        <span className="workspace-provenance" data-map-occluder>
-          {provenance}
-        </span>
-      </div>
-      <WorkspaceHeader
-        hidden={focus}
-        actions={
-          <>
-            <ThemeToggle />
-            {hasPanel && (
-              <button
-                className="workspace-button"
-                aria-expanded={details}
-                aria-controls="workspace-inspector"
-                onClick={() => setDetails(!details)}
-              >
-                <PanelRight aria-hidden />
-                <span className="workspace-button-label">Details</span>
-              </button>
-            )}
-            <button ref={trigger} className="workspace-button" onClick={() => changeFocus(true)}>
-              <Maximize2 aria-hidden />
-              <span className="workspace-button-label">Enter Focus</span>
-            </button>
-          </>
-        }
+    <FollowProvider>
+      <main
+        className="workspace-shell"
+        data-layout="map-first"
+        data-focus={focus}
+        data-details={details}
+        data-sheet={sheet && (phone || !sheet.phoneOnly) ? sheet.snap : undefined}
       >
-        {header}
-      </WorkspaceHeader>
-      {sheet && phone ? (
-        <div id="workspace-inspector" hidden={panelHidden} inert={panelHidden}>
-          <BottomSheet
-            label="Simulation details"
-            snap={sheet.snap}
-            onSnapChange={sheet.onSnapChange}
-            collapsed={sheet.collapsed}
-            expanded={sheet.expanded}
-          />
+        <div className="workspace-map-slot" data-map-slot>
+          {map}
+          <span className="workspace-provenance" data-map-occluder>
+            {provenance}
+          </span>
         </div>
-      ) : !hasPanel ? null : (
-        <aside
-          id="workspace-inspector"
-          aria-label="Simulation details"
-          className="workspace-inspector surface-glass"
-          data-map-occluder
-          data-compact={desktopSheet ? true : undefined}
-          hidden={panelHidden}
-          inert={panelHidden}
-          onKeyDown={(event) => {
-            if (!desktopSheet || event.key !== "Escape" || desktopSheet.snap !== "expanded") return;
-            event.preventDefault();
-            event.stopPropagation();
-            desktopSheet.onSnapChange("collapsed");
-          }}
-        >
-          {desktopSheet ? (
+        <WorkspaceHeader
+          hidden={focus}
+          actions={
             <>
-              {desktopSheet.collapsed}
-              {desktopSheet.detailsLabel && (
+              <ThemeToggle />
+              {hasPanel && (
                 <button
-                  type="button"
-                  className="sheet-disclosure"
-                  aria-expanded={desktopSheet.snap === "expanded"}
-                  aria-controls={sheetDetailsId}
-                  onClick={() =>
-                    desktopSheet.onSnapChange(
-                      desktopSheet.snap === "expanded" ? "collapsed" : "expanded",
-                    )
-                  }
+                  className="workspace-button"
+                  aria-expanded={details}
+                  aria-controls="workspace-inspector"
+                  onClick={() => setDetails(!details)}
                 >
-                  {desktopSheet.detailsLabel}
-                  <ChevronDown aria-hidden />
+                  <PanelRight aria-hidden />
+                  <span className="workspace-button-label">Details</span>
                 </button>
               )}
-              <div id={sheetDetailsId} hidden={desktopSheet.snap !== "expanded"}>
-                {desktopSheet.snap === "expanded" && desktopSheet.expanded}
-              </div>
+              <button ref={trigger} className="workspace-button" onClick={() => changeFocus(true)}>
+                <Maximize2 aria-hidden />
+                <span className="workspace-button-label">Enter Focus</span>
+              </button>
             </>
-          ) : (
-            inspector
-          )}
-        </aside>
-      )}
-      {status && (
-        <div className="workspace-driver-status" data-map-occluder hidden={focus} inert={focus}>
-          {status}
-        </div>
-      )}
-      {focus && (
-        <button
-          ref={exit}
-          className="workspace-button workspace-float workspace-exit"
-          data-map-occluder
-          onClick={() => changeFocus(false)}
+          }
         >
-          <Minimize2 aria-hidden />
-          Exit Focus
-        </button>
-      )}
-    </main>
+          {header}
+        </WorkspaceHeader>
+        {sheet && phone ? (
+          <div id="workspace-inspector" hidden={panelHidden} inert={panelHidden}>
+            <BottomSheet
+              label="Simulation details"
+              snap={sheet.snap}
+              onSnapChange={sheet.onSnapChange}
+              collapsed={sheet.collapsed}
+              expanded={sheet.expanded}
+            />
+          </div>
+        ) : !hasPanel ? null : (
+          <aside
+            id="workspace-inspector"
+            aria-label="Simulation details"
+            className="workspace-inspector surface-glass"
+            data-map-occluder
+            data-compact={desktopSheet ? true : undefined}
+            hidden={panelHidden}
+            inert={panelHidden}
+            onKeyDown={(event) => {
+              if (!desktopSheet || event.key !== "Escape" || desktopSheet.snap !== "expanded")
+                return;
+              event.preventDefault();
+              event.stopPropagation();
+              desktopSheet.onSnapChange("collapsed");
+            }}
+          >
+            {desktopSheet ? (
+              <>
+                {desktopSheet.collapsed}
+                {desktopSheet.detailsLabel && (
+                  <button
+                    type="button"
+                    className="sheet-disclosure"
+                    aria-expanded={desktopSheet.snap === "expanded"}
+                    aria-controls={sheetDetailsId}
+                    onClick={() =>
+                      desktopSheet.onSnapChange(
+                        desktopSheet.snap === "expanded" ? "collapsed" : "expanded",
+                      )
+                    }
+                  >
+                    {desktopSheet.detailsLabel}
+                    <ChevronDown aria-hidden />
+                  </button>
+                )}
+                <div id={sheetDetailsId} hidden={desktopSheet.snap !== "expanded"}>
+                  {desktopSheet.snap === "expanded" && desktopSheet.expanded}
+                </div>
+              </>
+            ) : (
+              inspector
+            )}
+          </aside>
+        )}
+        {status && (
+          <div className="workspace-driver-status" data-map-occluder hidden={focus} inert={focus}>
+            {status}
+          </div>
+        )}
+        {focus && (
+          <button
+            ref={exit}
+            className="workspace-button workspace-float workspace-exit"
+            data-map-occluder
+            onClick={() => changeFocus(false)}
+          >
+            <Minimize2 aria-hidden />
+            Exit Focus
+          </button>
+        )}
+      </main>
+    </FollowProvider>
   );
 }

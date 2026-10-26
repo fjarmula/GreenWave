@@ -48,10 +48,7 @@ export function useMapCamera(
     (point: [number, number]) => camera.current?.display(point, activeRef.current),
     [],
   );
-  return {
-    mode,
-    display,
-    resume: () => camera.current?.resume(),
-    showRoute: () => camera.current?.showRoute(),
-  };
+  const resume = useCallback(() => camera.current?.resume(), []);
+  const showRoute = useCallback(() => camera.current?.showRoute(), []);
+  return { mode, display, resume, showRoute };
 }
