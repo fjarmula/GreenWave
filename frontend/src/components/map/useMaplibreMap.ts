@@ -28,8 +28,21 @@ export { DATA_ATTRIBUTION } from "@/components/map/attribution";
  * style inside the theme view transition (a registered barrier) and counts style loads
  * so layers can re-add themselves.
  */
-export function useMaplibreMap(theme: ResolvedTheme) {
+export function useMaplibreMap(
+  theme: ResolvedTheme,
+  {
+    interactive = true,
+    controls = true,
+  }: {
+    /** False: a backdrop map that ignores pointer and keyboard input. */
+    interactive?: boolean;
+    /** False: no zoom buttons (attribution is always shown). */
+    controls?: boolean;
+  } = {},
+) {
   const mapElement = useRef<HTMLDivElement>(null);
+  // Read once: the map is created a single time per container.
+  const options = useRef({ interactive, controls });
   const mapRef = useRef<Map | null>(null);
   const initialTheme = useRef<ResolvedTheme>(theme);
   const swapRef = useRef<ReturnType<typeof createMapThemeSwap> | null>(null);
@@ -52,10 +65,11 @@ export function useMaplibreMap(theme: ResolvedTheme) {
       pitchWithRotate: false,
       maxPitch: 0,
       attributionControl: false,
+      interactive: options.current.interactive,
     });
     instance.addControl(new maplibregl.AttributionControl(attributionOptions()), "bottom-right");
-
-    instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    if (options.current.controls)
+      instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     const setStyle = createBasemapLoader(instance);
     const swap = createMapThemeSwap(
       {
