@@ -3,9 +3,9 @@
 }
 
 {$DOMAIN} {
-	basic_auth {
-		{$DEMO_USERNAME} {$DEMO_PASSWORD_HASH}
-	}
+	# basic_auth {
+	# 	{$DEMO_USERNAME} {$DEMO_PASSWORD_HASH}
+	# }
 
 	@api path /api /api/*
 	handle @api {
