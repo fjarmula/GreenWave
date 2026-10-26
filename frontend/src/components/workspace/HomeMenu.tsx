@@ -1,10 +1,8 @@
 "use client";
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { Activity, ArrowRight, ArrowUpRight, Info, Smartphone } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
-import { ResponsiveNavigation } from "@/components/workspace/ResponsiveNavigation";
 import { HomeBackdrop } from "@/components/workspace/HomeBackdrop";
 import { GreenWaveMark } from "@/components/workspace/GreenWaveMark";
 import {
@@ -29,9 +27,6 @@ const MODES = [
   },
 ];
 const TOOL_ICONS = [Activity, Smartphone];
-
-/** Entrance order for the first-load reveal (40ms apart). */
-const reveal = (step: number) => ({ "--reveal-step": step }) as CSSProperties;
 
 export function HomeMenu() {
   const { startRequest, simulationState } = useSimulationState();
@@ -63,35 +58,22 @@ export function HomeMenu() {
             </p>
             <ThemeToggle />
           </header>
-          <div className="mt-4">
-            {" "}
-            <ResponsiveNavigation
-              current="/"
-              title="Home"
-              detail="Workspace"
-              heading={false}
-              themeInMenu={false}
-            />
-          </div>
         </div>
 
         <div className="home-hero">
           <section>
-            <p className="home-reveal home-eyebrow" style={reveal(0)}>
+            <p className="home-eyebrow">
               <span aria-hidden className="size-1.5 rounded-full bg-go" />
               Emergency corridor simulation
             </p>
-            <h1 className="home-reveal home-title" style={reveal(1)}>
-              A clearer path to the incident.
-            </h1>
-            <p className="home-reveal home-lede" style={reveal(2)}>
+            <h1 className="home-title">A clearer path to the incident.</h1>
+            <p className="home-lede">
               Explore simulated emergency response, compare recorded runs and follow the data behind
               the corridor.
             </p>
             {startRequest && (
               <Link
-                className="home-reveal home-return pressable"
-                style={reveal(3)}
+                className="home-return pressable"
                 href={routeForMode(startRequest.green_wave_mode)}
               >
                 <span
@@ -111,12 +93,7 @@ export function HomeMenu() {
             {destinations.slice(1, 4).map((d, i) => {
               const { icon: Icon, tone, copy } = MODES[i];
               return (
-                <Link
-                  className="home-reveal home-card pressable"
-                  style={reveal(4 + i)}
-                  key={d.href}
-                  href={d.href}
-                >
+                <Link className="home-card pressable" key={d.href} href={d.href}>
                   <span className={`home-card-icon ${tone}`}>
                     <Icon className="size-[18px]" />
                   </span>
@@ -133,7 +110,7 @@ export function HomeMenu() {
             })}
           </div>
 
-          <div className="home-reveal home-foot" style={reveal(7)}>
+          <div className="home-foot">
             <nav className="flex flex-wrap gap-2" aria-label="Tools">
               {destinations.slice(4).map((d, i) => {
                 const Icon = TOOL_ICONS[i];

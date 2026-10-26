@@ -1612,7 +1612,7 @@ button,
   }
 }
 
-/* Home: first-load reveal, corridor illustration and destination cards. */
+/* Home: corridor backdrop and destination cards. */
 /* Home background: a simulated green wave on a real Kraków corridor (see home-corridor.ts). */
 .home-backdrop {
   position: absolute;
@@ -1703,6 +1703,9 @@ button,
     linear-gradient(0deg, color-mix(in oklch, var(--bg) 92%, transparent) 0%, transparent 38%);
 }
 .home-content {
+  /* Keep text in one explicit foreground layer when the WebGL backdrop is recreated. */
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-rows: auto 1fr auto;
   width: min(1800px, 96%);
@@ -1849,10 +1852,6 @@ button,
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--muted-foreground);
-}
-.home-reveal {
-  animation: home-reveal 420ms var(--ease-out) backwards;
-  animation-delay: calc(var(--reveal-step, 0) * 50ms);
 }
 .home-return {
   display: inline-flex;
@@ -2006,17 +2005,6 @@ button,
   }
 }
 
-@keyframes home-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}
-@keyframes home-reveal-fade {
-  from {
-    opacity: 0;
-  }
-}
 @keyframes home-live {
   to {
     transform: scale(2.6);
@@ -2024,11 +2012,8 @@ button,
   }
 }
 
-/* Reduced motion: fades only. */
+/* Reduced motion: keep the active-run indicator still. */
 @media (prefers-reduced-motion: reduce) {
-  .home-reveal {
-    animation-name: home-reveal-fade;
-  }
   .home-return-dot[data-live]::after {
     animation: none;
   }
