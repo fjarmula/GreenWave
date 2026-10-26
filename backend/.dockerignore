@@ -12,3 +12,6 @@ data/raw/*
 data/processed/*
 !data/processed/.gitkeep
 *.log
+.env
+.env.*
+!.env.example
