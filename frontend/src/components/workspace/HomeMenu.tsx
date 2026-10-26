@@ -40,7 +40,7 @@ export function HomeMenu() {
       <div className="home-scrim" aria-hidden />
       <p className="home-corridor-caption">
         <strong>Aleje Trzech Wieszczów</strong>
-        <span>{corridor.signals.length} signalised junctions · real geometry</span>
+        <span>{corridor.signals.length} traffic signals · real geometry</span>
         <span className="flex gap-3">
           <span className="home-legend">
             <i className="bg-emergency" /> Vehicle

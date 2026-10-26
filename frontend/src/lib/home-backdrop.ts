@@ -29,3 +29,14 @@ export function hasWebGL(): boolean {
 export function hasBasemap(sourceIds: string[]): boolean {
   return sourceIds.some((id) => !id.startsWith("home-"));
 }
+
+/** The live map failed when, after the grace period, it has no basemap or none of its tiles. */
+export function basemapFailed({
+  sourceIds,
+  tilesLoaded,
+}: {
+  sourceIds: string[];
+  tilesLoaded: boolean;
+}): boolean {
+  return !hasBasemap(sourceIds) || !tilesLoaded;
+}

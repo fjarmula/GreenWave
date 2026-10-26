@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { backdropKind, hasBasemap } from "@/lib/home-backdrop";
+import { backdropKind, basemapFailed, hasBasemap } from "@/lib/home-backdrop";
 
 it.each([
   [{ hydrated: false, phone: false, webgl: true, failed: false }, "static"],
@@ -15,4 +15,10 @@ it("counts only a real basemap source as loaded, not the ground or our own layer
   expect(hasBasemap([])).toBe(false);
   expect(hasBasemap(["home-route", "home-vehicle"])).toBe(false);
   expect(hasBasemap(["carto", "home-route"])).toBe(true);
+});
+
+it("fails the live map when the basemap or its tiles never arrived", () => {
+  expect(basemapFailed({ sourceIds: ["carto"], tilesLoaded: true })).toBe(false);
+  expect(basemapFailed({ sourceIds: ["carto"], tilesLoaded: false })).toBe(true);
+  expect(basemapFailed({ sourceIds: ["home-route"], tilesLoaded: true })).toBe(true);
 });

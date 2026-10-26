@@ -1679,13 +1679,11 @@ button,
   fill: var(--emergency);
   opacity: 0.22;
 }
-/* One screen: background, scrim, then header / hero / cards. Short screens scroll instead. */
+/* One screen: background, scrim, then header / hero / cards. Taller content scrolls instead. */
 .home-main {
   position: relative;
   isolation: isolate;
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
+  overflow-x: clip;
 }
 .home-scrim {
   position: absolute;
@@ -1705,7 +1703,9 @@ button,
   display: grid;
   grid-template-rows: auto 1fr auto;
   width: min(70rem, 100%);
-  height: 100%;
+  /* Exactly one screen while the content fits; it grows (and the page scrolls) when it does not. */
+  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
   padding: 1.75rem 2.5rem 1.5rem;
 }
@@ -1823,16 +1823,6 @@ button,
     justify-content: flex-start;
     font-size: 0.6875rem;
     text-align: left;
-  }
-}
-@media (max-height: 699px) {
-  .home-main {
-    height: auto;
-    min-height: 100dvh;
-    overflow: visible;
-  }
-  .home-content {
-    min-height: 100dvh;
   }
 }
 .brand-mark {

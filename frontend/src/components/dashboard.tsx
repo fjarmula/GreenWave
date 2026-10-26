@@ -37,6 +37,7 @@ import type { DashboardMode } from "@/components/dashboard/dashboard-mode";
 import { WorkspaceShell, type WorkspaceSheet } from "@/components/workspace/WorkspaceShell";
 import { MapContainer } from "@/components/map/MapContainer";
 import { useIsPhone } from "@/lib/useIsPhone";
+import { setupSheetMinimizable } from "@/lib/driver-setup-sheet";
 import { KpiHeader } from "@/components/hud/KpiHeader";
 import { RunSummary } from "@/components/hud/RunSummary";
 import { IntersectionList } from "@/components/hud/IntersectionList";
@@ -101,6 +102,7 @@ export function Dashboard({
   });
   const snap = sheetState.key === sheetKey ? sheetState.snap : "collapsed";
   const phone = useIsPhone();
+  const minimizable = setupSheetMinimizable({ driver, setup: mode === "setup", onSite: !!onSite });
   const setSnap = (next: SheetSnap) => setSheetState({ key: sheetKey, snap: next });
   const timeMode = timeModeFor(selectedMode, "simulation");
   const chosenStation = pageCandidate(dispatch, timeMode)?.station ?? null;
@@ -164,9 +166,7 @@ export function Dashboard({
       : onMapClick,
     // Driver on a phone: using the map folds the setup sheet down to its peek row.
     onUserMove:
-      driver && phone && mode === "setup" && snap !== "minimized"
-        ? () => setSnap("minimized")
-        : undefined,
+      minimizable && phone && snap !== "minimized" ? () => setSnap("minimized") : undefined,
   };
 
   const notices = (
@@ -266,7 +266,7 @@ export function Dashboard({
       ? {
           snap,
           onSnapChange: setSnap,
-          minimizable: true,
+          minimizable,
           minimizedLabel: `Driver setup · ${dispatch.incident?.label ?? "no incident"}`,
           collapsed: onSite ? (
             <OnSiteResult

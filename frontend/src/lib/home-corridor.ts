@@ -69,3 +69,13 @@ export function pointAlong(
   const trail = [tail.point, ...lonLat.slice(tail.index + 1, head.index + 1), head.point];
   return { point: head.point, trail };
 }
+
+/** One frame of the corridor: where the vehicle is, its trail and each signal's state. */
+export function corridorSnapshot(progress: number): {
+  point: [number, number];
+  trail: [number, number][];
+  states: SignalState[];
+} {
+  const { point, trail } = pointAlong(corridor.route.lonLat, progress);
+  return { point, trail, states: corridor.signals.map((s) => signalState(s.t, progress)) };
+}

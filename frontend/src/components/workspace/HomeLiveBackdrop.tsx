@@ -5,8 +5,13 @@ import type { GeoJSONSource, Map } from "maplibre-gl";
 import { useMaplibreMap } from "@/components/map/useMaplibreMap";
 import { mapPalette } from "@/components/map/map-palette";
 import { useCorridorLoop } from "@/components/workspace/useCorridorLoop";
-import { hasBasemap } from "@/lib/home-backdrop";
-import { corridor, pointAlong, signalState, type SignalState } from "@/lib/home-corridor";
+import { basemapFailed } from "@/lib/home-backdrop";
+import {
+  corridor,
+  corridorProgress,
+  corridorSnapshot,
+  type SignalState,
+} from "@/lib/home-corridor";
 
 /** No basemap within this long (offline, CARTO down): the page falls back to the drawing. */
 const LOAD_TIMEOUT_MS = 8000;
@@ -72,10 +77,25 @@ export default function HomeLiveBackdrop({ onFail }: { onFail: () => void }) {
   useEffect(() => {
     failRef.current = onFail;
   }, [onFail]);
+  // Any basemap tile source finishing a load proves the network path works.
+  const tilesLoaded = useRef(false);
+  useEffect(() => {
+    if (!map) return;
+    const loaded = (event: { isSourceLoaded?: boolean; sourceId?: string }) => {
+      if (event.isSourceLoaded && event.sourceId && !event.sourceId.startsWith("home-"))
+        tilesLoaded.current = true;
+    };
+    map.on("sourcedata", loaded);
+    return () => {
+      map.off("sourcedata", loaded);
+    };
+  }, [map]);
   useEffect(() => {
     const timer = setTimeout(() => {
-      const current = mapRef.current;
-      if (!current || !hasBasemap(Object.keys(current.getStyle().sources))) failRef.current();
+      // getStyle() is undefined while a style is still loading.
+      const sources = mapRef.current?.getStyle()?.sources ?? {};
+      if (basemapFailed({ sourceIds: Object.keys(sources), tilesLoaded: tilesLoaded.current }))
+        failRef.current();
     }, LOAD_TIMEOUT_MS);
     return () => clearTimeout(timer);
   }, []);
@@ -84,11 +104,15 @@ export default function HomeLiveBackdrop({ onFail }: { onFail: () => void }) {
   useEffect(() => {
     if (!map) return;
     const palette = mapPalette(theme);
+    // Seed the current frame: under reduced motion the loop has already drawn its one frame.
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const now = corridorSnapshot(corridorProgress(performance.now(), reduced));
+    states.current = now.states;
     try {
       map.addSource("home-route", { type: "geojson", data: line(ROUTE) });
-      map.addSource("home-trail", { type: "geojson", data: line(ROUTE.slice(0, 2)) });
+      map.addSource("home-trail", { type: "geojson", data: line(now.trail) });
       map.addSource("home-signals", { type: "geojson", data: signalFeatures(states.current) });
-      map.addSource("home-vehicle", { type: "geojson", data: point(ROUTE[0]) });
+      map.addSource("home-vehicle", { type: "geojson", data: point(now.point) });
       const round = { "line-cap": "round", "line-join": "round" } as const;
       map.addLayer({
         id: "home-route",
@@ -161,10 +185,9 @@ export default function HomeLiveBackdrop({ onFail }: { onFail: () => void }) {
   useCorridorLoop((progress) => {
     const vehicle = map?.getSource<GeoJSONSource>("home-vehicle");
     if (!map || !vehicle) return;
-    const { point: head, trail } = pointAlong(ROUTE, progress);
+    const { point: head, trail, states: next } = corridorSnapshot(progress);
     vehicle.setData(point(head));
     map.getSource<GeoJSONSource>("home-trail")?.setData(line(trail));
-    const next = corridor.signals.map((signal) => signalState(signal.t, progress));
     if (next.some((state, i) => state !== states.current[i])) {
       states.current = next;
       map.getSource<GeoJSONSource>("home-signals")?.setData(signalFeatures(next));

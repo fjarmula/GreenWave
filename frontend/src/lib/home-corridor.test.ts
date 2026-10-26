@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   LOOP_MS,
+  corridor,
+  corridorSnapshot,
   REDUCED_PROGRESS,
   corridorProgress,
   pointAlong,
@@ -37,5 +39,14 @@ describe("pointAlong", () => {
   });
   it("keeps a trail at the start of the route", () => {
     expect(pointAlong(line, 0).trail.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("corridorSnapshot", () => {
+  it("gives one frame's vehicle, trail and signal states for any progress", () => {
+    const frame = corridorSnapshot(REDUCED_PROGRESS);
+    expect(frame.point).toEqual(pointAlong(corridor.route.lonLat, REDUCED_PROGRESS).point);
+    expect(frame.states).toHaveLength(corridor.signals.length);
+    expect(frame.states).toContain("green");
   });
 });

@@ -122,6 +122,11 @@ export function BottomSheet({
     stops.find((stop) => stop.snap === target)?.translate ?? travel ?? 0;
   const lowest = Math.max(...stops.map((stop) => stop.translate));
 
+  // Minimized without a peek row to show would hide the card behind an inert slot: restore it.
+  useLayoutEffect(() => {
+    if (snap === "minimized" && travel !== null && !peek) onSnapChange("collapsed");
+  }, [snap, travel, peek, onSnapChange]);
+
   // Map controls and attribution stay above the visible part of the sheet (CSS reads this).
   useLayoutEffect(() => {
     const element = sheet.current;

@@ -22,7 +22,9 @@ it("names the real corridor and keeps the simulation disclaimer", () => {
   const markup = html();
   expect(markup).toContain("home-corridor-caption");
   expect(markup).toContain("Aleje Trzech Wieszczów");
-  expect(markup).toContain(`${corridor.signals.length} signalised junctions`);
+  // The corridor mixes junction and mid-block signals: count them as traffic signals.
+  expect(markup).toContain(`${corridor.signals.length} traffic signals`);
+  expect(markup).not.toContain("signalised junctions");
   expect(markup).toContain("Simulation only.");
 });
 
