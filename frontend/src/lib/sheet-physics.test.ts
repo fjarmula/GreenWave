@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { dampedOffset, nextSnap, sheetTravel, shouldDragSheet } from "./sheet-physics";
+import {
+  dampedOffset,
+  nextSnap,
+  settleSnap,
+  sheetTravel,
+  shouldDragSheet,
+  type SnapStop,
+} from "./sheet-physics";
 
 describe("nextSnap", () => {
   it("opens on an upward flick regardless of distance", () => {
@@ -52,5 +59,26 @@ describe("sheetTravel (recomputes snaps on resize)", () => {
   });
   it("never goes negative, so the sheet never ends off-screen", () => {
     expect(sheetTravel(150, 180)).toBe(0);
+  });
+});
+
+describe("settleSnap", () => {
+  const three: SnapStop[] = [
+    { snap: "expanded", translate: 0 },
+    { snap: "collapsed", translate: 300 },
+    { snap: "minimized", translate: 520 },
+  ];
+  it("settles on the stop nearest the release point", () => {
+    expect(settleSnap(three, 300, 150, 0)).toBe("minimized");
+    expect(settleSnap(three, 300, 40, 0)).toBe("collapsed");
+  });
+  it("moves one stop in the direction of a flick", () => {
+    expect(settleSnap(three, 300, 10, 0.3)).toBe("minimized");
+    expect(settleSnap(three, 520, -10, -0.3)).toBe("collapsed");
+    expect(settleSnap(three, 0, -10, -0.3)).toBe("expanded");
+  });
+  it("keeps the two-snap sheet unchanged", () => {
+    const two = three.slice(0, 2);
+    expect(settleSnap(two, 300, 10, 0.3)).toBe("collapsed");
   });
 });
