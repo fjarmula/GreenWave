@@ -1722,6 +1722,9 @@ button,
   .tone-beacon {
     --tone: var(--beacon);
   }
+  .tone-muted {
+    --tone: var(--muted-foreground);
+  }
   .hud-panel {
     padding: 1rem;
     border: 1px solid var(--border);
@@ -1799,6 +1802,52 @@ button,
     color: var(--tone, var(--foreground));
     background: var(--thumb);
     box-shadow: var(--thumb-shadow);
+  }
+  /* ITS feedback: the segmented track as a 2×2 grid of cards; transitions come from pressable. */
+  .its-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px;
+    padding: 3px;
+    border-radius: var(--radius-control);
+    background: var(--track);
+  }
+  .its-option {
+    display: flex;
+    min-height: 3.25rem;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.125rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: var(--radius-thumb);
+    text-align: left;
+    color: var(--muted-foreground);
+  }
+  .its-option-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4375rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+  .its-option .hud-dot {
+    background: var(--tone);
+  }
+  .its-option-caption {
+    padding-left: 0.8125rem;
+    font-size: 0.6875rem;
+  }
+  .its-option[aria-checked="true"] {
+    color: var(--foreground);
+    background: var(--thumb);
+    box-shadow: var(--thumb-shadow);
+  }
+  .its-option[aria-checked="true"] .its-option-caption {
+    color: var(--muted-foreground);
+  }
+  .its-option:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
   .hud-input {
     width: 100%;
@@ -2007,6 +2056,9 @@ button,
   }
   @media (hover: hover) and (pointer: fine) {
     .hud-segment:hover {
+      color: var(--foreground);
+    }
+    .its-option:not(:disabled):hover {
       color: var(--foreground);
     }
     .hud-primary:not(:disabled):hover {

@@ -77,6 +77,28 @@ export function itsScenarioLabel(scenario: ItsScenario): string {
   }[scenario];
 }
 
+export function itsScenarioCaption(scenario: ItsScenario): string {
+  return {
+    NOMINAL: "accept · 1 s",
+    DELAYED: "accept · 5 s",
+    REJECTED: "decline",
+    NO_FEEDBACK: "timeout · 8 s",
+  }[scenario];
+}
+
+export function itsScenarioTone(
+  scenario: ItsScenario,
+): "tone-go" | "tone-caution" | "tone-emergency" | "tone-muted" {
+  return (
+    {
+      NOMINAL: "tone-go",
+      DELAYED: "tone-caution",
+      REJECTED: "tone-emergency",
+      NO_FEEDBACK: "tone-muted",
+    } as const
+  )[scenario];
+}
+
 export function settingsSummary(settings: DispatchSettings): string {
   return `Traffic ${settings.trafficDensity}× · Cascade ${settings.cascadeEnabled ? "on" : "off"} · ${settings.playbackSpeed}× speed · ITS ${itsScenarioLabel(settings.greenWaveMode === "DISABLED" ? "NOMINAL" : (settings.itsScenario ?? "NOMINAL"))}`;
 }
