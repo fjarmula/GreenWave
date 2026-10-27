@@ -35,6 +35,13 @@ KRAKOW_LICENCE = (
     "with source attribution"
 )
 
+EMUIA_SOURCE = "Kraków open data (MSIP), Punkty adresowe (EMUiA)"
+EMUIA_URL = "https://msip.krakow.pl/dataset/1492"
+EMUIA_TERMS = (
+    "Catalogue terms: 'Wykorzystanie danych zgodne z regulaminem MSIP'. Downloaded as "
+    "https://msip.um.krakow.pl/Dane/Adresy_JSON.zip."
+)
+
 # (relative path, source, url, retrieved_on, licence, attribution, notes)
 # retrieved_on is the local file date; the Krakow export timestamp is 2026-10-13 00:47:34.
 _SOURCES: list[tuple[str, str, str | None, str, str | None, str | None, str | None]] = [
@@ -90,6 +97,28 @@ _SOURCES: list[tuple[str, str, str | None, str, str | None, str | None, str | No
         "(znacznik czasu eksportu danych: 2026-10-13 00:47:34).",
         "Records the export timestamp (2026-10-13 00:47:34) of the Kraków municipal dataset "
         "package; no data used in the simulation.",
+    ),
+    (
+        "krakow/emuia/Adresy.geojson",
+        EMUIA_SOURCE,
+        EMUIA_URL,
+        "2026-10-27",
+        KRAKOW_LICENCE,
+        "Źródło: Urząd Miasta Krakowa, Wydział Geodezji / MSIP, zestaw danych 'Punkty adresowe "
+        "(EMUiA)' (stan danych: 2026-10-27 00:45:04). Dane przetworzone w projekcie ER-GreenWave.",
+        "EPSG:2178. Authoritative coordinate for incident addresses (places step), reconciled "
+        f"against OSM addresses. {EMUIA_TERMS}",
+    ),
+    (
+        "krakow/emuia/__Aktualnosc__.txt",
+        EMUIA_SOURCE,
+        EMUIA_URL,
+        "2026-10-27",
+        KRAKOW_LICENCE,
+        "Źródło: Urząd Miasta Krakowa, Wydział Geodezji / MSIP "
+        "(znacznik czasu eksportu danych: 2026-10-27 00:45:04).",
+        "Export timestamp of the EMUiA address package; reported as emuia_export_timestamp. "
+        f"{EMUIA_TERMS}",
     ),
 ]
 
