@@ -222,3 +222,24 @@ def test_alt_key_record_returned_once() -> None:
     index = AddressIndex.from_frame(frame)
     for query in ("Stanisława Moniuszki 5", "Moniuszki 5", "moniuszki"):
         assert [r.label for r in index.search(query, 8)] == ["Moniuszki 5"], query
+
+
+def test_alt_key_hits_do_not_crowd_out_contains_matches() -> None:
+    variant = _record(
+        "Niepokalanej Panny Marii",
+        "5",
+        provenance="matched",
+        emuia_id=1,
+        osm_lat=50.0,
+        osm_lng=19.9,
+        osm_delta_m=10.0,
+        match_basis="name_variant",
+        alt_search_key=address_search_key("Niepokalanej Marii Panny"),
+    )
+    contains = _frame([("Przy Niepokalanej", "1")])
+    index = AddressIndex.from_frame(pl.concat([variant, contains], how="vertical_relaxed"))
+
+    assert [r.label for r in index.search("niepokalanej", 2)] == [
+        "Niepokalanej Panny Marii 5",
+        "Przy Niepokalanej 1",
+    ]

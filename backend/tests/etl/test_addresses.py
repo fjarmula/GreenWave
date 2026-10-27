@@ -215,3 +215,13 @@ def test_canonical_housenumber() -> None:
     assert canonical_housenumber("15a") == "15A"
     assert canonical_housenumber(" 15 a ") == "15A"
     assert canonical_housenumber("15/2b") == "15/2B"
+
+
+def test_dedup_merges_house_numbers_differing_only_by_spacing(tmp_path: Path) -> None:
+    a = point(19.9, 50.0, **{"addr:street": "Miodowa", "addr:housenumber": "28a"})
+    b = point(19.90001, 50.0, **{"addr:street": "Miodowa", "addr:housenumber": "28 A"})
+
+    frame, merged = dedupe_addresses(extract_addresses(_features(tmp_path, a, b))[0], 150.0)
+
+    assert merged == 1
+    assert frame.height == 1

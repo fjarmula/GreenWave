@@ -100,7 +100,8 @@ class AddressIndex:
             return []
 
         ranked = self._matches([k for k in self._keys if k.startswith(rest)], 0, number)
-        if len(ranked) < limit:
+        # A record under two street keys can match twice: count distinct records.
+        if len({a.label for _, a in ranked}) < limit:
             contains = [k for k in self._keys if rest in k and not k.startswith(rest)]
             ranked += self._matches(contains, 1, number)
         ranked.sort(key=lambda item: item[0])
