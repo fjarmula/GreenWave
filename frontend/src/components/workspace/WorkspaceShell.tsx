@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { GreenWaveMark } from "./GreenWaveMark";
-import { Maximize2, Minimize2, PanelRight } from "lucide-react";
+import { PanelRight } from "lucide-react";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { BottomSheet } from "@/components/workspace/BottomSheet";
 import { WorkspaceControls } from "./WorkspaceControls";
@@ -28,7 +26,6 @@ export function WorkspaceShell({
   inspector,
   sheet,
   header,
-  defaultFocus = false,
   defaultDetails = true,
   provenance = "Simulated · all signal states",
   statusAlign = "start",
@@ -46,14 +43,11 @@ export function WorkspaceShell({
   /** Phone-only draggable bottom sheet, independent of simulation mode. */
   sheet?: WorkspaceSheet;
   header: ReactNode;
-  defaultFocus?: boolean;
   defaultDetails?: boolean;
   provenance?: string;
 }) {
-  const [focus, setFocus] = useState(defaultFocus);
   const [details, setDetails] = useState(defaultDetails);
   const trigger = useRef<HTMLButtonElement>(null);
-  const exit = useRef<HTMLButtonElement>(null);
   const shell = useRef<HTMLElement>(null);
   const action = useRef<HTMLDivElement>(null);
   const hasPrimaryAction = !!primaryAction;
@@ -70,12 +64,8 @@ export function WorkspaceShell({
     return () => observer.disconnect();
   }, [hasPrimaryAction]);
   const phone = useIsPhone();
-  const changeFocus = (next: boolean) => {
-    setFocus(next);
-    requestAnimationFrame(() => (next ? exit : trigger).current?.focus());
-  };
   useEffect(() => {
-    if (!focus) return;
+    if (details) return;
     const escape = (event: KeyboardEvent) => {
       if (
         event.key !== "Escape" ||
@@ -84,14 +74,14 @@ export function WorkspaceShell({
       )
         return;
       event.preventDefault();
-      setFocus(false);
+      setDetails(true);
       requestAnimationFrame(() => trigger.current?.focus());
     };
     window.addEventListener("keydown", escape);
     return () => window.removeEventListener("keydown", escape);
-  }, [focus]);
+  }, [details]);
   const hasPanel = !!sheet || inspector !== undefined;
-  const panelHidden = focus || !details;
+  const panelHidden = !details;
   return (
     <FollowProvider>
       <main
@@ -99,7 +89,6 @@ export function WorkspaceShell({
         className="workspace-shell"
         data-layout="map-first"
         data-primary-action={hasPrimaryAction || undefined}
-        data-focus={focus}
         data-details={details && hasPanel}
         data-sheet={sheet && phone && !panelHidden ? sheet.snap : undefined}
       >
@@ -110,26 +99,24 @@ export function WorkspaceShell({
           </span>
         </div>
         <WorkspaceHeader
-          hidden={focus}
           compact={phone}
           actions={
             <>
               {!phone && <ThemeToggle />}
               {hasPanel && (
                 <button
+                  ref={trigger}
                   className="workspace-button"
+                  aria-label="Focus Mode"
+                  aria-pressed={!details}
                   aria-expanded={details}
                   aria-controls="workspace-inspector"
                   onClick={() => setDetails(!details)}
                 >
                   <PanelRight aria-hidden />
-                  <span className="workspace-button-label">Details</span>
+                  <span className="workspace-button-label">Focus Mode</span>
                 </button>
               )}
-              <button ref={trigger} className="workspace-button" onClick={() => changeFocus(true)}>
-                <Maximize2 aria-hidden />
-                <span className="workspace-button-label">Enter Focus</span>
-              </button>
             </>
           }
         >
@@ -165,36 +152,9 @@ export function WorkspaceShell({
           </aside>
         )}
         {status && (
-          <div
-            className="workspace-status"
-            data-align={statusAlign}
-            data-map-occluder
-            hidden={focus}
-            inert={focus}
-          >
+          <div className="workspace-status" data-align={statusAlign} data-map-occluder>
             {status}
           </div>
-        )}
-        {focus && (
-          <Link
-            href="/"
-            aria-label="ER–GreenWave home"
-            className="workspace-brand workspace-focus-brand surface-glass"
-            data-map-occluder
-          >
-            <GreenWaveMark className="size-8" />
-          </Link>
-        )}
-        {focus && (
-          <button
-            ref={exit}
-            className="workspace-button workspace-float workspace-exit"
-            data-map-occluder
-            onClick={() => changeFocus(false)}
-          >
-            <Minimize2 aria-hidden />
-            Exit Focus
-          </button>
         )}
       </main>
     </FollowProvider>

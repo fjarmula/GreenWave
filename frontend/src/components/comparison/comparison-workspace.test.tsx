@@ -34,7 +34,7 @@ it("offers destination, vehicle and traffic setup directly on comparison entry",
   expect(its).toContain('role="radio"');
   expect(its).not.toContain('disabled=""');
   expect(html).not.toContain("Choose incident and station</a>");
-  expect(html).toContain("Enter Focus");
+  expect(html).toContain("Focus Mode");
   expect(html).not.toContain("Exit Focus");
   expect(html).toMatch(/data-testid="start-corridor"[^>]*disabled/);
 });

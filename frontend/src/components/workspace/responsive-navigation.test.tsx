@@ -37,3 +37,12 @@ it("shows a concise heading without a duplicate subtitle", () => {
     expect(html).not.toContain("text-muted-foreground");
   }
 });
+
+it("announces the desktop page heading without repeating its visible mode label", () => {
+  viewport.phone = false;
+  const html = renderToStaticMarkup(
+    <ResponsiveNavigation current="/simulation/green-wave" title="Green Wave" />,
+  );
+  expect(html).toContain('<h1 class="sr-only">Green Wave</h1>');
+  expect(html).toContain('aria-current="page"');
+});

@@ -28,7 +28,7 @@ export function ResponsiveNavigation({
   ) : (
     <div className="min-w-0 flex-1">
       <WorkspaceNavigation current={current} />
-      <Heading className="workspace-title">{title}</Heading>
+      <Heading className="sr-only">{title}</Heading>
     </div>
   );
 }

@@ -2,10 +2,10 @@ import Link from "next/link";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vitest";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
-it("keeps map content while focused controls are absent from interaction", () => {
+it("keeps navigation and map visible while focus mode hides the inspector", () => {
   const html = renderToStaticMarkup(
     <WorkspaceShell
-      defaultFocus
+      defaultDetails={false}
       map={<div>Vehicle and route</div>}
       inspector={<button>Stop simulation</button>}
       header={<Link href="/">Home</Link>}
@@ -13,11 +13,13 @@ it("keeps map content while focused controls are absent from interaction", () =>
   );
   expect(html).toContain("data-map-slot");
   expect(html).toContain("Vehicle and route");
-  expect(html).toContain("Exit Focus");
+  expect(html).toContain("Focus Mode");
+  expect(html).toContain('aria-pressed="true"');
+  expect(html).not.toMatch(/<header[^>]*hidden/);
   expect(html).toContain('inert=""');
   expect(html).toContain("Simulated");
 });
-it("offers a labelled bounded inspector and focus on entry", () => {
+it("offers one focus toggle for the labelled inspector", () => {
   const html = renderToStaticMarkup(
     <WorkspaceShell
       map={<div>Map</div>}
@@ -26,7 +28,10 @@ it("offers a labelled bounded inspector and focus on entry", () => {
     />,
   );
   expect(html).toContain('aria-label="Simulation details"');
-  expect(html).toContain("Enter Focus");
+  expect(html).toContain("Focus Mode");
+  expect(html).toContain('aria-pressed="false"');
+  expect(html).not.toContain("Enter Focus");
+  expect(html).not.toContain(">Details</span>");
   expect(html).toContain("Stop simulation");
 });
 it("can open replay with full-width maps and an initially closed inspector", () => {
@@ -39,7 +44,7 @@ it("can open replay with full-width maps and an initially closed inspector", () 
     />,
   );
   expect(html).toContain('data-details="false"');
-  expect(html).toContain('aria-expanded="false"');
+  expect(html).toContain('aria-pressed="true"');
   expect(html).toContain("Both maps");
 });
 it("renders the map slot beneath floating header and inspector", () => {
@@ -81,10 +86,9 @@ it("uses the full inspector on desktop regardless of phone sheet state", () => {
   expect(html).not.toContain("sheet-pill");
 });
 
-it("keeps a standalone start action outside hidden details and focus chrome", () => {
+it("keeps a standalone start action outside the hidden details panel", () => {
   const html = renderToStaticMarkup(
     <WorkspaceShell
-      defaultFocus
       defaultDetails={false}
       map={<div />}
       header={<h1>Green Wave</h1>}

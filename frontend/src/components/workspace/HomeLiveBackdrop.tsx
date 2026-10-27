@@ -151,7 +151,7 @@ export default function HomeLiveBackdrop({ onFail }: { onFail: () => void }) {
         source: "home-vehicle",
         paint: {
           "circle-radius": 14,
-          "circle-color": "#ef4444",
+          "circle-color": "#3b82f6",
           "circle-opacity": 0.22,
         },
       });
@@ -159,7 +159,7 @@ export default function HomeLiveBackdrop({ onFail }: { onFail: () => void }) {
         id: "home-vehicle",
         type: "circle",
         source: "home-vehicle",
-        paint: { "circle-radius": 6, "circle-color": "#ef4444" },
+        paint: { "circle-radius": 6, "circle-color": "#3b82f6" },
       });
       frame(map);
     } catch {
