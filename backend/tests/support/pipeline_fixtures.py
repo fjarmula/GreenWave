@@ -1,7 +1,9 @@
-"""Shared builder of a tiny synthetic raw directory (OSM extract, Ulice, MANIFEST.json)."""
+"""Shared builder of a tiny synthetic raw directory (OSM extract, Ulice, EMUiA, MANIFEST.json)."""
 
 import json
+from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
 from greenwave.etl.manifest import (
     MANIFEST_FILENAME,
@@ -10,6 +12,7 @@ from greenwave.etl.manifest import (
     sha256_of_file,
     write_manifest,
 )
+from greenwave.etl.municipal_addresses import EMUIA_AKTUALNOSC_PATH, EMUIA_RELATIVE_PATH
 from greenwave.etl.profile import OSM_RELATIVE_PATH
 from tests.support.osm_fixtures import line, point, write_osm
 
@@ -20,7 +23,55 @@ def at(x: float, y: float) -> tuple[float, float]:
     return round(19.9 + x * STEP, 7), round(50.0 + y * STEP, 7)
 
 
-def make_raw(tmp_path: Path, extra: tuple[str, ...] = ()) -> Path:
+def emuia_feature(
+    fid: int,
+    street: str,
+    number: str,
+    x_m: float,
+    y_m: float,
+    *,
+    miejscowosc: str = "Kraków",
+    district: str = "Dzielnica I Stare Miasto",
+) -> dict[str, Any]:
+    """One EMUiA address point with the published property names (EPSG:2178 coordinates)."""
+    return {
+        "type": "Feature",
+        "id": fid,
+        "geometry": {"type": "Point", "coordinates": [x_m, y_m]},
+        "properties": {
+            "id": fid,
+            "nazwa_ulicy": street,
+            "numer_adresowy": number,
+            "kod_pocztowy": "30-001",
+            "miejscowosc": miejscowosc,
+            "numer_dzielnicy": "1",
+            "nazwa_dzielnicy": district,
+            "kod_teryt": "00001",
+            "data_importu": 1793034002000,
+        },
+    }
+
+
+def write_emuia(
+    raw: Path, features: Iterable[dict[str, Any]], crs: str = "EPSG:2178"
+) -> tuple[Path, Path]:
+    """Write ``krakow/emuia/Adresy.geojson`` and its ``__Aktualnosc__.txt``; return both paths."""
+    path = raw / EMUIA_RELATIVE_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    collection = {
+        "type": "FeatureCollection",
+        "crs": {"type": "name", "properties": {"name": crs}},
+        "features": list(features),
+    }
+    path.write_text(json.dumps(collection, ensure_ascii=False), encoding="utf-8")
+    aktualnosc = raw / EMUIA_AKTUALNOSC_PATH
+    aktualnosc.write_text("Data wygenerowania plików: 2026-10-27_00:45:04", encoding="utf-8")
+    return path, aktualnosc
+
+
+def make_raw(
+    tmp_path: Path, extra: tuple[str, ...] = (), emuia: Iterable[dict[str, Any]] = ()
+) -> Path:
     raw = tmp_path / "raw"
     osm_path = raw / OSM_RELATIVE_PATH
     osm_path.parent.mkdir(parents=True)
@@ -68,6 +119,7 @@ def make_raw(tmp_path: Path, extra: tuple[str, ...] = ()) -> Path:
         "1,pas autobusowy,,ul. Poprzeczna od ul. A do ul. B,,stała,200.0\n",
         encoding="utf-8-sig",
     )
+    emuia_path, emuia_aktualnosc = write_emuia(raw, emuia)
     entries = [
         ManifestEntry(
             path=path.relative_to(raw).as_posix(),
@@ -79,7 +131,7 @@ def make_raw(tmp_path: Path, extra: tuple[str, ...] = ()) -> Path:
             licence=None,
             attribution=None,
         )
-        for path in (osm_path, ulice, buspasy)
+        for path in (osm_path, ulice, buspasy, emuia_path, emuia_aktualnosc)
     ]
     write_manifest(Manifest(entries=entries), raw / MANIFEST_FILENAME)
     return raw

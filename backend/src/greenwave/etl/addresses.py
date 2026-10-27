@@ -1,6 +1,7 @@
 """Address-point extraction from OSM ``addr:*`` tags for local geocoding."""
 
 import math
+import re
 from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -38,6 +39,14 @@ class AddressCandidate:
 def address_search_key(street: str) -> str:
     """Lowercased, diacritics folded, ``ul.``/``al.``/``os.`` prefixes normalised."""
     return normalise_street_name(street)
+
+
+_WHITESPACE = re.compile(r"\s+")
+
+
+def canonical_housenumber(number: str) -> str:
+    """Whitespace removed and letters upper-cased, so ``15 a``, ``15a`` and ``15A`` are one key."""
+    return _WHITESPACE.sub("", number).upper()
 
 
 def _text(value: object) -> str:

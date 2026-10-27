@@ -5,6 +5,7 @@ import polars as pl
 from greenwave.etl.addresses import (
     address_search_key,
     assign_labels,
+    canonical_housenumber,
     dedupe_addresses,
     extract_addresses,
 )
@@ -208,3 +209,9 @@ def test_duplicates_without_locality_still_unique() -> None:
     )
     assert labels == ["Polna 3 (2)", "Polna 3", "Polna 3 (Zielonki)"]
     assert len(set(labels)) == 3
+
+
+def test_canonical_housenumber() -> None:
+    assert canonical_housenumber("15a") == "15A"
+    assert canonical_housenumber(" 15 a ") == "15A"
+    assert canonical_housenumber("15/2b") == "15/2B"

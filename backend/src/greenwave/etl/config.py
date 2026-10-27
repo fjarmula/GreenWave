@@ -288,6 +288,17 @@ MERGE_SAME_NAME_AT_ANY_DISTANCE: tuple[str, ...] = ("POLICE_CAR",)
 # than this are one address (a multi-building complex); farther apart they are distinct (another
 # locality, e.g. bounding-box bleed into Wieliczka or Skawina).
 ADDRESS_DEDUP_RADIUS_M = 400.0
+# APPROVED (human, 2026-10-27): an EMUiA and an OSM address with the same street key and house
+# number at most this far apart agree (a parcel gate point vs a building or campus centroid).
+ADDRESS_MATCH_CLEAN_M = 100.0
+# APPROVED (human, 2026-10-27): up to this distance the pair is still one address, flagged as a
+# disagreement; farther apart they are two records (e.g. a same-named street in another town).
+ADDRESS_MATCH_MAX_M = 500.0
+# APPROVED (human, 2026-10-27): unmatched EMUiA and OSM addresses with the same house number this
+# close are one address under two street-name forms ("Moniuszki" / "Stanisława Moniuszki") when
+# the names share tokens, or at any names within ADDRESS_NAME_VARIANT_TIGHT_M (one building).
+ADDRESS_NAME_VARIANT_RADIUS_M = 50.0
+ADDRESS_NAME_VARIANT_TIGHT_M = 20.0
 # APPROVED (human, 2026-10-20): Kraków centre (Rynek Główny). Geocode suggestions closer to it rank
 # first among equal matches, and duplicate labels are numbered outward from it.
 KRAKOW_CENTRE_LAT_LNG = (50.0617, 19.9373)
