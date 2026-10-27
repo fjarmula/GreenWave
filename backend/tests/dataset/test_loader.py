@@ -29,7 +29,11 @@ from greenwave.etl.intersections_pipeline import (
 from greenwave.etl.io import REPORT_FILENAME
 from greenwave.etl.manifest import load_manifest, sha256_of_file
 from greenwave.etl.neighbours_pipeline import NEIGHBOURS_FILENAME
-from greenwave.etl.places_pipeline import ADDRESSES_FILENAME, STATIONS_FILENAME
+from greenwave.etl.places_pipeline import (
+    ADDRESSES_FILENAME,
+    RESOURCES_FILENAME,
+    STATIONS_FILENAME,
+)
 from greenwave.etl.quality import QUALITY_FILENAME
 from tests.support.processed import Layout
 
@@ -701,6 +705,7 @@ def test_layout_addresses_cover_matched_and_osm(layout: Layout) -> None:
     ("section", "path", "artifact"),
     [
         ("places", ("addresses", "rows"), ADDRESSES_FILENAME),
+        ("places", ("resources", "teams_in_scope"), RESOURCES_FILENAME),
     ],
 )
 def test_places_count_mismatch_against_the_report(
@@ -777,3 +782,70 @@ def test_loader_rejects_invalid_signal_positions(
     ) as error:
         load_dataset(layout.processed, layout.manifest)
     assert "run_etl.py intersections" in str(error.value)
+
+
+def test_dataset_exposes_resources(layout: Layout) -> None:
+    dataset = load_dataset(layout.processed, layout.manifest)
+
+    assert dataset.resources["team_code"].to_list() == ["K01 008", "K01 162", "K01 176"]
+    assert dataset.counts.resources == 3
+    assert (dataset.roster.plan_update, dataset.roster.effective_from) == ("2", "2026-09-01")
+    assert dataset.roster.teams_in_scope == 3
+
+
+def test_resources_station_must_be_prm_base(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / RESOURCES_FILENAME,
+        lambda f: f.with_columns(pl.lit("STN-F-0001").alias("station_id")),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="station_id"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_resources_unknown_station_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / RESOURCES_FILENAME,
+        lambda f: f.with_columns(pl.lit("STN-A-0099").alias("station_id")),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="STN-A-0099"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_duplicate_team_code_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / RESOURCES_FILENAME,
+        lambda f: f.with_columns(pl.lit("K01 162").alias("team_code")),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="team_code"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+@pytest.mark.parametrize(("start", "end"), [(600, 600), (-1, 60), (0, 1441), (700, 600)])
+def test_resources_bad_ready_window_rejected(layout: Layout, start: int, end: int) -> None:
+    edit_parquet(
+        layout.processed / RESOURCES_FILENAME,
+        lambda f: f.with_columns(
+            pl.lit(start, dtype=pl.Int16).alias("ready_from_min"),
+            pl.lit(end, dtype=pl.Int16).alias("ready_to_min"),
+        ),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="ready"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_prm_base_without_team_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / RESOURCES_FILENAME,
+        lambda f: f.filter(pl.col("team_code") != "K01 008"),
+    )
+    edit_json(
+        layout.processed / REPORT_FILENAME,
+        lambda d: d["places"]["resources"].__setitem__("teams_in_scope", 2),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="no team"):
+        load_dataset(layout.processed, layout.manifest)

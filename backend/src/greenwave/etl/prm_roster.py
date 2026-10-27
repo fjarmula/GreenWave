@@ -19,6 +19,8 @@ ROSTER_SHEET = "Tabela nr 1a"
 ADDRESS_SHEET = "Tabela nr 2a"
 PLAN_UPDATE = "2"
 EFFECTIVE_FROM = "2026-09-01"
+# The Kraków operational region; its teams without a curated base are reported as outside the map.
+KRAKOW_REGION = "RO12/01"
 
 # "K01 162"; the plan also lists one motorcycle team, "K01 051 M" (type M).
 _TEAM_CODE = re.compile(r"^K\d{2} \d{3}( M)?$")

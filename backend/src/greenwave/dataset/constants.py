@@ -13,6 +13,7 @@ from greenwave.artifacts import (
     NETWORK_NODES_FILENAME,
     QUALITY_FILENAME,
     REPORT_FILENAME,
+    RESOURCES_FILENAME,
     STATIONS_FILENAME,
 )
 
@@ -31,7 +32,15 @@ EXAMPLES_IN_MESSAGE = 5
 BOUNDS_PADDING_DEG = 0.01
 VEHICLE_TYPES = frozenset({"AMBULANCE", "FIRE_TRUCK", "POLICE_CAR"})
 SOURCE_KINDS = frozenset(
-    {"ambulance_base", "hospital_ed", "fire_state", "fire_volunteer", "fire_other", "police"}
+    {
+        "prm_base",
+        "ambulance_base",
+        "hospital_ed",
+        "fire_state",
+        "fire_volunteer",
+        "fire_other",
+        "police",
+    }
 )
 STATION_ID_PATTERN = r"^STN-[AFP]-\d{4}$"
 ADDRESS_PROVENANCES = frozenset({"matched", "municipal", "osm"})
@@ -76,6 +85,7 @@ PRODUCED_BY = {
     NEIGHBOURS_FILENAME: STEP_NEIGHBOURS,
     STATIONS_FILENAME: STEP_PLACES,
     ADDRESSES_FILENAME: STEP_PLACES,
+    RESOURCES_FILENAME: STEP_PLACES,
     REPORT_FILENAME: STEP_INTERSECTIONS,
     QUALITY_FILENAME: STEP_QUALITY,
 }
@@ -150,5 +160,19 @@ REQUIRED_COLUMNS: dict[str, dict[str, pl.DataType | type[pl.DataType] | None]] =
         "osm_delta_m": pl.Float64,
         "match_basis": pl.String,
         "osm_same_key_elsewhere": pl.Boolean,
+    },
+    RESOURCES_FILENAME: {
+        "team_code": pl.String,
+        "team_id": pl.String,
+        "team_type": pl.String,
+        "station_id": pl.String,
+        "base_address": pl.String,
+        "area_teryt": pl.String,
+        "weekdays": pl.String,
+        "ready_from_min": pl.Int16,
+        "ready_to_min": pl.Int16,
+        "season_from": pl.String,
+        "season_to": pl.String,
+        "region": pl.String,
     },
 }

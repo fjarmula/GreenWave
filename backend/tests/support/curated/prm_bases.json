@@ -1,0 +1,14 @@
+[
+  {
+    "address": "ul. Poprzeczna 5, 30-001 Kraków",
+    "lat": 49.9995,
+    "lng": 19.9005,
+    "source": "test fixture"
+  },
+  {
+    "address": "ul. Testowa 1, 30-001 Kraków",
+    "lat": 49.9992,
+    "lng": 19.903,
+    "source": "test fixture"
+  }
+]

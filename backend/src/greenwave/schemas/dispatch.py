@@ -24,6 +24,7 @@ STATION_ID_PATTERN = r"^STN-[AFP]-\d{4}$"
 class StationSourceKind(StrEnum):
     """Where a station comes from; the UI names it, so hospital EDs are not passed off as bases."""
 
+    PRM_BASE = "prm_base"  # an official PRM team base (ambulance origins since ADR 0014)
     AMBULANCE_BASE = "ambulance_base"
     HOSPITAL_ED = "hospital_ed"
     FIRE_STATE = "fire_state"

@@ -385,6 +385,13 @@ describe("on-foot legs", () => {
     expect(() => validateRank(onSite)).toThrow("candidates[0].on_site");
   });
 
+  it("accepts a PRM base station", () => {
+    const body = record(wire(rank()));
+    const candidate = record((body.candidates as unknown[])[0]);
+    record(candidate.station).source_kind = "prm_base";
+    expect(validateRank(body).candidates[0].station.source_kind).toBe("prm_base");
+  });
+
   it("accepts rank candidates with a missing, null or valid on_foot", () => {
     for (const leg of [undefined, null, LEG]) {
       expect(() => validateRank(wire(rank(leg)))).not.toThrow();

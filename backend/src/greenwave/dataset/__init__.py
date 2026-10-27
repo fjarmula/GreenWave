@@ -15,6 +15,7 @@ from greenwave.dataset.models import (
     LoadedCounts,
     ProcessedDataset,
     Provenance,
+    RosterSummary,
 )
 from greenwave.dataset.settings import DatasetSettings
 
@@ -31,5 +32,6 @@ __all__ = [
     "ProcessedDataset",
     "Provenance",
     "ReferentialIntegrityError",
+    "RosterSummary",
     "load_dataset",
 ]

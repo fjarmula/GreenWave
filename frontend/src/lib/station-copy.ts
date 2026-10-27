@@ -2,6 +2,7 @@ import type { StationSourceKind, VehicleType } from "@/types/telemetry";
 
 /** Every station says where it comes from, so a hospital ED is never passed off as a base. */
 export const SOURCE_KIND_LABELS: Record<StationSourceKind, string> = {
+  prm_base: "PRM team base",
   ambulance_base: "Ambulance base",
   hospital_ed: "Hospital emergency dept.",
   fire_state: "State fire service (PSP)",

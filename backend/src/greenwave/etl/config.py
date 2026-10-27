@@ -307,3 +307,7 @@ KRAKOW_CENTRE_LAT_LNG = (50.0617, 19.9373)
 # SimulationSettings.max_snap_distance_meters (a test enforces it): stations and addresses farther
 # than this from every network node could never be routed to.
 PLACES_MAX_SNAP_DISTANCE_M = 150.0
+
+# APPROVED (human, D2, 2026-10-27): a PRM base with an OSM `emergency=ambulance_station` within this
+# distance is reported as matched to it (its osm_ref is kept); farther, the base is a new station.
+PRM_BASE_OSM_MATCH_RADIUS_M = 200.0

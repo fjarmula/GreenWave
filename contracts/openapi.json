@@ -1563,6 +1563,7 @@
       "StationSourceKind": {
         "description": "Where a station comes from; the UI names it, so hospital EDs are not passed off as bases.",
         "enum": [
+          "prm_base",
           "ambulance_base",
           "hospital_ed",
           "fire_state",

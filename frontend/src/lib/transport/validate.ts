@@ -77,6 +77,7 @@ const VEHICLE_TYPES: Record<VehicleType, true> = {
   POLICE_CAR: true,
 };
 const STATION_SOURCE_KINDS: Record<StationSourceKind, true> = {
+  prm_base: true,
   ambulance_base: true,
   hospital_ed: true,
   fire_state: true,

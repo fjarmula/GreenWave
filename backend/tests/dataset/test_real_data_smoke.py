@@ -1,7 +1,9 @@
+import polars as pl
 import pytest
 
 from greenwave.dataset import DatasetSettings, ProcessedDataset, load_dataset
 from greenwave.etl.connectivity import main_component_nodes
+from greenwave.etl.prm_roster import PRM_TABLES_RELATIVE_PATH, load_roster
 from greenwave.routing.network_index import RoutingIndex, build_routing_index
 from greenwave.routing.planner import plan_route
 from greenwave.routing.station_ranking import build_station_nodes, rank_stations
@@ -64,3 +66,11 @@ def test_pedestrian_island_incident_snaps_into_the_main_network(
     assert ranking.incident_snap.node_key in main_component_nodes(real_dataset.graph)
     assert ranking.incident_snap.snap_distance_m <= settings.max_snap_distance_meters
     assert ranking.candidates
+
+
+def test_every_krakow_based_team_is_in_scope(real_dataset: ProcessedDataset) -> None:
+    roster = load_roster(DatasetSettings().raw_manifest_path.parent / PRM_TABLES_RELATIVE_PATH)
+    krakow = set(roster.filter(pl.col("base_teryt").str.starts_with("1261"))["team_code"])
+
+    assert len(krakow) == 23
+    assert krakow <= set(real_dataset.resources["team_code"])

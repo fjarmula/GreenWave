@@ -16,6 +16,7 @@ from greenwave.artifacts import (
     NETWORK_NODES_FILENAME,
     PLACES_ARTIFACT_FILENAMES,
     REPORT_FILENAME,
+    RESOURCES_FILENAME,
     STATIONS_FILENAME,
     T4_ARTIFACT_FILENAMES,
     artifact_hashes,
@@ -328,6 +329,52 @@ def check_places(graph: nx.MultiDiGraph, stations: pl.DataFrame, addresses: pl.D
     _check_coordinates(ADDRESSES_FILENAME, addresses, graph)
 
 
+def check_resources(stations: pl.DataFrame, resources: pl.DataFrame) -> None:
+    """Each team is unique, has a same-day readiness window and sits at a ``prm_base`` station;
+    each ``prm_base`` station has a team."""
+    codes = resources["team_code"]
+    if codes.null_count() or codes.n_unique() != len(codes):
+        raise _malformed(RESOURCES_FILENAME, "has null or duplicate team_code values")
+    kinds = dict(stations.select("station_id", "source_kind").iter_rows())
+    unknown = sorted(set(resources["station_id"].to_list()) - kinds.keys())
+    if unknown:
+        raise _malformed(
+            RESOURCES_FILENAME,
+            f"has station_id values not in {STATIONS_FILENAME}, e.g. "
+            f"{', '.join(unknown[:EXAMPLES_IN_MESSAGE])}",
+        )
+    not_bases = sorted({s for s in resources["station_id"].to_list() if kinds[s] != "prm_base"})
+    if not_bases:
+        raise _malformed(
+            RESOURCES_FILENAME,
+            f"has station_id values that are not prm_base stations, e.g. "
+            f"{', '.join(not_bases[:EXAMPLES_IN_MESSAGE])}",
+        )
+    bad_window = resources.filter(
+        pl.col("ready_from_min").is_null()
+        | pl.col("ready_to_min").is_null()
+        | (pl.col("ready_from_min") < 0)
+        | (pl.col("ready_from_min") >= pl.col("ready_to_min"))
+        | (pl.col("ready_to_min") > 1440)
+    )
+    if bad_window.height:
+        raise _malformed(
+            RESOURCES_FILENAME,
+            "has teams whose ready window is not 0 <= ready_from_min < ready_to_min <= 1440, e.g. "
+            f"{', '.join(bad_window['team_code'][:EXAMPLES_IN_MESSAGE])}",
+        )
+    teamless = sorted(
+        set(stations.filter(pl.col("source_kind") == "prm_base")["station_id"].to_list())
+        - set(resources["station_id"].to_list())
+    )
+    if teamless:
+        raise _malformed(
+            STATIONS_FILENAME,
+            f"has prm_base stations with no team in {RESOURCES_FILENAME}, e.g. "
+            f"{', '.join(teamless[:EXAMPLES_IN_MESSAGE])}",
+        )
+
+
 def check_ids_file(records: list[IntersectionIdRecord], intersections: pl.DataFrame) -> None:
     from_file = {r.id: (r.kind, r.node_key) for r in records}
     from_parquet = {
@@ -354,6 +401,7 @@ def check_counts(
     neighbours: pl.DataFrame,
     stations: pl.DataFrame,
     addresses: pl.DataFrame,
+    resources: pl.DataFrame,
     intersections_section: IntersectionsSection,
     neighbours_section: NeighboursSection,
     places_section: PlacesSection,
@@ -375,6 +423,7 @@ def check_counts(
         (NEIGHBOURS_FILENAME, neighbours.height, neighbour_report.pairs),
         (STATIONS_FILENAME, stations.height, sum(places_section.stations.by_vehicle_type.values())),
         (ADDRESSES_FILENAME, addresses.height, places_section.addresses.rows),
+        (RESOURCES_FILENAME, resources.height, places_section.resources.teams_in_scope),
         (
             f"{APPROACHES_FILENAME} (approach edges)",
             approach_edge_count,
@@ -394,6 +443,7 @@ def check_counts(
         approach_neighbours=neighbours.height,
         stations=stations.height,
         addresses=addresses.height,
+        resources=resources.height,
         approach_edges=approach_edge_count,
         graph_nodes=graph.number_of_nodes(),
         graph_edges=graph.number_of_edges(),

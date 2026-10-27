@@ -61,13 +61,13 @@ def test_stations_lists_all_sorted(layout: Layout) -> None:
     body = response.json()
     assert body["schema_version"] == "1.0"
     stations = body["stations"]
-    assert [s["station_id"] for s in stations] == ["STN-A-0001", "STN-F-0001"]
-    assert stations[0] == {
-        "station_id": "STN-A-0001",
+    assert [s["station_id"] for s in stations] == ["STN-A-0001", "STN-A-0002", "STN-F-0001"]
+    assert stations[1] == {
+        "station_id": "STN-A-0002",
         "vehicle_type": "AMBULANCE",
-        "source_kind": "ambulance_base",
-        "name": "Stacja Testowa",
-        "position": stations[0]["position"],
+        "source_kind": "prm_base",
+        "name": "ul. Testowa 1, 30-001 Kraków",
+        "position": {"lat": 49.9992, "lng": 19.903},
     }
 
 

@@ -1,5 +1,8 @@
 """Step `places`: rescue stations from OSM and address points from EMUiA and OSM, snapped to the
-network. Addresses are reconciled (``address_reconcile``) so each carries its provenance."""
+network. Addresses are reconciled (``address_reconcile``) so each carries its provenance.
+
+Ambulance stations are the PRM team bases (``prm_places``, ADR 0014), and ``resources.parquet``
+lists the teams in scope."""
 
 import hashlib
 import json
@@ -53,6 +56,9 @@ from greenwave.etl.municipal_addresses import (
     load_municipal_addresses,
 )
 from greenwave.etl.neighbours_pipeline import StaleArtifactError, _recorded_t4_hashes
+from greenwave.etl.prm_bases import PRM_BASES_FILENAME, load_base_coordinates, resolve_bases
+from greenwave.etl.prm_places import ResourcesReport, prm_stations
+from greenwave.etl.prm_roster import PRM_TABLES_RELATIVE_PATH, load_roster
 from greenwave.etl.profile import OSM_RELATIVE_PATH
 from greenwave.etl.stations import (
     StationCandidate,
@@ -67,6 +73,8 @@ logger = logging.getLogger(__name__)
 
 STATIONS_FILENAME = artifacts.STATIONS_FILENAME
 ADDRESSES_FILENAME = artifacts.ADDRESSES_FILENAME
+RESOURCES_FILENAME = artifacts.RESOURCES_FILENAME
+CURATED_DIR = Path(__file__).resolve().parents[3] / "data" / "curated"
 PLACES_ARTIFACT_FILENAMES = artifacts.PLACES_ARTIFACT_FILENAMES
 _CONSUMED = (NETWORK_NODES_FILENAME, NETWORK_EDGES_FILENAME)
 
@@ -124,6 +132,7 @@ class PlacesSection(BaseModel):
     artifact_sha256: dict[str, str]
     stations: StationsReport
     addresses: AddressesReport
+    resources: ResourcesReport
 
 
 def _relevant_features(path: Path) -> Iterator[OsmFeature]:
@@ -180,7 +189,9 @@ def _relocate_to_access_points(
     return relocated, sorted(moved)
 
 
-def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
+def run_places(
+    raw_dir: Path, processed_dir: Path, curated_dir: Path = CURATED_DIR
+) -> PlacesSection:
     manifest_sha256 = hashlib.sha256((raw_dir / MANIFEST_FILENAME).read_bytes()).hexdigest()
     ids = json.loads((processed_dir / IDS_FILENAME).read_text(encoding="utf-8"))
     built_from = ids["valid_for"]["manifest_sha256"]
@@ -233,8 +244,10 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
         for c in kept
         if distance_by_ref[c.osm_ref] > PLACES_MAX_SNAP_DISTANCE_M
     ]
-    stations = assign_station_ids(on_network)
-    stations = stations.with_columns(
+    # Ambulance origins are PRM bases (below); OSM ambulance stations only serve to match them.
+    osm_ambulances = [c for c in on_network if c.vehicle_type == "AMBULANCE"]
+    others = assign_station_ids([c for c in on_network if c.vehicle_type != "AMBULANCE"])
+    others = others.with_columns(
         pl.col("osm_ref")
         .replace_strict(distance_by_ref, return_dtype=pl.Float64)
         .alias("snap_distance_m")
@@ -270,8 +283,19 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
         extracted_keys,
     )
     labelled = assign_labels(reconciled)
+
+    roster = load_roster(raw_dir / PRM_TABLES_RELATIVE_PATH)
+    bases = resolve_bases(load_base_coordinates(curated_dir / PRM_BASES_FILENAME), labelled)
+    ambulances, resources, resources_report = prm_stations(
+        roster,
+        bases,
+        _snap_distances(node_xy, bases["lng"].to_list(), bases["lat"].to_list()).tolist(),
+        osm_ambulances,
+    )
+    stations = pl.concat([ambulances, others]).sort("station_id")
     stations.write_parquet(processed_dir / STATIONS_FILENAME)
     labelled.write_parquet(processed_dir / ADDRESSES_FILENAME)
+    resources.write_parquet(processed_dir / RESOURCES_FILENAME)
 
     def counts(column: str) -> dict[str, int]:
         return {str(k): int(v) for k, v in stations[column].value_counts().sort(column).rows()}
@@ -315,4 +339,5 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
                 examples=reconciliation_examples(labelled),
             ),
         ),
+        resources=resources_report,
     )

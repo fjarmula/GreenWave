@@ -16,7 +16,7 @@ from greenwave.etl.neighbours_pipeline import run_neighbours
 from greenwave.etl.places_pipeline import run_places
 from greenwave.etl.quality import run_quality
 from tests.support.osm_fixtures import point
-from tests.support.pipeline_fixtures import at, emuia_feature, make_raw
+from tests.support.pipeline_fixtures import CURATED_DIR, at, emuia_feature, make_raw
 
 
 @dataclass(frozen=True)
@@ -119,7 +119,7 @@ def build_layout(root: Path) -> Layout:
     update_report_section(report, "intersections", section)
     update_report_section(report, "road_attributes", road_attributes)
     update_report_section(report, "neighbours", run_neighbours(raw, processed))
-    update_report_section(report, "places", run_places(raw, processed))
+    update_report_section(report, "places", run_places(raw, processed, CURATED_DIR))
     write_graph_check_stubs(processed)
     update_report_section(report, "quality", run_quality(raw, processed))
     return Layout(processed, raw / MANIFEST_FILENAME)
