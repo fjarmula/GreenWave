@@ -1,4 +1,5 @@
-"""Step `places`: rescue stations and address points from OSM, snapped to the network."""
+"""Step `places`: rescue stations from OSM and address points from EMUiA and OSM, snapped to the
+network. Addresses are reconciled (``address_reconcile``) so each carries its provenance."""
 
 import hashlib
 import json
@@ -15,9 +16,23 @@ import shapely.ops
 from pydantic import BaseModel
 
 from greenwave import artifacts
-from greenwave.etl.addresses import assign_labels, dedupe_addresses, extract_addresses
+from greenwave.etl.address_reconcile import (
+    ReconciliationCounts,
+    ReconciliationExamples,
+    reconcile_addresses,
+    reconciliation_examples,
+)
+from greenwave.etl.addresses import (
+    assign_labels,
+    canonical_housenumber,
+    dedupe_addresses,
+    extract_addresses,
+)
 from greenwave.etl.config import (
     ADDRESS_DEDUP_RADIUS_M,
+    ADDRESS_MATCH_CLEAN_M,
+    ADDRESS_MATCH_MAX_M,
+    ADDRESS_NAME_VARIANT_RADIUS_M,
     PLACES_MAX_SNAP_DISTANCE_M,
     STATION_DEDUP_RADIUS_M,
 )
@@ -32,6 +47,11 @@ from greenwave.etl.intersections_pipeline import (
 )
 from greenwave.etl.io import REPORT_FILENAME
 from greenwave.etl.manifest import MANIFEST_FILENAME
+from greenwave.etl.municipal_addresses import (
+    EMUIA_RELATIVE_PATH,
+    emuia_export_timestamp,
+    load_municipal_addresses,
+)
 from greenwave.etl.neighbours_pipeline import StaleArtifactError, _recorded_t4_hashes
 from greenwave.etl.profile import OSM_RELATIVE_PATH
 from greenwave.etl.stations import (
@@ -72,12 +92,25 @@ class StationsReport(BaseModel):
     no_usable_point: int
 
 
+class AddressReconciliationReport(ReconciliationCounts):
+    """EMUiA vs OSM; ``municipal_total`` EMUiA points read, ``municipal_rows`` those on-network."""
+
+    municipal_total: int
+    municipal_dropped_off_network: int
+    thresholds_m: dict[str, float]
+    emuia_export_timestamp: str | None
+    examples: ReconciliationExamples
+
+
 class AddressesReport(BaseModel):
+    """``rows`` is every written address; the other counts describe the OSM side."""
+
     rows: int
     skipped_missing_tags: int
     no_usable_point: int
     dropped_off_network: int
     duplicates_merged: int
+    reconciliation: AddressReconciliationReport
 
 
 class PlacesSection(BaseModel):
@@ -217,9 +250,28 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
         addresses.filter(pl.Series(near, dtype=pl.Boolean)), ADDRESS_DEDUP_RADIUS_M
     )
 
-    addresses_on_network = assign_labels(addresses_on_network)
+    # Every extracted OSM key inside Kraków, before any filter: a municipal record whose key OSM
+    # has (even off-network or merged away) is not a gap OSM lacks.
+    extracted_keys = frozenset(
+        (key, canonical_housenumber(number))
+        for key, number, outside in addresses.select(
+            "search_key", "housenumber", "outside_krakow"
+        ).iter_rows()
+        if not outside
+    )
+    municipal = load_municipal_addresses(raw_dir / EMUIA_RELATIVE_PATH)
+    municipal_near = (
+        _snap_distances(node_xy, municipal["lng"].to_list(), municipal["lat"].to_list())
+        <= PLACES_MAX_SNAP_DISTANCE_M
+    )
+    reconciled, address_counts = reconcile_addresses(
+        municipal.filter(pl.Series(municipal_near, dtype=pl.Boolean)),
+        addresses_on_network,
+        extracted_keys,
+    )
+    labelled = assign_labels(reconciled)
     stations.write_parquet(processed_dir / STATIONS_FILENAME)
-    addresses_on_network.write_parquet(processed_dir / ADDRESSES_FILENAME)
+    labelled.write_parquet(processed_dir / ADDRESSES_FILENAME)
 
     def counts(column: str) -> dict[str, int]:
         return {str(k): int(v) for k, v in stations[column].value_counts().sort(column).rows()}
@@ -245,10 +297,22 @@ def run_places(raw_dir: Path, processed_dir: Path) -> PlacesSection:
             no_usable_point=len(stations_without_point),
         ),
         addresses=AddressesReport(
-            rows=addresses_on_network.height,
+            rows=labelled.height,
             skipped_missing_tags=skipped,
             no_usable_point=addresses_without_point,
             dropped_off_network=int((~near).sum()),
             duplicates_merged=address_twins,
+            reconciliation=AddressReconciliationReport(
+                **address_counts.model_dump(),
+                municipal_total=municipal.height,
+                municipal_dropped_off_network=int((~municipal_near).sum()),
+                thresholds_m={
+                    "clean": ADDRESS_MATCH_CLEAN_M,
+                    "max": ADDRESS_MATCH_MAX_M,
+                    "name_variant": ADDRESS_NAME_VARIANT_RADIUS_M,
+                },
+                emuia_export_timestamp=emuia_export_timestamp(raw_dir),
+                examples=reconciliation_examples(labelled),
+            ),
         ),
     )

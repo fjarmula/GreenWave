@@ -21,6 +21,9 @@ from greenwave.artifacts import (
     artifact_hashes,
 )
 from greenwave.dataset.constants import (
+    ADDRESS_FILLED_BY_PROVENANCE,
+    ADDRESS_MATCH_BASES,
+    ADDRESS_PROVENANCES,
     BOUNDS_PADDING_DEG,
     CHAIN,
     COMMAND,
@@ -273,6 +276,30 @@ def check_signal_positions(graph: nx.MultiDiGraph, approaches: pl.DataFrame) -> 
     _check_coordinates(APPROACHES_FILENAME, approaches, graph, "lon", rerun)
 
 
+def _check_address_provenance(addresses: pl.DataFrame) -> None:
+    """Provenance values, and the optional columns each provenance fills or leaves null."""
+    _check_one_of(ADDRESSES_FILENAME, "provenance", addresses["provenance"], ADDRESS_PROVENANCES)
+    if addresses["osm_same_key_elsewhere"].null_count():
+        raise _malformed(ADDRESSES_FILENAME, "has null values in column 'osm_same_key_elsewhere'")
+    for provenance, columns in ADDRESS_FILLED_BY_PROVENANCE.items():
+        rows = addresses.filter(pl.col("provenance") == provenance)
+        for column, filled in columns.items():
+            nulls = rows[column].null_count()
+            if (filled and nulls) or (not filled and nulls != rows.height):
+                state = "null" if filled else "set"
+                raise _malformed(
+                    ADDRESSES_FILENAME, f"has {provenance} rows with '{column}' {state}"
+                )
+    matched = addresses.filter(pl.col("provenance") == "matched")
+    _check_one_of(ADDRESSES_FILENAME, "match_basis", matched["match_basis"], ADDRESS_MATCH_BASES)
+    if matched.filter((pl.col("osm_delta_m") < 0) | (pl.col("osm_delta_m") > 500)).height:
+        raise _malformed(ADDRESSES_FILENAME, "has 'osm_delta_m' values outside 0 to 500 m")
+    if addresses.filter(pl.col("provenance") != "municipal")["osm_same_key_elsewhere"].any():
+        raise _malformed(
+            ADDRESSES_FILENAME, "has 'osm_same_key_elsewhere' set on a non-municipal row"
+        )
+
+
 def check_places(graph: nx.MultiDiGraph, stations: pl.DataFrame, addresses: pl.DataFrame) -> None:
     """Keys, enumerations and coordinates of stations.parquet and addresses.parquet."""
     ids = stations["station_id"]
@@ -291,6 +318,7 @@ def check_places(graph: nx.MultiDiGraph, stations: pl.DataFrame, addresses: pl.D
     for column in ("street", "housenumber", "search_key", "locality", "outside_krakow", "label"):
         if addresses[column].null_count():
             raise _malformed(ADDRESSES_FILENAME, f"has null values in column '{column}'")
+    _check_address_provenance(addresses)
     if addresses["label"].n_unique() != addresses.height:
         repeated = addresses.filter(addresses["label"].is_duplicated())["label"].unique().sort()
         raise _malformed(

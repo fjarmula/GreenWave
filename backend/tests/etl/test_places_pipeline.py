@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import polars as pl
@@ -26,11 +27,13 @@ from greenwave.etl.places_pipeline import (
 )
 from greenwave.simulation_settings import SimulationSettings
 from tests.support.osm_fixtures import closed_way, line, point, polygon
-from tests.support.pipeline_fixtures import at, make_raw
+from tests.support.pipeline_fixtures import at, emuia_feature, make_raw
 
 
-def _prepare(tmp_path: Path, *extra: str) -> tuple[Path, Path]:
-    raw = make_raw(tmp_path, extra)
+def _prepare(
+    tmp_path: Path, *extra: str, emuia: tuple[dict[str, Any], ...] = ()
+) -> tuple[Path, Path]:
+    raw = make_raw(tmp_path, extra, emuia)
     processed = tmp_path / "processed"
     section = run_intersections(raw, processed, tmp_path / "overrides")
     update_report_section(processed / REPORT_FILENAME, "intersections", section)
@@ -39,6 +42,12 @@ def _prepare(tmp_path: Path, *extra: str) -> tuple[Path, Path]:
 
 def _addr(x: float, y: float, number: str = "1") -> str:
     return point(*at(x, y), **{"addr:street": "Poprzeczna", "addr:housenumber": number})
+
+
+def _metric(x: float, y: float) -> tuple[float, float]:
+    lon, lat = at(x, y)
+    mx, my = project_points(np.array([lon]), np.array([lat]))[0]
+    return float(mx), float(my)
 
 
 def _station(x: float, y: float, name: str) -> str:
@@ -234,3 +243,66 @@ def test_large_polygon_station_moves_to_its_access_point(tmp_path: Path) -> None
     assert kampus["lat"][0] == pytest.approx(at(4.1, 0.2)[1], abs=1e-6)  # on the south edge
     assert section.stations.relocated_to_outline == ["PSP Kampus"]
     assert section.stations.dropped == []
+
+
+def test_places_reconciles_emuia(tmp_path: Path) -> None:
+    # make_raw always has OSM "Poprzeczna 7" at at(2, 0.4).
+    emuia = (emuia_feature(1, "Poprzeczna", "7", *_metric(2, 0.41)),)
+    raw, processed = _prepare(tmp_path, emuia=emuia)
+
+    section = run_places(raw, processed)
+
+    addresses = pl.read_parquet(processed / ADDRESSES_FILENAME)
+    row = addresses.filter(pl.col("housenumber") == "7").row(0, named=True)
+    assert row["provenance"] == "matched"
+    assert row["emuia_id"] == 1
+    assert row["osm_delta_m"] < 100
+    reconciliation = section.addresses.reconciliation
+    assert reconciliation.municipal_total == 1
+    assert reconciliation.matched_clean == 1
+    assert reconciliation.emuia_export_timestamp == "2026-10-27 00:45:04"
+    assert reconciliation.thresholds_m == {"clean": 100.0, "max": 500.0, "name_variant": 50.0}
+    assert reconciliation.examples.matched_clean == [
+        "Poprzeczna 7: " + f"{round(row['osm_delta_m'])} m"
+    ]
+    assert section.addresses.rows == addresses.height
+
+
+def test_off_network_emuia_dropped(tmp_path: Path) -> None:
+    emuia = (emuia_feature(1, "Daleka", "1", *_metric(0, 8)),)
+    raw, processed = _prepare(tmp_path, emuia=emuia)
+
+    section = run_places(raw, processed)
+
+    assert section.addresses.reconciliation.municipal_dropped_off_network == 1
+    assert section.addresses.reconciliation.municipal_rows == 0
+    addresses = pl.read_parquet(processed / ADDRESSES_FILENAME)
+    assert "Daleka 1" not in addresses["label"].to_list()
+
+
+def test_dropped_osm_twin_marks_same_key_elsewhere(tmp_path: Path) -> None:
+    emuia = (emuia_feature(1, "Poprzeczna", "9", *_metric(1, 0.3)),)
+    raw, processed = _prepare(tmp_path, _addr(0, 8, "9"), emuia=emuia)
+
+    section = run_places(raw, processed)
+
+    addresses = pl.read_parquet(processed / ADDRESSES_FILENAME)
+    row = addresses.filter(pl.col("housenumber") == "9").row(0, named=True)
+    assert row["provenance"] == "municipal"
+    assert row["osm_same_key_elsewhere"] is True
+    assert section.addresses.reconciliation.municipal_only_gap_closed == 0
+    assert section.addresses.reconciliation.municipal_same_key_elsewhere == 1
+
+
+def test_places_output_is_deterministic(tmp_path: Path) -> None:
+    emuia = (
+        emuia_feature(1, "Poprzeczna", "7", *_metric(2, 0.41)),
+        emuia_feature(2, "Poprzeczna", "8", *_metric(2, 0.6)),
+    )
+    raw, processed = _prepare(tmp_path, emuia=emuia)
+
+    run_places(raw, processed)
+    first = (processed / ADDRESSES_FILENAME).read_bytes()
+    run_places(raw, processed)
+
+    assert (processed / ADDRESSES_FILENAME).read_bytes() == first

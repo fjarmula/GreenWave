@@ -640,6 +640,46 @@ def test_null_address_key_rejected(layout: Layout) -> None:
         load_dataset(layout.processed, layout.manifest)
 
 
+def test_unknown_address_provenance_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / ADDRESSES_FILENAME,
+        lambda f: f.with_columns(pl.lit("unknown").alias("provenance")),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="provenance"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_matched_address_without_osm_offset_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / ADDRESSES_FILENAME,
+        lambda f: f.with_columns(
+            pl.when(pl.col("provenance") == "matched")
+            .then(None)
+            .otherwise(pl.col("osm_delta_m"))
+            .alias("osm_delta_m")
+        ),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="osm_delta_m"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_osm_address_with_emuia_id_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / ADDRESSES_FILENAME,
+        lambda f: f.with_columns(pl.lit(1, dtype=pl.Int64).alias("emuia_id")),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="emuia_id"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_layout_addresses_cover_matched_and_osm(layout: Layout) -> None:
+    provenance = set(pl.read_parquet(layout.processed / ADDRESSES_FILENAME)["provenance"])
+    assert provenance == {"matched", "municipal", "osm"}
+
+
 @pytest.mark.parametrize(
     ("section", "path", "artifact"),
     [

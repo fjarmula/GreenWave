@@ -34,6 +34,34 @@ SOURCE_KINDS = frozenset(
     {"ambulance_base", "hospital_ed", "fire_state", "fire_volunteer", "fire_other", "police"}
 )
 STATION_ID_PATTERN = r"^STN-[AFP]-\d{4}$"
+ADDRESS_PROVENANCES = frozenset({"matched", "municipal", "osm"})
+ADDRESS_MATCH_BASES = frozenset({"exact_key", "name_variant"})
+# Which optional address columns each provenance fills (True) or leaves null (False).
+ADDRESS_FILLED_BY_PROVENANCE: dict[str, dict[str, bool]] = {
+    "matched": {
+        "emuia_id": True,
+        "osm_lat": True,
+        "osm_lng": True,
+        "osm_delta_m": True,
+        "match_basis": True,
+    },
+    "municipal": {
+        "emuia_id": True,
+        "osm_lat": False,
+        "osm_lng": False,
+        "osm_delta_m": False,
+        "match_basis": False,
+        "alt_search_key": False,
+    },
+    "osm": {
+        "emuia_id": False,
+        "osm_lat": False,
+        "osm_lng": False,
+        "osm_delta_m": False,
+        "match_basis": False,
+        "alt_search_key": False,
+    },
+}
 
 # file -> step that writes it
 PRODUCED_BY = {
@@ -110,5 +138,13 @@ REQUIRED_COLUMNS: dict[str, dict[str, pl.DataType | type[pl.DataType] | None]] =
         "label": pl.String,
         "lat": pl.Float64,
         "lng": pl.Float64,
+        "provenance": pl.String,
+        "alt_search_key": pl.String,
+        "emuia_id": pl.Int64,
+        "osm_lat": pl.Float64,
+        "osm_lng": pl.Float64,
+        "osm_delta_m": pl.Float64,
+        "match_basis": pl.String,
+        "osm_same_key_elsewhere": pl.Boolean,
     },
 }
