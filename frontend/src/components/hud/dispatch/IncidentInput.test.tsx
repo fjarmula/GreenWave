@@ -148,6 +148,13 @@ describe("suggestionToIncident", () => {
       position: RESULT.position,
       label: "Floriańska 1",
       source: "address",
+      address: {
+        provenance: "osm",
+        osmDeltaM: null,
+        disagreementM: null,
+        osmPosition: null,
+        osmSameKeyElsewhere: false,
+      },
     });
   });
 });

@@ -6,6 +6,7 @@
  * so a contract change fails compilation here.
  */
 import type {
+  AddressProvenance,
   AmbulanceStatus,
   CancelReason,
   ComparisonStartResponse,
@@ -90,6 +91,12 @@ const STREAM_EVENT_TYPES: Record<SimulationStreamEvent["event_type"], true> = {
   ITS_FEEDBACK: true,
   SIMULATION_COMPLETED: true,
   SIMULATION_CANCELLED: true,
+};
+
+const ADDRESS_PROVENANCES: Record<AddressProvenance, true> = {
+  matched: true,
+  municipal: true,
+  osm: true,
 };
 
 const QUALITY_STATUSES: Record<QualityStatus, true> = { pass: true, info: true, warn: true };
@@ -501,9 +508,26 @@ export function validateGeocode(body: unknown): GeocodeResponse {
   const response = record(body, "response");
   if (response.schema_version !== "1.0") fail("schema_version", '"1.0"');
   list(response.results, "results").forEach((value, index) => {
-    const result = record(value, `results[${index}]`);
-    text(result.label, `results[${index}].label`);
-    position(result.position, `results[${index}].position`);
+    const path = `results[${index}]`;
+    const result = record(value, path);
+    text(result.label, `${path}.label`);
+    position(result.position, `${path}.position`);
+    member(ADDRESS_PROVENANCES, result.provenance, `${path}.provenance`);
+    // Optional provenance details (ADR 0013): absent or `null`, else valid.
+    for (const field of ["osm_delta_m", "disagreement_m"] as const) {
+      if (result[field] !== undefined && result[field] !== null) {
+        nonNegative(result[field], `${path}.${field}`);
+      }
+    }
+    const disagreement = result.disagreement_m !== undefined && result.disagreement_m !== null;
+    const osmPosition = result.osm_position !== undefined && result.osm_position !== null;
+    if (osmPosition) position(result.osm_position, `${path}.osm_position`);
+    if (disagreement !== osmPosition) {
+      fail(`${path}.osm_position`, "a position exactly when disagreement_m is set");
+    }
+    if (result.osm_same_key_elsewhere !== undefined) {
+      bool(result.osm_same_key_elsewhere, `${path}.osm_same_key_elsewhere`);
+    }
   });
   return response as GeocodeResponse;
 }

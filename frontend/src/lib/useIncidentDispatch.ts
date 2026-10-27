@@ -3,6 +3,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import { toSimulationErrorInfo } from "@/lib/transport/errors";
 import type {
+  AddressProvenance,
   DispatchRankResponse,
   ErrorCode,
   Position,
@@ -10,7 +11,21 @@ import type {
   VehicleType,
 } from "@/types/telemetry";
 
-export type Incident = { position: Position; label: string; source: "address" | "map" };
+/** Where a searched address's coordinate comes from (ADR 0013); absent for a map pin. */
+export type IncidentAddress = {
+  provenance: AddressProvenance;
+  osmDeltaM: number | null;
+  disagreementM: number | null;
+  osmPosition: Position | null;
+  osmSameKeyElsewhere: boolean;
+};
+
+export type Incident = {
+  position: Position;
+  label: string;
+  source: "address" | "map";
+  address?: IncidentAddress;
+};
 
 /** A map click becomes the incident, labelled like "Pinned 50.0614, 19.9366". */
 export function pinnedIncident(position: Position): Incident {

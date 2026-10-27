@@ -17,6 +17,7 @@ import {
   parseStartResponse,
   parseStreamEvent,
   validateDatasetQuality,
+  validateGeocode,
   validateRank,
 } from "@/lib/transport/validate";
 
@@ -417,4 +418,63 @@ it.each([
     Object.assign(phases[0], patch);
   });
   expect(parseStreamEvent(value, SIMULATION_ID)).toBeNull();
+});
+
+describe("validateGeocode", () => {
+  const matched = {
+    label: "Zabłocie 18",
+    position: { lat: 50.05, lng: 19.96 },
+    provenance: "matched",
+    osm_delta_m: 442,
+    disagreement_m: 442,
+    osm_position: { lat: 50.051, lng: 19.965 },
+    osm_same_key_elsewhere: false,
+  };
+  const body = (result: Record<string, unknown>) => ({ schema_version: "1.0", results: [result] });
+
+  it("accepts every provenance with its optional fields", () => {
+    expect(validateGeocode(body(matched)).results[0].provenance).toBe("matched");
+    expect(() =>
+      validateGeocode(body({ label: "A 1", position: matched.position, provenance: "osm" })),
+    ).not.toThrow();
+    expect(() =>
+      validateGeocode(
+        body({
+          ...matched,
+          provenance: "municipal",
+          osm_delta_m: null,
+          disagreement_m: null,
+          osm_position: null,
+          osm_same_key_elsewhere: true,
+        }),
+      ),
+    ).not.toThrow();
+  });
+
+  it("rejects a missing or unknown provenance", () => {
+    expect(() => validateGeocode(body({ ...matched, provenance: undefined }))).toThrow(
+      "results[0].provenance",
+    );
+    expect(() => validateGeocode(body({ ...matched, provenance: "x" }))).toThrow(
+      "results[0].provenance",
+    );
+  });
+
+  it("rejects a negative offset and a non-boolean same-key flag", () => {
+    expect(() => validateGeocode(body({ ...matched, osm_delta_m: -1 }))).toThrow(
+      "results[0].osm_delta_m",
+    );
+    expect(() => validateGeocode(body({ ...matched, osm_same_key_elsewhere: "no" }))).toThrow(
+      "results[0].osm_same_key_elsewhere",
+    );
+  });
+
+  it("requires the OSM position exactly when there is a disagreement", () => {
+    expect(() => validateGeocode(body({ ...matched, osm_position: null }))).toThrow(
+      "results[0].osm_position",
+    );
+    expect(() =>
+      validateGeocode(body({ ...matched, disagreement_m: null, osm_delta_m: 40 })),
+    ).toThrow("results[0].osm_position");
+  });
 });

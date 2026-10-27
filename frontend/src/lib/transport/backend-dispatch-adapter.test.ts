@@ -55,7 +55,15 @@ describe("createBackendDispatchAdapter", () => {
   });
 
   it("geocodes with an encoded query", async () => {
-    const results = [{ label: "Floriańska 1", position: { lat: 50.06, lng: 19.94 } }];
+    const results = [
+      {
+        label: "Floriańska 1",
+        position: { lat: 50.06, lng: 19.94 },
+        provenance: "matched",
+        osm_delta_m: 4,
+        osm_same_key_elsewhere: false,
+      },
+    ];
     const fetchMock = respond(200, { schema_version: "1.0", results });
 
     await expect(adapter.geocode("Floriańska 1")).resolves.toEqual(results);

@@ -43,6 +43,7 @@ export type StationSourceKind = Schemas["StationSourceKind"];
 export type Station = Schemas["Station"];
 export type OnFootLeg = Schemas["OnFootLeg"];
 export type StationsResponse = Schemas["StationsResponse"];
+export type AddressProvenance = Schemas["AddressProvenance"];
 export type GeocodeResult = Schemas["GeocodeResult"];
 export type GeocodeResponse = Schemas["GeocodeResponse"];
 export type DispatchRankRequest = Schemas["DispatchRankRequest"];

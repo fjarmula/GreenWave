@@ -1,3 +1,4 @@
+import { addressFromResult } from "@/lib/address-provenance";
 import type { Incident } from "@/lib/useIncidentDispatch";
 import type { GeocodeResult } from "@/types/telemetry";
 
@@ -91,5 +92,10 @@ export function enterSelection(results: GeocodeResult[], active: number): Geocod
 }
 
 export function suggestionToIncident(result: GeocodeResult): Incident {
-  return { position: result.position, label: result.label, source: "address" };
+  return {
+    position: result.position,
+    label: result.label,
+    source: "address",
+    address: addressFromResult(result),
+  };
 }
