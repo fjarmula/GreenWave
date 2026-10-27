@@ -14,6 +14,7 @@ import type { PreviousRun } from "@/lib/previous-run";
 import { DEFAULT_DISPATCH_SETTINGS, type DispatchSettings } from "@/lib/start-request";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
 import type { DispatchRankResponse } from "@/types/telemetry";
+import { RESOURCES } from "@/lib/transport/__fixtures__/team-dispatch";
 
 const transport = vi.hoisted(() => ({ current: "mock" as SimulationTransport }));
 
@@ -86,6 +87,7 @@ function render(
   dispatch: IncidentDispatch,
   roadTimeRanking = true,
   settings: DispatchSettings = DEFAULT_DISPATCH_SETTINGS,
+  resources = false,
 ) {
   return renderToStaticMarkup(
     <DispatchForm
@@ -95,7 +97,7 @@ function render(
       pending={false}
       errorMessage={null}
       dispatch={dispatch}
-      capabilities={{ geocode: roadTimeRanking, roadTimeRanking, resources: false }}
+      capabilities={{ geocode: roadTimeRanking, roadTimeRanking, resources }}
       geocode={async () => []}
       onFocusMap={() => undefined}
     />,
@@ -482,4 +484,27 @@ it("shows start failures beside the standalone action", () => {
     />,
   );
   expect(markup).toMatch(/role="alert"[^>]*>.*No drivable route found/);
+});
+
+describe("DispatchForm PRM team controls (ADR 0014)", () => {
+  const ambulance = dispatchState({ vehicleType: "AMBULANCE", resources: RESOURCES });
+
+  it("shows the scenario time and team availability for ambulances with a roster", () => {
+    const markup = render(ambulance, true, DEFAULT_DISPATCH_SETTINGS, true);
+    expect(markup).toContain('type="datetime-local"');
+    expect(markup).toContain("Team availability");
+  });
+
+  it("hides them without the resources capability (mock)", () => {
+    const markup = render(ambulance, true, DEFAULT_DISPATCH_SETTINGS, false);
+    expect(markup).not.toContain('type="datetime-local"');
+    expect(markup).not.toContain("Team availability");
+  });
+
+  it("hides them for other vehicle types", () => {
+    const fire = dispatchState({ vehicleType: "FIRE_TRUCK", resources: RESOURCES });
+    const markup = render(fire, true, DEFAULT_DISPATCH_SETTINGS, true);
+    expect(markup).not.toContain('type="datetime-local"');
+    expect(markup).not.toContain("Team availability");
+  });
 });

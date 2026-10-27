@@ -1,18 +1,28 @@
 import { LoaderCircle, TriangleAlert } from "lucide-react";
 import { useId } from "react";
 
+import { ExcludedTeams } from "@/components/hud/dispatch/ExcludedTeams";
 import { formatSignalDistance } from "@/lib/driver-presentation";
 import { formatMinutesSeconds } from "@/lib/format-duration";
 import {
   candidateDriveSeconds,
   candidateTotalSeconds,
+  fastestCandidateId,
+  isTeamRanked,
   orderCandidates,
   pageCandidate,
   type TimeMode,
 } from "@/lib/station-choice";
 import { SOURCE_KIND_LABELS } from "@/lib/station-copy";
+import {
+  ASSUMED_FREE_BADGE,
+  noEligibleText,
+  rosterBadgeText,
+  scenarioClock,
+  selectionReasonText,
+} from "@/lib/team-dispatch-copy";
 import type { RankStatus } from "@/lib/useIncidentDispatch";
-import type { DispatchRankResponse, RankedCandidate } from "@/types/telemetry";
+import type { DispatchRankResponse, PrmTeam, RankedCandidate } from "@/types/telemetry";
 
 type StationRankingProps = {
   ranking: DispatchRankResponse | null;
@@ -24,6 +34,8 @@ type StationRankingProps = {
   timeMode: TimeMode;
   selectedStationId: string | null;
   onSelect: (stationId: string) => void;
+  /** The roster at the scenario time, for the hours of excluded teams. */
+  teams?: PrmTeam[];
 };
 
 export function StationRanking({
@@ -34,6 +46,7 @@ export function StationRanking({
   timeMode,
   selectedStationId,
   onSelect,
+  teams,
 }: StationRankingProps) {
   const name = useId();
   if (rankStatus === "loading") {
@@ -60,8 +73,35 @@ export function StationRanking({
     );
   }
 
+  const roster = ranking.roster && (
+    <p className="text-2xs text-muted-foreground">{rosterBadgeText(ranking.roster)}</p>
+  );
+  if (ranking.outcome === "NO_ELIGIBLE_RESOURCE") {
+    const count = (reason: string) =>
+      ranking.excluded_teams.filter((team) => team.reason === reason).length;
+    return (
+      <div className="mt-4 space-y-2" aria-live="polite">
+        <p role="alert" className="hud-alert tone-caution">
+          <TriangleAlert aria-hidden />
+          {noEligibleText(
+            scenarioClock(ranking.scenario_time),
+            count("OFF_SHIFT"),
+            count("BUSY_OVERRIDE"),
+          )}
+        </p>
+        <ExcludedTeams excluded={ranking.excluded_teams} teams={teams} />
+        {roster}
+      </div>
+    );
+  }
+
   const ordered = orderCandidates(ranking.candidates, timeMode);
-  const [fastest] = ordered;
+  // Team ranking: the first row is recommended (area rule); "Fastest" marks the lowest total.
+  const teamRanked = isTeamRanked(ordered);
+  const fastestId = teamRanked
+    ? fastestCandidateId(ordered, timeMode)
+    : ordered[0].station.station_id;
+  const fastest = ordered.find((c) => c.station.station_id === fastestId) ?? ordered[0];
   const selectedId = pageCandidate({ ranking, selectedStationId }, timeMode)?.station.station_id;
   return (
     <div className="mt-4 space-y-2" aria-live="polite">
@@ -78,6 +118,12 @@ export function StationRanking({
             name={name}
             candidate={candidate}
             fastest={fastest}
+            recommended={teamRanked && candidate === ordered[0]}
+            reason={
+              teamRanked && candidate === ordered[0] && ranking.area_rule
+                ? selectionReasonText(ranking.area_rule)
+                : null
+            }
             checked={candidate.station.station_id === selectedId}
             roadTimeRanking={roadTimeRanking}
             timeMode={timeMode}
@@ -85,6 +131,8 @@ export function StationRanking({
           />
         ))}
       </fieldset>
+      <ExcludedTeams excluded={ranking.excluded_teams} teams={teams} />
+      {roster}
     </div>
   );
 }
@@ -93,6 +141,8 @@ function CandidateRow({
   name,
   candidate,
   fastest,
+  recommended,
+  reason,
   checked,
   roadTimeRanking,
   timeMode,
@@ -101,12 +151,14 @@ function CandidateRow({
   name: string;
   candidate: RankedCandidate;
   fastest: RankedCandidate;
+  recommended: boolean;
+  reason: string | null;
   checked: boolean;
   roadTimeRanking: boolean;
   timeMode: TimeMode;
   onSelect: (stationId: string) => void;
 }) {
-  const { station, on_foot: onFoot } = candidate;
+  const { station, on_foot: onFoot, team } = candidate;
   const isFastest = candidate === fastest;
   // The comparison keeps the green-wave order, so its deltas are green-wave deltas.
   const deltaMode = timeMode === "STANDARD" ? "STANDARD" : "GREENWAVE";
@@ -130,15 +182,34 @@ function CandidateRow({
           >
             {station.name}
           </span>
+          {recommended && (
+            <span className="hud-chip tone-beacon shrink-0 text-2xs">Recommended</span>
+          )}
           {candidate.on_site ? (
             <span className="hud-chip tone-beacon shrink-0 text-2xs">On site</span>
           ) : (
             isFastest && <span className="hud-chip tone-go shrink-0 text-2xs">Fastest</span>
           )}
         </span>
-        <span className="block text-2xs text-muted-foreground">
-          {SOURCE_KIND_LABELS[station.source_kind]}
-        </span>
+        {team ? (
+          <span className="flex flex-wrap items-center gap-1 text-2xs text-muted-foreground">
+            <span className="font-mono font-medium text-foreground">{team.team_code}</span>
+            <span className="hud-chip tone-muted text-2xs">{team.team_type}</span>
+            {team.in_area !== null && (
+              <span className={`hud-chip ${team.in_area ? "tone-go" : "tone-muted"} text-2xs`}>
+                {team.in_area ? "In area" : "Outside area"}
+              </span>
+            )}
+            {team.availability === "assumed_free" && (
+              <span className="hud-chip tone-caution text-2xs">{ASSUMED_FREE_BADGE}</span>
+            )}
+          </span>
+        ) : (
+          <span className="block text-2xs text-muted-foreground">
+            {SOURCE_KIND_LABELS[station.source_kind]}
+          </span>
+        )}
+        {reason && <span className="block text-2xs text-foreground">{reason}</span>}
       </span>
       <span className="shrink-0 text-right">
         <span

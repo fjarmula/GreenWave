@@ -5,6 +5,7 @@ import {
   candidateDriveSeconds,
   candidateTotalSeconds,
   fastestCandidateId,
+  rankTimeModeFor,
   isOnSite,
   onSiteResult,
   orderCandidates,
@@ -205,5 +206,13 @@ describe("team-ranked ambulance candidates (ADR 0014)", () => {
       "STN-A-0007",
       "STN-A-0003",
     ]);
+  });
+});
+
+describe("rankTimeModeFor", () => {
+  it("compares the page's own estimate, green wave on the comparison", () => {
+    expect(rankTimeModeFor("ENABLED", "simulation")).toBe("ENABLED");
+    expect(rankTimeModeFor("DISABLED", "simulation")).toBe("DISABLED");
+    expect(rankTimeModeFor("DISABLED", "comparison")).toBe("ENABLED");
   });
 });

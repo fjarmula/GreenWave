@@ -20,6 +20,14 @@ export function timeModeFor(
   return greenWaveMode === "DISABLED" ? "STANDARD" : "GREENWAVE";
 }
 
+/** The estimate the area rule compares (ADR 0014): the page's run; the comparison's green wave. */
+export function rankTimeModeFor(
+  greenWaveMode: GreenWaveMode,
+  intent: "simulation" | "comparison",
+): GreenWaveMode {
+  return intent === "comparison" ? "ENABLED" : greenWaveMode;
+}
+
 /** The drive estimate of one mode: the green-wave run or the standard-traffic run. */
 export function candidateDriveSeconds(
   candidate: RankedCandidate,
