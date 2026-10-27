@@ -9,7 +9,13 @@ from greenwave.etl.config import ROUTE_DETOUR_RATIO_RANGE, STREET_LENGTH_RATIO_R
 from greenwave.etl.intersections_pipeline import NEAR_MISSES_FILENAME
 from greenwave.etl.manifest import load_manifest
 from greenwave.etl.prepare import TERTIARY_PLUS_FILENAME
-from greenwave.etl.quality import QUALITY_INPUT_FILENAMES, build_quality, run_quality, write_quality
+from greenwave.etl.quality import (
+    QUALITY_INPUT_FILENAMES,
+    QualityInputError,
+    build_quality,
+    run_quality,
+    write_quality,
+)
 from greenwave.schemas import DatasetQualityResponse, QualityCheck, QualityStatus
 from tests.support.processed import Layout, write_route_checks, write_street_table
 
@@ -21,6 +27,8 @@ CHECK_IDS = [
     "signals_needing_review",
     "bus_lane_crosscheck",
     "road_attributes",
+    "address_reconciliation",
+    "address_gap_examples",
 ]
 NEAR_MISS_SCHEMA = {
     "kind": pl.String,
@@ -344,3 +352,86 @@ def test_run_quality_records_consumed_and_written_hashes(layout: Layout) -> None
     assert set(section.artifact_sha256) == {"data_quality.json"}
     written = json.loads((layout.processed / "data_quality.json").read_text(encoding="utf-8"))
     assert section.manifest_sha256 == written["manifest_sha256"]
+
+
+def write_reconciliation(layout: Layout, **values: object) -> None:
+    """Overwrite fields of the report's ``places.addresses.reconciliation`` section."""
+    path = layout.processed / "etl_report.json"
+    report = json.loads(path.read_text(encoding="utf-8"))
+    report["places"]["addresses"]["reconciliation"].update(values)
+    path.write_text(json.dumps(report, ensure_ascii=False), encoding="utf-8")
+
+
+def test_address_reconciliation_summarises_report(layout: Layout) -> None:
+    write_reconciliation(
+        layout,
+        municipal_total=1000,
+        matched_clean=880,
+        matched_disagreement=2,
+        municipal_only_gap_closed=100,
+        osm_only_fallback=30,
+        examples={
+            "matched_clean": ["Długa 1: 4 m"],
+            "matched_disagreement": ["Zabłocie 18: 442 m", "Ojcowska 134A: 369 m"],
+            "municipal_only_gap_closed": ["Tyniecka 33a"],
+        },
+    )
+
+    result = check(layout, "address_reconciliation")
+
+    assert result.title == "Municipal addresses (EMUiA)"
+    assert result.status == QualityStatus.INFO
+    assert result.headline == (
+        "1,000 EMUiA addresses: 88.0% match OSM within 100 m, 0.2% differ by 100\u2013500 m, "
+        "10.0% fill gaps OSM lacks. 30 OSM-only addresses kept as fallback."
+    )
+    assert result.metrics == {
+        "matched_clean": 880,
+        "matched_disagreement": 2,
+        "municipal_only_gap_closed": 100,
+        "osm_only_fallback": 30,
+    }
+    assert result.samples == ["Zabłocie 18: 442 m", "Ojcowska 134A: 369 m"]
+
+
+def test_address_gap_examples_mixes_classes(layout: Layout) -> None:
+    write_reconciliation(
+        layout,
+        municipal_only_gap_closed=4113,
+        matched_name_variant=831,
+        same_key_beyond_limit=4,
+        examples={
+            "matched_clean": ["C1: 1 m", "C2: 2 m", "C3: 3 m"],
+            "matched_disagreement": [],
+            "municipal_only_gap_closed": ["G1", "G2", "G3", "G4"],
+        },
+    )
+
+    result = check(layout, "address_gap_examples")
+
+    assert result.title == "Addresses only in EMUiA"
+    assert result.status == QualityStatus.INFO
+    assert result.headline == (
+        "4,113 addresses exist only in EMUiA. 831 street-name variants were matched to OSM "
+        "and not counted as gaps."
+    )
+    assert result.metrics == {"matched_name_variant": 831, "same_key_beyond_limit": 4}
+    assert result.samples == ["G1", "G2", "G3", "C1: 1 m", "C2: 2 m"]
+
+
+def test_address_reconciliation_with_no_emuia_rows(layout: Layout) -> None:
+    write_reconciliation(layout, municipal_total=0)
+
+    assert check(layout, "address_reconciliation").headline.startswith(
+        "0 EMUiA addresses: 0.0% match OSM"
+    )
+
+
+def test_run_quality_needs_the_places_section(layout: Layout) -> None:
+    path = layout.processed / "etl_report.json"
+    report = json.loads(path.read_text(encoding="utf-8"))
+    del report["places"]
+    path.write_text(json.dumps(report), encoding="utf-8")
+
+    with pytest.raises(QualityInputError, match="places"):
+        run_quality(raw_dir(layout), layout.processed)

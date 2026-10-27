@@ -30,7 +30,7 @@ uv run python scripts/run_etl.py override-map    # check page for data/overrides
 uv run python scripts/run_etl.py intersections   # T4: network_*, intersections, signal_approaches, ids
 uv run python scripts/run_etl.py neighbours      # T5: approach_neighbours.parquet (candidate set only)
 uv run python scripts/run_etl.py places          # stations.parquet + addresses.parquet (run after intersections)
-uv run python scripts/run_etl.py quality         # data_quality.json (run after neighbours)
+uv run python scripts/run_etl.py quality         # data_quality.json (run after neighbours and places)
 ```
 
 `places` reads the OSM extract (one pass) for rescue stations and address points, then keeps only those
@@ -62,9 +62,9 @@ disagreement), never to an OSM address outside Kraków; then the same house numb
 `addresses.reconciliation` holds the counts and real examples of each class. An address point is
 a geocoding result, not a vehicle access point.
 
-`quality` reads the outputs of `graph`, `intersections` and `neighbours` (near misses, street
-lengths, route checks, signal snapping, signals needing review, the bus-lane cross-check and the
-`road_attributes` section) and writes `data_quality.json`, a small deterministic summary served at
+`quality` reads the outputs of `graph`, `intersections`, `neighbours` and `places` (near misses,
+street lengths, route checks, signal snapping, signals needing review, the bus-lane cross-check,
+the `road_attributes` section and the EMUiA address reconciliation) and writes `data_quality.json`, a small deterministic summary served at
 `GET /api/v1/dataset/quality`. It records the hashes of the files it read in the `quality` report
 section. Re-run it after any of those steps.
 

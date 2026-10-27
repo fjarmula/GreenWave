@@ -1,8 +1,9 @@
 """Step ``quality``: summarise the ETL diagnostics into ``data_quality.json`` for the dashboard.
 
-Reads processed outputs of the graph, intersections and neighbours steps (run it after
-``neighbours``). The status labels only report; they reuse the analysis ranges in
-``etl.config`` and add no thresholds. Output is deterministic: same inputs, same bytes.
+Reads processed outputs of the graph, intersections and neighbours steps and the ``places``
+report section (run it after ``neighbours`` and ``places``). The status labels only report; they
+reuse the analysis ranges in ``etl.config`` and add no thresholds. Output is deterministic: same
+inputs, same bytes.
 """
 
 import hashlib
@@ -297,6 +298,60 @@ def _road_attributes(report: dict[str, Any]) -> QualityCheck:
     )
 
 
+def _percent(part: int, whole: int) -> float:
+    return 100.0 * part / whole if whole else 0.0
+
+
+def _address_reconciliation(report: dict[str, Any]) -> QualityCheck:
+    r = report["places"]["addresses"]["reconciliation"]
+    total = int(r["municipal_total"])
+    clean_m, max_m = float(r["thresholds_m"]["clean"]), float(r["thresholds_m"]["max"])
+    return QualityCheck(
+        id="address_reconciliation",
+        title="Municipal addresses (EMUiA)",
+        status=QualityStatus.INFO,
+        headline=(
+            f"{total:,} EMUiA addresses: "
+            f"{_percent(r['matched_clean'], total):.1f}% match OSM within {clean_m:.0f} m, "
+            f"{_percent(r['matched_disagreement'], total):.1f}% differ by "
+            f"{clean_m:.0f}\u2013{max_m:.0f} m, "
+            f"{_percent(r['municipal_only_gap_closed'], total):.1f}% fill gaps OSM lacks. "
+            f"{int(r['osm_only_fallback']):,} OSM-only addresses kept as fallback."
+        ),
+        metrics={
+            name: int(r[name])
+            for name in (
+                "matched_clean",
+                "matched_disagreement",
+                "municipal_only_gap_closed",
+                "osm_only_fallback",
+            )
+        },
+        samples=list(r["examples"]["matched_disagreement"])[:MAX_SAMPLES],
+    )
+
+
+def _address_gap_examples(report: dict[str, Any]) -> QualityCheck:
+    r = report["places"]["addresses"]["reconciliation"]
+    examples = r["examples"]
+    return QualityCheck(
+        id="address_gap_examples",
+        title="Addresses only in EMUiA",
+        status=QualityStatus.INFO,
+        headline=(
+            f"{int(r['municipal_only_gap_closed']):,} addresses exist only in EMUiA. "
+            f"{int(r['matched_name_variant']):,} street-name variants were matched to OSM and "
+            "not counted as gaps."
+        ),
+        metrics={
+            "matched_name_variant": int(r["matched_name_variant"]),
+            "same_key_beyond_limit": int(r["same_key_beyond_limit"]),
+        },
+        # Gaps first, then clean matches, so every example class reaches the panel.
+        samples=[*examples["municipal_only_gap_closed"][:3], *examples["matched_clean"][:2]],
+    )
+
+
 def msip_export_timestamp(raw_dir: Path) -> str | None:
     """``Data wygenerowania plików: 2026-10-13_00:47:34`` -> ``2026-10-13 00:47:34``."""
     path = raw_dir / AKTUALNOSC_PATH
@@ -321,6 +376,8 @@ def build_quality(processed_dir: Path, raw_dir: Path, manifest: Manifest) -> Dat
             _signals_needing_review(processed_dir),
             _bus_lane_crosscheck(processed_dir),
             _road_attributes(report),
+            _address_reconciliation(report),
+            _address_gap_examples(report),
         ],
         sources=[
             QualitySource(
@@ -353,6 +410,11 @@ def run_quality(raw_dir: Path, processed_dir: Path) -> QualitySection:
         raise QualityInputError(
             f"{', '.join(missing)} missing in {processed_dir}; run the graph, intersections and "
             "neighbours steps before `quality`"
+        )
+    report = json.loads((processed_dir / REPORT_FILENAME).read_text(encoding="utf-8"))
+    if "places" not in report:
+        raise QualityInputError(
+            f"{REPORT_FILENAME} has no places section; run the places step before `quality`"
         )
     consumed = artifact_hashes(processed_dir, QUALITY_INPUT_FILENAMES)  # hashed before reading
     summary = build_quality(processed_dir, raw_dir, load_manifest(raw_dir / MANIFEST_FILENAME))
