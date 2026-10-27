@@ -41,6 +41,7 @@ import { KpiHeader } from "@/components/hud/KpiHeader";
 import { RunSummary } from "@/components/hud/RunSummary";
 import { IntersectionList } from "@/components/hud/IntersectionList";
 import { ItsConsole } from "@/components/hud/ItsConsole";
+import { DispatchStartButton } from "@/components/hud/dispatch/DispatchStartButton";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import { OnSiteResult } from "@/components/hud/OnSiteResult";
 import type { MapEndpoint } from "@/components/map/EndpointMarkers";
@@ -221,6 +222,7 @@ export function Dashboard({
             />
           ) : (
             <DriverSetupCard
+              showStartAction={false}
               dispatch={dispatch}
               capabilities={dispatchAdapter.capabilities}
               geocode={dispatchAdapter.geocode}
@@ -230,7 +232,7 @@ export function Dashboard({
               notices={notices}
               pending={pending}
               replacement={policy.requiresReplacement}
-              errorMessage={startErrorMessage}
+              errorMessage={null}
               onInitialize={() => initialize(settingsForMode(settings, selectedMode))}
               startLabel={setupLabel}
             />
@@ -278,6 +280,7 @@ export function Dashboard({
             />
           ) : (
             <DriverSetupCard
+              showStartAction={false}
               dispatch={dispatch}
               capabilities={dispatchAdapter.capabilities}
               geocode={dispatchAdapter.geocode}
@@ -287,7 +290,7 @@ export function Dashboard({
               notices={notices}
               pending={pending}
               replacement={policy.requiresReplacement}
-              errorMessage={startErrorMessage}
+              errorMessage={null}
               onInitialize={() => initialize(settingsForMode(settings, selectedMode))}
             />
           ),
@@ -318,7 +321,27 @@ export function Dashboard({
 
   return (
     <WorkspaceShell
-      sheet={workspaceSheet}
+      primaryAction={
+        onSite ? (
+          <div className="surface-glass p-4">
+            <OnSiteResult
+              station={onSite.station}
+              walk={onSite.walk}
+              onBackToSetup={() => setOnSiteAnswer(null)}
+            />
+          </div>
+        ) : mode === "setup" ? (
+          <DispatchStartButton
+            dispatch={dispatch}
+            settings={settingsForMode(settings, selectedMode)}
+            pending={pending}
+            replacement={policy.requiresReplacement}
+            onInitialize={initialize}
+            errorMessage={startErrorMessage}
+          />
+        ) : undefined
+      }
+      sheet={onSite ? undefined : workspaceSheet}
       status={
         mode === "live" && simulationState === "RUNNING" ? (
           <div className="driver-overlay">
@@ -337,7 +360,6 @@ export function Dashboard({
                 ? "Green Wave"
                 : "Standard traffic"
           }
-          detail={mode === "live" ? "Simulation" : "Setup"}
         />
       }
       map={
@@ -351,41 +373,36 @@ export function Dashboard({
         />
       }
       inspector={
-        <>
-          {notices}
-          {onSite ? (
-            <div className="p-4">
-              <OnSiteResult
-                station={onSite.station}
-                walk={onSite.walk}
-                onBackToSetup={() => setOnSiteAnswer(null)}
+        onSite ? undefined : (
+          <>
+            {notices}
+            {mode === "setup" ? (
+              <DispatchForm
+                showStartAction={false}
+                settings={settingsForMode(settings, selectedMode)}
+                modeLocked
+                replacement={policy.requiresReplacement}
+                onSettingsChange={setSettings}
+                previousRun={previousRun}
+                stationsError={stationsError}
+                pending={pending}
+                errorMessage={null}
+                dispatch={dispatch}
+                capabilities={dispatchAdapter.capabilities}
+                geocode={dispatchAdapter.geocode}
+                onInitialize={initialize}
+                onFocusMap={() => setMapFocusRequest((request) => request + 1)}
               />
-            </div>
-          ) : mode === "setup" ? (
-            <DispatchForm
-              settings={settingsForMode(settings, selectedMode)}
-              modeLocked
-              replacement={policy.requiresReplacement}
-              onSettingsChange={setSettings}
-              previousRun={previousRun}
-              stationsError={stationsError}
-              pending={pending}
-              errorMessage={startErrorMessage}
-              dispatch={dispatch}
-              capabilities={dispatchAdapter.capabilities}
-              geocode={dispatchAdapter.geocode}
-              onInitialize={initialize}
-              onFocusMap={() => setMapFocusRequest((request) => request + 1)}
-            />
-          ) : (
-            <div className="space-y-4 p-4">
-              <KpiHeader />
-              <RunSummary onBackToSetup={backToSetup} onStop={stopRun} />
-              <IntersectionList />
-              <ItsConsole />
-            </div>
-          )}
-        </>
+            ) : (
+              <div className="space-y-4 p-4">
+                <KpiHeader />
+                <RunSummary onBackToSetup={backToSetup} onStop={stopRun} />
+                <IntersectionList />
+                <ItsConsole />
+              </div>
+            )}
+          </>
+        )
       }
     />
   );

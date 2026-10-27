@@ -406,3 +406,15 @@ describe("on-foot legs", () => {
     );
   });
 });
+
+it.each([
+  { controlled_edge_ids: [42] },
+  { controlled_edge_ids: "edge-a" },
+  { is_route_movement: "yes" },
+])("rejects malformed signal movement context: %j", (patch) => {
+  const value = wire(tickEventExample, (copy) => {
+    const phases = copy.signal_phases as Array<Record<string, unknown>>;
+    Object.assign(phases[0], patch);
+  });
+  expect(parseStreamEvent(value, SIMULATION_ID)).toBeNull();
+});

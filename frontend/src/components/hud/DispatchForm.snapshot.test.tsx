@@ -7,6 +7,7 @@ import { GreenWaveToggle } from "@/components/hud/dispatch/GreenWaveToggle";
 import { PlaybackSpeedSelector } from "@/components/hud/dispatch/PlaybackSpeedSelector";
 import { PreflightEstimate } from "@/components/hud/dispatch/PreflightEstimate";
 import { TrafficDensityControl } from "@/components/hud/dispatch/TrafficDensityControl";
+import { DispatchStartButton } from "@/components/hud/dispatch/DispatchStartButton";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import type { SimulationTransport } from "@/lib/config";
 import type { PreviousRun } from "@/lib/previous-run";
@@ -281,7 +282,12 @@ describe("DispatchForm settings", () => {
   it("starts with the settings it was given", () => {
     const onInitialize = vi.fn<(settings: DispatchSettings) => void>();
     const start = findElement(
-      formTree(CHOSEN, undefined, onInitialize),
+      DispatchStartButton({
+        dispatch: dispatchState(),
+        settings: CHOSEN,
+        pending: false,
+        onInitialize,
+      }),
       (element) =>
         (element.props as { "data-testid"?: string })["data-testid"] === "start-corridor",
     );
@@ -446,4 +452,17 @@ it("uses the shared dispatch controls to configure both comparison modes", () =>
   expect(propsOf(tree, PlaybackSpeedSelector).label).toBeUndefined();
   expect(html).toContain("one simulated clock");
   expect(html).not.toContain("Replay");
+});
+
+it("shows start failures beside the standalone action", () => {
+  const markup = renderToStaticMarkup(
+    <DispatchStartButton
+      dispatch={dispatchState()}
+      settings={DEFAULT_DISPATCH_SETTINGS}
+      pending={false}
+      onInitialize={() => {}}
+      errorMessage="No drivable route found"
+    />,
+  );
+  expect(markup).toMatch(/role="alert"[^>]*>.*No drivable route found/);
 });

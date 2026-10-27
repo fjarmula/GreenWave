@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowUpRight, Gauge, Radio, ShieldCheck, Target, TriangleAlert, Zap } from "lucide-react";
+import { Gauge, Radio, ShieldCheck, Target, TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { DispatchStartButton } from "./dispatch/DispatchStartButton";
 import { ItsScenarioControl } from "./dispatch/ItsScenarioControl";
 import { CascadeToggle } from "@/components/hud/dispatch/CascadeToggle";
 import { GreenWaveToggle } from "@/components/hud/dispatch/GreenWaveToggle";
@@ -18,13 +19,14 @@ import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import type { PreviousRun } from "@/lib/previous-run";
 import type { DispatchSettings } from "@/lib/start-request";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
-import { isOnSite, pageCandidate, timeModeFor } from "@/lib/station-choice";
+import { pageCandidate, timeModeFor } from "@/lib/station-choice";
 
 type DispatchFormProps = {
   /** Owned by the dashboard so the chosen settings outlive each run. */
   settings: DispatchSettings;
   intent?: "simulation" | "comparison";
   modeLocked?: boolean;
+  showStartAction?: boolean;
   replacement?: boolean;
   onSettingsChange: (settings: DispatchSettings) => void;
   /** The last finished run of this page session, shown for comparison. */
@@ -49,6 +51,7 @@ export function DispatchForm({
   settings,
   intent = "simulation",
   modeLocked = false,
+  showStartAction = true,
   replacement = false,
   onSettingsChange,
   previousRun = null,
@@ -179,30 +182,18 @@ export function DispatchForm({
       </p>
       {previousRun && <PreviousRunCard run={previousRun} />}
 
-      <button
-        type="button"
-        data-testid="start-corridor"
-        disabled={pending || !canStart}
-        aria-busy={pending}
-        onClick={() => onInitialize(settings)}
-        className={`hud-primary pressable mt-7 ${pending ? "disabled:cursor-wait" : "disabled:cursor-not-allowed"}`}
-      >
-        <Zap className="size-4" aria-hidden />
-        {pending
-          ? "Computing route…"
-          : canStart && isOnSite(pageCandidate(dispatch, timeMode))
-            ? "Dispatch on foot"
-            : intent === "comparison"
-              ? replacement
-                ? "Replace run & compare"
-                : "Start comparison"
-              : replacement
-                ? "Replace active simulation"
-                : greenWaveMode === "ENABLED"
-                  ? "Initialize green corridor"
-                  : "Start standard-traffic run"}
-        <ArrowUpRight className="ml-auto size-4" aria-hidden />
-      </button>
+      {showStartAction && (
+        <div className="mt-7">
+          <DispatchStartButton
+            dispatch={dispatch}
+            settings={settings}
+            pending={pending}
+            replacement={replacement}
+            intent={intent}
+            onInitialize={onInitialize}
+          />
+        </div>
+      )}
 
       {errorMessage && (
         <p role="alert" className="hud-alert tone-emergency mt-3">

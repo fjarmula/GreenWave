@@ -33,6 +33,7 @@ export function DriverSetupCard({
   onToggleDetails,
   notices,
   pending,
+  showStartAction = true,
   replacement,
   errorMessage,
   onInitialize,
@@ -48,6 +49,7 @@ export function DriverSetupCard({
   /** Ownership and replacement notices, shown above the start. */
   notices?: ReactNode;
   pending: boolean;
+  showStartAction?: boolean;
   replacement: boolean;
   errorMessage: string | null;
   onInitialize: () => void;
@@ -91,25 +93,27 @@ export function DriverSetupCard({
         <ChevronRight aria-hidden data-open={detailsOpen} />
       </button>
       {notices}
-      <button
-        type="button"
-        data-testid="start-corridor"
-        disabled={pending || !canStartDispatch(dispatch)}
-        aria-busy={pending}
-        onClick={onInitialize}
-        className={`hud-primary pressable mt-3 ${pending ? "disabled:cursor-wait" : "disabled:cursor-not-allowed"}`}
-      >
-        <Zap className="size-4" aria-hidden />
-        {pending
-          ? "Computing route…"
-          : canStartDispatch(dispatch) &&
-              isOnSite(pageCandidate(dispatch, timeModeFor(settings.greenWaveMode, intent)))
-            ? "Dispatch on foot"
-            : replacement
-              ? "Replace active simulation"
-              : startLabel}
-        <ArrowUpRight className="ml-auto size-4" aria-hidden />
-      </button>
+      {showStartAction && (
+        <button
+          type="button"
+          data-testid="start-corridor"
+          disabled={pending || !canStartDispatch(dispatch)}
+          aria-busy={pending}
+          onClick={onInitialize}
+          className={`hud-primary pressable mt-3 ${pending ? "disabled:cursor-wait" : "disabled:cursor-not-allowed"}`}
+        >
+          <Zap className="size-4" aria-hidden />
+          {pending
+            ? "Computing route…"
+            : canStartDispatch(dispatch) &&
+                isOnSite(pageCandidate(dispatch, timeModeFor(settings.greenWaveMode, intent)))
+              ? "Dispatch on foot"
+              : replacement
+                ? "Replace active simulation"
+                : startLabel}
+          <ArrowUpRight className="ml-auto size-4" aria-hidden />
+        </button>
+      )}
       {errorMessage && (
         <p role="alert" className="hud-alert tone-emergency mt-3">
           <TriangleAlert aria-hidden />

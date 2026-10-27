@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { GreenWaveMark } from "./GreenWaveMark";
 import { Maximize2, Minimize2, PanelRight } from "lucide-react";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { BottomSheet } from "@/components/workspace/BottomSheet";
@@ -20,6 +22,7 @@ export type WorkspaceSheet = {
 export function WorkspaceShell({
   map,
   status,
+  primaryAction,
   inspector,
   sheet,
   header,
@@ -30,6 +33,8 @@ export function WorkspaceShell({
 }: {
   map: ReactNode;
   status?: ReactNode;
+  /** Persistent action, independent of inspector scrolling, sheets and focus. */
+  primaryAction?: ReactNode;
   /** Which top corner the status overlay floats in. */
   statusAlign?: "start" | "end";
   /** Full desktop panel; also used on phones without a sheet. */
@@ -74,7 +79,7 @@ export function WorkspaceShell({
         className="workspace-shell"
         data-layout="map-first"
         data-focus={focus}
-        data-details={details}
+        data-details={details && hasPanel}
         data-sheet={sheet && phone && !panelHidden ? sheet.snap : undefined}
       >
         <div className="workspace-map-slot" data-map-slot>
@@ -109,6 +114,11 @@ export function WorkspaceShell({
         >
           {header}
         </WorkspaceHeader>
+        {primaryAction && (
+          <div className="workspace-primary-action" data-map-occluder>
+            {primaryAction}
+          </div>
+        )}
         {sheet && phone ? (
           <div id="workspace-inspector" hidden={panelHidden} inert={panelHidden}>
             <BottomSheet
@@ -142,6 +152,16 @@ export function WorkspaceShell({
           >
             {status}
           </div>
+        )}
+        {focus && (
+          <Link
+            href="/"
+            aria-label="ER–GreenWave home"
+            className="workspace-brand workspace-focus-brand surface-glass"
+            data-map-occluder
+          >
+            <GreenWaveMark className="size-8" />
+          </Link>
         )}
         {focus && (
           <button

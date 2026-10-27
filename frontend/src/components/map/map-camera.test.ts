@@ -217,3 +217,16 @@ it("waits for the wheel handler to return before starting an ease", async () => 
   await Promise.resolve();
   expect(map.easeTo).toHaveBeenCalledOnce();
 });
+
+it("one Follow click wins over the interrupted wheel gesture's trailing zoomend", () => {
+  const { camera, map, emit, changed } = sizedCamera(14);
+  camera.display([19, 50], true);
+  emit("zoomstart", { originalEvent: {} });
+  // Stopping a wheel animation can synchronously finish its user-originated zoom.
+  map.stop.mockImplementationOnce(() => emit("zoomend", { originalEvent: {} }));
+  camera.resume();
+  expect(changed).toHaveBeenLastCalledWith("following");
+  emit("moveend", map.easeTo.mock.calls[0][1]);
+  camera.display([20, 51], true);
+  expect(map.jumpTo).toHaveBeenLastCalledWith({ center: [20, 51], bearing: 0, pitch: 0 });
+});

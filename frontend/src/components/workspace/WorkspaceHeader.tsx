@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { GreenWaveMark } from "./GreenWaveMark";
 import { useEffect, useRef, type ReactNode } from "react";
 
 /** One pinned glass header for every workspace: page content left, actions right. */
@@ -44,7 +46,12 @@ export function WorkspaceHeader({
       hidden={hidden}
       inert={hidden}
     >
-      {children}
+      <div className="workspace-heading">
+        <Link href="/" aria-label="ER–GreenWave home" className="workspace-brand">
+          <GreenWaveMark className="size-8" />
+        </Link>
+        {children}
+      </div>
       <div className="workspace-actions">{actions}</div>
     </header>
   );

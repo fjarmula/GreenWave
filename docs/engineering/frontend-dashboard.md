@@ -31,3 +31,16 @@ The delivered dashboard uses the canonical v1 generated contract. Mock transport
 ## Verification
 
 After frontend changes run `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm test`, and `npm run build`.
+
+## Workspace controls and signal diagnostics
+
+The shared workspace shell exposes a standalone primary dispatch action outside scrolling settings,
+including minimized phone sheets, hidden details and focus mode. Shared headers show the brand's
+Home link and concise navigation labels.
+
+Map phase detail draws vehicle lights only. Pedestrian indications remain in each tick's
+`signal_phases` and the Diagnostics JSON inspector. Phase entries expose `controlled_edge_ids`
+for road approaches and `is_route_movement` for the vehicle movement followed by the route.
+The dataset identifies approaches, not individual lanes; mock signals have no real edge IDs.
+Priority targets route vehicle movements green and other movements red, preserving clearance
+transitions; ordinary cycles remain unchanged outside priority.

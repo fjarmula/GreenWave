@@ -500,6 +500,8 @@ terminal event. `POST /stop` returns `StopResponse`
       "intersection_id": "INT-0361",
       "signal_key": "OSM-L1214",
       "kind": "VEHICLE",
+      "controlled_edge_ids": [],
+      "is_route_movement": true,
       "color": "YELLOW",
       "position": { "lat": 50.0663, "lng": 19.9218 },
       "accessible_label": "Simulated vehicle signal OSM-L1214 at INT-0361: yellow"
@@ -508,6 +510,8 @@ terminal event. `POST /stop` returns `StopResponse`
       "intersection_id": "INT-0361",
       "signal_key": "OSM-L1214",
       "kind": "PEDESTRIAN",
+      "controlled_edge_ids": [],
+      "is_route_movement": false,
       "color": "RED",
       "position": { "lat": 50.0663, "lng": 19.9218 },
       "accessible_label": "Simulated pedestrian signal OSM-L1214 at INT-0361: red"
@@ -520,6 +524,12 @@ Every tick lists **all** route intersections in route order.
 `tti_seconds` is an integer (rounded) and `null` once the intersection has
 been passed; `name` is nullable. `total_time_elapsed_sec` advances by
 1 per tick at every playback speed.
+
+Each phase also reports `controlled_edge_ids` for its known road approach (empty for
+unknown/synthetic geometry) and `is_route_movement` for vehicle indications followed
+by the emergency route. These identify approaches, not individual lanes. Both vehicle
+and pedestrian indications remain in Diagnostics JSON; the map renders vehicle lights only.
+The additive fields default to an empty list and false for older payloads.
 
 `signal_phases` (default `[]`) is a deterministic, **simulated** explanatory
 layer, never a live or measured signal state (`backend/src/greenwave/simulation/phases.py`).

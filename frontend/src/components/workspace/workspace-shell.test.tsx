@@ -80,3 +80,18 @@ it("uses the full inspector on desktop regardless of phone sheet state", () => {
   expect(html).not.toContain("Phone card");
   expect(html).not.toContain("sheet-pill");
 });
+
+it("keeps a standalone start action outside hidden details and focus chrome", () => {
+  const html = renderToStaticMarkup(
+    <WorkspaceShell
+      defaultFocus
+      defaultDetails={false}
+      map={<div />}
+      header={<h1>Green Wave</h1>}
+      inspector={<p>Settings</p>}
+      primaryAction={<button>Initialize corridor</button>}
+    />,
+  );
+  expect(html).toMatch(/class="workspace-primary-action"[^>]*><button>Initialize corridor/);
+  expect(html).toMatch(/aria-label="ER–GreenWave home"/);
+});

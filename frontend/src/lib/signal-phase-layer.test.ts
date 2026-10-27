@@ -105,7 +105,7 @@ describe("signal phase layer", () => {
     layer.setPhases([VEHICLE, PEDESTRIAN]);
 
     map.zoomTo(SIGNAL_PHASE_DETAIL_ZOOM);
-    expect(factory.live().map((marker) => marker.shown)).toEqual([VEHICLE, PEDESTRIAN]);
+    expect(factory.live().map((marker) => marker.shown)).toEqual([VEHICLE]);
 
     map.zoomTo(SIGNAL_PHASE_DETAIL_ZOOM - 1);
     expect(factory.live()).toEqual([]);
@@ -130,7 +130,7 @@ describe("signal phase layer", () => {
 
     layer.setPhases([PEDESTRIAN]);
 
-    expect(factory.live().map((marker) => marker.shown)).toEqual([PEDESTRIAN]);
+    expect(factory.live().map((marker) => marker.shown)).toEqual([]);
   });
 
   it("draws no invented marker when a tick carries no phases", () => {
@@ -170,7 +170,6 @@ describe("signal phase layer", () => {
 describe("phaseMarkerText", () => {
   it("names the movement and colour in text, marked simulated", () => {
     expect(phaseMarkerText(VEHICLE)).toBe("SIM CAR GREEN");
-    expect(phaseMarkerText(PEDESTRIAN)).toBe("SIM PED RED");
   });
 });
 
@@ -219,8 +218,8 @@ describe("layoutPhaseMarkers", () => {
     const layout = layoutPhaseMarkers(ALL_AT_ONE_POINT);
     const offsets = [...layout.values()].map((item) => item.offset.join(","));
 
-    expect(layout.size).toBe(4);
-    expect(new Set(offsets).size).toBe(4);
+    expect(layout.size).toBe(2);
+    expect(new Set(offsets).size).toBe(2);
     expect(layoutPhaseMarkers([...ALL_AT_ONE_POINT].reverse())).toEqual(layout);
     // Rows at least one label height apart: never a two-pixel left/right split.
     const rows = [...layout.values()].map((item) => item.offset[1]).sort((a, b) => a - b);
@@ -228,7 +227,7 @@ describe("layoutPhaseMarkers", () => {
   });
 
   it("keys items by intersection, signal and kind", () => {
-    expect([...layoutPhaseMarkers([PEDESTRIAN]).keys()]).toEqual(["INT-0360|OSM-L4|PEDESTRIAN"]);
+    expect([...layoutPhaseMarkers([VEHICLE]).keys()]).toEqual(["INT-0360|OSM-L4|VEHICLE"]);
   });
 
   it("leaves well-separated intersections at their geographic anchors", () => {
@@ -246,13 +245,10 @@ describe("layoutPhaseMarkers", () => {
     expect(layout.get("INT-0360|OSM-L4|VEHICLE")?.offset).toEqual([0, 0]);
   });
 
-  it("draws a pedestrian-only signal as one pedestrian marker, never a car", () => {
+  it("omits pedestrian-only signals from map layout", () => {
     const layout = layoutPhaseMarkers([PEDESTRIAN]);
 
-    expect(layout.size).toBe(1);
-    expect([...layout.values()].map((item) => phaseMarkerText(item.phase))).toEqual([
-      "SIM PED RED",
-    ]);
+    expect(layout.size).toBe(0);
   });
 });
 
@@ -371,4 +367,8 @@ it("shows a supplied mock junction name in the map label and accessible label", 
   );
   expect(label.text).toContain("Mock junction A");
   expect(label.ariaLabel).toContain("Mock junction A");
+});
+
+it("keeps a coarse intersection marker when only pedestrian phases are available", () => {
+  expect(coarseMarkerIds(["INT-0360"], [PEDESTRIAN], true)).toEqual(new Set(["INT-0360"]));
 });

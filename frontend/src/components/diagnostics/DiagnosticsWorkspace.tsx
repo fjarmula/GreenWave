@@ -43,12 +43,7 @@ export function DiagnosticsWorkspace() {
           </>
         }
       >
-        <ResponsiveNavigation
-          current="/diagnostics"
-          title="Diagnostics"
-          detail="Developer view"
-          heading={false}
-        />
+        <ResponsiveNavigation current="/diagnostics" title="Diagnostics" heading={false} />
       </WorkspaceHeader>
       <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Endpoint diagnostics</h1>
       <p className="mt-3 mb-8 text-muted-foreground">

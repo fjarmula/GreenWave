@@ -310,6 +310,14 @@ def _indicator(
         intersection_id=item.id,
         signal_key=decision.signal_key,
         kind=decision.kind,
+        controlled_edge_ids=list(
+            next(
+                signal for signal in item.signals if signal.signal_key == decision.signal_key
+            ).controlled_edge_ids
+        ),
+        is_route_movement=(
+            decision.kind is VEHICLE and decision.signal_key in item.route_signal_keys
+        ),
         color=color,
         position=decision.position,
         accessible_label=(

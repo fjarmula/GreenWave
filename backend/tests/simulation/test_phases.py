@@ -552,3 +552,18 @@ def test_a_multi_line_route_movement_shows_one_colour_in_the_normal_cycle() -> N
             if d.kind is VEHICLE
         }
         assert colors["sig-a"] == colors["sig-a-c"], now_s
+
+
+def test_priority_diagnostics_identify_controlled_approaches_and_route_movements() -> None:
+    model = _model(corridor_index(signal_approaches=SIGNALS))
+    phases = project_signal_phases(
+        model, _state(model, 0, IntersectionState.PRIORITY_GREEN), SETTINGS
+    )
+    phases = [phase.model_dump(mode="json") for phase in phases if phase.intersection_id == "INT-A"]
+    assert len(phases) == 4
+    for phase in phases:
+        route_vehicle = phase["signal_key"] == "sig-a" and phase["kind"] == "VEHICLE"
+        assert phase["is_route_movement"] is route_vehicle
+        expected_edges = ["corridor-a"] if phase["signal_key"] == "sig-a" else ["cross-street"]
+        assert phase["controlled_edge_ids"] == expected_edges
+        assert phase["color"] == ("GREEN" if route_vehicle else "RED")
