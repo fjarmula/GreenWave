@@ -115,14 +115,7 @@ export function ComparisonWorkspace() {
       }
       defaultDetails={!live}
       provenance={`${config.transport === "mock" ? "Synthetic mock" : "Backend simulation"} · ${live ? "Both runs live on one simulated clock" : "Comparison scenario"}`}
-      statusAlign="end"
-      status={
-        running && runRequest ? (
-          <div className="driver-overlay">
-            <DispatchSettingsChip request={runRequest} />
-          </div>
-        ) : undefined
-      }
+      controls={running && runRequest ? <DispatchSettingsChip request={runRequest} /> : undefined}
       header={<ResponsiveNavigation current="/compare" title="Comparison" />}
       map={
         live ? (

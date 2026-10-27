@@ -1,6 +1,7 @@
 import * as maplibregl from "maplibre-gl";
 import type { Map } from "maplibre-gl";
 
+import { CAMERA_TRANSITION_MILLISECONDS } from "@/lib/camera-motion";
 import { canFit } from "@/components/map/endpoint-fit";
 import { measureMapPadding } from "@/components/map/occluders";
 import type { Position, SimulationStartResponse } from "@/types/telemetry";
@@ -28,6 +29,8 @@ export function applyRouteFit(
   map.fitBounds(bounds, {
     padding: measureMapPadding(map.getContainer()),
     maxZoom: 16,
-    duration: reduceMotion ? 0 : 200,
+    // Ease directly between views instead of a flight arc that zooms out and back in.
+    linear: true,
+    duration: reduceMotion ? 0 : CAMERA_TRANSITION_MILLISECONDS,
   });
 }

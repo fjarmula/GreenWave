@@ -5,6 +5,7 @@ import { GreenWaveMark } from "./GreenWaveMark";
 import { Maximize2, Minimize2, PanelRight } from "lucide-react";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { BottomSheet } from "@/components/workspace/BottomSheet";
+import { WorkspaceControls } from "./WorkspaceControls";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { FollowProvider } from "@/components/map/follow-context";
 import type { SheetSnap } from "@/lib/sheet-physics";
@@ -23,6 +24,7 @@ export function WorkspaceShell({
   map,
   status,
   primaryAction,
+  controls,
   inspector,
   sheet,
   header,
@@ -35,6 +37,8 @@ export function WorkspaceShell({
   status?: ReactNode;
   /** Persistent action, independent of inspector scrolling, sheets and focus. */
   primaryAction?: ReactNode;
+  /** Settings beside the shared camera toggle. */
+  controls?: ReactNode;
   /** Which top corner the status overlay floats in. */
   statusAlign?: "start" | "end";
   /** Full desktop panel; also used on phones without a sheet. */
@@ -50,6 +54,21 @@ export function WorkspaceShell({
   const [details, setDetails] = useState(defaultDetails);
   const trigger = useRef<HTMLButtonElement>(null);
   const exit = useRef<HTMLButtonElement>(null);
+  const shell = useRef<HTMLElement>(null);
+  const action = useRef<HTMLDivElement>(null);
+  const hasPrimaryAction = !!primaryAction;
+  useEffect(() => {
+    if (!action.current) return;
+    const measure = () =>
+      shell.current?.style.setProperty(
+        "--workspace-primary-height",
+        `${action.current?.offsetHeight ?? 0}px`,
+      );
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(action.current);
+    return () => observer.disconnect();
+  }, [hasPrimaryAction]);
   const phone = useIsPhone();
   const changeFocus = (next: boolean) => {
     setFocus(next);
@@ -76,8 +95,10 @@ export function WorkspaceShell({
   return (
     <FollowProvider>
       <main
+        ref={shell}
         className="workspace-shell"
         data-layout="map-first"
+        data-primary-action={hasPrimaryAction || undefined}
         data-focus={focus}
         data-details={details && hasPanel}
         data-sheet={sheet && phone && !panelHidden ? sheet.snap : undefined}
@@ -114,8 +135,9 @@ export function WorkspaceShell({
         >
           {header}
         </WorkspaceHeader>
+        <WorkspaceControls>{controls}</WorkspaceControls>
         {primaryAction && (
-          <div className="workspace-primary-action" data-map-occluder>
+          <div ref={action} className="workspace-primary-action" data-map-occluder>
             {primaryAction}
           </div>
         )}

@@ -228,3 +228,17 @@ describe("routeFitCoordinates", () => {
     expect(routeFitCoordinates({ route_geometry: geometry }, null)).toEqual(geometry.coordinates);
   });
 });
+
+it("returns to the route with the same eased duration as Follow and respects reduced motion", () => {
+  const { map, fitBounds } = fakeMap(1200, 800);
+  applyRouteFit(map, OFF_SCREEN, false);
+  expect(fitBounds).toHaveBeenLastCalledWith(
+    expect.anything(),
+    expect.objectContaining({ linear: true, duration: 600 }),
+  );
+  applyRouteFit(map, OFF_SCREEN, true);
+  expect(fitBounds).toHaveBeenLastCalledWith(
+    expect.anything(),
+    expect.objectContaining({ linear: true, duration: 0 }),
+  );
+});

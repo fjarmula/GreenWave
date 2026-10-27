@@ -112,7 +112,7 @@ it("Follow vehicle eases to street level without displayed frames cancelling the
   camera.display([19, 50], true);
   camera.resume();
   expect(map.easeTo).toHaveBeenCalledWith(
-    { center: [19, 50], zoom: 17, bearing: 0, pitch: 0, duration: 280 },
+    { center: [19, 50], zoom: 17, bearing: 0, pitch: 0, duration: 600 },
     expect.any(Object),
   );
   camera.display([20, 51], true);
@@ -229,4 +229,19 @@ it("one Follow click wins over the interrupted wheel gesture's trailing zoomend"
   emit("moveend", map.easeTo.mock.calls[0][1]);
   camera.display([20, 51], true);
   expect(map.jumpTo).toHaveBeenLastCalledWith({ center: [20, 51], bearing: 0, pitch: 0 });
+});
+
+it("Show route wins over a user zoom completed while fitting the route", async () => {
+  const { camera, map, fit, emit, setZoom, changed } = sizedCamera(17);
+  camera.display([19, 50], true);
+  emit("zoomstart", { originalEvent: {} });
+  setZoom(17.5);
+  map.stop.mockImplementationOnce(() => emit("zoomend", { originalEvent: {} }));
+  fit.mockImplementationOnce(() => {
+    map.stop();
+  });
+  camera.showRoute();
+  expect(changed).toHaveBeenLastCalledWith("overview");
+  await Promise.resolve();
+  expect(map.easeTo).not.toHaveBeenCalled();
 });

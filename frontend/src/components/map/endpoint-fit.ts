@@ -1,6 +1,7 @@
 import * as maplibregl from "maplibre-gl";
 import type { Map } from "maplibre-gl";
 
+import { CAMERA_TRANSITION_MILLISECONDS } from "@/lib/camera-motion";
 import { measureMapPadding } from "@/components/map/occluders";
 
 /** The visible map area, as MapLibre's `getBounds()` reports it. */
@@ -26,8 +27,6 @@ export function endpointFitDecision({
     lng >= west && lng <= east && lat >= south && lat <= north;
   return points.every(inView) ? "none" : "fit";
 }
-
-const FOCUS_FIT_DURATION_MILLISECONDS = 600;
 
 /** `fitBounds` on a zero-size container produces `Invalid LngLat (NaN, NaN)`. */
 export function canFit(map: Map): boolean {
@@ -62,6 +61,6 @@ export function applyEndpointFit(
   map.fitBounds(bounds, {
     padding: measureMapPadding(map.getContainer()),
     maxZoom: points.length > 1 ? 13.2 : 14,
-    duration: reduceMotion ? 0 : FOCUS_FIT_DURATION_MILLISECONDS,
+    duration: reduceMotion ? 0 : CAMERA_TRANSITION_MILLISECONDS,
   });
 }

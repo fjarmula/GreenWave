@@ -104,12 +104,13 @@ export function BottomSheet({
     const observer = new ResizeObserver(measure);
     // The containing block (not the DOM parent) is what the 85% cap and the snaps follow.
     const container = sheet.current?.offsetParent ?? null;
+    const workspace = sheet.current?.closest<HTMLElement>(".workspace-shell");
     for (const element of [sheet.current, collapsedSlot.current, container])
       if (element) observer.observe(element);
     return () => {
       observer.disconnect();
       finishDrag.current?.();
-      if (container instanceof HTMLElement) container.style.removeProperty("--sheet-visible");
+      workspace?.style.removeProperty("--sheet-visible");
     };
   }, [measure]);
 
@@ -130,8 +131,9 @@ export function BottomSheet({
   // Map controls and attribution stay above the visible part of the sheet (CSS reads this).
   useLayoutEffect(() => {
     const element = sheet.current;
-    const container = element?.offsetParent;
-    if (!element || !(container instanceof HTMLElement) || travel === null) return;
+    // The dock's clipping wrapper can be the offsetParent; sibling map controls read the shell.
+    const container = element?.closest<HTMLElement>(".workspace-shell");
+    if (!element || !container || travel === null) return;
     const collapsedVisible = Number(element.dataset.collapsedVisible) || 0;
     const visible = snap === "minimized" && peek ? peek.visible : collapsedVisible;
     container.style.setProperty("--sheet-visible", `${visible}px`);

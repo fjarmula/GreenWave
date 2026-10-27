@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo } from "react";
 import { useTheme } from "next-themes";
-import { LocateFixed, Route } from "lucide-react";
 
 import { CascadeLinksLayer, CascadeLinksMapProvider } from "@/components/map/CascadeLinksLayer";
 import { EndpointMarkers, type MapEndpoint } from "@/components/map/EndpointMarkers";
@@ -91,11 +90,12 @@ export function MapContainer({
     theme,
   );
   const { display, mode: cameraMode, resume, showRoute } = camera;
-  const followable = canFollow && !!routeData;
+  const followable = live && !!routeData;
   useFollowTarget(
     useMemo(
-      () => (followable ? { following: cameraMode === "following", resume, showRoute } : null),
-      [followable, cameraMode, resume, showRoute],
+      () =>
+        followable ? { following: cameraMode === "following", canFollow, resume, showRoute } : null,
+      [followable, canFollow, cameraMode, resume, showRoute],
     ),
   );
   const displayVehicle = useCallback(
@@ -199,27 +199,6 @@ export function MapContainer({
           labels={signalLabels}
         />
       </div>
-      {live && routeData && (
-        <div
-          className="workspace-camera-controls absolute top-3 left-3 z-20 flex flex-wrap gap-2"
-          data-map-occluder
-        >
-          <button className="workspace-button workspace-float" onClick={camera.showRoute}>
-            <Route aria-hidden />
-            Show route
-          </button>
-          <button
-            className="workspace-button workspace-float"
-            data-active={(canFollow && camera.mode === "following") || undefined}
-            aria-pressed={canFollow && camera.mode === "following"}
-            disabled={!canFollow}
-            onClick={camera.resume}
-          >
-            <LocateFixed aria-hidden />
-            {canFollow && camera.mode === "following" ? "Following vehicle" : "Follow vehicle"}
-          </button>
-        </div>
-      )}
     </>
   );
 }

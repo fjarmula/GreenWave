@@ -342,11 +342,15 @@ export function Dashboard({
         ) : undefined
       }
       sheet={onSite ? undefined : workspaceSheet}
+      controls={
+        mode === "live" && simulationState === "RUNNING" && simulation.startRequest ? (
+          <DispatchSettingsChip request={simulation.startRequest} />
+        ) : undefined
+      }
       status={
-        mode === "live" && simulationState === "RUNNING" ? (
+        mode === "live" && simulationState === "RUNNING" && driver && signal ? (
           <div className="driver-overlay">
-            {driver && signal && <NextSignalCard signal={signal} />}
-            {simulation.startRequest && <DispatchSettingsChip request={simulation.startRequest} />}
+            <NextSignalCard signal={signal} />
           </div>
         ) : undefined
       }
