@@ -42,11 +42,18 @@ def address_search_key(street: str) -> str:
 
 
 _WHITESPACE = re.compile(r"\s+")
+_LEADING_INT = re.compile(r"^(\d+)(.*)$")
 
 
 def canonical_housenumber(number: str) -> str:
     """Whitespace removed and letters upper-cased, so ``15 a``, ``15a`` and ``15A`` are one key."""
     return _WHITESPACE.sub("", number).upper()
+
+
+def natural_housenumber(housenumber: str) -> tuple[float, str]:
+    """``1 < 1a < 2 < 10``: (leading integer, remainder); non-numeric numbers sort last."""
+    match = _LEADING_INT.match(housenumber)
+    return (int(match.group(1)), match.group(2)) if match else (math.inf, housenumber)
 
 
 def _text(value: object) -> str:

@@ -1,24 +1,15 @@
 """Local address search over ``addresses.parquet``: no external geocoder (spec, anti-goal)."""
 
-import math
 import re
 from dataclasses import dataclass
 
 import polars as pl
 
-from greenwave.etl.addresses import address_search_key, centre_distance_m
+from greenwave.etl.addresses import address_search_key, centre_distance_m, natural_housenumber
 from greenwave.schemas import GeocodeResult, Position
 
 # Matched on the raw last token: the street normaliser turns "15/2" into "15 2".
 _HOUSE_NUMBER = re.compile(r"^\d+[a-z]?(/\d+[a-z]?)?$")
-_LEADING_INT = re.compile(r"^(\d+)(.*)$")
-
-
-def _natural(housenumber: str) -> tuple[float, str]:
-    """``1 < 1a < 2 < 10``: (leading integer, remainder); non-numeric numbers sort last."""
-    match = _LEADING_INT.match(housenumber)
-    return (int(match.group(1)), match.group(2)) if match else (math.inf, housenumber)
-
 
 _SortKey = tuple[int, int, bool, str, tuple[float, str], float, float, float]
 
@@ -103,7 +94,7 @@ class AddressIndex:
                     number_tier,
                     a.outside_krakow,
                     a.street,
-                    _natural(a.folded_number),
+                    natural_housenumber(a.folded_number),
                     a.centre_distance_m,
                     a.lat,
                     a.lng,
