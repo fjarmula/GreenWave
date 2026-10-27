@@ -55,6 +55,28 @@
       "licence": "Polish Open Data Act (Ustawa z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu informacji sektora publicznego, Dz.U. 2021 poz. 1641) — free re-use with source attribution",
       "attribution": "Źródło: Urząd Miasta Krakowa / MSIP (znacznik czasu eksportu danych: 2026-10-13 00:47:34).",
       "notes": "Records the export timestamp (2026-10-13 00:47:34) of the Kraków municipal dataset package; no data used in the simulation."
+    },
+    {
+      "path": "krakow/emuia/Adresy.geojson",
+      "sha256": "6a67df38f1a5354a8752ee873fa8ae6ea8bb279f76e483e74390dd8abc2076f2",
+      "size_bytes": 26233333,
+      "source": "Kraków open data (MSIP), Punkty adresowe (EMUiA)",
+      "url": "https://msip.krakow.pl/dataset/1492",
+      "retrieved_on": "2026-10-27",
+      "licence": "Polish Open Data Act (Ustawa z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu informacji sektora publicznego, Dz.U. 2021 poz. 1641) — free re-use with source attribution",
+      "attribution": "Źródło: Urząd Miasta Krakowa, Wydział Geodezji / MSIP, zestaw danych 'Punkty adresowe (EMUiA)' (stan danych: 2026-10-27 00:45:04). Dane przetworzone w projekcie ER-GreenWave.",
+      "notes": "EPSG:2178. Authoritative coordinate for incident addresses (places step), reconciled against OSM addresses. Catalogue terms: 'Wykorzystanie danych zgodne z regulaminem MSIP'. Downloaded as https://msip.um.krakow.pl/Dane/Adresy_JSON.zip."
+    },
+    {
+      "path": "krakow/emuia/__Aktualnosc__.txt",
+      "sha256": "8334b748c8fedf5c0e38ac8e42aff9b64ab222d6d7bb69bd67db6dd04c4e79f1",
+      "size_bytes": 47,
+      "source": "Kraków open data (MSIP), Punkty adresowe (EMUiA)",
+      "url": "https://msip.krakow.pl/dataset/1492",
+      "retrieved_on": "2026-10-27",
+      "licence": "Polish Open Data Act (Ustawa z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu informacji sektora publicznego, Dz.U. 2021 poz. 1641) — free re-use with source attribution",
+      "attribution": "Źródło: Urząd Miasta Krakowa, Wydział Geodezji / MSIP (znacznik czasu eksportu danych: 2026-10-27 00:45:04).",
+      "notes": "Export timestamp of the EMUiA address package; reported as emuia_export_timestamp. Catalogue terms: 'Wykorzystanie danych zgodne z regulaminem MSIP'. Downloaded as https://msip.um.krakow.pl/Dane/Adresy_JSON.zip."
     }
   ]
 }
