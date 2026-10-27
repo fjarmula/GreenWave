@@ -4,101 +4,81 @@
     {
       "station_id": "STN-A-0001",
       "vehicle_type": "AMBULANCE",
-      "source_kind": "ambulance_base",
-      "name": "MS Jugowicka",
+      "source_kind": "prm_base",
+      "name": "Osiedle Złotej Jesieni 1, 31-826 Kraków",
       "position": {
-        "lat": 50.007311900000005,
-        "lng": 19.930094935464307
+        "lat": 50.09205534006615,
+        "lng": 20.0192659931845
       }
     },
     {
       "station_id": "STN-A-0002",
       "vehicle_type": "AMBULANCE",
-      "source_kind": "hospital_ed",
-      "name": "Szpital Uniwersytecki",
+      "source_kind": "prm_base",
+      "name": "ul. Kościuszki Tadeusza 49, 30-105 Kraków",
       "position": {
-        "lat": 50.008772099999995,
-        "lng": 20.004044500000006
+        "lat": 50.05318258484102,
+        "lng": 19.919725851681402
       }
     },
     {
       "station_id": "STN-A-0003",
       "vehicle_type": "AMBULANCE",
-      "source_kind": "hospital_ed",
-      "name": "Uniwersytecki Szpital Dziecięcy",
+      "source_kind": "prm_base",
+      "name": "ul. Rynek Podgórski 2, 30-533 Kraków",
       "position": {
-        "lat": 50.00965709500575,
-        "lng": 20.00270152921418
+        "lat": 50.04447069487434,
+        "lng": 19.949881935217906
       }
     },
     {
       "station_id": "STN-A-0004",
       "vehicle_type": "AMBULANCE",
-      "source_kind": "ambulance_base",
-      "name": "Krakowskie Pogotowie Ratunkowe, Zespoły wyjazdowe Teligi",
+      "source_kind": "prm_base",
+      "name": "ul. Teligi Leonida 8, 30-835 Kraków",
       "position": {
-        "lat": 50.0157709,
-        "lng": 20.0041455
+        "lat": 50.01622949255725,
+        "lng": 20.00438119302971
       }
     },
     {
       "station_id": "STN-A-0005",
       "vehicle_type": "AMBULANCE",
-      "source_kind": "ambulance_base",
-      "name": "Krakowskie Pogotowie Ratunkowe",
+      "source_kind": "prm_base",
+      "name": "ul. Wybickiego Józefa 3a, 31-261 Kraków",
       "position": {
-        "lat": 50.06034175,
-        "lng": 19.95134540724206
+        "lat": 50.083577194508166,
+        "lng": 19.929897508952767
       }
     },
     {
       "station_id": "STN-A-0006",
       "vehicle_type": "AMBULANCE",
-      "source_kind": "hospital_ed",
-      "name": "Szpital specjalistyczny imienia Stefana Żeromskiego",
+      "source_kind": "prm_base",
+      "name": "ul. dr. Babińskiego Józefa 29, 30-393 Kraków",
       "position": {
-        "lat": 50.06515425,
-        "lng": 20.04631435846379
+        "lat": 50.006495314192804,
+        "lng": 19.888304639267524
       }
     },
     {
       "station_id": "STN-A-0007",
       "vehicle_type": "AMBULANCE",
-      "source_kind": "hospital_ed",
-      "name": "Samodzielny Publiczny Zakład Opieki Zdrowotnej MSW",
+      "source_kind": "prm_base",
+      "name": "ul. św. Łazarza 14, 31-530 Kraków",
       "position": {
-        "lat": 50.07205895,
-        "lng": 19.912506956410752
+        "lat": 50.06030425166462,
+        "lng": 19.950977957441424
       }
     },
     {
       "station_id": "STN-A-0008",
       "vehicle_type": "AMBULANCE",
-      "source_kind": "hospital_ed",
-      "name": "5. Wojskowy Szpital Kliniczny z Polikliniką SP ZOZ w Krakowie",
+      "source_kind": "prm_base",
+      "name": "ul. Żaglowa 13A, 31-979 Kraków",
       "position": {
-        "lat": 50.0773814,
-        "lng": 19.933990032788536
-      }
-    },
-    {
-      "station_id": "STN-A-0009",
-      "vehicle_type": "AMBULANCE",
-      "source_kind": "hospital_ed",
-      "name": "Szpital Miejski Specjalistyczny imienia Gabriela Narutowicza",
-      "position": {
-        "lat": 50.083152150000004,
-        "lng": 19.939291130915112
-      }
-    },
-    {
-      "station_id": "STN-A-0010",
-      "vehicle_type": "AMBULANCE",
-      "source_kind": "hospital_ed",
-      "name": "Szpital Specjalistyczny im. Ludwika Rydygiera w Krakowie",
-      "position": {
-        "lat": 50.0930833,
-        "lng": 20.018478501270657
+        "lat": 50.062545853817305,
+        "lng": 20.057098116828467
       }
     },
     {

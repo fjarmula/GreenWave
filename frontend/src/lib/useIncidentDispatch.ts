@@ -138,6 +138,8 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
           incident: next.incident.position,
           vehicle_type: next.vehicleType,
           traffic_density_multiplier: next.trafficDensity,
+          time_mode: "ENABLED",
+          availability: {},
         },
         controller.signal,
       )

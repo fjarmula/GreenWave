@@ -1,6 +1,12 @@
+from datetime import datetime
+from typing import Any
+
+import pytest
 from fastapi.testclient import TestClient
 
+from greenwave.api import dispatch as dispatch_api
 from greenwave.main import create_app
+from greenwave.routing.errors import NoStationReachable
 from tests.support.processed import Layout
 
 
@@ -224,6 +230,169 @@ def test_rank_rejects_unknown_vehicle_type(layout: Layout) -> None:
         response = c.post(
             "/api/v1/dispatch/rank",
             json={"incident": {"lat": 50.0, "lng": 19.9}, "vehicle_type": "TANK"},
+        )
+
+    assert response.status_code == 422
+
+
+NOON = "2026-10-27T12:00:00"
+EVENING = "2026-10-27T21:00:00"
+
+
+def _rank_ambulance(c: TestClient, **extra: object) -> dict[str, Any]:
+    response = c.post(
+        "/api/v1/dispatch/rank",
+        json={"incident": _poprzeczna(c), "vehicle_type": "AMBULANCE", **extra},
+    )
+    assert response.status_code == 200, response.text
+    body: dict[str, Any] = response.json()
+    return body
+
+
+def test_resources_lists_teams_with_roster(layout: Layout) -> None:
+    with client(layout) as c:
+        response = c.get("/api/v1/resources", params={"at": NOON})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["schema_version"] == "1.0"
+    assert body["roster"]["plan_update"] == "2"
+    assert body["roster"]["effective_from"] == "2026-09-01"
+    assert body["roster"]["teams_in_scope"] == 3
+    assert body["at"] == NOON
+    assert [t["team_code"] for t in body["teams"]] == ["K01 008", "K01 162", "K01 176"]
+    assert all(t["on_shift"] for t in body["teams"])
+
+
+def test_resources_on_shift_at_given_time(layout: Layout) -> None:
+    with client(layout) as c:
+        body = c.get("/api/v1/resources", params={"at": "2026-10-27T21:00"}).json()
+
+    on_shift = {t["team_code"]: t["on_shift"] for t in body["teams"]}
+    assert on_shift == {"K01 008": True, "K01 162": True, "K01 176": False}
+
+
+def test_resources_defaults_to_server_now(layout: Layout) -> None:
+    with client(layout) as c:
+        body = c.get("/api/v1/resources").json()
+
+    assert datetime.fromisoformat(body["at"]).tzinfo is None
+
+
+def test_rank_ambulance_returns_team_and_reason(layout: Layout) -> None:
+    with client(layout) as c:
+        body = _rank_ambulance(c, scenario_time=NOON)
+
+    assert body["outcome"] == "OK"
+    assert body["roster"]["teams_in_scope"] == 3
+    assert body["incident_area"] == {
+        "teryt": "1261059",
+        "delegatura_name": "Śródmieście",
+        "district_number": 1,
+        "district_name": "Stare Miasto",
+    }
+    first = body["candidates"][0]
+    assert first["selection_reason"] in {
+        "NEAREST",
+        "IN_AREA_WITHIN_MARGIN",
+        "NEAREST_OUTSIDE_MARGIN",
+    }
+    assert first["team"]["team_code"] == body["area_rule"]["chosen_team_code"]
+    assert first["team"]["availability"] == "assumed_free"
+    assert all(c["selection_reason"] is None for c in body["candidates"][1:])
+    assert body["excluded_teams"] == []
+    # Two bases: K01 162 and K01 176 share one, so one candidate per base.
+    assert len(body["candidates"]) == 2
+
+
+def test_rank_echoes_scenario_time(layout: Layout) -> None:
+    with client(layout) as c:
+        assert _rank_ambulance(c, scenario_time="2026-10-27T21:00")["scenario_time"] == EVENING
+        echoed = _rank_ambulance(c)["scenario_time"]
+
+    assert datetime.fromisoformat(echoed).tzinfo is None
+
+
+def test_off_shift_team_is_excluded(layout: Layout) -> None:
+    with client(layout) as c:
+        body = _rank_ambulance(c, scenario_time=EVENING)
+
+    assert body["excluded_teams"] == [
+        {"team_code": "K01 176", "station_id": "STN-A-0002", "reason": "OFF_SHIFT"}
+    ]
+
+
+def test_busy_override_moves_choice(layout: Layout) -> None:
+    with client(layout) as c:
+        chosen = _rank_ambulance(c, scenario_time=NOON)["area_rule"]["chosen_team_code"]
+        body = _rank_ambulance(c, scenario_time=NOON, availability={chosen: "busy"})
+
+    assert body["area_rule"]["chosen_team_code"] != chosen
+    assert {"team_code": chosen, "reason": "BUSY_OVERRIDE"}.items() <= next(
+        t for t in body["excluded_teams"] if t["team_code"] == chosen
+    ).items()
+
+
+def test_free_override_is_not_assumed(layout: Layout) -> None:
+    with client(layout) as c:
+        chosen = _rank_ambulance(c, scenario_time=NOON)["area_rule"]["chosen_team_code"]
+        body = _rank_ambulance(c, scenario_time=NOON, availability={chosen: "free"})
+
+    assert body["candidates"][0]["team"]["availability"] == "free"
+
+
+def test_all_busy_returns_no_eligible_outcome(layout: Layout) -> None:
+    busy = {code: "busy" for code in ("K01 008", "K01 162", "K01 176")}
+    with client(layout) as c:
+        body = _rank_ambulance(c, scenario_time=NOON, availability=busy)
+
+    assert body["outcome"] == "NO_ELIGIBLE_RESOURCE"
+    assert body["candidates"] == []
+    assert body["area_rule"] is None
+    assert sorted(t["team_code"] for t in body["excluded_teams"]) == sorted(busy)
+    assert {t["reason"] for t in body["excluded_teams"]} == {"BUSY_OVERRIDE"}
+    assert body["incident_snapped"]["snap_distance_m"] >= 0
+
+
+def test_fire_rank_unchanged(layout: Layout) -> None:
+    with client(layout) as c:
+        incident = _poprzeczna(c)
+        body = c.post(
+            "/api/v1/dispatch/rank",
+            json={"incident": incident, "vehicle_type": "FIRE_TRUCK", "scenario_time": NOON},
+        ).json()
+
+    assert body["outcome"] == "OK"
+    assert body["scenario_time"] == NOON
+    assert (body["area_rule"], body["roster"], body["incident_area"]) == (None, None, None)
+    assert body["excluded_teams"] == []
+    assert all(c["team"] is None and c["selection_reason"] is None for c in body["candidates"])
+
+
+def test_rank_unreachable_still_422(layout: Layout, monkeypatch: pytest.MonkeyPatch) -> None:
+    def unreachable(*_args: object, **_kwargs: object) -> None:
+        raise NoStationReachable("no AMBULANCE station can reach the incident")
+
+    monkeypatch.setattr(dispatch_api, "rank_teams", unreachable)
+    with client(layout) as c:
+        response = c.post(
+            "/api/v1/dispatch/rank",
+            json={"incident": _poprzeczna(c), "vehicle_type": "AMBULANCE"},
+        )
+
+    assert response.status_code == 422
+    assert response.json()["error_code"] == "NO_STATION_REACHABLE"
+
+
+def test_rank_rejects_unknown_availability_value(layout: Layout) -> None:
+    with client(layout) as c:
+        response = c.post(
+            "/api/v1/dispatch/rank",
+            json={
+                "incident": _poprzeczna(c),
+                "vehicle_type": "AMBULANCE",
+                "availability": {"K01 162": "away"},
+            },
         )
 
     assert response.status_code == 422

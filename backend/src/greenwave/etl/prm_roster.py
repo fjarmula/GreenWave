@@ -19,6 +19,11 @@ ROSTER_SHEET = "Tabela nr 1a"
 ADDRESS_SHEET = "Tabela nr 2a"
 PLAN_UPDATE = "2"
 EFFECTIVE_FROM = "2026-09-01"
+# Shown with the roster in the API and the UI.
+PRM_SOURCE = (
+    "Wojewódzki plan działania systemu Państwowe Ratownictwo Medyczne, województwo małopolskie "
+    "(Tables 1a and 2a)"
+)
 # The Kraków operational region; its teams without a curated base are reported as outside the map.
 KRAKOW_REGION = "RO12/01"
 

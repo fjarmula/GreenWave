@@ -46,6 +46,12 @@ const RANKING: DispatchRankResponse = {
     },
   ],
   station_at_incident: null,
+  scenario_time: "2026-10-27T12:00:00",
+  outcome: "OK",
+  incident_area: null,
+  excluded_teams: [],
+  roster: null,
+  area_rule: null,
 };
 
 function dispatchState(patch: Partial<IncidentDispatch> = {}): IncidentDispatch {

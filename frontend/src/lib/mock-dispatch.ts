@@ -12,6 +12,15 @@ import type { Station } from "@/types/telemetry";
 
 export { haversineMeters } from "@/lib/mock-route-metrics";
 
+/** Naive local "YYYY-MM-DDTHH:MM:00", the shape the backend echoes as scenario_time. */
+function localMinute(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:00`
+  );
+}
+
 export function createMockDispatchAdapter(
   stations: Station[] = validateStations(snapshot).stations,
 ): DispatchAdapter {
@@ -69,6 +78,13 @@ export function createMockDispatchAdapter(
             : []),
         ].slice(0, 3),
         station_at_incident: null,
+        // No roster in mock mode (capability resources: false): plain nearest station.
+        scenario_time: localMinute(new Date()),
+        outcome: "OK",
+        incident_area: null,
+        excluded_teams: [],
+        roster: null,
+        area_rule: null,
       };
     },
   };

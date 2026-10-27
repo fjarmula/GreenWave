@@ -59,6 +59,12 @@ const ranking = (stationId: string): DispatchRankResponse => ({
     },
   ],
   station_at_incident: null,
+  scenario_time: "2026-10-27T12:00:00",
+  outcome: "OK",
+  incident_area: null,
+  excluded_teams: [],
+  roster: null,
+  area_rule: null,
 });
 
 const candidate = (stationId: string, seconds: number) => ({
@@ -108,6 +114,8 @@ describe("createIncidentDispatch", () => {
       incident: { lat: 50.01, lng: 19.94 },
       vehicle_type: "AMBULANCE",
       traffic_density_multiplier: 1,
+      time_mode: "ENABLED",
+      availability: {},
     });
     expect(dispatch.getState().rankStatus).toBe("ready");
     expect(dispatch.getState().ranking?.candidates[0].station.station_id).toBe("STN-A-0001");

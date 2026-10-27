@@ -27,6 +27,12 @@ const RANK: DispatchRankResponse = {
     },
   ],
   station_at_incident: null,
+  scenario_time: "2026-10-27T12:00:00",
+  outcome: "OK",
+  incident_area: null,
+  excluded_teams: [],
+  roster: null,
+  area_rule: null,
 };
 
 function respond(status: number, body: unknown) {
@@ -79,6 +85,8 @@ describe("createBackendDispatchAdapter", () => {
       incident: { lat: 50.0617, lng: 19.9373 },
       vehicle_type: "FIRE_TRUCK" as const,
       traffic_density_multiplier: 1,
+      time_mode: "ENABLED" as const,
+      availability: {},
     };
 
     await expect(adapter.rank(request)).resolves.toEqual(RANK);
@@ -103,6 +111,8 @@ describe("createBackendDispatchAdapter", () => {
         incident: { lat: 50, lng: 19.9 },
         vehicle_type: "FIRE_TRUCK",
         traffic_density_multiplier: 1,
+        time_mode: "ENABLED",
+        availability: {},
       })
       .catch((e) => e);
     expect(error).toBeInstanceOf(SimulationAdapterError);
@@ -118,6 +128,8 @@ describe("createBackendDispatchAdapter", () => {
           incident: { lat: 50, lng: 19.9 },
           vehicle_type: "AMBULANCE",
           traffic_density_multiplier: 1,
+          time_mode: "ENABLED",
+          availability: {},
         })
         .catch((e) => e);
       expect(error).toBeInstanceOf(SimulationAdapterError);
@@ -178,6 +190,8 @@ it("captures the full wire envelope and error JSON without changing validation",
     incident: { lat: 50.06, lng: 19.94 },
     vehicle_type: "FIRE_TRUCK" as const,
     traffic_density_multiplier: 1,
+    time_mode: "ENABLED" as const,
+    availability: {},
   };
   await expect(adapter.rank(request)).rejects.toBeInstanceOf(SimulationAdapterError);
   expect(diagnosticStore.getSnapshot().at(-1)).toMatchObject({
