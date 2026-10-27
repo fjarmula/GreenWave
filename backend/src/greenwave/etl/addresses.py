@@ -1,6 +1,7 @@
 """Address-point extraction from OSM ``addr:*`` tags for local geocoding."""
 
 import math
+import re
 from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -38,6 +39,21 @@ class AddressCandidate:
 def address_search_key(street: str) -> str:
     """Lowercased, diacritics folded, ``ul.``/``al.``/``os.`` prefixes normalised."""
     return normalise_street_name(street)
+
+
+_WHITESPACE = re.compile(r"\s+")
+_LEADING_INT = re.compile(r"^(\d+)(.*)$")
+
+
+def canonical_housenumber(number: str) -> str:
+    """Whitespace removed and letters upper-cased, so ``15 a``, ``15a`` and ``15A`` are one key."""
+    return _WHITESPACE.sub("", number).upper()
+
+
+def natural_housenumber(housenumber: str) -> tuple[float, str]:
+    """``1 < 1a < 2 < 10``: (leading integer, remainder); non-numeric numbers sort last."""
+    match = _LEADING_INT.match(housenumber)
+    return (int(match.group(1)), match.group(2)) if match else (math.inf, housenumber)
 
 
 def _text(value: object) -> str:
@@ -128,16 +144,17 @@ def extract_addresses(features: Iterable[OsmFeature]) -> tuple[pl.DataFrame, int
 def dedupe_addresses(
     frame: pl.DataFrame, radius_m: float = ADDRESS_DEDUP_RADIUS_M
 ) -> tuple[pl.DataFrame, int]:
-    """Merge rows with the same (search_key, case-folded house number) within ``radius_m``.
+    """Merge rows with the same (search_key, canonical house number) within ``radius_m``.
 
     Rows are visited in (search_key, house number, lat, lng) order; a row within ``radius_m`` of an
     already kept row of its key merges into it. The same street and number farther apart (another
     locality) stay distinct. Also collapses a building emitted twice (closed way and multipolygon).
     Returns ``(frame, merged_count)``.
     """
-    ordered = frame.with_columns(pl.col("housenumber").str.to_lowercase().alias("_hn")).sort(
-        "search_key", "_hn", "lat", "lng"
-    )
+    ordered = frame.with_columns(
+        # canonical_housenumber as an expression: whitespace removed, upper-cased.
+        pl.col("housenumber").str.replace_all(r"\s+", "").str.to_uppercase().alias("_hn")
+    ).sort("search_key", "_hn", "lat", "lng")
     keys = list(zip(ordered["search_key"].to_list(), ordered["_hn"].to_list(), strict=True))
     keep = np.ones(len(keys), dtype=bool)
     if keys:

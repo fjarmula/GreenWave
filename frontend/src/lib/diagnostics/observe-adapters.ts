@@ -73,6 +73,15 @@ export function observeDispatch(
         undefined,
         synthetic(transport, "/api/v1/stations"),
       ),
+    listResources: (at, signal) =>
+      observeOperation(
+        "resources",
+        transport,
+        () => adapter.listResources(at, signal),
+        store,
+        undefined,
+        synthetic(transport, "/api/v1/resources?" + new URLSearchParams({ at })),
+      ),
     geocode: (q, signal) =>
       observeOperation(
         "geocode",

@@ -36,6 +36,8 @@ export interface paths {
         /**
          * Rank
          * @description Sync on purpose: FastAPI runs it in the thread pool, keeping the CPU work off the loop.
+         *
+         *     AMBULANCE ranks eligible PRM teams (ADR 0014); fire and police rank stations as before.
          */
         post: operations["rank_api_v1_dispatch_rank_post"];
         delete?: never;
@@ -53,7 +55,7 @@ export interface paths {
         };
         /**
          * Geocode
-         * @description Search the local OSM address index; never calls an external geocoder.
+         * @description Search the local EMUiA + OSM address index (ADR 0013); never calls an external geocoder.
          */
         get: operations["geocode_api_v1_geocode_get"];
         put?: never;
@@ -73,6 +75,27 @@ export interface paths {
         };
         /** Health */
         get: operations["health_api_v1_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Resources
+         * @description The PRM teams in scope and whether each is on shift at ``at`` (naive local time; default
+         *     the server's local now). Published schedule only: no live availability.
+         */
+        get: operations["list_resources_api_v1_resources_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -180,6 +203,12 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * AddressProvenance
+         * @description Where an address coordinate comes from (ADR 0013); EMUiA is Kraków's address register.
+         * @enum {string}
+         */
+        AddressProvenance: "matched" | "municipal" | "osm";
+        /**
          * AmbulanceStatus
          * @enum {string}
          */
@@ -192,6 +221,25 @@ export interface components {
             /** Speed Kmh */
             speed_kmh: number;
             status: components["schemas"]["AmbulanceStatus"];
+        };
+        /**
+         * AreaRuleOutcome
+         * @description Why the first candidate was chosen (D4), with the teams compared.
+         */
+        AreaRuleOutcome: {
+            /** Chosen Team Code */
+            chosen_team_code: string;
+            /** Delta Seconds */
+            delta_seconds: number | null;
+            /** In Area Team Code */
+            in_area_team_code: string | null;
+            /** Nearest Team Code */
+            nearest_team_code: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "NEAREST" | "IN_AREA_WITHIN_MARGIN" | "NEAREST_OUTSIDE_MARGIN";
         };
         /**
          * CancelReason
@@ -264,7 +312,18 @@ export interface components {
         };
         /** DispatchRankRequest */
         DispatchRankRequest: {
+            /**
+             * Availability
+             * @default {}
+             */
+            availability: {
+                [key: string]: "free" | "busy";
+            };
             incident: components["schemas"]["Position"];
+            /** Scenario Time */
+            scenario_time?: string | null;
+            /** @default ENABLED */
+            time_mode: components["schemas"]["GreenWaveMode"];
             /**
              * Traffic Density Multiplier
              * @default 1
@@ -274,9 +333,24 @@ export interface components {
         };
         /** DispatchRankResponse */
         DispatchRankResponse: {
+            area_rule: components["schemas"]["AreaRuleOutcome"] | null;
             /** Candidates */
             candidates: components["schemas"]["RankedCandidate"][];
+            /** Excluded Teams */
+            excluded_teams: components["schemas"]["ExcludedTeam"][];
+            incident_area: components["schemas"]["IncidentArea"] | null;
             incident_snapped: components["schemas"]["SnappedEndpoint"];
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "OK" | "NO_ELIGIBLE_RESOURCE";
+            roster: components["schemas"]["RosterInfo"] | null;
+            /**
+             * Scenario Time
+             * Format: date-time
+             */
+            scenario_time: string;
             /**
              * Schema Version
              * @constant
@@ -300,6 +374,18 @@ export interface components {
              */
             schema_version: "1.0";
         };
+        /** ExcludedTeam */
+        ExcludedTeam: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "OFF_SHIFT" | "BUSY_OVERRIDE";
+            /** Station Id */
+            station_id: string;
+            /** Team Code */
+            team_code: string;
+        };
         /** GeocodeResponse */
         GeocodeResponse: {
             /** Results */
@@ -310,11 +396,25 @@ export interface components {
              */
             schema_version: "1.0";
         };
-        /** GeocodeResult */
+        /**
+         * GeocodeResult
+         * @description An address point: where to geocode an incident, not where a vehicle can stop.
+         */
         GeocodeResult: {
+            /** Disagreement M */
+            disagreement_m?: number | null;
             /** Label */
             label: string;
+            /** Osm Delta M */
+            osm_delta_m?: number | null;
+            osm_position?: components["schemas"]["Position"] | null;
+            /**
+             * Osm Same Key Elsewhere
+             * @default false
+             */
+            osm_same_key_elsewhere: boolean;
             position: components["schemas"]["Position"];
+            provenance: components["schemas"]["AddressProvenance"];
         };
         /**
          * GreenWaveMode
@@ -334,6 +434,20 @@ export interface components {
              * @constant
              */
             status: "ok";
+        };
+        /**
+         * IncidentArea
+         * @description The incident's PRM operating area: the Kraków delegatura of its district (EMUiA).
+         */
+        IncidentArea: {
+            /** Delegatura Name */
+            delegatura_name: string;
+            /** District Name */
+            district_name: string;
+            /** District Number */
+            district_number: number;
+            /** Teryt */
+            teryt: string;
         };
         /**
          * IntersectionKind
@@ -567,9 +681,45 @@ export interface components {
              * @default false
              */
             on_site: boolean;
+            /** Selection Reason */
+            selection_reason?: ("NEAREST" | "IN_AREA_WITHIN_MARGIN" | "NEAREST_OUTSIDE_MARGIN") | null;
             /** Standard Seconds */
             standard_seconds: number;
             station: components["schemas"]["Station"];
+            team?: components["schemas"]["TeamAssignment"] | null;
+        };
+        /** ResourcesResponse */
+        ResourcesResponse: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            roster: components["schemas"]["RosterInfo"];
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Teams */
+            teams: components["schemas"]["Team"][];
+        };
+        /**
+         * RosterInfo
+         * @description The official roster the teams come from (Małopolska PRM plan, Tables 1a and 2a).
+         */
+        RosterInfo: {
+            /**
+             * Effective From
+             * Format: date
+             */
+            effective_from: string;
+            /** Plan Update */
+            plan_update: string;
+            /** Source */
+            source: string;
+            /** Teams In Scope */
+            teams_in_scope: number;
         };
         /** RouteGeometry */
         RouteGeometry: {
@@ -828,7 +978,7 @@ export interface components {
          * @description Where a station comes from; the UI names it, so hospital EDs are not passed off as bases.
          * @enum {string}
          */
-        StationSourceKind: "ambulance_base" | "hospital_ed" | "fire_state" | "fire_volunteer" | "fire_other" | "police";
+        StationSourceKind: "prm_base" | "ambulance_base" | "hospital_ed" | "fire_state" | "fire_volunteer" | "fire_other" | "police";
         /** StationsResponse */
         StationsResponse: {
             /**
@@ -858,6 +1008,55 @@ export interface components {
              * @constant
              */
             status: "STOPPED";
+        };
+        /**
+         * Team
+         * @description A PRM team in scope and whether its published schedule has it on shift at ``at``.
+         */
+        Team: {
+            /** Area Teryt */
+            area_teryt: string[];
+            /** Base Address */
+            base_address: string;
+            /** On Shift */
+            on_shift: boolean;
+            /** Ready From Min */
+            ready_from_min: number;
+            /** Ready To Min */
+            ready_to_min: number;
+            /** Season From */
+            season_from: string;
+            /** Season To */
+            season_to: string;
+            /** Station Id */
+            station_id: string;
+            /** Team Code */
+            team_code: string;
+            /** Team Type */
+            team_type: string;
+            /** Weekdays */
+            weekdays: string;
+        };
+        /**
+         * TeamAssignment
+         * @description The PRM team a candidate base sends (AMBULANCE only).
+         */
+        TeamAssignment: {
+            /** Area Teryt */
+            area_teryt: string[];
+            /**
+             * Availability
+             * @enum {string}
+             */
+            availability: "free" | "assumed_free";
+            /** In Area */
+            in_area: boolean | null;
+            /** Other Eligible Team Codes */
+            other_eligible_team_codes: string[];
+            /** Team Code */
+            team_code: string;
+            /** Team Type */
+            team_type: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -991,6 +1190,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    list_resources_api_v1_resources_get: {
+        parameters: {
+            query?: {
+                at?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourcesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

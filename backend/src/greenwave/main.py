@@ -12,8 +12,10 @@ from greenwave.api.dispatch import router as dispatch_router
 from greenwave.api.simulation import router as simulation_router
 from greenwave.dataset import DatasetSettings, ProcessedDataset, load_dataset
 from greenwave.places.address_index import AddressIndex
+from greenwave.places.incident_area import IncidentAreaLocator
 from greenwave.routing.network_index import build_routing_index
 from greenwave.routing.station_ranking import build_station_nodes
+from greenwave.routing.team_eligibility import teams_from_frame
 from greenwave.schemas import HealthResponse
 from greenwave.simulation.session import SessionManager
 from greenwave.simulation_settings import SimulationSettings
@@ -62,6 +64,10 @@ def create_app(
         app.state.address_index = AddressIndex.from_frame(app.state.dataset.addresses)
         app.state.station_nodes = build_station_nodes(
             app.state.dataset.stations, app.state.routing_index
+        )
+        app.state.teams = teams_from_frame(app.state.dataset.resources)
+        app.state.incident_area_locator = IncidentAreaLocator.from_addresses(
+            app.state.dataset.addresses
         )
         app.state.session_manager = SessionManager(app.state.routing_index, simulation_settings)
         try:

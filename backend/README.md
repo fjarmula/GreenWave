@@ -29,8 +29,8 @@ uv run python scripts/run_etl.py graph           # T3: road_nodes/road_edges.par
 uv run python scripts/run_etl.py override-map    # check page for data/overrides/roundabouts.json
 uv run python scripts/run_etl.py intersections   # T4: network_*, intersections, signal_approaches, ids
 uv run python scripts/run_etl.py neighbours      # T5: approach_neighbours.parquet (candidate set only)
-uv run python scripts/run_etl.py places          # stations.parquet + addresses.parquet (run after intersections)
-uv run python scripts/run_etl.py quality         # data_quality.json (run after neighbours)
+uv run python scripts/run_etl.py places          # stations + addresses + resources.parquet (run after intersections)
+uv run python scripts/run_etl.py quality         # data_quality.json (run after neighbours and places)
 ```
 
 `places` reads the OSM extract (one pass) for rescue stations and address points, then keeps only those
@@ -50,9 +50,36 @@ station whose centre is beyond the snap limit moves to its outline point nearest
 (`relocated_to_outline`). The `places` report section lists dropped stations, the kept police
 names and the excluded names.
 
-`quality` reads the outputs of `graph`, `intersections` and `neighbours` (near misses, street
-lengths, route checks, signal snapping, signals needing review, the bus-lane cross-check and the
-`road_attributes` section) and writes `data_quality.json`, a small deterministic summary served at
+`places` also reads Kraków's official address points, *Punkty adresowe (EMUiA)*
+(`data/raw/krakow/emuia/Adresy.geojson` and its `__Aktualnosc__.txt`, unzipped from
+<https://msip.um.krakow.pl/Dane/Adresy_JSON.zip>; required). On-network EMUiA points are
+reconciled with the OSM addresses (`etl/address_reconcile.py`, ADR 0013): the same street key and
+house number within `ADDRESS_MATCH_MAX_M` (500 m; above `ADDRESS_MATCH_CLEAN_M`, 100 m, it is a
+disagreement), never to an OSM address outside Kraków; then the same house number within
+`ADDRESS_NAME_VARIANT_RADIUS_M` (50 m) when the street names share tokens, or within
+`ADDRESS_NAME_VARIANT_TIGHT_M` (20 m). Each address has a `provenance` (`matched`, `municipal`,
+`osm`); matched and municipal ones use the EMUiA name and coordinate. The report's
+`addresses.reconciliation` holds the counts and real examples of each class. An address point is
+a geocoding result, not a vehicle access point. EMUiA's district number (`numer_dzielnicy`, 1-18)
+is kept as `district_number` on matched and municipal rows.
+
+Ambulance origins are the official PRM team bases (ADR 0014), not OSM buildings. `places` reads
+Tables 1a and 2a of the Małopolska PRM plan, update no. 2
+(`data/raw/prm/amendments/AKTUALIZACJA_NR_2_TABELE.xlsx`; required) with a standard-library
+reader (`etl/xlsx_reader.py`) and joins them on the team name (`etl/prm_roster.py`). Base
+coordinates are curated in the committed `data/curated/prm_bases.json`: an EMUiA id for a Kraków
+base, or a cited coordinate elsewhere (the published addresses do not geocode as free text). Each
+curated base becomes a `prm_base` station named by its published address; an OSM ambulance station
+within `PRM_BASE_OSM_MATCH_RADIUS_M` (200 m) keeps its `osm_ref` as the match. OSM ambulance
+stations and hospital SORs without a base are no longer written (`resources.replaced_by_prm`).
+`resources.parquet` lists the teams in scope (type, area TERYT codes, weekdays, readiness window in
+minutes, season); region RO12/01 teams without a curated base are listed as
+`resources.outside_simulation_area`. The suburban bases are not in the OSM extract, so only the 23
+Kraków-based teams (8 bases) are in scope today.
+
+`quality` reads the outputs of `graph`, `intersections`, `neighbours` and `places` (near misses,
+street lengths, route checks, signal snapping, signals needing review, the bus-lane cross-check,
+the `road_attributes` section and the EMUiA address reconciliation) and writes `data_quality.json`, a small deterministic summary served at
 `GET /api/v1/dataset/quality`. It records the hashes of the files it read in the `quality` report
 section. Re-run it after any of those steps.
 
@@ -159,6 +186,7 @@ artifacts from different runs, not a security measure and not a reproducible-bui
 
 - **OpenStreetMap:** Road network and traffic signal geometry © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, licensed under the Open Database License (ODbL), extracted via [BBBike.org](https://extract.bbbike.org/).
 - **City of Kraków Open Data:** Municipal street registry (Ulice.geojson) provided by Urząd Miasta Krakowa / Miejski System Informacji Przestrzennej (MSIP, export timestamp: 2026-10-13 00:47:34), re-used under the Polish Act on Open Data and Re-use of Public Sector Information (Dz.U. 2021 poz. 1641).
+- **City of Kraków Open Data, Punkty adresowe (EMUiA):** Official address points provided by Urząd Miasta Krakowa, Wydział Geodezji / MSIP ([dataset 1492](https://msip.krakow.pl/dataset/1492), export timestamp: 2026-10-27 00:45:04), used under the MSIP terms and the Polish Act on Open Data. They are the authoritative coordinate for incident addresses, reconciled against OSM.
 - **Disclaimer:** All traffic signal states, delays, and priority dispatches generated by ER-GreenWave are simulated proof-of-concept inputs and do not represent verified physical traffic signal states.
 
 ## Simulated ITS feedback

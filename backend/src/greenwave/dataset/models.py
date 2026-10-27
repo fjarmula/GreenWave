@@ -72,6 +72,16 @@ class _PlacesAddresses(BaseModel):
     rows: int
 
 
+class RosterSummary(BaseModel):
+    """The PRM roster the ``places`` step loaded (its ``resources`` report section)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    plan_update: str
+    effective_from: str
+    teams_in_scope: int
+
+
 class PlacesSection(BaseModel):
     """``consumed_sha256``: the network files the places step read; ``artifact_sha256``: the two
     files it wrote. Integrity checks against mixed runs, not security."""
@@ -81,6 +91,7 @@ class PlacesSection(BaseModel):
     consumed_sha256: dict[str, str] | None = None
     stations: _PlacesStations
     addresses: _PlacesAddresses
+    resources: RosterSummary
 
 
 class QualitySection(BaseModel):
@@ -111,6 +122,7 @@ class LoadedCounts(BaseModel):
     approach_neighbours: int
     stations: int
     addresses: int
+    resources: int
     approach_edges: int
     graph_nodes: int
     graph_edges: int
@@ -131,7 +143,8 @@ class ProcessedDataset:
     ``signal_approaches["delay_seconds"]`` is a property of the signal node and must not be summed
     along a route. ``approach_neighbours`` is a candidate set only: its distance is not
     an along-route distance. ``stations`` and ``addresses`` are the snapped places of the
-    ``places`` step (lat/lng in degrees). ``quality`` is ``data_quality.json`` as the ETL wrote it.
+    ``places`` step (lat/lng in degrees); ``resources`` the PRM teams at its ``prm_base`` stations,
+    ``roster`` the plan they come from. ``quality`` is ``data_quality.json`` as the ETL wrote it.
     """
 
     graph: nx.MultiDiGraph
@@ -140,9 +153,11 @@ class ProcessedDataset:
     approach_neighbours: pl.DataFrame
     stations: pl.DataFrame
     addresses: pl.DataFrame
+    resources: pl.DataFrame
     intersection_ids: tuple[IntersectionIdRecord, ...]
     cascade_threshold_m: float
     allow_u_turns: bool
     counts: LoadedCounts
+    roster: RosterSummary
     provenance: Provenance
     quality: DatasetQualityResponse

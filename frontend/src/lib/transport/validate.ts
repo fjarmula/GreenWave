@@ -6,6 +6,11 @@
  * so a contract change fails compilation here.
  */
 import type {
+  AddressProvenance,
+  AreaRuleOutcome,
+  ExcludedTeam,
+  ResourcesResponse,
+  TeamAssignment,
   AmbulanceStatus,
   CancelReason,
   ComparisonStartResponse,
@@ -76,6 +81,7 @@ const VEHICLE_TYPES: Record<VehicleType, true> = {
   POLICE_CAR: true,
 };
 const STATION_SOURCE_KINDS: Record<StationSourceKind, true> = {
+  prm_base: true,
   ambulance_base: true,
   hospital_ed: true,
   fire_state: true,
@@ -92,7 +98,30 @@ const STREAM_EVENT_TYPES: Record<SimulationStreamEvent["event_type"], true> = {
   SIMULATION_CANCELLED: true,
 };
 
+const ADDRESS_PROVENANCES: Record<AddressProvenance, true> = {
+  matched: true,
+  municipal: true,
+  osm: true,
+};
+
 const QUALITY_STATUSES: Record<QualityStatus, true> = { pass: true, info: true, warn: true };
+const OUTCOMES: Record<DispatchRankResponse["outcome"], true> = {
+  OK: true,
+  NO_ELIGIBLE_RESOURCE: true,
+};
+const EXCLUSION_REASONS: Record<ExcludedTeam["reason"], true> = {
+  OFF_SHIFT: true,
+  BUSY_OVERRIDE: true,
+};
+const SELECTION_REASONS: Record<AreaRuleOutcome["reason"], true> = {
+  NEAREST: true,
+  IN_AREA_WITHIN_MARGIN: true,
+  NEAREST_OUTSIDE_MARGIN: true,
+};
+const TEAM_AVAILABILITIES: Record<TeamAssignment["availability"], true> = {
+  free: true,
+  assumed_free: true,
+};
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -501,20 +530,122 @@ export function validateGeocode(body: unknown): GeocodeResponse {
   const response = record(body, "response");
   if (response.schema_version !== "1.0") fail("schema_version", '"1.0"');
   list(response.results, "results").forEach((value, index) => {
-    const result = record(value, `results[${index}]`);
-    text(result.label, `results[${index}].label`);
-    position(result.position, `results[${index}].position`);
+    const path = `results[${index}]`;
+    const result = record(value, path);
+    text(result.label, `${path}.label`);
+    position(result.position, `${path}.position`);
+    member(ADDRESS_PROVENANCES, result.provenance, `${path}.provenance`);
+    // Optional provenance details (ADR 0013): absent or `null`, else valid.
+    for (const field of ["osm_delta_m", "disagreement_m"] as const) {
+      if (result[field] !== undefined && result[field] !== null) {
+        nonNegative(result[field], `${path}.${field}`);
+      }
+    }
+    const disagreement = result.disagreement_m !== undefined && result.disagreement_m !== null;
+    const osmPosition = result.osm_position !== undefined && result.osm_position !== null;
+    if (osmPosition) position(result.osm_position, `${path}.osm_position`);
+    if (disagreement !== osmPosition) {
+      fail(`${path}.osm_position`, "a position exactly when disagreement_m is set");
+    }
+    if (result.osm_same_key_elsewhere !== undefined) {
+      bool(result.osm_same_key_elsewhere, `${path}.osm_same_key_elsewhere`);
+    }
   });
   return response as GeocodeResponse;
 }
 
 /** `POST /api/v1/dispatch/rank` body. Throws `TypeError` naming the first offending field. */
+function textList(value: unknown, path: string): void {
+  list(value, path).forEach((item, index) => text(item, `${path}[${index}]`));
+}
+
+function nullableBool(value: unknown, path: string): void {
+  if (value !== null) bool(value, path);
+}
+
+function teamAssignment(value: unknown, path: string): void {
+  // Fire, police and mock candidates have no team.
+  if (value === undefined || value === null) return;
+  const team = record(value, path);
+  text(team.team_code, `${path}.team_code`);
+  text(team.team_type, `${path}.team_type`);
+  textList(team.area_teryt, `${path}.area_teryt`);
+  nullableBool(team.in_area, `${path}.in_area`);
+  member(TEAM_AVAILABILITIES, team.availability, `${path}.availability`);
+  textList(team.other_eligible_team_codes, `${path}.other_eligible_team_codes`);
+}
+
+/** The ADR 0014 fields: outcome, exclusions, area, roster and the area rule. */
+function resourceFields(response: UnknownRecord, candidateCount: number): void {
+  text(response.scenario_time, "scenario_time");
+  const outcome = member(OUTCOMES, response.outcome, "outcome");
+  if ((outcome === "NO_ELIGIBLE_RESOURCE") !== (candidateCount === 0)) {
+    fail("candidates", "empty exactly when outcome is NO_ELIGIBLE_RESOURCE");
+  }
+  list(response.excluded_teams, "excluded_teams").forEach((value, index) => {
+    const path = `excluded_teams[${index}]`;
+    const excluded = record(value, path);
+    text(excluded.team_code, `${path}.team_code`);
+    if (typeof excluded.station_id !== "string" || !STATION_ID.test(excluded.station_id)) {
+      fail(`${path}.station_id`, "a station ID");
+    }
+    member(EXCLUSION_REASONS, excluded.reason, `${path}.reason`);
+  });
+  if (response.incident_area !== null) {
+    const area = record(response.incident_area, "incident_area");
+    text(area.teryt, "incident_area.teryt");
+    text(area.delegatura_name, "incident_area.delegatura_name");
+    positiveInteger(area.district_number, "incident_area.district_number");
+    text(area.district_name, "incident_area.district_name");
+  }
+  if (response.roster !== null) roster(response.roster, "roster");
+  if (response.area_rule !== null) {
+    const rule = record(response.area_rule, "area_rule");
+    member(SELECTION_REASONS, rule.reason, "area_rule.reason");
+    text(rule.chosen_team_code, "area_rule.chosen_team_code");
+    text(rule.nearest_team_code, "area_rule.nearest_team_code");
+    nullableText(rule.in_area_team_code, "area_rule.in_area_team_code");
+    if (rule.delta_seconds !== null) finite(rule.delta_seconds, "area_rule.delta_seconds");
+  }
+}
+
+function roster(value: unknown, path: string): void {
+  const body = record(value, path);
+  text(body.source, `${path}.source`);
+  text(body.plan_update, `${path}.plan_update`);
+  text(body.effective_from, `${path}.effective_from`);
+  nonNegative(body.teams_in_scope, `${path}.teams_in_scope`);
+}
+
+/** `GET /api/v1/resources`: the roster and each team's published schedule at `at`. */
+export function validateResources(body: unknown): ResourcesResponse {
+  const response = record(body, "response");
+  if (response.schema_version !== "1.0") fail("schema_version", '"1.0"');
+  roster(response.roster, "roster");
+  text(response.at, "at");
+  list(response.teams, "teams").forEach((value, index) => {
+    const path = `teams[${index}]`;
+    const team = record(value, path);
+    text(team.team_code, `${path}.team_code`);
+    text(team.team_type, `${path}.team_type`);
+    if (typeof team.station_id !== "string" || !STATION_ID.test(team.station_id)) {
+      fail(`${path}.station_id`, "a station ID");
+    }
+    text(team.base_address, `${path}.base_address`);
+    textList(team.area_teryt, `${path}.area_teryt`);
+    nonNegative(team.ready_from_min, `${path}.ready_from_min`);
+    nonNegative(team.ready_to_min, `${path}.ready_to_min`);
+    bool(team.on_shift, `${path}.on_shift`);
+  });
+  return response as ResourcesResponse;
+}
+
 export function validateRank(body: unknown): DispatchRankResponse {
   const response = record(body, "response");
   if (response.schema_version !== "1.0") fail("schema_version", '"1.0"');
   snappedEndpoint(response.incident_snapped, "incident_snapped");
   const candidates = list(response.candidates, "candidates");
-  if (candidates.length < 1 || candidates.length > 3) fail("candidates", "1 to 3 items");
+  if (candidates.length > 3) fail("candidates", "0 to 3 items");
   candidates.forEach((value, index) => {
     const path = `candidates[${index}]`;
     const candidate = record(value, path);
@@ -526,7 +657,12 @@ export function validateRank(body: unknown): DispatchRankResponse {
     // Additive (ADR 0012): an older backend omits it; its candidates always drive.
     if (candidate.on_site === undefined) candidate.on_site = false;
     bool(candidate.on_site, `${path}.on_site`);
+    teamAssignment(candidate.team, `${path}.team`);
+    if (candidate.selection_reason != null) {
+      member(SELECTION_REASONS, candidate.selection_reason, `${path}.selection_reason`);
+    }
   });
+  resourceFields(response, candidates.length);
   if (response.station_at_incident !== null) {
     station(response.station_at_incident, "station_at_incident");
   }

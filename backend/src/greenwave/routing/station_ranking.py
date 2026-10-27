@@ -117,11 +117,16 @@ def rank_stations(
     vehicle_type: VehicleType,
     settings: SimulationSettings,
     traffic_density_multiplier: float = 1.0,
+    *,
+    include_fastest_of: frozenset[str] = frozenset(),
+    max_candidates: int = MAX_CANDIDATES,
 ) -> StationRanking:
     """Raises ``DestinationOffNetwork`` or ``NoStationReachable``.
 
     ``traffic_density_multiplier`` only changes each candidate's standard estimate; the order
-    stays the green-wave one.
+    stays the green-wave one. Of the station ids in ``include_fastest_of``, the one with the
+    lowest reversed-Dijkstra time joins the shortlist even beyond its size (team ranking needs
+    the best in-area base, ADR 0014). At most ``max_candidates`` are returned.
     """
     incident_snap: SnappedRouteEndpoint | None
     access: dict[str, AccessNode] = {}
@@ -149,10 +154,14 @@ def rank_stations(
         seeds,
         lambda _source, _target, data: edge_weight(index, data, settings),
     )
-    shortlist = sorted(
+    reachable = sorted(
         (s for s in of_type if s.node_key != incident_node and s.node_key in motion),
         key=lambda s: (motion[s.node_key], s.station.station_id),
-    )[: settings.dispatch_shortlist_size]
+    )
+    shortlist = reachable[: settings.dispatch_shortlist_size]
+    forced = next((s for s in reachable if s.station.station_id in include_fastest_of), None)
+    if forced is not None and forced not in shortlist:
+        shortlist.append(forced)
 
     ranked: list[tuple[RankedStation, PlannedRoute | None]] = []
     for node in shortlist:
@@ -180,7 +189,7 @@ def rank_stations(
     ranked.sort(key=lambda item: (item[0].total_seconds, item[0].station.station_id))
     return StationRanking(
         incident_snap=incident_snap or _off_road_snap(index, ranked, access, stations),
-        candidates=tuple(candidate for candidate, _ in ranked[:MAX_CANDIDATES]),
+        candidates=tuple(candidate for candidate, _ in ranked[:max_candidates]),
     )
 
 

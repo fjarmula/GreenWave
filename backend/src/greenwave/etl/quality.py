@@ -1,8 +1,9 @@
 """Step ``quality``: summarise the ETL diagnostics into ``data_quality.json`` for the dashboard.
 
-Reads processed outputs of the graph, intersections and neighbours steps (run it after
-``neighbours``). The status labels only report; they reuse the analysis ranges in
-``etl.config`` and add no thresholds. Output is deterministic: same inputs, same bytes.
+Reads processed outputs of the graph, intersections and neighbours steps and the ``places``
+report section (run it after ``neighbours`` and ``places``). The status labels only report; they
+reuse the analysis ranges in ``etl.config`` and add no thresholds. Output is deterministic: same
+inputs, same bytes.
 """
 
 import hashlib
@@ -20,6 +21,7 @@ from greenwave.artifacts import (
     INTERSECTIONS_FILENAME,
     QUALITY_FILENAME,
     REPORT_FILENAME,
+    RESOURCES_FILENAME,
     artifact_hashes,
 )
 from greenwave.etl.bus_lanes import (
@@ -59,6 +61,7 @@ QUALITY_INPUT_FILENAMES = (
     ROUTES_FILENAME,
     INTERSECTIONS_FILENAME,
     BUS_LANE_CROSSCHECK_FILENAME,
+    RESOURCES_FILENAME,
 )
 
 
@@ -297,6 +300,95 @@ def _road_attributes(report: dict[str, Any]) -> QualityCheck:
     )
 
 
+def _percent(part: int, whole: int) -> float:
+    return 100.0 * part / whole if whole else 0.0
+
+
+def _address_reconciliation(report: dict[str, Any]) -> QualityCheck:
+    r = report["places"]["addresses"]["reconciliation"]
+    total = int(r["municipal_total"])
+    clean_m, max_m = float(r["thresholds_m"]["clean"]), float(r["thresholds_m"]["max"])
+    return QualityCheck(
+        id="address_reconciliation",
+        title="Municipal addresses (EMUiA)",
+        status=QualityStatus.INFO,
+        headline=(
+            f"{total:,} EMUiA addresses: "
+            f"{_percent(r['matched_clean'], total):.1f}% match OSM within {clean_m:.0f} m, "
+            f"{_percent(r['matched_disagreement'], total):.1f}% differ by "
+            f"{clean_m:.0f}\u2013{max_m:.0f} m, "
+            f"{_percent(r['municipal_only_gap_closed'], total):.1f}% fill gaps OSM lacks. "
+            f"{int(r['osm_only_fallback']):,} OSM-only addresses kept as fallback."
+        ),
+        metrics={
+            name: int(r[name])
+            for name in (
+                "matched_clean",
+                "matched_disagreement",
+                "municipal_only_gap_closed",
+                "osm_only_fallback",
+            )
+        },
+        samples=list(r["examples"]["matched_disagreement"])[:MAX_SAMPLES],
+    )
+
+
+def _address_gap_examples(report: dict[str, Any]) -> QualityCheck:
+    r = report["places"]["addresses"]["reconciliation"]
+    examples = r["examples"]
+    return QualityCheck(
+        id="address_gap_examples",
+        title="Addresses only in EMUiA",
+        status=QualityStatus.INFO,
+        headline=(
+            f"{int(r['municipal_only_gap_closed']):,} addresses exist only in EMUiA. "
+            f"{int(r['matched_name_variant']):,} street-name variants were matched to OSM and "
+            "not counted as gaps."
+        ),
+        metrics={
+            "matched_name_variant": int(r["matched_name_variant"]),
+            "same_key_beyond_limit": int(r["same_key_beyond_limit"]),
+        },
+        # Gaps first, then clean matches, so every example class reaches the panel.
+        samples=[*examples["municipal_only_gap_closed"][:3], *examples["matched_clean"][:2]],
+    )
+
+
+def _prm_roster(processed_dir: Path, report: dict[str, Any]) -> QualityCheck:
+    r = report["places"]["resources"]
+    teams, bases = int(r["teams_in_scope"]), int(r["bases"])
+    all_day = int(r["teams_by_hours"].get("00:00-24:00", 0))
+    by_base = (
+        pl.read_parquet(processed_dir / RESOURCES_FILENAME, columns=["base_address", "team_code"])
+        .group_by("base_address")
+        .agg(pl.col("team_code").sort())
+        .with_columns(pl.col("team_code").list.len().alias("teams"))
+        .sort(["teams", "base_address"], descending=[True, False])
+        .head(MAX_SAMPLES)
+    )
+    return QualityCheck(
+        id="prm_roster",
+        title="Ambulance teams (PRM plan)",
+        status=QualityStatus.INFO,
+        headline=(
+            f"{teams:,} ambulance teams at {bases} bases from the Małopolska PRM plan "
+            f"(update {r['plan_update']}, effective {r['effective_from']}). "
+            f"{len(r['outside_simulation_area'])} teams of the region are outside the simulated "
+            "area."
+        ),
+        metrics={
+            "teams_in_scope": teams,
+            "bases": bases,
+            "teams_24h": all_day,
+            "teams_daytime": teams - all_day,
+        },
+        samples=[
+            f"{address}: {', '.join(codes)}"
+            for address, codes in by_base.select("base_address", "team_code").iter_rows()
+        ],
+    )
+
+
 def msip_export_timestamp(raw_dir: Path) -> str | None:
     """``Data wygenerowania plików: 2026-10-13_00:47:34`` -> ``2026-10-13 00:47:34``."""
     path = raw_dir / AKTUALNOSC_PATH
@@ -321,6 +413,9 @@ def build_quality(processed_dir: Path, raw_dir: Path, manifest: Manifest) -> Dat
             _signals_needing_review(processed_dir),
             _bus_lane_crosscheck(processed_dir),
             _road_attributes(report),
+            _address_reconciliation(report),
+            _address_gap_examples(report),
+            _prm_roster(processed_dir, report),
         ],
         sources=[
             QualitySource(
@@ -353,6 +448,11 @@ def run_quality(raw_dir: Path, processed_dir: Path) -> QualitySection:
         raise QualityInputError(
             f"{', '.join(missing)} missing in {processed_dir}; run the graph, intersections and "
             "neighbours steps before `quality`"
+        )
+    report = json.loads((processed_dir / REPORT_FILENAME).read_text(encoding="utf-8"))
+    if "places" not in report:
+        raise QualityInputError(
+            f"{REPORT_FILENAME} has no places section; run the places step before `quality`"
         )
     consumed = artifact_hashes(processed_dir, QUALITY_INPUT_FILENAMES)  # hashed before reading
     summary = build_quality(processed_dir, raw_dir, load_manifest(raw_dir / MANIFEST_FILENAME))

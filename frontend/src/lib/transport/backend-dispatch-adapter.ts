@@ -15,6 +15,7 @@ import {
   parseErrorResponse,
   validateGeocode,
   validateRank,
+  validateResources,
   validateStations,
 } from "@/lib/transport/validate";
 
@@ -40,7 +41,9 @@ export function createBackendDispatchAdapter(
       ? "stations"
       : path.includes("/geocode")
         ? "geocode"
-        : "ranking";
+        : path.includes("/resources")
+          ? "resources"
+          : "ranking";
     const capture = beginHttpCapture(operation, {
       method: init.method === "POST" ? "POST" : "GET",
       path,
@@ -98,7 +101,7 @@ export function createBackendDispatchAdapter(
   }
 
   return {
-    capabilities: { geocode: true, roadTimeRanking: true },
+    capabilities: { geocode: true, roadTimeRanking: true, resources: true },
 
     async listStations() {
       const body = await request(
@@ -108,6 +111,16 @@ export function createBackendDispatchAdapter(
         "station list",
       );
       return body.stations;
+    },
+
+    listResources(at, signal) {
+      return request(
+        `/api/v1/resources?${new URLSearchParams({ at })}`,
+        { method: "GET" },
+        validateResources,
+        "team roster",
+        signal,
+      );
     },
 
     async geocode(query, signal) {

@@ -10,7 +10,8 @@ import type { ResolvedTheme } from "@/lib/theme-transition";
 import type { Position, SimulationStartRequest, SimulationStartResponse } from "@/types/telemetry";
 
 /** A labelled map point: the dispatching station (origin) or the incident (destination). */
-export type MapEndpoint = { label: string; position: Position };
+/** ``osmPosition``: an incident address whose OSM point disagrees with EMUiA (ADR 0013). */
+export type MapEndpoint = { label: string; position: Position; osmPosition?: Position | null };
 
 type EndpointMarkersProps = {
   map: Map | null;

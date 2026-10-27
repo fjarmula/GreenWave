@@ -3,6 +3,8 @@
 import { LoaderCircle, MapPin, SearchX, TriangleAlert } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 
+import { AddressProvenanceStrip } from "@/components/hud/dispatch/AddressProvenanceStrip";
+import { SuggestionContent } from "@/components/hud/dispatch/ProvenanceBadge";
 import {
   createAddressSearch,
   enterSelection,
@@ -124,13 +126,14 @@ export function IncidentInput({
                 }}
                 className="cursor-pointer rounded-lg px-3 py-2 text-sm hover:bg-muted aria-selected:bg-accent"
               >
-                {result.label}
+                <SuggestionContent result={result} />
               </li>
             ))}
           </ul>
         )}
       </div>
       <SearchFeedback feedback={geocodeEnabled ? searchFeedback(searchState, query) : null} />
+      {incident?.address && <AddressProvenanceStrip address={incident.address} />}
       <p className="mt-1.5 text-2xs text-muted-foreground">or click the map</p>
       {!geocodeEnabled && (
         <p className="mt-1 text-2xs text-muted-foreground">Address search needs the backend</p>

@@ -124,7 +124,11 @@ export function Dashboard({
     mode === "live" && runLabels
       ? runLabels.destination
       : dispatch.incident
-        ? { label: dispatch.incident.label, position: dispatch.incident.position }
+        ? {
+            label: dispatch.incident.label,
+            position: dispatch.incident.position,
+            osmPosition: dispatch.incident.address?.osmPosition ?? null,
+          }
         : null;
   const initialize = (runSettings: DispatchSettings) => {
     const answer = onSiteResult(
@@ -150,7 +154,11 @@ export function Dashboard({
     retainResult(simulation);
     const labels = captureRunLabels(
       { label: chosenStation.name, position: chosenStation.position },
-      { label: dispatch.incident.label, position: dispatch.incident.position },
+      {
+        label: dispatch.incident.label,
+        position: dispatch.incident.position,
+        osmPosition: dispatch.incident.address?.osmPosition ?? null,
+      },
     );
     void startSimulation(request, policy.requiresReplacement).then((started) => {
       if (started) setRunLabels(labels);

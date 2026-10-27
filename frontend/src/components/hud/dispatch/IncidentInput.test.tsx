@@ -2,6 +2,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { IncidentInput, SearchFeedback } from "@/components/hud/dispatch/IncidentInput";
+import { SuggestionContent } from "@/components/hud/dispatch/ProvenanceBadge";
+import type { Incident } from "@/lib/useIncidentDispatch";
 import {
   createAddressSearch,
   enterSelection,
@@ -11,7 +13,12 @@ import {
 } from "@/lib/address-search";
 import type { GeocodeResult } from "@/types/telemetry";
 
-const RESULT: GeocodeResult = { label: "Floriańska 1", position: { lat: 50.0624, lng: 19.9395 } };
+const RESULT: GeocodeResult = {
+  label: "Floriańska 1",
+  position: { lat: 50.0624, lng: 19.9395 },
+  provenance: "osm",
+  osm_same_key_elsewhere: false,
+};
 
 afterEach(() => vi.useRealTimers());
 
@@ -143,6 +150,13 @@ describe("suggestionToIncident", () => {
       position: RESULT.position,
       label: "Floriańska 1",
       source: "address",
+      address: {
+        provenance: "osm",
+        osmDeltaM: null,
+        disagreementM: null,
+        osmPosition: null,
+        osmSameKeyElsewhere: false,
+      },
     });
   });
 });
@@ -187,5 +201,72 @@ describe("IncidentInput markup", () => {
       />,
     );
     expect(markup).toContain('value="Pinned 50.0614, 19.9366"');
+  });
+});
+
+describe("address provenance in the incident input", () => {
+  const DISAGREEMENT: GeocodeResult = {
+    label: "Zabłocie 18",
+    position: { lat: 50.05, lng: 19.96 },
+    provenance: "matched",
+    osm_delta_m: 441.7,
+    disagreement_m: 441.7,
+    osm_position: { lat: 50.051, lng: 19.965 },
+    osm_same_key_elsewhere: false,
+  };
+
+  const renderWith = (incident: Incident) =>
+    renderToStaticMarkup(
+      <IncidentInput
+        incident={incident}
+        geocodeEnabled
+        geocode={async () => []}
+        onIncidentChange={() => undefined}
+      />,
+    );
+
+  it("shows the label and the provenance badge in a suggestion", () => {
+    const markup = renderToStaticMarkup(<SuggestionContent result={DISAGREEMENT} />);
+    expect(markup).toMatch(/Zabłocie 18.*EMUiA · ⚠ 442m delta/);
+    expect(markup).toContain("hud-chip");
+    expect(markup).toContain("tone-caution");
+  });
+
+  it("badges an OSM fallback as muted", () => {
+    const markup = renderToStaticMarkup(<SuggestionContent result={RESULT} />);
+    expect(markup).toContain("OSM Fallback");
+    expect(markup).toContain("tone-muted");
+  });
+
+  it("explains a disagreement under the input as a polite status", () => {
+    const markup = renderWith(suggestionToIncident(DISAGREEMENT));
+    expect(markup).toContain("Coordinate source: Kraków EMUiA");
+    expect(markup).toMatch(
+      /role="status"[^>]*>.*Kraków EMUiA and OSM differ by 442 m\. Routing to official EMUiA coordinate\./,
+    );
+    expect(markup).toContain("tone-caution");
+  });
+
+  it("states the OSM cross-check for a clean match", () => {
+    const markup = renderWith(
+      suggestionToIncident({
+        ...DISAGREEMENT,
+        osm_delta_m: 6,
+        disagreement_m: null,
+        osm_position: null,
+      }),
+    );
+    expect(markup).toContain("Coordinate source: Kraków EMUiA");
+    expect(markup).toContain("OSM cross-check: 6 m delta");
+    expect(markup).not.toContain("differ by");
+  });
+
+  it("shows no provenance for a map pin", () => {
+    const markup = renderWith({
+      position: { lat: 50.0614, lng: 19.9366 },
+      label: "Pinned 50.0614, 19.9366",
+      source: "map",
+    });
+    expect(markup).not.toContain("Coordinate source");
   });
 });

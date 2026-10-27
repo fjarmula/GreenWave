@@ -55,6 +55,94 @@
       "licence": "Polish Open Data Act (Ustawa z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu informacji sektora publicznego, Dz.U. 2021 poz. 1641) — free re-use with source attribution",
       "attribution": "Źródło: Urząd Miasta Krakowa / MSIP (znacznik czasu eksportu danych: 2026-10-13 00:47:34).",
       "notes": "Records the export timestamp (2026-10-13 00:47:34) of the Kraków municipal dataset package; no data used in the simulation."
+    },
+    {
+      "path": "krakow/emuia/Adresy.geojson",
+      "sha256": "6a67df38f1a5354a8752ee873fa8ae6ea8bb279f76e483e74390dd8abc2076f2",
+      "size_bytes": 26233333,
+      "source": "Kraków open data (MSIP), Punkty adresowe (EMUiA)",
+      "url": "https://msip.krakow.pl/dataset/1492",
+      "retrieved_on": "2026-10-27",
+      "licence": "Polish Open Data Act (Ustawa z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu informacji sektora publicznego, Dz.U. 2021 poz. 1641) — free re-use with source attribution",
+      "attribution": "Źródło: Urząd Miasta Krakowa, Wydział Geodezji / MSIP, zestaw danych 'Punkty adresowe (EMUiA)' (stan danych: 2026-10-27 00:45:04). Dane przetworzone w projekcie ER-GreenWave.",
+      "notes": "EPSG:2178. Authoritative coordinate for incident addresses (places step), reconciled against OSM addresses. Catalogue terms: 'Wykorzystanie danych zgodne z regulaminem MSIP'. Downloaded as https://msip.um.krakow.pl/Dane/Adresy_JSON.zip."
+    },
+    {
+      "path": "krakow/emuia/__Aktualnosc__.txt",
+      "sha256": "8334b748c8fedf5c0e38ac8e42aff9b64ab222d6d7bb69bd67db6dd04c4e79f1",
+      "size_bytes": 47,
+      "source": "Kraków open data (MSIP), Punkty adresowe (EMUiA)",
+      "url": "https://msip.krakow.pl/dataset/1492",
+      "retrieved_on": "2026-10-27",
+      "licence": "Polish Open Data Act (Ustawa z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu informacji sektora publicznego, Dz.U. 2021 poz. 1641) — free re-use with source attribution",
+      "attribution": "Źródło: Urząd Miasta Krakowa, Wydział Geodezji / MSIP (znacznik czasu eksportu danych: 2026-10-27 00:45:04).",
+      "notes": "Export timestamp of the EMUiA address package; reported as emuia_export_timestamp. Catalogue terms: 'Wykorzystanie danych zgodne z regulaminem MSIP'. Downloaded as https://msip.um.krakow.pl/Dane/Adresy_JSON.zip."
+    },
+    {
+      "path": "prm/amendments/AKTUALIZACJA_NR_2_TABELE.xlsx",
+      "sha256": "8c8e7b88f0e42f3e9f0fdcb5c4311b981eeb52efcad9b5d67edb8e0845aec2cf",
+      "size_bytes": 197890,
+      "source": "Małopolski Urząd Wojewódzki w Krakowie, BIP: Wojewódzki plan działania systemu Państwowe Ratownictwo Medyczne (Małopolska)",
+      "url": null,
+      "retrieved_on": "2026-10-27",
+      "licence": null,
+      "attribution": "Źródło: Wojewoda Małopolski, Wojewódzki plan działania systemu PRM, aktualizacja nr 2 (Kraków, 24 czerwca 2026 r.). Dane przetworzone w projekcie ER-GreenWave.",
+      "notes": "Plan update no. 2 tables. Tabela nr 1a (teams, operating areas, readiness hours, from 1 Sep 2026) and Tabela nr 2a (team base addresses) feed resources.parquet (places step). Simulation input only; no live availability or dispatch protocol is implied."
+    },
+    {
+      "path": "prm/amendments/AKTUALIZACJA_NR_2_TEKST.docx",
+      "sha256": "23cd73cd4d1e81ca2d0f1858b6c54d53e1d24fba9fe11ad747bda14f0d2fc317",
+      "size_bytes": 124313,
+      "source": "Małopolski Urząd Wojewódzki w Krakowie, BIP: Wojewódzki plan działania systemu Państwowe Ratownictwo Medyczne (Małopolska)",
+      "url": null,
+      "retrieved_on": "2026-10-27",
+      "licence": null,
+      "attribution": "Źródło: Wojewoda Małopolski, Wojewódzki plan działania systemu PRM, aktualizacja nr 2 (Kraków, 24 czerwca 2026 r.). Dane przetworzone w projekcie ER-GreenWave.",
+      "notes": "Plan update no. 2 text (24 June 2026; Table 1a applies from 1 Sep 2026). Provenance only; not read by the ETL."
+    },
+    {
+      "path": "prm/Obowiazujacy_Wojewodzki_plan_dzialania_systemu_Panstwowe_Ratownictwo_Medyczne/REJONY_ZRM_od_1_stycznia_2026_r._WERSJA_PDF.pdf",
+      "sha256": "628d6fdd7ffd9fee47cc2f567e49fc55cba7b4fc2850f5e9bf53bea43cfb2b3a",
+      "size_bytes": 7629161,
+      "source": "Małopolski Urząd Wojewódzki w Krakowie, BIP: Wojewódzki plan działania systemu Państwowe Ratownictwo Medyczne (Małopolska)",
+      "url": null,
+      "retrieved_on": "2026-10-27",
+      "licence": null,
+      "attribution": "Źródło: Wojewoda Małopolski, Wojewódzki plan działania systemu PRM, aktualizacja nr 2 (Kraków, 24 czerwca 2026 r.). Dane przetworzone w projekcie ER-GreenWave.",
+      "notes": "Map of ambulance team areas from 1 Jan 2026. Context only; not read by the ETL."
+    },
+    {
+      "path": "prm/Obowiazujacy_Wojewodzki_plan_dzialania_systemu_Panstwowe_Ratownictwo_Medyczne/REJONY_ZRM_od_1_stycznia_2026_r._WERSJA_GIF.gif/REJONY ZRM od 1 stycznia 2026 r. WERSJA GIF.gif",
+      "sha256": "e47bb16311e1b2d542d100b48daac7ec58317d7a8faa70e3c70b428e3d04cce9",
+      "size_bytes": 1730471,
+      "source": "Małopolski Urząd Wojewódzki w Krakowie, BIP: Wojewódzki plan działania systemu Państwowe Ratownictwo Medyczne (Małopolska)",
+      "url": null,
+      "retrieved_on": "2026-10-27",
+      "licence": null,
+      "attribution": "Źródło: Wojewoda Małopolski, Wojewódzki plan działania systemu PRM, aktualizacja nr 2 (Kraków, 24 czerwca 2026 r.). Dane przetworzone w projekcie ER-GreenWave.",
+      "notes": "Image version of the area map. Context only; not read by the ETL."
+    },
+    {
+      "path": "prm/announcements/Drukowanie.pdf",
+      "sha256": "714aeb73981bbad9b25e52db705902db5bc205d2a3d83826c6a755f12fd470bf",
+      "size_bytes": 96805,
+      "source": "Małopolski Urząd Wojewódzki w Krakowie, press release",
+      "url": null,
+      "retrieved_on": "2026-10-27",
+      "licence": null,
+      "attribution": null,
+      "notes": "Press release 'Nowy Wojewódzki plan działania systemu Państwowe Ratownictwo Medyczne' (2025-11-05), printed to PDF. Provenance only; not read by the ETL."
+    },
+    {
+      "path": "prm/announcements/Informacje prasowe _ Dla mediów _ Narodowy Fundusz Zdrowia - Małopolski Oddział Wojewódzki.pdf",
+      "sha256": "bcb46b358efeeddfe2d266f2189b64f173f8097c61e3cedabcf7373276cb3004",
+      "size_bytes": 105227,
+      "source": "Narodowy Fundusz Zdrowia, Małopolski Oddział Wojewódzki, press releases page",
+      "url": null,
+      "retrieved_on": "2026-10-27",
+      "licence": null,
+      "attribution": null,
+      "notes": "NFZ press releases page, printed to PDF. Provenance only; not read by the ETL."
     }
   ]
 }

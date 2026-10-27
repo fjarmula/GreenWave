@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { CascadeLinksLayer, CascadeLinksMapProvider } from "@/components/map/CascadeLinksLayer";
 import { EndpointMarkers, type MapEndpoint } from "@/components/map/EndpointMarkers";
 import { IncidentMarker } from "@/components/map/IncidentMarker";
+import { OsmGhostMarker } from "@/components/map/OsmGhostMarker";
 import { RouteLayer } from "@/components/map/RouteLayer";
 import { SignalMarkers } from "@/components/map/SignalMarkers";
 import { StationLayer } from "@/components/map/StationLayer";
@@ -157,6 +158,12 @@ export function MapContainer({
           runnerUpIds={live ? [] : runnerUpIds}
         />
         <IncidentMarker map={map} incident={destination} />
+        <OsmGhostMarker
+          map={map}
+          incident={destination}
+          styleRevision={styleRevision}
+          theme={theme}
+        />
         <VehicleMarker
           map={map}
           visible={live && !!vehiclePosition}

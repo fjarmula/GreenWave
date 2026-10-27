@@ -35,6 +35,27 @@ KRAKOW_LICENCE = (
     "with source attribution"
 )
 
+EMUIA_SOURCE = "Kraków open data (MSIP), Punkty adresowe (EMUiA)"
+EMUIA_URL = "https://msip.krakow.pl/dataset/1492"
+EMUIA_TERMS = (
+    "Catalogue terms: 'Wykorzystanie danych zgodne z regulaminem MSIP'. Downloaded as "
+    "https://msip.um.krakow.pl/Dane/Adresy_JSON.zip."
+)
+
+PRM_SOURCE = (
+    "Małopolski Urząd Wojewódzki w Krakowie, BIP: Wojewódzki plan działania systemu Państwowe "
+    "Ratownictwo Medyczne (Małopolska)"
+)
+PRM_ATTRIBUTION = (
+    "Źródło: Wojewoda Małopolski, Wojewódzki plan działania systemu PRM, aktualizacja nr 2 "
+    "(Kraków, 24 czerwca 2026 r.). Dane przetworzone w projekcie ER-GreenWave."
+)
+PRM_DIR = "prm"
+PRM_PLAN_DIR = (
+    f"{PRM_DIR}/Obowiazujacy_Wojewodzki_plan_dzialania_systemu_Panstwowe_Ratownictwo_Medyczne"
+)
+_PRM_NOTE = "Simulation input only; no live availability or dispatch protocol is implied."
+
 # (relative path, source, url, retrieved_on, licence, attribution, notes)
 # retrieved_on is the local file date; the Krakow export timestamp is 2026-10-13 00:47:34.
 _SOURCES: list[tuple[str, str, str | None, str, str | None, str | None, str | None]] = [
@@ -90,6 +111,88 @@ _SOURCES: list[tuple[str, str, str | None, str, str | None, str | None, str | No
         "(znacznik czasu eksportu danych: 2026-10-13 00:47:34).",
         "Records the export timestamp (2026-10-13 00:47:34) of the Kraków municipal dataset "
         "package; no data used in the simulation.",
+    ),
+    (
+        "krakow/emuia/Adresy.geojson",
+        EMUIA_SOURCE,
+        EMUIA_URL,
+        "2026-10-27",
+        KRAKOW_LICENCE,
+        "Źródło: Urząd Miasta Krakowa, Wydział Geodezji / MSIP, zestaw danych 'Punkty adresowe "
+        "(EMUiA)' (stan danych: 2026-10-27 00:45:04). Dane przetworzone w projekcie ER-GreenWave.",
+        "EPSG:2178. Authoritative coordinate for incident addresses (places step), reconciled "
+        f"against OSM addresses. {EMUIA_TERMS}",
+    ),
+    (
+        "krakow/emuia/__Aktualnosc__.txt",
+        EMUIA_SOURCE,
+        EMUIA_URL,
+        "2026-10-27",
+        KRAKOW_LICENCE,
+        "Źródło: Urząd Miasta Krakowa, Wydział Geodezji / MSIP "
+        "(znacznik czasu eksportu danych: 2026-10-27 00:45:04).",
+        "Export timestamp of the EMUiA address package; reported as emuia_export_timestamp. "
+        f"{EMUIA_TERMS}",
+    ),
+    (
+        f"{PRM_DIR}/amendments/AKTUALIZACJA_NR_2_TABELE.xlsx",
+        PRM_SOURCE,
+        None,
+        "2026-10-27",
+        None,
+        PRM_ATTRIBUTION,
+        "Plan update no. 2 tables. Tabela nr 1a (teams, operating areas, readiness hours, from "
+        "1 Sep 2026) and Tabela nr 2a (team base addresses) feed resources.parquet (places "
+        f"step). {_PRM_NOTE}",
+    ),
+    (
+        f"{PRM_DIR}/amendments/AKTUALIZACJA_NR_2_TEKST.docx",
+        PRM_SOURCE,
+        None,
+        "2026-10-27",
+        None,
+        PRM_ATTRIBUTION,
+        "Plan update no. 2 text (24 June 2026; Table 1a applies from 1 Sep 2026). Provenance "
+        "only; not read by the ETL.",
+    ),
+    (
+        f"{PRM_PLAN_DIR}/REJONY_ZRM_od_1_stycznia_2026_r._WERSJA_PDF.pdf",
+        PRM_SOURCE,
+        None,
+        "2026-10-27",
+        None,
+        PRM_ATTRIBUTION,
+        "Map of ambulance team areas from 1 Jan 2026. Context only; not read by the ETL.",
+    ),
+    (
+        f"{PRM_PLAN_DIR}/REJONY_ZRM_od_1_stycznia_2026_r._WERSJA_GIF.gif/"
+        "REJONY ZRM od 1 stycznia 2026 r. WERSJA GIF.gif",
+        PRM_SOURCE,
+        None,
+        "2026-10-27",
+        None,
+        PRM_ATTRIBUTION,
+        "Image version of the area map. Context only; not read by the ETL.",
+    ),
+    (
+        f"{PRM_DIR}/announcements/Drukowanie.pdf",
+        "Małopolski Urząd Wojewódzki w Krakowie, press release",
+        None,
+        "2026-10-27",
+        None,
+        None,
+        "Press release 'Nowy Wojewódzki plan działania systemu Państwowe Ratownictwo Medyczne' "
+        "(2025-11-05), printed to PDF. Provenance only; not read by the ETL.",
+    ),
+    (
+        f"{PRM_DIR}/announcements/Informacje prasowe _ Dla mediów _ Narodowy Fundusz Zdrowia - "
+        "Małopolski Oddział Wojewódzki.pdf",
+        "Narodowy Fundusz Zdrowia, Małopolski Oddział Wojewódzki, press releases page",
+        None,
+        "2026-10-27",
+        None,
+        None,
+        "NFZ press releases page, printed to PDF. Provenance only; not read by the ETL.",
     ),
 ]
 

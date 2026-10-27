@@ -4,8 +4,10 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
 import polars as pl
 
+from greenwave.etl.geo import project_points
 from greenwave.etl.graph_pipeline import ROUTES_FILENAME, STREET_TABLE_FILENAME
 from greenwave.etl.intersections_pipeline import run_intersections_with_road_attributes
 from greenwave.etl.io import REPORT_FILENAME, update_report_section
@@ -13,7 +15,8 @@ from greenwave.etl.manifest import MANIFEST_FILENAME
 from greenwave.etl.neighbours_pipeline import run_neighbours
 from greenwave.etl.places_pipeline import run_places
 from greenwave.etl.quality import run_quality
-from tests.support.pipeline_fixtures import make_raw
+from tests.support.osm_fixtures import point
+from tests.support.pipeline_fixtures import CURATED_DIR, at, emuia_feature, make_raw
 
 
 @dataclass(frozen=True)
@@ -88,9 +91,26 @@ def write_graph_check_stubs(processed: Path) -> None:
     write_route_checks(processed, [("Rondo A", "Rondo B", 1.2)])
 
 
+def _metric(x: float, y: float) -> tuple[float, float]:
+    lon, lat = at(x, y)
+    mx, my = project_points(np.array([lon]), np.array([lat]))[0]
+    return float(mx), float(my)
+
+
+# One address of each provenance: "Poprzeczna 7" in both sources (matched), "Poprzeczna 5" only
+# in EMUiA (municipal), "Poprzeczna 3" only in OSM (osm).
+LAYOUT_OSM_ONLY_ADDRESS = point(
+    *at(2, -0.4), **{"addr:street": "Poprzeczna", "addr:housenumber": "3"}
+)
+LAYOUT_EMUIA = (
+    emuia_feature(1, "Poprzeczna", "7", *_metric(2, 0.41)),
+    emuia_feature(2, "Poprzeczna", "5", *_metric(2, 0.8)),
+)
+
+
 def build_layout(root: Path) -> Layout:
     """Run intersections, neighbours, places and quality on the tiny raw fixture in ``root``."""
-    raw = make_raw(root)
+    raw = make_raw(root, (LAYOUT_OSM_ONLY_ADDRESS,), LAYOUT_EMUIA)
     processed = root / "processed"
     report = processed / REPORT_FILENAME
     section, road_attributes = run_intersections_with_road_attributes(
@@ -99,7 +119,7 @@ def build_layout(root: Path) -> Layout:
     update_report_section(report, "intersections", section)
     update_report_section(report, "road_attributes", road_attributes)
     update_report_section(report, "neighbours", run_neighbours(raw, processed))
-    update_report_section(report, "places", run_places(raw, processed))
+    update_report_section(report, "places", run_places(raw, processed, CURATED_DIR))
     write_graph_check_stubs(processed)
     update_report_section(report, "quality", run_quality(raw, processed))
     return Layout(processed, raw / MANIFEST_FILENAME)

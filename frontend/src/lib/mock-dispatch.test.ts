@@ -37,7 +37,11 @@ describe("createMockDispatchAdapter", () => {
   const incident = { lat: 50.0617, lng: 19.9373 };
 
   it("offers neither geocoding nor road-time ranking", () => {
-    expect(adapter.capabilities).toEqual({ geocode: false, roadTimeRanking: false });
+    expect(adapter.capabilities).toEqual({
+      geocode: false,
+      roadTimeRanking: false,
+      resources: false,
+    });
   });
 
   it("lists the injected stations", async () => {
@@ -49,11 +53,15 @@ describe("createMockDispatchAdapter", () => {
       incident,
       vehicle_type: "AMBULANCE",
       traffic_density_multiplier: 1,
+      time_mode: "ENABLED",
+      availability: {},
     });
     const fire = await adapter.rank({
       incident,
       vehicle_type: "FIRE_TRUCK",
       traffic_density_multiplier: 1,
+      time_mode: "ENABLED",
+      availability: {},
     });
 
     expect(ambulance.candidates.map((c) => c.station.station_id)).toEqual(["STN-A-0002"]);
@@ -70,7 +78,13 @@ describe("createMockDispatchAdapter", () => {
 
   it("rejects with NO_STATION_REACHABLE when no station has the type", async () => {
     const error = await adapter
-      .rank({ incident, vehicle_type: "POLICE_CAR", traffic_density_multiplier: 1 })
+      .rank({
+        incident,
+        vehicle_type: "POLICE_CAR",
+        traffic_density_multiplier: 1,
+        time_mode: "ENABLED",
+        availability: {},
+      })
       .catch((e) => e);
     expect(error).toBeInstanceOf(SimulationAdapterError);
     expect(error.code).toBe("NO_STATION_REACHABLE");
@@ -96,6 +110,8 @@ describe("coincident station dispatch", () => {
       incident: STATIONS[1].position,
       vehicle_type: "AMBULANCE",
       traffic_density_multiplier: 1,
+      time_mode: "ENABLED",
+      availability: {},
     });
     expect(result.station_at_incident).toBeNull();
     expect(result.candidates.map((item) => [item.station.station_id, item.on_site])).toEqual([
@@ -116,6 +132,8 @@ describe("coincident station dispatch", () => {
       incident: STATIONS[0].position,
       vehicle_type: "AMBULANCE",
       traffic_density_multiplier: 1,
+      time_mode: "ENABLED",
+      availability: {},
     });
     expect(result.candidates.map((item) => item.on_site)).toEqual([true]);
   });
@@ -129,6 +147,8 @@ describe("coincident station dispatch", () => {
       incident: { lat: 50.01, lng: 20 },
       vehicle_type: "AMBULANCE",
       traffic_density_multiplier: 1,
+      time_mode: "ENABLED",
+      availability: {},
     });
     expect(result.candidates[0].station.station_id).toBe("STN-A-0001");
   });

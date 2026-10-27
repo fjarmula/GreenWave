@@ -288,6 +288,14 @@
 .map-dot--incident {
   background: var(--emergency);
 }
+/* OSM's point of an address that disagrees with Kraków EMUiA (ADR 0013). */
+.map-dot--ghost {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-style: dashed;
+  background: var(--fg-muted);
+  opacity: 0.75;
+}
 .map-dot--station {
   color: #fff;
   background: var(--beacon);

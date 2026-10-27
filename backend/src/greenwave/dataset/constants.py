@@ -13,6 +13,7 @@ from greenwave.artifacts import (
     NETWORK_NODES_FILENAME,
     QUALITY_FILENAME,
     REPORT_FILENAME,
+    RESOURCES_FILENAME,
     STATIONS_FILENAME,
 )
 
@@ -31,9 +32,48 @@ EXAMPLES_IN_MESSAGE = 5
 BOUNDS_PADDING_DEG = 0.01
 VEHICLE_TYPES = frozenset({"AMBULANCE", "FIRE_TRUCK", "POLICE_CAR"})
 SOURCE_KINDS = frozenset(
-    {"ambulance_base", "hospital_ed", "fire_state", "fire_volunteer", "fire_other", "police"}
+    {
+        "prm_base",
+        "ambulance_base",
+        "hospital_ed",
+        "fire_state",
+        "fire_volunteer",
+        "fire_other",
+        "police",
+    }
 )
 STATION_ID_PATTERN = r"^STN-[AFP]-\d{4}$"
+ADDRESS_PROVENANCES = frozenset({"matched", "municipal", "osm"})
+ADDRESS_MATCH_BASES = frozenset({"exact_key", "name_variant"})
+# Which optional address columns each provenance fills (True) or leaves null (False).
+ADDRESS_FILLED_BY_PROVENANCE: dict[str, dict[str, bool]] = {
+    "matched": {
+        "emuia_id": True,
+        "district_number": True,
+        "osm_lat": True,
+        "osm_lng": True,
+        "osm_delta_m": True,
+        "match_basis": True,
+    },
+    "municipal": {
+        "emuia_id": True,
+        "district_number": True,
+        "osm_lat": False,
+        "osm_lng": False,
+        "osm_delta_m": False,
+        "match_basis": False,
+        "alt_search_key": False,
+    },
+    "osm": {
+        "emuia_id": False,
+        "district_number": False,
+        "osm_lat": False,
+        "osm_lng": False,
+        "osm_delta_m": False,
+        "match_basis": False,
+        "alt_search_key": False,
+    },
+}
 
 # file -> step that writes it
 PRODUCED_BY = {
@@ -45,6 +85,7 @@ PRODUCED_BY = {
     NEIGHBOURS_FILENAME: STEP_NEIGHBOURS,
     STATIONS_FILENAME: STEP_PLACES,
     ADDRESSES_FILENAME: STEP_PLACES,
+    RESOURCES_FILENAME: STEP_PLACES,
     REPORT_FILENAME: STEP_INTERSECTIONS,
     QUALITY_FILENAME: STEP_QUALITY,
 }
@@ -110,5 +151,28 @@ REQUIRED_COLUMNS: dict[str, dict[str, pl.DataType | type[pl.DataType] | None]] =
         "label": pl.String,
         "lat": pl.Float64,
         "lng": pl.Float64,
+        "provenance": pl.String,
+        "alt_search_key": pl.String,
+        "emuia_id": pl.Int64,
+        "district_number": pl.Int8,
+        "osm_lat": pl.Float64,
+        "osm_lng": pl.Float64,
+        "osm_delta_m": pl.Float64,
+        "match_basis": pl.String,
+        "osm_same_key_elsewhere": pl.Boolean,
+    },
+    RESOURCES_FILENAME: {
+        "team_code": pl.String,
+        "team_id": pl.String,
+        "team_type": pl.String,
+        "station_id": pl.String,
+        "base_address": pl.String,
+        "area_teryt": pl.String,
+        "weekdays": pl.String,
+        "ready_from_min": pl.Int16,
+        "ready_to_min": pl.Int16,
+        "season_from": pl.String,
+        "season_to": pl.String,
+        "region": pl.String,
     },
 }

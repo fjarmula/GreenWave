@@ -14,6 +14,7 @@ import type { PreviousRun } from "@/lib/previous-run";
 import { DEFAULT_DISPATCH_SETTINGS, type DispatchSettings } from "@/lib/start-request";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
 import type { DispatchRankResponse } from "@/types/telemetry";
+import { RESOURCES } from "@/lib/transport/__fixtures__/team-dispatch";
 
 const transport = vi.hoisted(() => ({ current: "mock" as SimulationTransport }));
 
@@ -46,6 +47,12 @@ const RANKING: DispatchRankResponse = {
     },
   ],
   station_at_incident: null,
+  scenario_time: "2026-10-27T12:00:00",
+  outcome: "OK",
+  incident_area: null,
+  excluded_teams: [],
+  roster: null,
+  area_rule: null,
 };
 
 function dispatchState(patch: Partial<IncidentDispatch> = {}): IncidentDispatch {
@@ -61,10 +68,17 @@ function dispatchState(patch: Partial<IncidentDispatch> = {}): IncidentDispatch 
     rankStatus: "ready",
     rankError: null,
     selectedStationId: null,
+    scenarioTime: "2026-10-27T12:00",
+    availability: {},
+    rankTimeMode: "ENABLED",
+    resources: null,
     setVehicleType: () => undefined,
     setIncident: () => undefined,
     setTrafficDensity: () => undefined,
     selectStation: () => {},
+    setScenarioTime: () => undefined,
+    setTeamAvailability: () => undefined,
+    setRankTimeMode: () => undefined,
     ...patch,
   };
 }
@@ -73,6 +87,7 @@ function render(
   dispatch: IncidentDispatch,
   roadTimeRanking = true,
   settings: DispatchSettings = DEFAULT_DISPATCH_SETTINGS,
+  resources = false,
 ) {
   return renderToStaticMarkup(
     <DispatchForm
@@ -82,7 +97,7 @@ function render(
       pending={false}
       errorMessage={null}
       dispatch={dispatch}
-      capabilities={{ geocode: roadTimeRanking, roadTimeRanking }}
+      capabilities={{ geocode: roadTimeRanking, roadTimeRanking, resources }}
       geocode={async () => []}
       onFocusMap={() => undefined}
     />,
@@ -106,7 +121,11 @@ describe.each(["mock", "backend"] as const)("DispatchForm markup (%s transport)"
         pending={false}
         errorMessage="Simulation backend unreachable"
         dispatch={dispatchState()}
-        capabilities={{ geocode: name === "backend", roadTimeRanking: name === "backend" }}
+        capabilities={{
+          geocode: name === "backend",
+          roadTimeRanking: name === "backend",
+          resources: false,
+        }}
         geocode={async () => []}
         onFocusMap={() => undefined}
       />,
@@ -197,7 +216,7 @@ function formProps(
     pending: false,
     errorMessage: null,
     dispatch: dispatchState(),
-    capabilities: { geocode: true, roadTimeRanking: true },
+    capabilities: { geocode: true, roadTimeRanking: true, resources: false },
     geocode: async () => [],
     onFocusMap: () => undefined,
   };
@@ -465,4 +484,27 @@ it("shows start failures beside the standalone action", () => {
     />,
   );
   expect(markup).toMatch(/role="alert"[^>]*>.*No drivable route found/);
+});
+
+describe("DispatchForm PRM team controls (ADR 0014)", () => {
+  const ambulance = dispatchState({ vehicleType: "AMBULANCE", resources: RESOURCES });
+
+  it("shows the scenario time and team availability for ambulances with a roster", () => {
+    const markup = render(ambulance, true, DEFAULT_DISPATCH_SETTINGS, true);
+    expect(markup).toContain('type="datetime-local"');
+    expect(markup).toContain("Team availability");
+  });
+
+  it("hides them without the resources capability (mock)", () => {
+    const markup = render(ambulance, true, DEFAULT_DISPATCH_SETTINGS, false);
+    expect(markup).not.toContain('type="datetime-local"');
+    expect(markup).not.toContain("Team availability");
+  });
+
+  it("hides them for other vehicle types", () => {
+    const fire = dispatchState({ vehicleType: "FIRE_TRUCK", resources: RESOURCES });
+    const markup = render(fire, true, DEFAULT_DISPATCH_SETTINGS, true);
+    expect(markup).not.toContain('type="datetime-local"');
+    expect(markup).not.toContain("Team availability");
+  });
 });

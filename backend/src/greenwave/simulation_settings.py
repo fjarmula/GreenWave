@@ -44,6 +44,9 @@ class SimulationSettings(BaseSettings):
     max_playback_speed: int = Field(default=10, ge=1)
     # Stations given the full green-wave estimate after the reversed-Dijkstra shortlist.
     dispatch_shortlist_size: int = Field(default=5, ge=1)
+    # APPROVED (human, D4, 2026-10-27): an ambulance team whose operating area covers the incident
+    # is sent unless an out-of-area team arrives more than this much sooner (routing/team_ranking).
+    area_preference_margin_seconds: float = Field(default=60, ge=0, allow_inf_nan=False)
     subscriber_queue_size: int = Field(default=32, ge=1)
     # Sessions kept for streaming and stop: the active run plus the most recent ended ones (D3).
     retained_session_limit: int = Field(default=4, ge=1)

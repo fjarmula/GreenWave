@@ -1,6 +1,16 @@
 {
   "components": {
     "schemas": {
+      "AddressProvenance": {
+        "description": "Where an address coordinate comes from (ADR 0013); EMUiA is Krak\u00f3w's address register.",
+        "enum": [
+          "matched",
+          "municipal",
+          "osm"
+        ],
+        "title": "AddressProvenance",
+        "type": "string"
+      },
       "AmbulanceStatus": {
         "enum": [
           "EN_ROUTE",
@@ -36,6 +46,62 @@
           "status"
         ],
         "title": "AmbulanceTelemetry",
+        "type": "object"
+      },
+      "AreaRuleOutcome": {
+        "description": "Why the first candidate was chosen (D4), with the teams compared.",
+        "properties": {
+          "chosen_team_code": {
+            "pattern": "^K\\d{2} \\d{3}( M)?$",
+            "title": "Chosen Team Code",
+            "type": "string"
+          },
+          "delta_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta Seconds"
+          },
+          "in_area_team_code": {
+            "anyOf": [
+              {
+                "pattern": "^K\\d{2} \\d{3}( M)?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Area Team Code"
+          },
+          "nearest_team_code": {
+            "pattern": "^K\\d{2} \\d{3}( M)?$",
+            "title": "Nearest Team Code",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "NEAREST",
+              "IN_AREA_WITHIN_MARGIN",
+              "NEAREST_OUTSIDE_MARGIN"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "chosen_team_code",
+          "nearest_team_code",
+          "in_area_team_code",
+          "delta_seconds"
+        ],
+        "title": "AreaRuleOutcome",
         "type": "object"
       },
       "CancelReason": {
@@ -189,8 +255,39 @@
       },
       "DispatchRankRequest": {
         "properties": {
+          "availability": {
+            "default": {},
+            "maxProperties": 200,
+            "patternProperties": {
+              "^K\\d{2} \\d{3}( M)?$": {
+                "enum": [
+                  "free",
+                  "busy"
+                ],
+                "type": "string"
+              }
+            },
+            "title": "Availability",
+            "type": "object"
+          },
           "incident": {
             "$ref": "#/components/schemas/Position"
+          },
+          "scenario_time": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenario Time"
+          },
+          "time_mode": {
+            "$ref": "#/components/schemas/GreenWaveMode",
+            "default": "ENABLED"
           },
           "traffic_density_multiplier": {
             "default": 1.0,
@@ -212,17 +309,66 @@
       },
       "DispatchRankResponse": {
         "properties": {
+          "area_rule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AreaRuleOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "candidates": {
             "items": {
               "$ref": "#/components/schemas/RankedCandidate"
             },
             "maxItems": 3,
-            "minItems": 1,
             "title": "Candidates",
             "type": "array"
           },
+          "excluded_teams": {
+            "items": {
+              "$ref": "#/components/schemas/ExcludedTeam"
+            },
+            "title": "Excluded Teams",
+            "type": "array"
+          },
+          "incident_area": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IncidentArea"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "incident_snapped": {
             "$ref": "#/components/schemas/SnappedEndpoint"
+          },
+          "outcome": {
+            "enum": [
+              "OK",
+              "NO_ELIGIBLE_RESOURCE"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "roster": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RosterInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scenario_time": {
+            "format": "date-time",
+            "title": "Scenario Time",
+            "type": "string"
           },
           "schema_version": {
             "const": "1.0",
@@ -244,7 +390,13 @@
           "schema_version",
           "incident_snapped",
           "candidates",
-          "station_at_incident"
+          "station_at_incident",
+          "scenario_time",
+          "outcome",
+          "incident_area",
+          "excluded_teams",
+          "roster",
+          "area_rule"
         ],
         "title": "DispatchRankResponse",
         "type": "object"
@@ -284,6 +436,35 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "ExcludedTeam": {
+        "properties": {
+          "reason": {
+            "enum": [
+              "OFF_SHIFT",
+              "BUSY_OVERRIDE"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "station_id": {
+            "pattern": "^STN-[AFP]-\\d{4}$",
+            "title": "Station Id",
+            "type": "string"
+          },
+          "team_code": {
+            "pattern": "^K\\d{2} \\d{3}( M)?$",
+            "title": "Team Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "team_code",
+          "station_id",
+          "reason"
+        ],
+        "title": "ExcludedTeam",
+        "type": "object"
+      },
       "GeocodeResponse": {
         "properties": {
           "results": {
@@ -307,18 +488,62 @@
         "type": "object"
       },
       "GeocodeResult": {
+        "description": "An address point: where to geocode an incident, not where a vehicle can stop.",
         "properties": {
+          "disagreement_m": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disagreement M"
+          },
           "label": {
             "title": "Label",
             "type": "string"
           },
+          "osm_delta_m": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Osm Delta M"
+          },
+          "osm_position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Position"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "osm_same_key_elsewhere": {
+            "default": false,
+            "title": "Osm Same Key Elsewhere",
+            "type": "boolean"
+          },
           "position": {
             "$ref": "#/components/schemas/Position"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/AddressProvenance"
           }
         },
         "required": [
           "label",
-          "position"
+          "position",
+          "provenance"
         ],
         "title": "GeocodeResult",
         "type": "object"
@@ -357,6 +582,38 @@
           "status"
         ],
         "title": "HealthResponse",
+        "type": "object"
+      },
+      "IncidentArea": {
+        "description": "The incident's PRM operating area: the Krak\u00f3w delegatura of its district (EMUiA).",
+        "properties": {
+          "delegatura_name": {
+            "title": "Delegatura Name",
+            "type": "string"
+          },
+          "district_name": {
+            "title": "District Name",
+            "type": "string"
+          },
+          "district_number": {
+            "maximum": 18.0,
+            "minimum": 1.0,
+            "title": "District Number",
+            "type": "integer"
+          },
+          "teryt": {
+            "pattern": "^\\d{7}$",
+            "title": "Teryt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "teryt",
+          "delegatura_name",
+          "district_number",
+          "district_name"
+        ],
+        "title": "IncidentArea",
         "type": "object"
       },
       "IntersectionKind": {
@@ -904,6 +1161,22 @@
             "title": "On Site",
             "type": "boolean"
           },
+          "selection_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "NEAREST",
+                  "IN_AREA_WITHIN_MARGIN",
+                  "NEAREST_OUTSIDE_MARGIN"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selection Reason"
+          },
           "standard_seconds": {
             "minimum": 0.0,
             "title": "Standard Seconds",
@@ -911,6 +1184,16 @@
           },
           "station": {
             "$ref": "#/components/schemas/Station"
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeamAssignment"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -920,6 +1203,69 @@
           "distance_m"
         ],
         "title": "RankedCandidate",
+        "type": "object"
+      },
+      "ResourcesResponse": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "roster": {
+            "$ref": "#/components/schemas/RosterInfo"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/Team"
+            },
+            "title": "Teams",
+            "type": "array"
+          }
+        },
+        "required": [
+          "schema_version",
+          "roster",
+          "at",
+          "teams"
+        ],
+        "title": "ResourcesResponse",
+        "type": "object"
+      },
+      "RosterInfo": {
+        "description": "The official roster the teams come from (Ma\u0142opolska PRM plan, Tables 1a and 2a).",
+        "properties": {
+          "effective_from": {
+            "format": "date",
+            "title": "Effective From",
+            "type": "string"
+          },
+          "plan_update": {
+            "title": "Plan Update",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "teams_in_scope": {
+            "minimum": 0.0,
+            "title": "Teams In Scope",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "source",
+          "plan_update",
+          "effective_from",
+          "teams_in_scope"
+        ],
+        "title": "RosterInfo",
         "type": "object"
       },
       "RouteGeometry": {
@@ -1509,6 +1855,7 @@
       "StationSourceKind": {
         "description": "Where a station comes from; the UI names it, so hospital EDs are not passed off as bases.",
         "enum": [
+          "prm_base",
           "ambulance_base",
           "hospital_ed",
           "fire_state",
@@ -1571,6 +1918,142 @@
           "status"
         ],
         "title": "StopResponse",
+        "type": "object"
+      },
+      "Team": {
+        "description": "A PRM team in scope and whether its published schedule has it on shift at ``at``.",
+        "properties": {
+          "area_teryt": {
+            "items": {
+              "pattern": "^\\d{7}$",
+              "type": "string"
+            },
+            "title": "Area Teryt",
+            "type": "array"
+          },
+          "base_address": {
+            "title": "Base Address",
+            "type": "string"
+          },
+          "on_shift": {
+            "title": "On Shift",
+            "type": "boolean"
+          },
+          "ready_from_min": {
+            "maximum": 1439.0,
+            "minimum": 0.0,
+            "title": "Ready From Min",
+            "type": "integer"
+          },
+          "ready_to_min": {
+            "maximum": 1440.0,
+            "minimum": 1.0,
+            "title": "Ready To Min",
+            "type": "integer"
+          },
+          "season_from": {
+            "pattern": "^(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$",
+            "title": "Season From",
+            "type": "string"
+          },
+          "season_to": {
+            "pattern": "^(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$",
+            "title": "Season To",
+            "type": "string"
+          },
+          "station_id": {
+            "pattern": "^STN-[AFP]-\\d{4}$",
+            "title": "Station Id",
+            "type": "string"
+          },
+          "team_code": {
+            "pattern": "^K\\d{2} \\d{3}( M)?$",
+            "title": "Team Code",
+            "type": "string"
+          },
+          "team_type": {
+            "title": "Team Type",
+            "type": "string"
+          },
+          "weekdays": {
+            "pattern": "^[1-7]{1,7}$",
+            "title": "Weekdays",
+            "type": "string"
+          }
+        },
+        "required": [
+          "team_code",
+          "team_type",
+          "station_id",
+          "base_address",
+          "area_teryt",
+          "weekdays",
+          "ready_from_min",
+          "ready_to_min",
+          "season_from",
+          "season_to",
+          "on_shift"
+        ],
+        "title": "Team",
+        "type": "object"
+      },
+      "TeamAssignment": {
+        "description": "The PRM team a candidate base sends (AMBULANCE only).",
+        "properties": {
+          "area_teryt": {
+            "items": {
+              "pattern": "^\\d{7}$",
+              "type": "string"
+            },
+            "title": "Area Teryt",
+            "type": "array"
+          },
+          "availability": {
+            "enum": [
+              "free",
+              "assumed_free"
+            ],
+            "title": "Availability",
+            "type": "string"
+          },
+          "in_area": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Area"
+          },
+          "other_eligible_team_codes": {
+            "items": {
+              "pattern": "^K\\d{2} \\d{3}( M)?$",
+              "type": "string"
+            },
+            "title": "Other Eligible Team Codes",
+            "type": "array"
+          },
+          "team_code": {
+            "pattern": "^K\\d{2} \\d{3}( M)?$",
+            "title": "Team Code",
+            "type": "string"
+          },
+          "team_type": {
+            "title": "Team Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "team_code",
+          "team_type",
+          "area_teryt",
+          "in_area",
+          "availability",
+          "other_eligible_team_codes"
+        ],
+        "title": "TeamAssignment",
         "type": "object"
       },
       "ValidationError": {
@@ -1655,7 +2138,7 @@
     },
     "/api/v1/dispatch/rank": {
       "post": {
-        "description": "Sync on purpose: FastAPI runs it in the thread pool, keeping the CPU work off the loop.",
+        "description": "Sync on purpose: FastAPI runs it in the thread pool, keeping the CPU work off the loop.\n\nAMBULANCE ranks eligible PRM teams (ADR 0014); fire and police rank stations as before.",
         "operationId": "rank_api_v1_dispatch_rank_post",
         "requestBody": {
           "content": {
@@ -1697,7 +2180,7 @@
     },
     "/api/v1/geocode": {
       "get": {
-        "description": "Search the local OSM address index; never calls an external geocoder.",
+        "description": "Search the local EMUiA + OSM address index (ADR 0013); never calls an external geocoder.",
         "operationId": "geocode_api_v1_geocode_get",
         "parameters": [
           {
@@ -1770,6 +2253,57 @@
         "summary": "Health",
         "tags": [
           "system"
+        ]
+      }
+    },
+    "/api/v1/resources": {
+      "get": {
+        "description": "The PRM teams in scope and whether each is on shift at ``at`` (naive local time; default\nthe server's local now). Published schedule only: no live availability.",
+        "operationId": "list_resources_api_v1_resources_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "at",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "At"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourcesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Resources",
+        "tags": [
+          "dispatch"
         ]
       }
     },

@@ -5,6 +5,7 @@ const names: Record<Operation, string> = {
   stations: "Stations",
   geocode: "Geocode",
   ranking: "Ranking",
+  resources: "Team roster",
   start: "Start",
   "compare-start": "Comparison start",
   sse: "SSE",

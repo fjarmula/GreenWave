@@ -20,7 +20,9 @@ BUS_LANE_CROSSCHECK_FILENAME = "bus_lane_crosscheck.csv"
 # Step `places`: rescue stations and address points, both snapped to the network.
 STATIONS_FILENAME = "stations.parquet"
 ADDRESSES_FILENAME = "addresses.parquet"
-PLACES_ARTIFACT_FILENAMES = (STATIONS_FILENAME, ADDRESSES_FILENAME)
+# The PRM ambulance teams in scope, one row per team, each at a `prm_base` station.
+RESOURCES_FILENAME = "resources.parquet"
+PLACES_ARTIFACT_FILENAMES = (STATIONS_FILENAME, ADDRESSES_FILENAME, RESOURCES_FILENAME)
 # Step `quality`: a summary of the ETL diagnostics, served at /api/v1/dataset/quality.
 QUALITY_FILENAME = "data_quality.json"
 

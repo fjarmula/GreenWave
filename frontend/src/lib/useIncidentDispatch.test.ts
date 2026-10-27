@@ -10,6 +10,7 @@ import {
   selectedCandidate,
   type Incident,
 } from "@/lib/useIncidentDispatch";
+import { RESOURCES } from "@/lib/transport/__fixtures__/team-dispatch";
 import type { DispatchRankRequest, DispatchRankResponse } from "@/types/telemetry";
 
 type Pending = {
@@ -20,17 +21,25 @@ type Pending = {
 };
 
 /** An adapter whose rank calls stay pending until the test settles them; it ignores aborts. */
-function deferredAdapter() {
+function deferredAdapter(resources = true) {
   const calls: Pending[] = [];
+  const resourceCalls: string[] = [];
   const adapter: DispatchAdapter = {
-    capabilities: { geocode: true, roadTimeRanking: true },
+    capabilities: { geocode: true, roadTimeRanking: true, resources },
     listStations: async () => [],
+    listResources: async (at) => {
+      resourceCalls.push(at);
+      return { ...RESOURCES, at: `${at}:00` };
+    },
     geocode: async () => [],
     rank: (request, signal) =>
       new Promise((resolve, reject) => calls.push({ request, signal, resolve, reject })),
   };
-  return { adapter, calls };
+  return { adapter, calls, resourceCalls };
 }
+
+/** Tuesday 27 October 2026, 21:03 local time. */
+const NOW = () => new Date(2026, 9, 27, 21, 3, 30);
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -59,6 +68,12 @@ const ranking = (stationId: string): DispatchRankResponse => ({
     },
   ],
   station_at_incident: null,
+  scenario_time: "2026-10-27T12:00:00",
+  outcome: "OK",
+  incident_area: null,
+  excluded_teams: [],
+  roster: null,
+  area_rule: null,
 });
 
 const candidate = (stationId: string, seconds: number) => ({
@@ -97,7 +112,7 @@ describe("createIncidentDispatch", () => {
 
   it("ranks when an incident is set", async () => {
     const { adapter, calls } = deferredAdapter();
-    const dispatch = createIncidentDispatch(adapter);
+    const dispatch = createIncidentDispatch(adapter, NOW);
 
     dispatch.setIncident(incident(50.01));
     expect(dispatch.getState().rankStatus).toBe("loading");
@@ -108,6 +123,9 @@ describe("createIncidentDispatch", () => {
       incident: { lat: 50.01, lng: 19.94 },
       vehicle_type: "AMBULANCE",
       traffic_density_multiplier: 1,
+      scenario_time: "2026-10-27T21:00",
+      time_mode: "ENABLED",
+      availability: {},
     });
     expect(dispatch.getState().rankStatus).toBe("ready");
     expect(dispatch.getState().ranking?.candidates[0].station.station_id).toBe("STN-A-0001");
@@ -431,5 +449,111 @@ it("discards a ranking resolved after the incident was cleared even if abort is 
     ranking: null,
     rankStatus: "idle",
     selectedStationId: null,
+  });
+});
+
+describe("scenario time and team availability (ADR 0014)", () => {
+  it("defaults the scenario time to local now, rounded down to 5 minutes", () => {
+    const dispatch = createIncidentDispatch(deferredAdapter().adapter, NOW);
+
+    expect(dispatch.getState().scenarioTime).toBe("2026-10-27T21:00");
+    expect(dispatch.getState().availability).toEqual({});
+    expect(dispatch.getState().rankTimeMode).toBe("ENABLED");
+  });
+
+  it("re-ranks and re-fetches resources when the scenario time changes", async () => {
+    const { adapter, calls, resourceCalls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter, NOW);
+    dispatch.setIncident(incident(50.01));
+
+    dispatch.setScenarioTime("2026-10-27T10:00");
+    await flush();
+
+    expect(calls).toHaveLength(2);
+    expect(calls[1].request.scenario_time).toBe("2026-10-27T10:00");
+    expect(resourceCalls).toEqual(["2026-10-27T10:00"]);
+    expect(dispatch.getState().resources?.at).toBe("2026-10-27T10:00:00");
+  });
+
+  it("refreshes resources on demand and skips them without the capability", async () => {
+    const withRoster = deferredAdapter();
+    const dispatch = createIncidentDispatch(withRoster.adapter, NOW);
+    dispatch.refreshResources();
+    await flush();
+    expect(withRoster.resourceCalls).toEqual(["2026-10-27T21:00"]);
+
+    const mock = deferredAdapter(false);
+    const plain = createIncidentDispatch(mock.adapter, NOW);
+    plain.refreshResources();
+    plain.setScenarioTime("2026-10-27T10:00");
+    await flush();
+    expect(mock.resourceCalls).toEqual([]);
+    expect(plain.getState().resources).toBeNull();
+  });
+
+  it("clears the previous shift roster when the new scenario roster cannot load", async () => {
+    const { adapter } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter, NOW);
+    dispatch.refreshResources();
+    await flush();
+    expect(dispatch.getState().resources?.at).toBe("2026-10-27T21:00:00");
+
+    adapter.listResources = async () => {
+      throw new Error("backend unavailable");
+    };
+    dispatch.setScenarioTime("2026-10-27T10:00");
+
+    expect(dispatch.getState().resources).toBeNull();
+    await flush();
+    expect(dispatch.getState().resources).toBeNull();
+  });
+
+  it("sends availability overrides and drops one set back to unknown", () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter, NOW);
+    dispatch.setIncident(incident(50.01));
+
+    dispatch.setTeamAvailability("K01 176", "busy");
+    dispatch.setTeamAvailability("K01 008", "free");
+    dispatch.setTeamAvailability("K01 176", "unknown");
+
+    expect(calls.map((c) => c.request.availability)).toEqual([
+      {},
+      { "K01 176": "busy" },
+      { "K01 176": "busy", "K01 008": "free" },
+      { "K01 008": "free" },
+    ]);
+    expect(dispatch.getState().availability).toEqual({ "K01 008": "free" });
+  });
+
+  it("remembers availability without an incident and sends none for fire", () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter, NOW);
+
+    dispatch.setTeamAvailability("K01 176", "busy");
+    expect(calls).toHaveLength(0);
+    dispatch.setVehicleType("FIRE_TRUCK");
+    dispatch.setIncident(incident(50.01));
+    expect(calls[0].request.availability).toEqual({});
+    dispatch.setTeamAvailability("K01 008", "busy");
+    expect(calls).toHaveLength(1);
+  });
+
+  it("re-ranks on a time-mode change, keeping the pick", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter, NOW);
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(threeStations);
+    await flush();
+    dispatch.selectStation("B");
+
+    dispatch.setRankTimeMode("DISABLED");
+    dispatch.setRankTimeMode("DISABLED");
+    calls[1].resolve(threeStations);
+    await flush();
+
+    expect(calls).toHaveLength(2);
+    expect(calls[1].request.time_mode).toBe("DISABLED");
+    expect(dispatch.getState().selectedStationId).toBe("B");
   });
 });

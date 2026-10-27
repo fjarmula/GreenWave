@@ -6,19 +6,23 @@ import type {
   DispatchRankRequest,
   DispatchRankResponse,
   GeocodeResult,
+  ResourcesResponse,
   Station,
 } from "@/types/telemetry";
 
 /**
  * Transport boundary for incident dispatch: stations, address search and station
  * ranking. The backend ranks by the green-wave estimate; the mock only offers a
- * straight-line nearest station from the committed snapshot (no address search).
+ * straight-line nearest station from the committed snapshot (no address search and no
+ * PRM team roster: `resources: false`, so the team panels stay hidden).
  * Domain failures reject with `SimulationAdapterError`; an aborted request rejects
  * with the platform `AbortError`.
  */
 export type DispatchAdapter = {
-  capabilities: { geocode: boolean; roadTimeRanking: boolean };
+  capabilities: { geocode: boolean; roadTimeRanking: boolean; resources: boolean };
   listStations(): Promise<Station[]>;
+  /** The PRM teams in scope and their shift at `at` (naive local "YYYY-MM-DDTHH:MM"). */
+  listResources(at: string, signal?: AbortSignal): Promise<ResourcesResponse>;
   geocode(query: string, signal?: AbortSignal): Promise<GeocodeResult[]>;
   rank(request: DispatchRankRequest, signal?: AbortSignal): Promise<DispatchRankResponse>;
 };

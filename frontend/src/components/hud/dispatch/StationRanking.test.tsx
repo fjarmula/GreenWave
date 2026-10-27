@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { StationRanking } from "@/components/hud/dispatch/StationRanking";
+import { NO_ELIGIBLE_RANK, RESOURCES, TEAM_RANK } from "@/lib/transport/__fixtures__/team-dispatch";
 import type { DispatchRankResponse, Station } from "@/types/telemetry";
 
 const station = (id: string, name: string, kind: Station["source_kind"]): Station => ({
@@ -39,6 +40,12 @@ const RANKING: DispatchRankResponse = {
     },
   ],
   station_at_incident: null,
+  scenario_time: "2026-10-27T12:00:00",
+  outcome: "OK",
+  incident_area: null,
+  excluded_teams: [],
+  roster: null,
+  area_rule: null,
 };
 
 const render = (props: Partial<Parameters<typeof StationRanking>[0]> = {}) =>
@@ -266,5 +273,62 @@ describe("StationRanking", () => {
 
   it("shows progress while ranking", () => {
     expect(render({ ranking: null, rankStatus: "loading" })).toContain("Ranking stations");
+  });
+});
+
+describe("StationRanking with PRM teams (ADR 0014)", () => {
+  const teamMarkup = (props: Partial<Parameters<typeof StationRanking>[0]> = {}) =>
+    render({ ranking: TEAM_RANK, teams: RESOURCES.teams, ...props });
+
+  it("keeps the recommended team first and puts Fastest on a later row", () => {
+    const markup = teamMarkup();
+    const recommended = markup.indexOf("Recommended");
+    const fastest = markup.indexOf("Fastest");
+
+    expect(markup.indexOf("K01 008")).toBeLessThan(markup.indexOf("K01 001"));
+    expect(recommended).toBeGreaterThan(-1);
+    expect(recommended).toBeLessThan(markup.indexOf("K01 001"));
+    // The chip follows the second row's station name, after the whole first row.
+    expect(fastest).toBeGreaterThan(markup.indexOf("ul. św. Łazarza 14"));
+    expect(fastest).toBeGreaterThan(markup.indexOf("K01 008"));
+    expect(markup).toContain("+40 s");
+  });
+
+  it("shows the reason line on the first row", () => {
+    expect(teamMarkup()).toContain(
+      "In-area team chosen — 40 s slower than the nearest (within 60 s)",
+    );
+  });
+
+  it("shows team code, type and area chips", () => {
+    const markup = teamMarkup();
+    expect(markup).toContain("K01 008");
+    expect(markup).toContain("P2");
+    expect(markup).toContain("In area");
+    expect(markup).toContain("Outside area");
+  });
+
+  it("badges only the team whose status is assumed", () => {
+    const markup = teamMarkup();
+    expect(markup.split("status unknown — assumed free in scenario")).toHaveLength(2);
+  });
+
+  it("lists excluded teams with their reasons", () => {
+    const markup = teamMarkup();
+    expect(markup).toContain("<details");
+    expect(markup).toContain("Excluded teams (2)");
+    expect(markup).toContain("off shift (07:00–19:00)");
+    expect(markup).toContain("marked busy");
+  });
+
+  it("shows the roster badge", () => {
+    expect(teamMarkup()).toContain("Official PRM plan · update 2 · from 1 Sep 2026 · 23 teams");
+  });
+
+  it("shows the no-eligible state with counts", () => {
+    const markup = teamMarkup({ ranking: NO_ELIGIBLE_RANK });
+    expect(markup).toContain("No eligible ambulance team at 21:00. 1 off shift, 1 marked busy.");
+    expect(markup).not.toContain('type="radio"');
+    expect(markup).toContain("Excluded teams (2)");
   });
 });

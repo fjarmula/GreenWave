@@ -17,10 +17,17 @@ const dispatch: IncidentDispatch = {
   rankStatus: "idle",
   rankError: null,
   selectedStationId: null,
+  scenarioTime: "2026-10-27T12:00",
+  availability: {},
+  rankTimeMode: "ENABLED",
+  resources: null,
   setVehicleType: () => {},
   setIncident: () => {},
   setTrafficDensity: () => {},
   selectStation: () => {},
+  setScenarioTime: () => {},
+  setTeamAvailability: () => {},
+  setRankTimeMode: () => {},
 };
 const settings = { ...DEFAULT_DISPATCH_SETTINGS, itsScenario: "REJECTED" as const };
 const leg = { access_point: { lat: 50, lng: 20 }, distance_m: 420, seconds: 300 };
@@ -37,7 +44,7 @@ describe("dispatch scenario visibility", () => {
     const html = renderToStaticMarkup(
       <DriverSetupDetails
         dispatch={dispatch}
-        capabilities={{ geocode: false, roadTimeRanking: false }}
+        capabilities={{ geocode: false, roadTimeRanking: false, resources: false }}
         settings={effective}
         onSettingsChange={() => {}}
         stationsError={null}
@@ -126,7 +133,7 @@ it("shows the configured comparison feedback after visiting standard traffic", (
     <DriverSetupCard
       intent="comparison"
       dispatch={dispatch}
-      capabilities={{ geocode: false, roadTimeRanking: false }}
+      capabilities={{ geocode: false, roadTimeRanking: false, resources: false }}
       geocode={async () => []}
       settings={{ ...settings, greenWaveMode: "DISABLED" }}
       detailsOpen={false}

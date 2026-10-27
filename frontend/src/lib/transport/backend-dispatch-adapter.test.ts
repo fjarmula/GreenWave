@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createBackendDispatchAdapter } from "@/lib/transport/backend-dispatch-adapter";
 import { SimulationAdapterError } from "@/lib/transport/errors";
+import { RESOURCES } from "@/lib/transport/__fixtures__/team-dispatch";
 import type { DispatchRankResponse, Station } from "@/types/telemetry";
 
 const BASE = "http://127.0.0.1:8000";
@@ -27,6 +28,12 @@ const RANK: DispatchRankResponse = {
     },
   ],
   station_at_incident: null,
+  scenario_time: "2026-10-27T12:00:00",
+  outcome: "OK",
+  incident_area: null,
+  excluded_teams: [],
+  roster: null,
+  area_rule: null,
 };
 
 function respond(status: number, body: unknown) {
@@ -40,8 +47,18 @@ afterEach(() => vi.unstubAllGlobals());
 describe("createBackendDispatchAdapter", () => {
   const adapter = createBackendDispatchAdapter(BASE, OPTIONS);
 
-  it("offers geocoding and road-time ranking", () => {
-    expect(adapter.capabilities).toEqual({ geocode: true, roadTimeRanking: true });
+  it("offers geocoding, road-time ranking and the team roster", () => {
+    expect(adapter.capabilities).toEqual({ geocode: true, roadTimeRanking: true, resources: true });
+  });
+
+  it("lists validated resources at a scenario time", async () => {
+    const fetchMock = respond(200, RESOURCES);
+
+    await expect(adapter.listResources("2026-10-27T21:00")).resolves.toEqual(RESOURCES);
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BASE}/api/v1/resources?at=2026-10-27T21%3A00`,
+      expect.objectContaining({ method: "GET" }),
+    );
   });
 
   it("lists validated stations from GET /api/v1/stations", async () => {
@@ -55,7 +72,15 @@ describe("createBackendDispatchAdapter", () => {
   });
 
   it("geocodes with an encoded query", async () => {
-    const results = [{ label: "Floriańska 1", position: { lat: 50.06, lng: 19.94 } }];
+    const results = [
+      {
+        label: "Floriańska 1",
+        position: { lat: 50.06, lng: 19.94 },
+        provenance: "matched",
+        osm_delta_m: 4,
+        osm_same_key_elsewhere: false,
+      },
+    ];
     const fetchMock = respond(200, { schema_version: "1.0", results });
 
     await expect(adapter.geocode("Floriańska 1")).resolves.toEqual(results);
@@ -71,6 +96,8 @@ describe("createBackendDispatchAdapter", () => {
       incident: { lat: 50.0617, lng: 19.9373 },
       vehicle_type: "FIRE_TRUCK" as const,
       traffic_density_multiplier: 1,
+      time_mode: "ENABLED" as const,
+      availability: {},
     };
 
     await expect(adapter.rank(request)).resolves.toEqual(RANK);
@@ -95,6 +122,8 @@ describe("createBackendDispatchAdapter", () => {
         incident: { lat: 50, lng: 19.9 },
         vehicle_type: "FIRE_TRUCK",
         traffic_density_multiplier: 1,
+        time_mode: "ENABLED",
+        availability: {},
       })
       .catch((e) => e);
     expect(error).toBeInstanceOf(SimulationAdapterError);
@@ -110,6 +139,8 @@ describe("createBackendDispatchAdapter", () => {
           incident: { lat: 50, lng: 19.9 },
           vehicle_type: "AMBULANCE",
           traffic_density_multiplier: 1,
+          time_mode: "ENABLED",
+          availability: {},
         })
         .catch((e) => e);
       expect(error).toBeInstanceOf(SimulationAdapterError);
@@ -170,6 +201,8 @@ it("captures the full wire envelope and error JSON without changing validation",
     incident: { lat: 50.06, lng: 19.94 },
     vehicle_type: "FIRE_TRUCK" as const,
     traffic_density_multiplier: 1,
+    time_mode: "ENABLED" as const,
+    availability: {},
   };
   await expect(adapter.rank(request)).rejects.toBeInstanceOf(SimulationAdapterError);
   expect(diagnosticStore.getSnapshot().at(-1)).toMatchObject({

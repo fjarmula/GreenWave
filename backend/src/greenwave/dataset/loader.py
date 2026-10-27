@@ -28,6 +28,7 @@ from greenwave.artifacts import (
     INTERSECTIONS_FILENAME,
     NEIGHBOURS_FILENAME,
     REPORT_FILENAME,
+    RESOURCES_FILENAME,
     STATIONS_FILENAME,
 )
 from greenwave.dataset.artifact_io import (
@@ -48,6 +49,7 @@ from greenwave.dataset.integrity import (
     check_places,
     check_places_hashes,
     check_references,
+    check_resources,
     check_signal_positions,
 )
 from greenwave.dataset.models import (
@@ -96,10 +98,12 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
     neighbours = read_parquet(processed_dir, NEIGHBOURS_FILENAME)
     stations = read_parquet(processed_dir, STATIONS_FILENAME)
     addresses = read_parquet(processed_dir, ADDRESSES_FILENAME)
+    resources = read_parquet(processed_dir, RESOURCES_FILENAME)
 
     check_references(graph, intersections, approaches, neighbours)  # check 3
     check_signal_positions(graph, approaches)
     check_places(graph, stations, addresses)
+    check_resources(stations, resources)
     check_ids_file(ids.intersections, intersections)
     counts = check_counts(
         graph,
@@ -108,6 +112,7 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
         neighbours,
         stations,
         addresses,
+        resources,
         intersections_section,
         neighbours_section,
         places_section,
@@ -123,10 +128,12 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
         approach_neighbours=neighbours,
         stations=stations,
         addresses=addresses,
+        resources=resources,
         intersection_ids=tuple(ids.intersections),
         cascade_threshold_m=neighbours_section.report.threshold_m,
         allow_u_turns=neighbours_section.report.allow_u_turns,
         counts=counts,
+        roster=places_section.resources,
         provenance=Provenance(manifest_sha256=manifest_sha256, sources=tuple(manifest.entries)),
         quality=quality,
     )

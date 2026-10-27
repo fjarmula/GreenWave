@@ -5,6 +5,7 @@ import polars as pl
 from greenwave.etl.addresses import (
     address_search_key,
     assign_labels,
+    canonical_housenumber,
     dedupe_addresses,
     extract_addresses,
 )
@@ -208,3 +209,19 @@ def test_duplicates_without_locality_still_unique() -> None:
     )
     assert labels == ["Polna 3 (2)", "Polna 3", "Polna 3 (Zielonki)"]
     assert len(set(labels)) == 3
+
+
+def test_canonical_housenumber() -> None:
+    assert canonical_housenumber("15a") == "15A"
+    assert canonical_housenumber(" 15 a ") == "15A"
+    assert canonical_housenumber("15/2b") == "15/2B"
+
+
+def test_dedup_merges_house_numbers_differing_only_by_spacing(tmp_path: Path) -> None:
+    a = point(19.9, 50.0, **{"addr:street": "Miodowa", "addr:housenumber": "28a"})
+    b = point(19.90001, 50.0, **{"addr:street": "Miodowa", "addr:housenumber": "28 A"})
+
+    frame, merged = dedupe_addresses(extract_addresses(_features(tmp_path, a, b))[0], 150.0)
+
+    assert merged == 1
+    assert frame.height == 1

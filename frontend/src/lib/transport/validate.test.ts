@@ -11,13 +11,16 @@ import {
 } from "@/lib/transport/__fixtures__/architecture-examples";
 import { createMockSession } from "@/lib/mock-session";
 import { datasetQualityExample } from "@/lib/transport/__fixtures__/dataset-quality";
+import { NO_ELIGIBLE_RANK, RESOURCES, TEAM_RANK } from "@/lib/transport/__fixtures__/team-dispatch";
 import {
   parseComparisonStartResponse,
   parseErrorResponse,
   parseStartResponse,
   parseStreamEvent,
   validateDatasetQuality,
+  validateGeocode,
   validateRank,
+  validateResources,
 } from "@/lib/transport/validate";
 
 /** Round-trips through JSON like a real payload, then applies a mutation. */
@@ -373,6 +376,12 @@ describe("on-foot legs", () => {
       },
     ],
     station_at_incident: null,
+    scenario_time: "2026-10-27T12:00:00",
+    outcome: "OK",
+    incident_area: null,
+    excluded_teams: [],
+    roster: null,
+    area_rule: null,
   });
 
   it("defaults a missing candidate on_site to false and rejects a non-boolean one", () => {
@@ -382,6 +391,13 @@ describe("on-foot legs", () => {
     expect(validateRank(onSite).candidates[0].on_site).toBe(true);
     record((onSite.candidates as unknown[])[0]).on_site = "yes";
     expect(() => validateRank(onSite)).toThrow("candidates[0].on_site");
+  });
+
+  it("accepts a PRM base station", () => {
+    const body = record(wire(rank()));
+    const candidate = record((body.candidates as unknown[])[0]);
+    record(candidate.station).source_kind = "prm_base";
+    expect(validateRank(body).candidates[0].station.source_kind).toBe("prm_base");
   });
 
   it("accepts rank candidates with a missing, null or valid on_foot", () => {
@@ -417,4 +433,147 @@ it.each([
     Object.assign(phases[0], patch);
   });
   expect(parseStreamEvent(value, SIMULATION_ID)).toBeNull();
+});
+
+describe("validateGeocode", () => {
+  const matched = {
+    label: "Zabłocie 18",
+    position: { lat: 50.05, lng: 19.96 },
+    provenance: "matched",
+    osm_delta_m: 442,
+    disagreement_m: 442,
+    osm_position: { lat: 50.051, lng: 19.965 },
+    osm_same_key_elsewhere: false,
+  };
+  const body = (result: Record<string, unknown>) => ({ schema_version: "1.0", results: [result] });
+
+  it("accepts every provenance with its optional fields", () => {
+    expect(validateGeocode(body(matched)).results[0].provenance).toBe("matched");
+    expect(() =>
+      validateGeocode(body({ label: "A 1", position: matched.position, provenance: "osm" })),
+    ).not.toThrow();
+    expect(() =>
+      validateGeocode(
+        body({
+          ...matched,
+          provenance: "municipal",
+          osm_delta_m: null,
+          disagreement_m: null,
+          osm_position: null,
+          osm_same_key_elsewhere: true,
+        }),
+      ),
+    ).not.toThrow();
+  });
+
+  it("rejects a missing or unknown provenance", () => {
+    expect(() => validateGeocode(body({ ...matched, provenance: undefined }))).toThrow(
+      "results[0].provenance",
+    );
+    expect(() => validateGeocode(body({ ...matched, provenance: "x" }))).toThrow(
+      "results[0].provenance",
+    );
+  });
+
+  it("rejects a negative offset and a non-boolean same-key flag", () => {
+    expect(() => validateGeocode(body({ ...matched, osm_delta_m: -1 }))).toThrow(
+      "results[0].osm_delta_m",
+    );
+    expect(() => validateGeocode(body({ ...matched, osm_same_key_elsewhere: "no" }))).toThrow(
+      "results[0].osm_same_key_elsewhere",
+    );
+  });
+
+  it("requires the OSM position exactly when there is a disagreement", () => {
+    expect(() => validateGeocode(body({ ...matched, osm_position: null }))).toThrow(
+      "results[0].osm_position",
+    );
+    expect(() =>
+      validateGeocode(body({ ...matched, disagreement_m: null, osm_delta_m: 40 })),
+    ).toThrow("results[0].osm_position");
+  });
+});
+
+describe("resource-aware ambulance ranking (ADR 0014)", () => {
+  it("accepts a team-ranked response", () => {
+    expect(validateRank(wire(TEAM_RANK))).toEqual(TEAM_RANK);
+  });
+
+  it("accepts no candidates only with the no-eligible outcome", () => {
+    expect(validateRank(wire(NO_ELIGIBLE_RANK)).candidates).toEqual([]);
+    expect(() => validateRank(wire(NO_ELIGIBLE_RANK, (copy) => (copy.outcome = "OK")))).toThrow(
+      "candidates",
+    );
+    expect(() =>
+      validateRank(wire(TEAM_RANK, (copy) => (copy.outcome = "NO_ELIGIBLE_RESOURCE"))),
+    ).toThrow("candidates");
+  });
+
+  it("rejects four candidates", () => {
+    const body = wire(TEAM_RANK, (copy) => {
+      const list = copy.candidates as unknown[];
+      copy.candidates = [...list, ...list];
+    });
+    expect(() => validateRank(body)).toThrow("candidates");
+  });
+
+  it.each([
+    ["outcome", (c: Record<string, unknown>) => (c.outcome = "MAYBE")],
+    ["scenario_time", (c: Record<string, unknown>) => (c.scenario_time = 5)],
+    [
+      "excluded_teams[0].reason",
+      (c: Record<string, unknown>) => {
+        record((c.excluded_teams as unknown[])[0]).reason = "ASLEEP";
+      },
+    ],
+    ["area_rule.reason", (c: Record<string, unknown>) => (record(c.area_rule).reason = "CLOSEST")],
+    [
+      "area_rule.delta_seconds",
+      (c: Record<string, unknown>) => {
+        record(c.area_rule).delta_seconds = "40";
+      },
+    ],
+    [
+      "incident_area.district_number",
+      (c: Record<string, unknown>) => {
+        record(c.incident_area).district_number = 0;
+      },
+    ],
+    [
+      "roster.teams_in_scope",
+      (c: Record<string, unknown>) => (record(c.roster).teams_in_scope = -1),
+    ],
+    [
+      "candidates[0].team.availability",
+      (c: Record<string, unknown>) => {
+        record(record((c.candidates as unknown[])[0]).team).availability = "live";
+      },
+    ],
+    [
+      "candidates[0].team.in_area",
+      (c: Record<string, unknown>) => {
+        record(record((c.candidates as unknown[])[0]).team).in_area = "yes";
+      },
+    ],
+    [
+      "candidates[0].selection_reason",
+      (c: Record<string, unknown>) => {
+        record((c.candidates as unknown[])[0]).selection_reason = "CLOSEST";
+      },
+    ],
+  ])("rejects a malformed %s", (path, mutate) => {
+    expect(() => validateRank(wire(TEAM_RANK, mutate))).toThrow(path);
+  });
+
+  it("validates GET /resources", () => {
+    expect(validateResources(wire(RESOURCES))).toEqual(RESOURCES);
+    expect(() =>
+      validateResources(
+        wire(RESOURCES, (c) => {
+          record((c.teams as unknown[])[0]).on_shift = "no";
+        }),
+      ),
+    ).toThrow("teams[0].on_shift");
+    expect(() => validateResources(wire(RESOURCES, (c) => (c.roster = null)))).toThrow("roster");
+  });
 });

@@ -10,7 +10,8 @@ Steps, in dependency order (each step re-reads the raw data, except ``neighbours
     override-map     check page for data/overrides/roundabouts.json
     intersections    T4: network_*.parquet, intersections.parquet, signal_approaches.parquet, ids
     neighbours       T5: approach_neighbours.parquet (reads the processed T4 artifacts)
-    places           stations.parquet + addresses.parquet (reads OSM and the processed T4 network)
+    places           stations, addresses and resources.parquet (OSM, EMUiA, the PRM plan tables,
+                     data/curated/prm_bases.json and the processed T4 network)
     quality          data_quality.json: summary of the ETL diagnostics (reads processed outputs)
     roundabouts      roundabout inventory report (analysis only)
     cluster-map      signal-radius decision aid: signal_cluster_map.html
