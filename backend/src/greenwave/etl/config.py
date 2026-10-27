@@ -311,3 +311,8 @@ PLACES_MAX_SNAP_DISTANCE_M = 150.0
 # APPROVED (human, D2, 2026-10-27): a PRM base with an OSM `emergency=ambulance_station` within this
 # distance is reported as matched to it (its osm_ref is kept); farther, the base is a new station.
 PRM_BASE_OSM_MATCH_RADIUS_M = 200.0
+
+# PLACEHOLDER (2026-10-27, spec "Incident operating area"; uncalibrated): an incident takes the
+# district (dzielnica) of the nearest EMUiA address point within this distance; beyond it, or
+# outside Kraków, the incident's PRM operating area is unknown and ranking is pure nearest.
+AREA_LOOKUP_RADIUS_M = 250.0
