@@ -36,15 +36,36 @@ export function candidateTotalSeconds(
   return candidateDriveSeconds(candidate, mode) + (candidate.on_foot?.seconds ?? 0);
 }
 
+/** Ambulance candidates ranked as PRM teams (ADR 0014): the backend's first is recommended. */
+export function isTeamRanked(candidates: RankedCandidate[]): boolean {
+  return candidates.some((candidate) => candidate.team != null);
+}
+
 /**
  * Display order for a page: fastest total of its mode first, ties in backend order. The
  * comparison page keeps the backend (green-wave) order: both runs start from one station.
+ * Team-ranked ambulances keep the backend order on every page: it applies the area rule.
  */
 export function orderCandidates(candidates: RankedCandidate[], mode: TimeMode): RankedCandidate[] {
-  if (mode === "BOTH") return [...candidates];
+  if (mode === "BOTH" || isTeamRanked(candidates)) return [...candidates];
   return [...candidates].sort(
     (a, b) => candidateTotalSeconds(a, mode) - candidateTotalSeconds(b, mode),
   );
+}
+
+/** The station of the lowest total in the page's mode (the comparison: green wave). */
+export function fastestCandidateId(candidates: RankedCandidate[], mode: TimeMode): string | null {
+  const measure = mode === "BOTH" ? "GREENWAVE" : mode;
+  let fastest: RankedCandidate | null = null;
+  for (const candidate of candidates) {
+    if (
+      !fastest ||
+      candidateTotalSeconds(candidate, measure) < candidateTotalSeconds(fastest, measure)
+    ) {
+      fastest = candidate;
+    }
+  }
+  return fastest?.station.station_id ?? null;
 }
 
 /**

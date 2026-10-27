@@ -4,6 +4,7 @@ import { buildStartRequest, DEFAULT_DISPATCH_SETTINGS } from "@/lib/start-reques
 import {
   candidateDriveSeconds,
   candidateTotalSeconds,
+  fastestCandidateId,
   isOnSite,
   onSiteResult,
   orderCandidates,
@@ -12,6 +13,7 @@ import {
   runnerUpIds,
   timeModeFor,
 } from "@/lib/station-choice";
+import { TEAM_RANK } from "@/lib/transport/__fixtures__/team-dispatch";
 import { selectedCandidate } from "@/lib/useIncidentDispatch";
 import type { DispatchRankResponse, RankedCandidate } from "@/types/telemetry";
 
@@ -171,5 +173,37 @@ describe("on-site dispatch", () => {
     expect(shownOnSite(result, { incident: { ...here }, vehicleType: "AMBULANCE" })).toBeNull();
     expect(shownOnSite(result, { incident: here, vehicleType: "FIRE_TRUCK" })).toBeNull();
     expect(shownOnSite(null, { incident: here, vehicleType: "AMBULANCE" })).toBeNull();
+  });
+});
+
+describe("team-ranked ambulance candidates (ADR 0014)", () => {
+  it("test keeps backend order for team ranking", () => {
+    for (const mode of ["GREENWAVE", "STANDARD", "BOTH"] as const) {
+      expect(orderCandidates(TEAM_RANK.candidates, mode).map((c) => c.team?.team_code)).toEqual([
+        "K01 008",
+        "K01 001",
+      ]);
+    }
+  });
+
+  it("test page candidate defaults to the recommended team", () => {
+    const ranking = TEAM_RANK;
+    expect(pageCandidate({ ranking, selectedStationId: null }, "GREENWAVE")?.team?.team_code).toBe(
+      "K01 008",
+    );
+  });
+
+  it("test fastest chip on a later row", () => {
+    expect(fastestCandidateId(TEAM_RANK.candidates, "GREENWAVE")).toBe("STN-A-0007");
+    expect(fastestCandidateId(TEAM_RANK.candidates, "STANDARD")).toBe("STN-A-0007");
+    expect(fastestCandidateId([], "GREENWAVE")).toBeNull();
+  });
+
+  it("test re-sorts fire candidates as before", () => {
+    const fire = TEAM_RANK.candidates.map((c) => ({ ...c, team: null, selection_reason: null }));
+    expect(orderCandidates(fire, "GREENWAVE").map((c) => c.station.station_id)).toEqual([
+      "STN-A-0007",
+      "STN-A-0003",
+    ]);
   });
 });

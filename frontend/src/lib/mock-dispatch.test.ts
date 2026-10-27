@@ -37,7 +37,11 @@ describe("createMockDispatchAdapter", () => {
   const incident = { lat: 50.0617, lng: 19.9373 };
 
   it("offers neither geocoding nor road-time ranking", () => {
-    expect(adapter.capabilities).toEqual({ geocode: false, roadTimeRanking: false });
+    expect(adapter.capabilities).toEqual({
+      geocode: false,
+      roadTimeRanking: false,
+      resources: false,
+    });
   });
 
   it("lists the injected stations", async () => {

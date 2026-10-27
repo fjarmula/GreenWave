@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createBackendDispatchAdapter } from "@/lib/transport/backend-dispatch-adapter";
 import { SimulationAdapterError } from "@/lib/transport/errors";
+import { RESOURCES } from "@/lib/transport/__fixtures__/team-dispatch";
 import type { DispatchRankResponse, Station } from "@/types/telemetry";
 
 const BASE = "http://127.0.0.1:8000";
@@ -46,8 +47,18 @@ afterEach(() => vi.unstubAllGlobals());
 describe("createBackendDispatchAdapter", () => {
   const adapter = createBackendDispatchAdapter(BASE, OPTIONS);
 
-  it("offers geocoding and road-time ranking", () => {
-    expect(adapter.capabilities).toEqual({ geocode: true, roadTimeRanking: true });
+  it("offers geocoding, road-time ranking and the team roster", () => {
+    expect(adapter.capabilities).toEqual({ geocode: true, roadTimeRanking: true, resources: true });
+  });
+
+  it("lists validated resources at a scenario time", async () => {
+    const fetchMock = respond(200, RESOURCES);
+
+    await expect(adapter.listResources("2026-10-27T21:00")).resolves.toEqual(RESOURCES);
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BASE}/api/v1/resources?at=2026-10-27T21%3A00`,
+      expect.objectContaining({ method: "GET" }),
+    );
   });
 
   it("lists validated stations from GET /api/v1/stations", async () => {

@@ -49,8 +49,9 @@ it("preserves values, error identity, callback order and unsubscribe exactly onc
   let signal: AbortSignal | undefined;
   const d = observeDispatch(
     {
-      capabilities: { geocode: true, roadTimeRanking: true },
+      capabilities: { geocode: true, roadTimeRanking: true, resources: true },
       listStations: async () => [],
+      listResources: () => Promise.reject(error),
       geocode: (_, v) => {
         signal = v;
         return Promise.reject(error);

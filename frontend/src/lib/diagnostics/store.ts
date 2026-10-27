@@ -2,6 +2,7 @@ export const operations = [
   "stations",
   "geocode",
   "ranking",
+  "resources",
   "start",
   "compare-start",
   "sse",

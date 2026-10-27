@@ -6,8 +6,10 @@ import type {
   AddressProvenance,
   DispatchRankResponse,
   ErrorCode,
+  GreenWaveMode,
   Position,
   RankedCandidate,
+  ResourcesResponse,
   VehicleType,
 } from "@/types/telemetry";
 
@@ -38,6 +40,19 @@ export function pinnedIncident(position: Position): Incident {
 
 export type RankStatus = "idle" | "loading" | "ready" | "error";
 
+/** A team's simulated status in the scenario; "unknown" sends no override (assumed free). */
+export type TeamAvailability = "unknown" | "free" | "busy";
+
+/** Local wall-clock "YYYY-MM-DDTHH:MM" (a `datetime-local` value), rounded down to 5 minutes. */
+export function scenarioTimeAt(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const minutes = date.getMinutes() - (date.getMinutes() % 5);
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(minutes)}`
+  );
+}
+
 /** A density slider drag re-ranks once, this long after its last step. */
 export const DENSITY_RERANK_DELAY_MS = 250;
 
@@ -51,6 +66,14 @@ export type IncidentDispatchState = {
   rankError: string | null;
   /** The dispatcher's pick; `null` means the fastest. A re-rank resets it, except a density one. */
   selectedStationId: string | null;
+  /** The scenario's local time (ADR 0014): which PRM teams are on shift. */
+  scenarioTime: string;
+  /** Simulated team status by team code; a team left out is unknown (assumed free). */
+  availability: Record<string, "free" | "busy">;
+  /** Which estimate the area rule compares: the page's run, green wave on the comparison. */
+  rankTimeMode: GreenWaveMode;
+  /** The roster and each team's shift at `scenarioTime`; `null` without the capability. */
+  resources: ResourcesResponse | null;
 };
 
 /** The candidate the run starts from: the dispatcher's pick, else the fastest. */
@@ -80,7 +103,10 @@ export function describeRankError(error: unknown): string {
  * the previous request is aborted and, should it still settle, discarded by its
  * sequence number, so an older response never overwrites a newer one.
  */
-export function createIncidentDispatch(adapter: DispatchAdapter) {
+export function createIncidentDispatch(
+  adapter: DispatchAdapter,
+  now: () => Date = () => new Date(),
+) {
   let state: IncidentDispatchState = {
     vehicleType: "AMBULANCE",
     incident: null,
@@ -89,10 +115,16 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
     rankStatus: "idle",
     rankError: null,
     selectedStationId: null,
+    scenarioTime: scenarioTimeAt(now()),
+    availability: {},
+    rankTimeMode: "ENABLED",
+    resources: null,
   };
   const listeners = new Set<() => void>();
   let sequence = 0;
   let inFlight: AbortController | null = null;
+  let resourcesSequence = 0;
+  let resourcesInFlight: AbortController | null = null;
   let densityTimer: ReturnType<typeof setTimeout> | null = null;
 
   function cancelDensityRerank() {
@@ -138,8 +170,10 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
           incident: next.incident.position,
           vehicle_type: next.vehicleType,
           traffic_density_multiplier: next.trafficDensity,
-          time_mode: "ENABLED",
-          availability: {},
+          scenario_time: next.scenarioTime,
+          time_mode: next.rankTimeMode,
+          // Overrides are PRM ambulance teams; other vehicle types have none.
+          availability: next.vehicleType === "AMBULANCE" ? next.availability : {},
         },
         controller.signal,
       )
@@ -158,6 +192,29 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
       .finally(() => {
         if (inFlight === controller) inFlight = null;
       });
+  }
+
+  /** Fetches the roster at the scenario time; an older response never overwrites a newer one. */
+  function refreshResources() {
+    if (!adapter.capabilities.resources) return;
+    resourcesInFlight?.abort();
+    const controller = new AbortController();
+    resourcesInFlight = controller;
+    const current = ++resourcesSequence;
+    adapter.listResources(state.scenarioTime, controller.signal).then(
+      (resources) => {
+        if (current === resourcesSequence) update({ resources });
+      },
+      () => {
+        // The panel keeps its last roster; ranking still reports exclusions on its own.
+      },
+    );
+  }
+
+  /** A team-only change re-ranks ambulances; otherwise it is remembered for the next ranking. */
+  function rankIfAmbulance(patch: Partial<IncidentDispatchState>, keepSelection = false) {
+    if (state.vehicleType === "AMBULANCE" && state.incident !== null) rank(patch, keepSelection);
+    else update(patch);
   }
 
   return {
@@ -181,6 +238,26 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
       cancelDensityRerank();
       densityTimer = setTimeout(() => rank({}, true), DENSITY_RERANK_DELAY_MS);
     },
+    refreshResources,
+    /** A new scenario time re-ranks (the pick resets: teams change) and re-fetches the roster. */
+    setScenarioTime(scenarioTime: string) {
+      if (scenarioTime === state.scenarioTime) return;
+      if (state.incident === null) update({ scenarioTime });
+      else rank({ scenarioTime });
+      refreshResources();
+    },
+    /** "unknown" removes the override: the team is assumed free again. */
+    setTeamAvailability(teamCode: string, value: TeamAvailability) {
+      const availability = { ...state.availability };
+      if (value === "unknown") delete availability[teamCode];
+      else availability[teamCode] = value;
+      rankIfAmbulance({ availability });
+    },
+    /** The page's estimate for the area rule; the same stations, so the pick is kept. */
+    setRankTimeMode(rankTimeMode: GreenWaveMode) {
+      if (rankTimeMode === state.rankTimeMode) return;
+      rankIfAmbulance({ rankTimeMode }, true);
+    },
     /** Picks a listed candidate; an ID outside the current ranking is ignored. */
     selectStation(stationId: string) {
       if (!state.ranking?.candidates.some((c) => c.station.station_id === stationId)) return;
@@ -192,6 +269,9 @@ export function createIncidentDispatch(adapter: DispatchAdapter) {
       sequence += 1;
       inFlight?.abort();
       inFlight = null;
+      resourcesSequence += 1;
+      resourcesInFlight?.abort();
+      resourcesInFlight = null;
     },
   };
 }
@@ -201,17 +281,26 @@ export type IncidentDispatch = IncidentDispatchState & {
   setIncident: (incident: Incident | null) => void;
   setTrafficDensity: (trafficDensity: number) => void;
   selectStation: (stationId: string) => void;
+  setScenarioTime: (scenarioTime: string) => void;
+  setTeamAvailability: (teamCode: string, value: TeamAvailability) => void;
+  setRankTimeMode: (mode: GreenWaveMode) => void;
 };
 
 export function useIncidentDispatch(adapter: DispatchAdapter): IncidentDispatch {
   const [dispatch] = useState(() => createIncidentDispatch(adapter));
   const state = useSyncExternalStore(dispatch.subscribe, dispatch.getState, dispatch.getState);
-  useEffect(() => () => dispatch.dispose(), [dispatch]);
+  useEffect(() => {
+    dispatch.refreshResources();
+    return () => dispatch.dispose();
+  }, [dispatch]);
   return {
     ...state,
     setVehicleType: dispatch.setVehicleType,
     setIncident: dispatch.setIncident,
     setTrafficDensity: dispatch.setTrafficDensity,
     selectStation: dispatch.selectStation,
+    setScenarioTime: dispatch.setScenarioTime,
+    setTeamAvailability: dispatch.setTeamAvailability,
+    setRankTimeMode: dispatch.setRankTimeMode,
   };
 }

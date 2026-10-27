@@ -25,10 +25,14 @@ export function createMockDispatchAdapter(
   stations: Station[] = validateStations(snapshot).stations,
 ): DispatchAdapter {
   return {
-    capabilities: { geocode: false, roadTimeRanking: false },
+    capabilities: { geocode: false, roadTimeRanking: false, resources: false },
 
     async listStations() {
       return stations;
+    },
+
+    async listResources() {
+      throw new Error("The PRM team roster needs the backend");
     },
 
     async geocode() {

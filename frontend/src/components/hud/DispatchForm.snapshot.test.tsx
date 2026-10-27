@@ -67,10 +67,17 @@ function dispatchState(patch: Partial<IncidentDispatch> = {}): IncidentDispatch 
     rankStatus: "ready",
     rankError: null,
     selectedStationId: null,
+    scenarioTime: "2026-10-27T12:00",
+    availability: {},
+    rankTimeMode: "ENABLED",
+    resources: null,
     setVehicleType: () => undefined,
     setIncident: () => undefined,
     setTrafficDensity: () => undefined,
     selectStation: () => {},
+    setScenarioTime: () => undefined,
+    setTeamAvailability: () => undefined,
+    setRankTimeMode: () => undefined,
     ...patch,
   };
 }
@@ -88,7 +95,7 @@ function render(
       pending={false}
       errorMessage={null}
       dispatch={dispatch}
-      capabilities={{ geocode: roadTimeRanking, roadTimeRanking }}
+      capabilities={{ geocode: roadTimeRanking, roadTimeRanking, resources: false }}
       geocode={async () => []}
       onFocusMap={() => undefined}
     />,
@@ -112,7 +119,11 @@ describe.each(["mock", "backend"] as const)("DispatchForm markup (%s transport)"
         pending={false}
         errorMessage="Simulation backend unreachable"
         dispatch={dispatchState()}
-        capabilities={{ geocode: name === "backend", roadTimeRanking: name === "backend" }}
+        capabilities={{
+          geocode: name === "backend",
+          roadTimeRanking: name === "backend",
+          resources: false,
+        }}
         geocode={async () => []}
         onFocusMap={() => undefined}
       />,
@@ -203,7 +214,7 @@ function formProps(
     pending: false,
     errorMessage: null,
     dispatch: dispatchState(),
-    capabilities: { geocode: true, roadTimeRanking: true },
+    capabilities: { geocode: true, roadTimeRanking: true, resources: false },
     geocode: async () => [],
     onFocusMap: () => undefined,
   };

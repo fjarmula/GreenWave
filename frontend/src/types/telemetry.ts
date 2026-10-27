@@ -49,6 +49,13 @@ export type GeocodeResponse = Schemas["GeocodeResponse"];
 export type DispatchRankRequest = Schemas["DispatchRankRequest"];
 export type DispatchRankResponse = Schemas["DispatchRankResponse"];
 export type RankedCandidate = Schemas["RankedCandidate"];
+export type RosterInfo = Schemas["RosterInfo"];
+export type IncidentArea = Schemas["IncidentArea"];
+export type TeamAssignment = Schemas["TeamAssignment"];
+export type ExcludedTeam = Schemas["ExcludedTeam"];
+export type AreaRuleOutcome = Schemas["AreaRuleOutcome"];
+export type PrmTeam = Schemas["Team"];
+export type ResourcesResponse = Schemas["ResourcesResponse"];
 
 export type ItsFeedbackEvent = Schemas["ItsFeedbackEvent"];
 export type ItsRequestSnapshot = Schemas["ItsRequestSnapshot"];
