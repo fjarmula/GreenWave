@@ -2,7 +2,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { StationRanking } from "@/components/hud/dispatch/StationRanking";
-import { NO_ELIGIBLE_RANK, RESOURCES, TEAM_RANK } from "@/lib/transport/__fixtures__/team-dispatch";
+import {
+  NO_ELIGIBLE_RANK,
+  RESOURCES,
+  TEAM_RANK,
+  TEAM_RANK_WITH_WALK,
+} from "@/lib/transport/__fixtures__/team-dispatch";
 import type { DispatchRankResponse, Station } from "@/types/telemetry";
 
 const station = (id: string, name: string, kind: Station["source_kind"]): Station => ({
@@ -73,10 +78,12 @@ describe("StationRanking", () => {
     expect(markup).toContain("05m 49s");
   });
 
-  it("keeps each truncated station name readable in full on hover", () => {
+  it("keeps the full station name available without truncation", () => {
     const markup = render();
     for (const name of ["SP ZOZ MSW", "5. Wojskowy", "KPR"]) {
-      expect(markup).toMatch(new RegExp(`<span class="[^"]*truncate[^"]*" title="${name}">`));
+      expect(markup).toMatch(
+        new RegExp(`<span class="[^"]*station-choice-name[^"]*" title="${name}">`),
+      );
     }
   });
 
@@ -331,4 +338,15 @@ describe("StationRanking with PRM teams (ADR 0014)", () => {
     expect(markup).not.toContain('type="radio"');
     expect(markup).toContain("Excluded teams (2)");
   });
+});
+
+it("preserves station identity, availability and drive/walk totals for narrow-panel data", () => {
+  const markup = render({ ranking: TEAM_RANK_WITH_WALK });
+  expect(markup).toContain("ul. Generała Bolesława Wieniawy-Długoszowskiego 15, Kraków");
+  expect(markup).toContain("K01 008");
+  expect(markup).toContain("07m 22s");
+  expect(markup).toContain("03m 20s drive + 04m 02s on foot · 340 m");
+  expect(markup).toContain("status unknown — assumed free in scenario");
+  expect(markup).toContain("Recommended");
+  expect(markup).toContain("Fastest");
 });

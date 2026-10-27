@@ -136,3 +136,23 @@ export const RESOURCES: ResourcesResponse = {
     }),
   ],
 };
+
+/** Long station names plus the drive/walk breakdown that must fit a narrow dispatch panel. */
+export const TEAM_RANK_WITH_WALK: DispatchRankResponse = {
+  ...TEAM_RANK,
+  area_rule: { ...TEAM_RANK.area_rule!, reason: "NEAREST" },
+  candidates: TEAM_RANK.candidates.map((candidate, index) => ({
+    ...candidate,
+    station: {
+      ...candidate.station,
+      name:
+        index === 0
+          ? "ul. Generała Bolesława Wieniawy-Długoszowskiego 15, Kraków"
+          : "ul. Rynek Podgórski 2, 30-533 Kraków",
+    },
+    greenwave_seconds: index === 0 ? 200 : 430,
+    standard_seconds: index === 0 ? 420 : 650,
+    on_foot: { access_point: candidate.station.position, distance_m: 340, seconds: 242 },
+    team: { ...candidate.team!, availability: "assumed_free", in_area: true },
+  })),
+};

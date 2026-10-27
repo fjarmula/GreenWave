@@ -174,44 +174,13 @@ function CandidateRow({
         checked={checked}
         onChange={() => onSelect(station.station_id)}
       />
-      <span className="min-w-0 flex-1">
-        <span className="flex min-w-0 items-center gap-1.5">
-          <span
-            className={`min-w-0 truncate text-sm ${checked ? "font-semibold" : "font-medium"}`}
-            title={station.name}
-          >
-            {station.name}
-          </span>
-          {recommended && (
-            <span className="hud-chip tone-beacon shrink-0 text-2xs">Recommended</span>
-          )}
-          {candidate.on_site ? (
-            <span className="hud-chip tone-beacon shrink-0 text-2xs">On site</span>
-          ) : (
-            isFastest && <span className="hud-chip tone-go shrink-0 text-2xs">Fastest</span>
-          )}
-        </span>
-        {team ? (
-          <span className="flex flex-wrap items-center gap-1 text-2xs text-muted-foreground">
-            <span className="font-mono font-medium text-foreground">{team.team_code}</span>
-            <span className="hud-chip tone-muted text-2xs">{team.team_type}</span>
-            {team.in_area !== null && (
-              <span className={`hud-chip ${team.in_area ? "tone-go" : "tone-muted"} text-2xs`}>
-                {team.in_area ? "In area" : "Outside area"}
-              </span>
-            )}
-            {team.availability === "assumed_free" && (
-              <span className="hud-chip tone-caution text-2xs">{ASSUMED_FREE_BADGE}</span>
-            )}
-          </span>
-        ) : (
-          <span className="block text-2xs text-muted-foreground">
-            {SOURCE_KIND_LABELS[station.source_kind]}
-          </span>
-        )}
-        {reason && <span className="block text-2xs text-foreground">{reason}</span>}
+      <span
+        className={`station-choice-name text-sm ${checked ? "font-semibold" : "font-medium"}`}
+        title={station.name}
+      >
+        {station.name}
       </span>
-      <span className="shrink-0 text-right">
+      <span className="station-choice-time text-right">
         <span
           className={`hud-value block font-mono text-sm ${
             checked ? "font-semibold text-go" : "text-muted-foreground"
@@ -235,11 +204,6 @@ function CandidateRow({
             total(timeMode)
           )}
         </span>
-        {onFoot && (
-          <span className="block text-2xs text-muted-foreground">
-            {onFootLine(candidate, onFoot, roadTimeRanking, timeMode)}
-          </span>
-        )}
         {!isFastest && (
           <span className="block font-mono text-2xs text-muted-foreground">
             {roadTimeRanking
@@ -248,6 +212,36 @@ function CandidateRow({
           </span>
         )}
       </span>
+      <span className="station-choice-meta text-2xs text-muted-foreground">
+        {recommended && <span className="hud-chip tone-beacon text-2xs">Recommended</span>}
+        {candidate.on_site ? (
+          <span className="hud-chip tone-beacon text-2xs">On site</span>
+        ) : (
+          isFastest && <span className="hud-chip tone-go text-2xs">Fastest</span>
+        )}
+        {team ? (
+          <>
+            <span className="font-mono font-medium text-foreground">{team.team_code}</span>
+            <span>{team.team_type}</span>
+            {team.in_area !== null && <span>{team.in_area ? "In area" : "Outside area"}</span>}
+          </>
+        ) : (
+          <span>{SOURCE_KIND_LABELS[station.source_kind]}</span>
+        )}
+      </span>
+      {team?.availability === "assumed_free" && (
+        <span className="station-choice-note station-choice-assumption text-2xs">
+          {ASSUMED_FREE_BADGE}
+        </span>
+      )}
+      {onFoot && (
+        <span className="station-choice-note text-2xs text-muted-foreground">
+          {onFootLine(candidate, onFoot, roadTimeRanking, timeMode)}
+        </span>
+      )}
+      {reason && (
+        <span className="station-choice-note text-2xs text-muted-foreground">{reason}</span>
+      )}
     </label>
   );
 }
