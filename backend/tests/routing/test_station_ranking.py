@@ -362,3 +362,32 @@ def test_unreachable_access_nodes_skip_the_station() -> None:
         rank_stations(
             index, build_station_nodes(trapped, index), PARK, VehicleType.AMBULANCE, SETTINGS
         )
+
+
+def test_fastest_of_a_set_joins_the_shortlist() -> None:
+    index, nodes = _corridor()
+    settings = SimulationSettings(dispatch_shortlist_size=1)
+
+    ranking = rank_stations(
+        index,
+        nodes,
+        position_at(_X + 1_950.02),
+        VehicleType.AMBULANCE,
+        settings,
+        include_fastest_of=frozenset({"STN-A-0001", "STN-A-0002"}),
+    )
+
+    # The shortlist is STN-A-0004 plus the faster of the two, not both.
+    assert [c.station.station_id for c in ranking.candidates] == ["STN-A-0004", "STN-A-0002"]
+
+
+def test_max_candidates_lifts_the_cap() -> None:
+    index, nodes = _corridor()
+
+    ranking = rank_stations(
+        index, nodes, position_at(_X + 1_950.02), VehicleType.AMBULANCE, SETTINGS, max_candidates=10
+    )
+
+    assert [c.station.station_id for c in ranking.candidates] == [
+        "STN-A-0004", "STN-A-0003", "STN-A-0002", "STN-A-0001"
+    ]  # fmt: skip
