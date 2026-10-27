@@ -21,6 +21,7 @@ from greenwave.artifacts import (
     INTERSECTIONS_FILENAME,
     QUALITY_FILENAME,
     REPORT_FILENAME,
+    RESOURCES_FILENAME,
     artifact_hashes,
 )
 from greenwave.etl.bus_lanes import (
@@ -60,6 +61,7 @@ QUALITY_INPUT_FILENAMES = (
     ROUTES_FILENAME,
     INTERSECTIONS_FILENAME,
     BUS_LANE_CROSSCHECK_FILENAME,
+    RESOURCES_FILENAME,
 )
 
 
@@ -352,6 +354,41 @@ def _address_gap_examples(report: dict[str, Any]) -> QualityCheck:
     )
 
 
+def _prm_roster(processed_dir: Path, report: dict[str, Any]) -> QualityCheck:
+    r = report["places"]["resources"]
+    teams, bases = int(r["teams_in_scope"]), int(r["bases"])
+    all_day = int(r["teams_by_hours"].get("00:00-24:00", 0))
+    by_base = (
+        pl.read_parquet(processed_dir / RESOURCES_FILENAME, columns=["base_address", "team_code"])
+        .group_by("base_address")
+        .agg(pl.col("team_code").sort())
+        .with_columns(pl.col("team_code").list.len().alias("teams"))
+        .sort(["teams", "base_address"], descending=[True, False])
+        .head(MAX_SAMPLES)
+    )
+    return QualityCheck(
+        id="prm_roster",
+        title="Ambulance teams (PRM plan)",
+        status=QualityStatus.INFO,
+        headline=(
+            f"{teams:,} ambulance teams at {bases} bases from the Małopolska PRM plan "
+            f"(update {r['plan_update']}, effective {r['effective_from']}). "
+            f"{len(r['outside_simulation_area'])} teams of the region are outside the simulated "
+            "area."
+        ),
+        metrics={
+            "teams_in_scope": teams,
+            "bases": bases,
+            "teams_24h": all_day,
+            "teams_daytime": teams - all_day,
+        },
+        samples=[
+            f"{address}: {', '.join(codes)}"
+            for address, codes in by_base.select("base_address", "team_code").iter_rows()
+        ],
+    )
+
+
 def msip_export_timestamp(raw_dir: Path) -> str | None:
     """``Data wygenerowania plików: 2026-10-13_00:47:34`` -> ``2026-10-13 00:47:34``."""
     path = raw_dir / AKTUALNOSC_PATH
@@ -378,6 +415,7 @@ def build_quality(processed_dir: Path, raw_dir: Path, manifest: Manifest) -> Dat
             _road_attributes(report),
             _address_reconciliation(report),
             _address_gap_examples(report),
+            _prm_roster(processed_dir, report),
         ],
         sources=[
             QualitySource(

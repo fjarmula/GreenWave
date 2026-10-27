@@ -4,7 +4,11 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from greenwave.artifacts import BUS_LANE_CROSSCHECK_FILENAME, INTERSECTIONS_FILENAME
+from greenwave.artifacts import (
+    BUS_LANE_CROSSCHECK_FILENAME,
+    INTERSECTIONS_FILENAME,
+    RESOURCES_FILENAME,
+)
 from greenwave.etl.config import ROUTE_DETOUR_RATIO_RANGE, STREET_LENGTH_RATIO_RANGE
 from greenwave.etl.intersections_pipeline import NEAR_MISSES_FILENAME
 from greenwave.etl.manifest import load_manifest
@@ -29,6 +33,7 @@ CHECK_IDS = [
     "road_attributes",
     "address_reconciliation",
     "address_gap_examples",
+    "prm_roster",
 ]
 NEAR_MISS_SCHEMA = {
     "kind": pl.String,
@@ -435,3 +440,33 @@ def test_run_quality_needs_the_places_section(layout: Layout) -> None:
 
     with pytest.raises(QualityInputError, match="places"):
         run_quality(raw_dir(layout), layout.processed)
+
+
+def test_prm_roster_summarises_report(layout: Layout) -> None:
+    result = check(layout, "prm_roster")
+
+    assert result.title == "Ambulance teams (PRM plan)"
+    assert result.status is QualityStatus.INFO
+    assert result.headline == (
+        "3 ambulance teams at 2 bases from the Małopolska PRM plan (update 2, effective "
+        "2026-09-01). 1 teams of the region are outside the simulated area."
+    )
+    assert result.metrics == {"teams_in_scope": 3, "bases": 2, "teams_24h": 2, "teams_daytime": 1}
+    assert result.samples == [
+        "ul. Testowa 1, 30-001 Kraków: K01 162, K01 176",
+        "ul. Poprzeczna 5, 30-001 Kraków: K01 008",
+    ]
+
+
+def test_prm_roster_samples_capped_at_five(layout: Layout) -> None:
+    path = layout.processed / RESOURCES_FILENAME
+    frame = pl.read_parquet(path)
+    many = pl.concat(
+        frame.head(1).with_columns(
+            pl.lit(f"K01 {900 + i}").alias("team_code"), pl.lit(f"Base {i}").alias("base_address")
+        )
+        for i in range(7)
+    )
+    many.write_parquet(path)
+
+    assert len(check(layout, "prm_roster").samples) == 5
