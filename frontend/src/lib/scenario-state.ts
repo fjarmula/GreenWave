@@ -4,11 +4,14 @@ import type { GreenWaveMode } from "@/types/telemetry";
 
 export type RunLabels = { origin: MapEndpoint; destination: MapEndpoint };
 
+function copyEndpoint(endpoint: MapEndpoint): MapEndpoint {
+  const copy: MapEndpoint = { label: endpoint.label, position: { ...endpoint.position } };
+  if (endpoint.osmPosition) copy.osmPosition = { ...endpoint.osmPosition };
+  return copy;
+}
+
 export function captureRunLabels(origin: MapEndpoint, destination: MapEndpoint): RunLabels {
-  return {
-    origin: { label: origin.label, position: { ...origin.position } },
-    destination: { label: destination.label, position: { ...destination.position } },
-  };
+  return { origin: copyEndpoint(origin), destination: copyEndpoint(destination) };
 }
 
 export function settingsForMode(settings: DispatchSettings, mode: GreenWaveMode): DispatchSettings {
