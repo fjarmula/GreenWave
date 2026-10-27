@@ -47,7 +47,7 @@ Simulation only; no physical actuation. No new dependencies. Generated contracts
 
 - [x] Run full frontend and backend checks and browser acceptance through playwright-cli; keep artifacts in `.tmp/playwright/`.
 - [x] Refresh graph after structural changes; review the complete diff with a fresh reviewer.
-- [ ] Commit explicit paths, push the feature branch and open/attach a PR using the repository template.
+- [x] Commit explicit paths, push the feature branch and open/attach a PR using the repository template.
 
 ## Execution record — 2026-10-27
 
@@ -59,3 +59,5 @@ Simulation only; no physical actuation. No new dependencies. Generated contracts
 - Browser acceptance: six routes at 1280×720, 390×844, 320×720 and 844×390; additional 1440/768 layouts; real Follow and switch interactions; minimized sheets and Focus; high-zoom vehicle-only markers; diagnostic JSON with both movement kinds and context. No application console errors observed. Artifacts remain under .tmp/playwright/workspace-controls/.
 - Base branch decision: origin/main now contains the previous responsive-map branch via PR #49, with the same starting tree. Synchronize main before publication so this PR contains only these changes.
 - Proposed Conventional Commit: feat: improve workspace controls and signal diagnostics.
+
+Publication: PR #50 (https://github.com/fjarmula/GreenWave/pull/50), branch `codex/workspace-controls-signal-diagnostics`, base `main`. Synchronization with main preserved the exact verified implementation tree. Pre-push mypy, frontend typecheck and generated-contract drift checks passed.
