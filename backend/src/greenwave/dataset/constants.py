@@ -40,6 +40,7 @@ ADDRESS_MATCH_BASES = frozenset({"exact_key", "name_variant"})
 ADDRESS_FILLED_BY_PROVENANCE: dict[str, dict[str, bool]] = {
     "matched": {
         "emuia_id": True,
+        "district_number": True,
         "osm_lat": True,
         "osm_lng": True,
         "osm_delta_m": True,
@@ -47,6 +48,7 @@ ADDRESS_FILLED_BY_PROVENANCE: dict[str, dict[str, bool]] = {
     },
     "municipal": {
         "emuia_id": True,
+        "district_number": True,
         "osm_lat": False,
         "osm_lng": False,
         "osm_delta_m": False,
@@ -55,6 +57,7 @@ ADDRESS_FILLED_BY_PROVENANCE: dict[str, dict[str, bool]] = {
     },
     "osm": {
         "emuia_id": False,
+        "district_number": False,
         "osm_lat": False,
         "osm_lng": False,
         "osm_delta_m": False,
@@ -141,6 +144,7 @@ REQUIRED_COLUMNS: dict[str, dict[str, pl.DataType | type[pl.DataType] | None]] =
         "provenance": pl.String,
         "alt_search_key": pl.String,
         "emuia_id": pl.Int64,
+        "district_number": pl.Int8,
         "osm_lat": pl.Float64,
         "osm_lng": pl.Float64,
         "osm_delta_m": pl.Float64,

@@ -32,6 +32,7 @@ def emuia_feature(
     *,
     miejscowosc: str = "Kraków",
     district: str = "Dzielnica I Stare Miasto",
+    district_number: str = "1",
 ) -> dict[str, Any]:
     """One EMUiA address point with the published property names (EPSG:2178 coordinates)."""
     return {
@@ -44,7 +45,7 @@ def emuia_feature(
             "numer_adresowy": number,
             "kod_pocztowy": "30-001",
             "miejscowosc": miejscowosc,
-            "numer_dzielnicy": "1",
+            "numer_dzielnicy": district_number,
             "nazwa_dzielnicy": district,
             "kod_teryt": "00001",
             "data_importu": 1793034002000,

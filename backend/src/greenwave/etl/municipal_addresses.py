@@ -23,6 +23,7 @@ EMUIA_DOWNLOAD_URL = "https://msip.um.krakow.pl/Dane/Adresy_JSON.zip"
 
 _KRAKOW = "Kraków"
 _DISTRICT_PREFIX = re.compile(r"^Dzielnica\s+[IVXLC]+\s+")
+_DISTRICT_NUMBER = re.compile(r"^(?:[1-9]|1[0-8])$")
 _TIMESTAMP = re.compile(r"(\d{4}-\d{2}-\d{2})_(\d{2}:\d{2}:\d{2})")
 
 _SCHEMA = {
@@ -32,6 +33,7 @@ _SCHEMA = {
     "search_key": pl.Utf8,
     "number_key": pl.Utf8,
     "district": pl.Utf8,
+    "district_number": pl.Int8,  # Kraków's 18 districts (dzielnice), I-XVIII as 1-18
     "x_m": pl.Float64,
     "y_m": pl.Float64,
     "lat": pl.Float64,
@@ -64,6 +66,11 @@ def _row(feature: dict[str, Any], index: int) -> dict[str, Any]:
     locality = _text(properties.get("miejscowosc"))
     if locality != _KRAKOW:
         raise MunicipalAddressError(f"feature {fid} is outside Kraków: miejscowosc {locality!r}")
+    district_number = _text(properties.get("numer_dzielnicy"))
+    if not _DISTRICT_NUMBER.match(district_number):
+        raise MunicipalAddressError(
+            f"feature {fid} has numer_dzielnicy {district_number!r}; expected 1-18"
+        )
     x, y = geometry["coordinates"][:2]
     return {
         "emuia_id": fid,
@@ -72,6 +79,7 @@ def _row(feature: dict[str, Any], index: int) -> dict[str, Any]:
         "search_key": address_search_key(street),
         "number_key": canonical_housenumber(str(number)),
         "district": _DISTRICT_PREFIX.sub("", _text(properties.get("nazwa_dzielnicy"))),
+        "district_number": int(district_number),
         "x_m": float(x),
         "y_m": float(y),
     }

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import polars as pl
 import pytest
 
 from greenwave.etl.addresses import address_search_key
@@ -116,3 +117,16 @@ def test_fixture_is_valid_geojson(tmp_path: Path) -> None:
     write_emuia(raw, (emuia_feature(1, "Długa", "1", X0, Y0),))
     data = json.loads((raw / "krakow" / "emuia" / "Adresy.geojson").read_text(encoding="utf-8"))
     assert data["crs"]["properties"]["name"] == "EPSG:2178"
+
+
+def test_district_number_kept(tmp_path: Path) -> None:
+    frame = _load(tmp_path, emuia_feature(7, "Długa", "1", X0, Y0, district_number="6"))
+
+    assert frame.schema["district_number"] == pl.Int8
+    assert frame["district_number"].to_list() == [6]
+
+
+@pytest.mark.parametrize("value", ["0", "19", "VI", ""])
+def test_bad_district_number_raises(tmp_path: Path, value: str) -> None:
+    with pytest.raises(MunicipalAddressError, match="numer_dzielnicy"):
+        _load(tmp_path, emuia_feature(7, "Długa", "1", X0, Y0, district_number=value))

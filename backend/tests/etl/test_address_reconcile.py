@@ -38,6 +38,7 @@ def _emuia(*rows: tuple[int, str, str, float, float]) -> pl.DataFrame:
                 "search_key": address_search_key(street),
                 "number_key": canonical_housenumber(number),
                 "district": "Stare Miasto",
+                "district_number": 6,
                 "x_m": X0 + dx,
                 "y_m": Y0 + dy,
                 "lat": lat,
@@ -53,6 +54,7 @@ def _emuia(*rows: tuple[int, str, str, float, float]) -> pl.DataFrame:
             "search_key": pl.Utf8,
             "number_key": pl.Utf8,
             "district": pl.Utf8,
+            "district_number": pl.Int8,
             "x_m": pl.Float64,
             "y_m": pl.Float64,
             "lat": pl.Float64,
@@ -290,3 +292,15 @@ def test_examples_gap_and_clean_prefer_well_mapped_streets() -> None:
 
     assert examples.municipal_only_gap_closed == ["Długa 3", "Krótka 1"]
     assert examples.matched_clean == ["Długa 1: 10 m"]
+
+
+def test_district_number_by_provenance() -> None:
+    frame, _ = reconcile_addresses(
+        _emuia((1, "Długa", "1", 0, 0), (2, "Długa", "3", 300, 0)),
+        _osm(("Długa", "1", 5, 0, False), ("Krótka", "9", 600, 0, False)),
+        frozenset(),
+    )
+
+    assert frame.schema["district_number"] == pl.Int8
+    by_provenance = dict(frame.select("provenance", "district_number").rows())
+    assert by_provenance == {PROVENANCE_MATCHED: 6, PROVENANCE_MUNICIPAL: 6, PROVENANCE_OSM: None}

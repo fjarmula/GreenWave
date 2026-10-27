@@ -47,6 +47,7 @@ RECONCILED_SCHEMA = {
     "provenance": pl.Utf8,
     "alt_search_key": pl.Utf8,
     "emuia_id": pl.Int64,
+    "district_number": pl.Int8,  # EMUiA's district (1-18); null for OSM-only rows
     "osm_lat": pl.Float64,
     "osm_lng": pl.Float64,
     "osm_delta_m": pl.Float64,
@@ -169,6 +170,7 @@ def reconcile_addresses(
             "lat": row["lat"],
             "lng": row["lng"],
             "emuia_id": row["emuia_id"],
+            "district_number": row["district_number"],
             "alt_search_key": None,
             "osm_lat": None,
             "osm_lng": None,
@@ -207,6 +209,7 @@ def reconcile_addresses(
                 "provenance": PROVENANCE_OSM,
                 "alt_search_key": None,
                 "emuia_id": None,
+                "district_number": None,
                 "osm_lat": None,
                 "osm_lng": None,
                 "osm_delta_m": None,

@@ -675,6 +675,23 @@ def test_osm_address_with_emuia_id_rejected(layout: Layout) -> None:
         load_dataset(layout.processed, layout.manifest)
 
 
+def test_osm_address_with_district_number_rejected(layout: Layout) -> None:
+    edit_parquet(
+        layout.processed / ADDRESSES_FILENAME,
+        lambda f: f.with_columns(pl.lit(1, dtype=pl.Int8).alias("district_number")),
+    )
+
+    with pytest.raises(MalformedArtifactError, match="district_number"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_addresses_without_district_number_rejected(layout: Layout) -> None:
+    edit_parquet(layout.processed / ADDRESSES_FILENAME, lambda f: f.drop("district_number"))
+
+    with pytest.raises(MalformedArtifactError, match="district_number"):
+        load_dataset(layout.processed, layout.manifest)
+
+
 def test_layout_addresses_cover_matched_and_osm(layout: Layout) -> None:
     provenance = set(pl.read_parquet(layout.processed / ADDRESSES_FILENAME)["provenance"])
     assert provenance == {"matched", "municipal", "osm"}
