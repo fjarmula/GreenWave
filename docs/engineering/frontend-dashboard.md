@@ -35,8 +35,12 @@ After frontend changes run `npm run lint`, `npm run typecheck`, `npm run format:
 ## Workspace controls and signal diagnostics
 
 The shared workspace shell exposes a bottom-right primary dispatch action outside scrolling settings,
-including minimized phone sheets, hidden details and focus mode. Shared headers show the brand's
-Home link and concise navigation labels. A measured dock height keeps panels, phone sheets and map
+including minimized phone sheets and Focus Mode. Shared headers show the brand's
+Home link and concise navigation labels without a repeated desktop mode heading. Home uses the same
+header and logo geometry. One Focus Mode toggle hides or shows the details panel (including the phone
+sheet) while navigation, telemetry and run controls remain visible; Escape restores the panel.
+Comparison mode and speed/status pills sit at the right of each map. Vehicles use blue markers,
+separate from the red/amber/green signal colours. A measured dock height keeps panels, phone sheets and map
 controls clear of the dispatch action and its outcomes. One camera toggle shares a toolbar with
 Dispatch settings: Follow vehicle from overview/suspension, Show route while following or when
 telemetry cannot be followed. Comparison follows its fresh running members together; route overview

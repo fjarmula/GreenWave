@@ -4,7 +4,7 @@ import { Activity, ArrowRight, ArrowUpRight, Info, Smartphone } from "lucide-rea
 import { useSimulationState } from "@/components/simulation-provider";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { HomeBackdrop } from "@/components/workspace/HomeBackdrop";
-import { GreenWaveMark } from "@/components/workspace/GreenWaveMark";
+import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import {
   ComparisonGlyph,
   GreenWaveGlyph,
@@ -39,7 +39,7 @@ export function HomeMenu() {
         <span>{corridor.signals.length} traffic signals · real geometry</span>
         <span className="flex gap-3">
           <span className="home-legend">
-            <i className="bg-[var(--signal-red)]" /> Vehicle
+            <i className="bg-[var(--vehicle)]" /> Vehicle
           </span>
           <span className="home-legend">
             <i className="bg-[var(--signal-green)]" /> Priority green
@@ -48,18 +48,14 @@ export function HomeMenu() {
         <span>Simulated</span>
       </p>
 
-      <div className="home-content">
-        <div className="home-header">
-          <header className="flex flex-wrap items-center justify-between gap-2">
-            <p className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-              <GreenWaveMark className="size-6" />
-              ER–GreenWave
-              <span className="font-normal text-muted-foreground">/ Kraków</span>
-            </p>
-            <ThemeToggle />
-          </header>
-        </div>
+      <WorkspaceHeader compact actions={<ThemeToggle />}>
+        <p className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+          ER–GreenWave
+          <span className="font-normal text-muted-foreground">/ Kraków</span>
+        </p>
+      </WorkspaceHeader>
 
+      <div className="home-content">
         <div className="home-hero">
           <section>
             <p className="home-eyebrow">

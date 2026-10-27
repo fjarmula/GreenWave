@@ -104,6 +104,7 @@
   --dur-exit: 150ms;
   /* Signal colours carry meaning; `go` doubles as the one UI accent. */
   --signal-red: #ef4444;
+  --vehicle: #3b82f6;
   --signal-green: #22c55e;
   --signal-yellow: #facc15;
   --go: oklch(0.52 0.13 158);
@@ -325,13 +326,13 @@
   border: 3px solid #fff;
   border-radius: 999px;
   box-sizing: content-box;
-  background: var(--emergency);
+  background: var(--vehicle);
   box-shadow: var(--shadow-marker);
 }
 .map-vehicle-dot::after {
   position: absolute;
   inset: -3px;
-  border: 2px solid var(--emergency);
+  border: 2px solid var(--vehicle);
   border-radius: 999px;
   animation: vehicle-pulse 1.2s var(--ease-out) infinite;
   content: "";
@@ -1670,10 +1671,10 @@ button,
   stroke-width: 6;
 }
 .home-vehicle {
-  fill: var(--signal-red);
+  fill: var(--vehicle);
 }
 .home-vehicle-halo {
-  fill: var(--signal-red);
+  fill: var(--vehicle);
   opacity: 0.22;
 }
 /* One screen: background, scrim, then header / hero / cards. Taller content scrolls instead. */
@@ -1701,13 +1702,13 @@ button,
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: 1fr auto;
   width: min(1800px, 96%);
   /* Exactly one screen while the content fits; it grows (and the page scrolls) when it does not. */
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;
-  padding: 1.75rem 2.5rem 1.5rem;
+  padding: 6rem 2.5rem 1.5rem;
 }
 .home-hero {
   align-self: center;
@@ -1797,7 +1798,7 @@ button,
       );
   }
   .home-content {
-    padding: 1.125rem 1rem 1rem;
+    padding: 5rem 1rem 1rem;
   }
   .home-hero {
     align-self: end;
@@ -2387,18 +2388,19 @@ button,
   }
   /* Station choice: native radios inside full-row labels. */
   .station-choice {
+    container-type: inline-size;
     display: grid;
     min-width: 0;
     gap: 0.25rem;
   }
   .station-choice-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     min-width: 0;
     min-height: 2.75rem;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.5rem 0.75rem;
+    align-items: start;
+    gap: 0.375rem 0.75rem;
+    padding: 0.75rem;
     border: 1px solid transparent;
     border-radius: var(--radius-control);
     cursor: pointer;
@@ -2408,6 +2410,44 @@ button,
     transition:
       background-color 150ms ease,
       border-color 150ms ease;
+  }
+  .station-choice-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .station-choice-time {
+    white-space: nowrap;
+  }
+  .station-choice-meta,
+  .station-choice-note {
+    grid-column: 1 / -1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .station-choice-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem 0.5rem;
+  }
+  .station-choice-meta > * {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .station-choice-assumption {
+    color: var(--caution);
+  }
+  @container (max-width: 18rem) {
+    .station-choice-row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .station-choice-time {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.375rem 0.75rem;
+      text-align: start;
+    }
   }
   .station-choice-row[data-checked] {
     border-color: color-mix(in srgb, var(--go) 30%, transparent);
@@ -2542,10 +2582,10 @@ button,
   position: absolute;
   z-index: 4;
   top: calc(var(--workspace-header-bottom, 6rem) + 4rem);
-  left: 0.75rem;
+  right: 0.75rem;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 0.375rem;
   pointer-events: none;
 }
@@ -2748,7 +2788,7 @@ button,
   }
   .comparison-pane-chips {
     top: calc(6.5rem + env(safe-area-inset-top));
-    left: 0.5rem;
+    right: 0.5rem;
   }
   .comparison-phone-toggle {
     display: flex;

@@ -115,6 +115,6 @@ export function VehicleMarker({
   }, [map, element, longitude, latitude, stale, ended]);
 
   if (!element) return null;
-  // The home animation's vehicle: a red dot in a white ring with a pulse ring around it.
+  // The home animation's vehicle: a blue dot in a white ring with a pulse ring around it.
   return createPortal(<span className="map-vehicle-dot" />, element);
 }
