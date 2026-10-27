@@ -1,5 +1,7 @@
 """Incident dispatch contract: stations, local geocoding and station ranking (ADR 0006).
 
+Geocode results carry their address provenance, EMUiA vs OSM (ADR 0013).
+
 Additive to contract v1; ``schema_version`` stays ``"1.0"``.
 """
 
@@ -43,9 +45,27 @@ class StationsResponse(BaseModel):
     stations: list[Station]  # all vehicle types, sorted by station_id
 
 
+class AddressProvenance(StrEnum):
+    """Where an address coordinate comes from (ADR 0013); EMUiA is Kraków's address register."""
+
+    MATCHED = "matched"  # in EMUiA and OSM; the coordinate is EMUiA's
+    MUNICIPAL = "municipal"  # in EMUiA, no OSM counterpart
+    OSM = "osm"  # OSM only (fallback)
+
+
 class GeocodeResult(BaseModel):
+    """An address point: where to geocode an incident, not where a vehicle can stop."""
+
     label: str  # "Street 15"
-    position: Position
+    position: Position  # the authoritative coordinate
+    provenance: AddressProvenance
+    # Matched only: distance between the EMUiA and OSM points of the address.
+    osm_delta_m: Annotated[float, Field(ge=0.0)] | None = None
+    # Matched and farther apart than the clean threshold (100 m): the same as osm_delta_m.
+    disagreement_m: Annotated[float, Field(ge=0.0)] | None = None
+    osm_position: Position | None = None  # set exactly when disagreement_m is set
+    # Municipal only: OSM has this street and number, but not as this address.
+    osm_same_key_elsewhere: bool = False
 
 
 class GeocodeResponse(BaseModel):

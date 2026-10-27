@@ -53,7 +53,7 @@ export interface paths {
         };
         /**
          * Geocode
-         * @description Search the local OSM address index; never calls an external geocoder.
+         * @description Search the local EMUiA + OSM address index (ADR 0013); never calls an external geocoder.
          */
         get: operations["geocode_api_v1_geocode_get"];
         put?: never;
@@ -179,6 +179,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AddressProvenance
+         * @description Where an address coordinate comes from (ADR 0013); EMUiA is Kraków's address register.
+         * @enum {string}
+         */
+        AddressProvenance: "matched" | "municipal" | "osm";
         /**
          * AmbulanceStatus
          * @enum {string}
@@ -310,11 +316,25 @@ export interface components {
              */
             schema_version: "1.0";
         };
-        /** GeocodeResult */
+        /**
+         * GeocodeResult
+         * @description An address point: where to geocode an incident, not where a vehicle can stop.
+         */
         GeocodeResult: {
+            /** Disagreement M */
+            disagreement_m?: number | null;
             /** Label */
             label: string;
+            /** Osm Delta M */
+            osm_delta_m?: number | null;
+            osm_position?: components["schemas"]["Position"] | null;
+            /**
+             * Osm Same Key Elsewhere
+             * @default false
+             */
+            osm_same_key_elsewhere: boolean;
             position: components["schemas"]["Position"];
+            provenance: components["schemas"]["AddressProvenance"];
         };
         /**
          * GreenWaveMode

@@ -18,6 +18,17 @@ def test_geocode_returns_matches(layout: Layout) -> None:
     assert [r["label"] for r in body["results"]] == ["Poprzeczna 7"]
 
 
+def test_geocode_returns_provenance(layout: Layout) -> None:
+    with client(layout) as c:
+        response = c.get("/api/v1/geocode", params={"q": "poprzeczna"})
+
+    results = {r["label"]: r for r in response.json()["results"]}
+    assert results["Poprzeczna 7"]["provenance"] == "matched"
+    assert results["Poprzeczna 7"]["osm_delta_m"] < 100
+    assert results["Poprzeczna 5"]["provenance"] == "municipal"
+    assert results["Poprzeczna 3"]["provenance"] == "osm"
+
+
 def test_geocode_rejects_one_char_query(layout: Layout) -> None:
     with client(layout) as c:
         assert c.get("/api/v1/geocode", params={"q": "p"}).status_code == 422

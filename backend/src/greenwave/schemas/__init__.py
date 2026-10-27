@@ -11,6 +11,7 @@ from greenwave.schemas.dataset_quality import (
     QualityStatus,
 )
 from greenwave.schemas.dispatch import (
+    AddressProvenance,
     DispatchRankRequest,
     DispatchRankResponse,
     GeocodeResponse,
@@ -55,6 +56,7 @@ from greenwave.schemas.simulation import (
 )
 
 __all__ = [
+    "AddressProvenance",
     "AmbulanceStatus",
     "AmbulanceTelemetry",
     "CancelReason",

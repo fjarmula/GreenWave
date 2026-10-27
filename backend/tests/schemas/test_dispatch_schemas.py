@@ -7,6 +7,7 @@ from greenwave.schemas import (
     DispatchRankRequest,
     DispatchRankResponse,
     ErrorCode,
+    GeocodeResult,
     RankedCandidate,
     SimulationStartRequest,
     VehicleType,
@@ -113,3 +114,28 @@ def test_ranked_candidate_requires_a_non_negative_standard_time() -> None:
     for standard in (None, -1.0):
         with pytest.raises(ValidationError):
             RankedCandidate.model_validate({**candidate, "standard_seconds": standard})
+
+
+def test_geocode_result_requires_provenance() -> None:
+    with pytest.raises(ValidationError, match="provenance"):
+        GeocodeResult.model_validate({"label": "Długa 5", "position": {"lat": 50.0, "lng": 19.9}})
+
+
+def test_geocode_result_optional_provenance_fields_default_to_none() -> None:
+    result = GeocodeResult.model_validate(
+        {"label": "Długa 5", "position": {"lat": 50.0, "lng": 19.9}, "provenance": "osm"}
+    )
+    assert (result.osm_delta_m, result.disagreement_m, result.osm_position) == (None, None, None)
+    assert result.osm_same_key_elsewhere is False
+
+
+def test_geocode_result_rejects_negative_offset() -> None:
+    with pytest.raises(ValidationError, match="osm_delta_m"):
+        GeocodeResult.model_validate(
+            {
+                "label": "Długa 5",
+                "position": {"lat": 50.0, "lng": 19.9},
+                "provenance": "matched",
+                "osm_delta_m": -1,
+            }
+        )

@@ -6,7 +6,8 @@ from dataclasses import dataclass
 import polars as pl
 
 from greenwave.etl.addresses import address_search_key, centre_distance_m, natural_housenumber
-from greenwave.schemas import GeocodeResult, Position
+from greenwave.etl.config import ADDRESS_MATCH_CLEAN_M
+from greenwave.schemas import AddressProvenance, GeocodeResult, Position
 
 # Matched on the raw last token: the street normaliser turns "15/2" into "15 2".
 _HOUSE_NUMBER = re.compile(r"^\d+[a-z]?(/\d+[a-z]?)?$")
@@ -23,6 +24,32 @@ class _Address:
     centre_distance_m: float
     lat: float
     lng: float
+    provenance: AddressProvenance
+    osm_delta_m: float | None
+    osm_lat: float | None
+    osm_lng: float | None
+    osm_same_key_elsewhere: bool
+
+    def result(self) -> GeocodeResult:
+        disagreement = (
+            self.osm_delta_m
+            if self.osm_delta_m is not None and self.osm_delta_m > ADDRESS_MATCH_CLEAN_M
+            else None
+        )
+        osm_position = (
+            Position(lat=self.osm_lat, lng=self.osm_lng)
+            if disagreement is not None and self.osm_lat is not None and self.osm_lng is not None
+            else None
+        )
+        return GeocodeResult(
+            label=self.label,
+            position=Position(lat=self.lat, lng=self.lng),
+            provenance=self.provenance,
+            osm_delta_m=self.osm_delta_m,
+            disagreement_m=disagreement,
+            osm_position=osm_position,
+            osm_same_key_elsewhere=self.osm_same_key_elsewhere,
+        )
 
 
 class AddressIndex:
@@ -34,21 +61,26 @@ class AddressIndex:
 
     @classmethod
     def from_frame(cls, frame: pl.DataFrame) -> "AddressIndex":
+        """A name-variant match is indexed under its EMUiA and its OSM street key."""
         by_key: dict[str, list[_Address]] = {}
-        for street, housenumber, key, label, outside, lat, lng in frame.select(
-            "street", "housenumber", "search_key", "label", "outside_krakow", "lat", "lng"
-        ).iter_rows():
-            by_key.setdefault(key, []).append(
-                _Address(
-                    street,
-                    housenumber.lower(),
-                    label,
-                    outside,
-                    centre_distance_m(lat, lng),
-                    lat,
-                    lng,
-                )
+        for row in frame.iter_rows(named=True):
+            address = _Address(
+                row["street"],
+                row["housenumber"].lower(),
+                row["label"],
+                row["outside_krakow"],
+                centre_distance_m(row["lat"], row["lng"]),
+                row["lat"],
+                row["lng"],
+                AddressProvenance(row["provenance"]),
+                row["osm_delta_m"],
+                row["osm_lat"],
+                row["osm_lng"],
+                row["osm_same_key_elsewhere"],
             )
+            by_key.setdefault(row["search_key"], []).append(address)
+            if row["alt_search_key"] and row["alt_search_key"] != row["search_key"]:
+                by_key.setdefault(row["alt_search_key"], []).append(address)
         return cls(by_key)
 
     def search(self, query: str, limit: int) -> list[GeocodeResult]:
@@ -72,10 +104,11 @@ class AddressIndex:
             contains = [k for k in self._keys if rest in k and not k.startswith(rest)]
             ranked += self._matches(contains, 1, number)
         ranked.sort(key=lambda item: item[0])
-        return [
-            GeocodeResult(label=a.label, position=Position(lat=a.lat, lng=a.lng))
-            for _, a in ranked[:limit]
-        ]
+        # A record under two street keys can match twice; its best-ranked hit is kept.
+        unique: dict[str, _Address] = {}
+        for _, a in ranked:
+            unique.setdefault(a.label, a)
+        return [a.result() for a in list(unique.values())[:limit]]
 
     def _matches(
         self, keys: list[str], street_tier: int, number: str | None

@@ -1,6 +1,16 @@
 {
   "components": {
     "schemas": {
+      "AddressProvenance": {
+        "description": "Where an address coordinate comes from (ADR 0013); EMUiA is Krak\u00f3w's address register.",
+        "enum": [
+          "matched",
+          "municipal",
+          "osm"
+        ],
+        "title": "AddressProvenance",
+        "type": "string"
+      },
       "AmbulanceStatus": {
         "enum": [
           "EN_ROUTE",
@@ -307,18 +317,62 @@
         "type": "object"
       },
       "GeocodeResult": {
+        "description": "An address point: where to geocode an incident, not where a vehicle can stop.",
         "properties": {
+          "disagreement_m": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disagreement M"
+          },
           "label": {
             "title": "Label",
             "type": "string"
           },
+          "osm_delta_m": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Osm Delta M"
+          },
+          "osm_position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Position"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "osm_same_key_elsewhere": {
+            "default": false,
+            "title": "Osm Same Key Elsewhere",
+            "type": "boolean"
+          },
           "position": {
             "$ref": "#/components/schemas/Position"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/AddressProvenance"
           }
         },
         "required": [
           "label",
-          "position"
+          "position",
+          "provenance"
         ],
         "title": "GeocodeResult",
         "type": "object"
@@ -1697,7 +1751,7 @@
     },
     "/api/v1/geocode": {
       "get": {
-        "description": "Search the local OSM address index; never calls an external geocoder.",
+        "description": "Search the local EMUiA + OSM address index (ADR 0013); never calls an external geocoder.",
         "operationId": "geocode_api_v1_geocode_get",
         "parameters": [
           {

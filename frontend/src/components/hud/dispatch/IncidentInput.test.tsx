@@ -11,7 +11,12 @@ import {
 } from "@/lib/address-search";
 import type { GeocodeResult } from "@/types/telemetry";
 
-const RESULT: GeocodeResult = { label: "Floriańska 1", position: { lat: 50.0624, lng: 19.9395 } };
+const RESULT: GeocodeResult = {
+  label: "Floriańska 1",
+  position: { lat: 50.0624, lng: 19.9395 },
+  provenance: "osm",
+  osm_same_key_elsewhere: false,
+};
 
 afterEach(() => vi.useRealTimers());
 

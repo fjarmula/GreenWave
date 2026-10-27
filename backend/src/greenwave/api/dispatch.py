@@ -49,7 +49,7 @@ async def geocode(
     q: Annotated[str, Query(min_length=2, max_length=100)],
     limit: Annotated[int, Query(ge=1, le=10)] = 8,
 ) -> GeocodeResponse:
-    """Search the local OSM address index; never calls an external geocoder."""
+    """Search the local EMUiA + OSM address index (ADR 0013); never calls an external geocoder."""
     return GeocodeResponse(schema_version="1.0", results=_address_index(request).search(q, limit))
 
 
