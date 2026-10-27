@@ -133,6 +133,8 @@ function mockPhase(
     intersection_id: intersection.id,
     signal_key: signalKey,
     kind,
+    controlled_edge_ids: [], // Synthetic signals have no real road-edge/lane identity.
+    is_route_movement: kind === "VEHICLE" && signalKey.endsWith("-S1"),
     color,
     position,
     accessible_label: `Simulated mock ${kind.toLowerCase()} signal ${signalKey} at ${intersection.id}: ${color.toLowerCase()}`,

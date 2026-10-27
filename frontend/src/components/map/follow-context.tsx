@@ -16,7 +16,7 @@ import {
 } from "@/lib/follow-registry";
 
 const FollowContext = createContext<FollowRegistry | null>(null);
-const NONE: FollowSnapshot = { available: false, following: false };
+const NONE: FollowSnapshot = { hasRoute: false, available: false, following: false };
 const noop = () => () => {};
 
 /** Scopes the live maps of one workspace so a control outside the map can follow the vehicle. */

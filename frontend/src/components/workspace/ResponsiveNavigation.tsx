@@ -8,13 +8,11 @@ import { useIsPhone } from "@/lib/useIsPhone";
 export function ResponsiveNavigation({
   current,
   title,
-  detail,
   heading = true,
   themeInMenu = true,
 }: {
   current: string;
   title: string;
-  detail: string;
   heading?: boolean;
   themeInMenu?: boolean;
 }) {
@@ -24,16 +22,13 @@ export function ResponsiveNavigation({
     <PageMenu
       current={current}
       title={title}
-      detail={detail}
       heading={heading}
       tools={themeInMenu ? <ThemeToggle /> : undefined}
     />
   ) : (
     <div className="min-w-0 flex-1">
       <WorkspaceNavigation current={current} />
-      <Heading className="workspace-title">
-        {title} <span className="text-muted-foreground">/ {detail}</span>
-      </Heading>
+      <Heading className="workspace-title">{title}</Heading>
     </div>
   );
 }

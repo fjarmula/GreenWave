@@ -1,3 +1,5 @@
+import { CAMERA_TRANSITION_MILLISECONDS } from "@/lib/camera-motion";
+
 export type CameraMode = "overview" | "following" | "suspended";
 type CameraEvent =
   | { type: "zoom"; zoom: number; user: boolean }
@@ -68,9 +70,19 @@ export function createMapCamera(
     transition = null;
     // Stop an existing route fit before taking ownership of the next transition's events.
     map.stop();
+    // stop() can finish a user zoom synchronously. Apply Follow after that trailing event,
+    // so its old zoom level cannot turn the first click back into overview.
+    userZooming = false;
+    update({ type: "resume" });
     transition = ++sequence;
     map.easeTo(
-      { center: last, zoom, bearing: 0, pitch: 0, duration: reduceMotion() ? 0 : 280 },
+      {
+        center: last,
+        zoom,
+        bearing: 0,
+        pitch: 0,
+        duration: reduceMotion() ? 0 : CAMERA_TRANSITION_MILLISECONDS,
+      },
       { greenwaveCameraTransition: transition },
     );
   };
@@ -143,13 +155,13 @@ export function createMapCamera(
     },
     resume() {
       if (disposed || !fresh || !last) return;
-      userZooming = false;
-      update({ type: "resume" });
       approach(Math.max(17, map.getZoom()));
     },
     showRoute() {
       if (disposed) return;
       cancelTransition();
+      // Finish an active wheel gesture before setting the requested overview mode.
+      map.stop();
       update({ type: "show-route" });
       userMoved = false;
       userZooming = false;

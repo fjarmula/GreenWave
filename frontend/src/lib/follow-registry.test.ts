@@ -10,7 +10,7 @@ const target = (following: boolean): FollowTarget => ({
 describe("createFollowRegistry", () => {
   it("is unavailable and inert with no live map", () => {
     const registry = createFollowRegistry();
-    expect(registry.getSnapshot()).toEqual({ available: false, following: false });
+    expect(registry.getSnapshot()).toEqual({ hasRoute: false, available: false, following: false });
     expect(() => registry.setFollowing(true)).not.toThrow();
   });
 
@@ -20,7 +20,7 @@ describe("createFollowRegistry", () => {
     const b = target(false);
     registry.register("a", a);
     registry.register("b", b);
-    expect(registry.getSnapshot()).toEqual({ available: true, following: false });
+    expect(registry.getSnapshot()).toEqual({ hasRoute: true, available: true, following: false });
     registry.setFollowing(true);
     expect(a.resume).toHaveBeenCalledOnce();
     expect(b.resume).toHaveBeenCalledOnce();
@@ -36,7 +36,7 @@ describe("createFollowRegistry", () => {
     const listener = vi.fn();
     registry.subscribe(listener);
     unregister();
-    expect(registry.getSnapshot()).toEqual({ available: true, following: true });
+    expect(registry.getSnapshot()).toEqual({ hasRoute: true, available: true, following: true });
     expect(listener).toHaveBeenCalledOnce();
   });
 
@@ -53,6 +53,27 @@ describe("createFollowRegistry", () => {
     const registry = createFollowRegistry();
     registry.register("a", target(false));
     registry.register("a", target(true));
-    expect(registry.getSnapshot()).toEqual({ available: true, following: true });
+    expect(registry.getSnapshot()).toEqual({ hasRoute: true, available: true, following: true });
   });
+});
+
+it("keeps route overview available after one comparison member finishes", () => {
+  const registry = createFollowRegistry();
+  const finished = { ...target(false), canFollow: false };
+  const running = { ...target(true), canFollow: true };
+  registry.register("finished", finished);
+  registry.register("running", running);
+  expect(registry.getSnapshot()).toEqual({ hasRoute: true, available: true, following: true });
+  registry.setFollowing(true);
+  expect(finished.resume).not.toHaveBeenCalled();
+  expect(running.resume).toHaveBeenCalledOnce();
+  registry.setFollowing(false);
+  expect(finished.showRoute).toHaveBeenCalledOnce();
+  expect(running.showRoute).toHaveBeenCalledOnce();
+});
+
+it("retains Show route when telemetry is stale or the run has ended", () => {
+  const registry = createFollowRegistry();
+  registry.register("map", { ...target(true), canFollow: false });
+  expect(registry.getSnapshot()).toEqual({ hasRoute: true, available: false, following: false });
 });

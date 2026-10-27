@@ -11,6 +11,7 @@ import { DriverSetupCard, DriverSetupDetails } from "@/components/driver/DriverS
 import type { SheetSnap } from "@/lib/sheet-physics";
 import { DispatchSettingsChip } from "@/components/driver/DispatchSettingsChip";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
+import { DispatchStartButton } from "@/components/hud/dispatch/DispatchStartButton";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import { OnSiteResult } from "@/components/hud/OnSiteResult";
 import { MapContainer } from "@/components/map/MapContainer";
@@ -91,23 +92,31 @@ export function ComparisonWorkspace() {
   return (
     <WorkspaceShell
       key={live ? "live" : "setup"}
-      defaultDetails={!live}
-      provenance={`${config.transport === "mock" ? "Synthetic mock" : "Backend simulation"} · ${live ? "Both runs live on one simulated clock" : "Comparison scenario"}`}
-      statusAlign="end"
-      status={
-        running && runRequest ? (
-          <div className="driver-overlay">
-            <DispatchSettingsChip request={runRequest} />
+      primaryAction={
+        onSite ? (
+          <div className="surface-glass p-4">
+            <OnSiteResult
+              station={onSite.station}
+              walk={onSite.walk}
+              onBackToSetup={() => setOnSiteAnswer(null)}
+            />
           </div>
+        ) : !live ? (
+          <DispatchStartButton
+            dispatch={dispatch}
+            settings={settings}
+            pending={starting || simulation.simulationState === "STARTING"}
+            replacement={active}
+            intent="comparison"
+            onInitialize={(values) => void start(values)}
+            errorMessage={setupError}
+          />
         ) : undefined
       }
-      header={
-        <ResponsiveNavigation
-          current="/compare"
-          title="Comparison"
-          detail={live ? "Green Wave vs standard traffic" : "Setup"}
-        />
-      }
+      defaultDetails={!live}
+      provenance={`${config.transport === "mock" ? "Synthetic mock" : "Backend simulation"} · ${live ? "Both runs live on one simulated clock" : "Comparison scenario"}`}
+      controls={running && runRequest ? <DispatchSettingsChip request={runRequest} /> : undefined}
+      header={<ResponsiveNavigation current="/compare" title="Comparison" />}
       map={
         live ? (
           <ComparisonStage
@@ -142,19 +151,14 @@ export function ComparisonWorkspace() {
         )
       }
       sheet={
-        !live
+        !live && !onSite
           ? {
               snap,
               onSnapChange: setSnap,
               minimizable: !onSite,
-              collapsed: onSite ? (
-                <OnSiteResult
-                  station={onSite.station}
-                  walk={onSite.walk}
-                  onBackToSetup={() => setOnSiteAnswer(null)}
-                />
-              ) : (
+              collapsed: (
                 <DriverSetupCard
+                  showStartAction={false}
                   intent="comparison"
                   dispatch={dispatch}
                   capabilities={dispatchAdapter.capabilities}
@@ -164,7 +168,7 @@ export function ComparisonWorkspace() {
                   onToggleDetails={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
                   pending={starting}
                   replacement={active}
-                  errorMessage={setupError}
+                  errorMessage={null}
                   onInitialize={() => void start(settings)}
                   startLabel="Start live comparison"
                 />
@@ -184,7 +188,7 @@ export function ComparisonWorkspace() {
           : undefined
       }
       inspector={
-        live ? undefined : (
+        live || onSite ? undefined : (
           <>
             {active && (
               <p role="status" className="hud-alert tone-caution m-4 block text-sm">
@@ -192,30 +196,21 @@ export function ComparisonWorkspace() {
                 successful Stop.
               </p>
             )}
-            {onSite ? (
-              <div className="p-4">
-                <OnSiteResult
-                  station={onSite.station}
-                  walk={onSite.walk}
-                  onBackToSetup={() => setOnSiteAnswer(null)}
-                />
-              </div>
-            ) : (
-              <DispatchForm
-                intent="comparison"
-                settings={settings}
-                onSettingsChange={setSettings}
-                stationsError={stationsError}
-                pending={simulation.simulationState === "STARTING" || starting}
-                replacement={active}
-                errorMessage={setupError}
-                dispatch={dispatch}
-                capabilities={dispatchAdapter.capabilities}
-                geocode={dispatchAdapter.geocode}
-                onInitialize={(values) => void start(values)}
-                onFocusMap={() => setMapFocusRequest((value) => value + 1)}
-              />
-            )}
+            <DispatchForm
+              showStartAction={false}
+              intent="comparison"
+              settings={settings}
+              onSettingsChange={setSettings}
+              stationsError={stationsError}
+              pending={simulation.simulationState === "STARTING" || starting}
+              replacement={active}
+              errorMessage={null}
+              dispatch={dispatch}
+              capabilities={dispatchAdapter.capabilities}
+              geocode={dispatchAdapter.geocode}
+              onInitialize={(values) => void start(values)}
+              onFocusMap={() => setMapFocusRequest((value) => value + 1)}
+            />
           </>
         )
       }

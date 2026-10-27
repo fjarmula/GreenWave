@@ -347,6 +347,12 @@ function checkStreamEvent(
         text(phase.intersection_id, `${path}.intersection_id`);
         text(phase.signal_key, `${path}.signal_key`);
         member(SIGNAL_MOVEMENT_KINDS, phase.kind, `${path}.kind`);
+        if (phase.controlled_edge_ids !== undefined)
+          list(phase.controlled_edge_ids, `${path}.controlled_edge_ids`).forEach((edge, i) =>
+            text(edge, `${path}.controlled_edge_ids[${i}]`),
+          );
+        if (phase.is_route_movement !== undefined)
+          bool(phase.is_route_movement, `${path}.is_route_movement`);
         member(SIGNAL_PHASE_COLORS, phase.color, `${path}.color`);
         position(phase.position, `${path}.position`);
         text(phase.accessible_label, `${path}.accessible_label`);

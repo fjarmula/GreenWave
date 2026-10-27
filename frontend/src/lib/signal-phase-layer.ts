@@ -2,6 +2,7 @@
  * Lifecycle of the high-zoom simulated signal-phase markers, kept free of MapLibre and the DOM so
  * it is testable: the map supplies its zoom, the caller supplies how a marker is drawn. Phases and
  * positions come only from the tick contract; nothing is drawn for a phase that was not received.
+ * Pedestrian phases remain protocol data for diagnostics and are never drawn on the map.
  * An intersection without phases keeps its labelled state marker instead (`coarseMarkerIds`).
  */
 import type {
@@ -54,6 +55,7 @@ export function layoutPhaseMarkers(
 ): Map<string, PhaseMarkerLayout> {
   const groups = new Map<string, SignalPhaseIndicator[]>();
   for (const phase of phases) {
+    if (phase.kind !== "VEHICLE") continue;
     const group = groups.get(phase.intersection_id) ?? [];
     group.push(phase);
     groups.set(phase.intersection_id, group);
@@ -61,10 +63,8 @@ export function layoutPhaseMarkers(
   const layout = new Map<string, PhaseMarkerLayout>();
   const placed: Array<{ x: number; y: number }> = [];
   [...groups.keys()].sort().forEach((intersectionId) => {
-    const members = [...(groups.get(intersectionId) ?? [])].sort(
-      (a, b) =>
-        a.signal_key.localeCompare(b.signal_key) ||
-        Number(a.kind === "PEDESTRIAN") - Number(b.kind === "PEDESTRIAN"),
+    const members = [...(groups.get(intersectionId) ?? [])].sort((a, b) =>
+      a.signal_key.localeCompare(b.signal_key),
     );
     members.forEach((phase, index) => {
       const row = (index - (members.length - 1) / 2) * PHASE_ROW_PIXELS;
@@ -89,7 +89,7 @@ export function layoutPhaseMarkers(
 
 /** Short visible text; colour alone never carries the state. */
 export function phaseMarkerText(phase: SignalPhaseIndicator): string {
-  return `SIM ${phase.kind === "VEHICLE" ? "CAR" : "PED"} ${phase.color}`;
+  return `SIM CAR ${phase.color}`;
 }
 
 const PHASE_SWATCHES: Record<SignalPhaseColor, string> = {
@@ -122,7 +122,11 @@ export function coarseMarkerIds(
   phases: SignalPhaseIndicator[],
   detailed: boolean,
 ): Set<string> {
-  const phased = new Set(detailed ? phases.map((phase) => phase.intersection_id) : []);
+  const phased = new Set(
+    detailed
+      ? phases.filter((phase) => phase.kind === "VEHICLE").map((phase) => phase.intersection_id)
+      : [],
+  );
   return new Set(intersectionIds.filter((id) => !phased.has(id)));
 }
 

@@ -14,6 +14,12 @@ export function EndpointActivity({ entries }: { entries: ReadonlyArray<Diagnosti
       <h2 id="activity-title" className="text-xl font-semibold tracking-tight">
         Recent activity
       </h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Inspect a simulation tick’s <code>signal_phases</code> for vehicle and pedestrian colors.
+        Each entry identifies its signal and controlled road approach;{" "}
+        <code>is_route_movement</code>
+        marks the vehicle’s direction. These are simulated approaches, not individual lane data.
+      </p>
       <ol className="activity-log mt-4" aria-label="Observed activity">
         {entries.slice(-30).map((e, i) => (
           <li key={i}>

@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { DispatchSettingsChip, FollowSwitch } from "./DispatchSettingsChip";
+import { DispatchSettingsChip } from "./DispatchSettingsChip";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import type { SimulationStartRequest } from "@/types/telemetry";
 
@@ -13,27 +13,13 @@ const request = {
   playback_speed: 1,
 } as SimulationStartRequest;
 
-describe("FollowSwitch", () => {
-  it("shows the following state as a labelled switch", () => {
-    const html = renderToStaticMarkup(<FollowSwitch available following onChange={() => {}} />);
-    expect(html).toContain("Follow vehicle");
-    expect(html).toMatch(/<button[^>]*role="switch"[^>]*aria-checked="true"/);
-    expect(html).not.toContain('disabled=""');
-  });
-
-  it("is disabled while no live map can follow", () => {
-    const html = renderToStaticMarkup(
-      <FollowSwitch available={false} following={false} onChange={() => {}} />,
-    );
-    expect(html).toMatch(/<button[^>]*role="switch"[^>]*disabled=""/);
-  });
-});
-
 describe("DispatchSettingsChip", () => {
-  it("puts the follow switch in the settings popover", () => {
+  it("keeps settings separate from the single camera action", () => {
     const html = renderToStaticMarkup(<DispatchSettingsChip request={request} />);
     const popover = html.slice(html.indexOf("<section"));
-    expect(popover).toContain("Follow vehicle");
+    expect(popover).not.toContain("Follow vehicle");
+    expect(popover).not.toContain('role="switch"');
+    expect(popover).toContain("Playback speed");
   });
 });
 

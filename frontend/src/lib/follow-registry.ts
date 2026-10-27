@@ -1,21 +1,33 @@
-export type FollowTarget = { following: boolean; resume(): void; showRoute(): void };
-export type FollowSnapshot = { available: boolean; following: boolean };
+export type FollowTarget = {
+  following: boolean;
+  canFollow?: boolean;
+  resume(): void;
+  showRoute(): void;
+};
+export type FollowSnapshot = { hasRoute: boolean; available: boolean; following: boolean };
 export type FollowRegistry = ReturnType<typeof createFollowRegistry>;
 
 /**
- * The live maps of one workspace (two on Comparison), seen as one camera: it follows only when
- * every map follows, and a change drives every map.
+ * The routed maps of one workspace (two on Comparison), seen as one camera. Follow targets
+ * fresh running members; route overview still drives every map after arrival or stale telemetry.
  */
 export function createFollowRegistry() {
   const targets = new Map<string, FollowTarget>();
   const listeners = new Set<() => void>();
-  let snapshot: FollowSnapshot = { available: false, following: false };
+  let snapshot: FollowSnapshot = { hasRoute: false, available: false, following: false };
   const refresh = () => {
     const all = [...targets.values()];
-    const available = all.length > 0;
-    const following = available && all.every((target) => target.following);
-    if (available === snapshot.available && following === snapshot.following) return;
-    snapshot = { available, following };
+    const hasRoute = all.length > 0;
+    const active = all.filter((target) => target.canFollow !== false);
+    const available = active.length > 0;
+    const following = available && active.every((target) => target.following);
+    if (
+      hasRoute === snapshot.hasRoute &&
+      available === snapshot.available &&
+      following === snapshot.following
+    )
+      return;
+    snapshot = { hasRoute, available, following };
     listeners.forEach((listener) => listener());
   };
   return {
@@ -29,7 +41,10 @@ export function createFollowRegistry() {
       };
     },
     setFollowing(on: boolean) {
-      targets.forEach((target) => (on ? target.resume() : target.showRoute()));
+      targets.forEach((target) => {
+        if (!on) target.showRoute();
+        else if (target.canFollow !== false) target.resume();
+      });
     },
     getSnapshot: () => snapshot,
     subscribe(listener: () => void) {

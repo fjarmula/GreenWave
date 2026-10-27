@@ -172,3 +172,44 @@ it("captures synthetic ITS events as received with explicit event types", () => 
     capture: { eventType: "ITS_DISPATCH" },
   });
 });
+
+it("captures both vehicle and pedestrian phase colors and movement identity in tick JSON", async () => {
+  const { createMockSimulationAdapter } = await import("@/lib/mock-simulation-adapter");
+  vi.useFakeTimers();
+  try {
+    const store = createDiagnosticStore();
+    const adapter = observeSimulation(createMockSimulationAdapter(), "mock", store);
+    await adapter.start(request);
+    const subscriber = {
+      onTick: () => {},
+      onItsFeedback: () => {},
+      onItsDispatch: () => {},
+      onTerminal: () => {},
+      onConnectionChange: () => {},
+      onError: () => {},
+    };
+    const off = adapter.subscribe(request.simulation_id, subscriber);
+    vi.advanceTimersByTime(1000);
+    const entry = store.getSnapshot().find((item) => item.outcome === "tick");
+    const body = JSON.parse(entry!.capture!.responseBody!);
+    expect(body.signal_phases).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "VEHICLE",
+          is_route_movement: true,
+          controlled_edge_ids: [],
+          color: expect.any(String),
+        }),
+        expect.objectContaining({
+          kind: "PEDESTRIAN",
+          is_route_movement: false,
+          color: expect.any(String),
+        }),
+      ]),
+    );
+    off();
+    await adapter.stop(request.simulation_id);
+  } finally {
+    vi.useRealTimers();
+  }
+});

@@ -1,8 +1,11 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { GreenWaveMark } from "./GreenWaveMark";
 import { Maximize2, Minimize2, PanelRight } from "lucide-react";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { BottomSheet } from "@/components/workspace/BottomSheet";
+import { WorkspaceControls } from "./WorkspaceControls";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { FollowProvider } from "@/components/map/follow-context";
 import type { SheetSnap } from "@/lib/sheet-physics";
@@ -20,6 +23,8 @@ export type WorkspaceSheet = {
 export function WorkspaceShell({
   map,
   status,
+  primaryAction,
+  controls,
   inspector,
   sheet,
   header,
@@ -30,6 +35,10 @@ export function WorkspaceShell({
 }: {
   map: ReactNode;
   status?: ReactNode;
+  /** Persistent action, independent of inspector scrolling, sheets and focus. */
+  primaryAction?: ReactNode;
+  /** Settings beside the shared camera toggle. */
+  controls?: ReactNode;
   /** Which top corner the status overlay floats in. */
   statusAlign?: "start" | "end";
   /** Full desktop panel; also used on phones without a sheet. */
@@ -45,6 +54,21 @@ export function WorkspaceShell({
   const [details, setDetails] = useState(defaultDetails);
   const trigger = useRef<HTMLButtonElement>(null);
   const exit = useRef<HTMLButtonElement>(null);
+  const shell = useRef<HTMLElement>(null);
+  const action = useRef<HTMLDivElement>(null);
+  const hasPrimaryAction = !!primaryAction;
+  useEffect(() => {
+    if (!action.current) return;
+    const measure = () =>
+      shell.current?.style.setProperty(
+        "--workspace-primary-height",
+        `${action.current?.offsetHeight ?? 0}px`,
+      );
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(action.current);
+    return () => observer.disconnect();
+  }, [hasPrimaryAction]);
   const phone = useIsPhone();
   const changeFocus = (next: boolean) => {
     setFocus(next);
@@ -71,10 +95,12 @@ export function WorkspaceShell({
   return (
     <FollowProvider>
       <main
+        ref={shell}
         className="workspace-shell"
         data-layout="map-first"
+        data-primary-action={hasPrimaryAction || undefined}
         data-focus={focus}
-        data-details={details}
+        data-details={details && hasPanel}
         data-sheet={sheet && phone && !panelHidden ? sheet.snap : undefined}
       >
         <div className="workspace-map-slot" data-map-slot>
@@ -109,6 +135,12 @@ export function WorkspaceShell({
         >
           {header}
         </WorkspaceHeader>
+        <WorkspaceControls>{controls}</WorkspaceControls>
+        {primaryAction && (
+          <div ref={action} className="workspace-primary-action" data-map-occluder>
+            {primaryAction}
+          </div>
+        )}
         {sheet && phone ? (
           <div id="workspace-inspector" hidden={panelHidden} inert={panelHidden}>
             <BottomSheet
@@ -142,6 +174,16 @@ export function WorkspaceShell({
           >
             {status}
           </div>
+        )}
+        {focus && (
+          <Link
+            href="/"
+            aria-label="ER–GreenWave home"
+            className="workspace-brand workspace-focus-brand surface-glass"
+            data-map-occluder
+          >
+            <GreenWaveMark className="size-8" />
+          </Link>
         )}
         {focus && (
           <button

@@ -31,3 +31,24 @@ The delivered dashboard uses the canonical v1 generated contract. Mock transport
 ## Verification
 
 After frontend changes run `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm test`, and `npm run build`.
+
+## Workspace controls and signal diagnostics
+
+The shared workspace shell exposes a bottom-right primary dispatch action outside scrolling settings,
+including minimized phone sheets, hidden details and focus mode. Shared headers show the brand's
+Home link and concise navigation labels. A measured dock height keeps panels, phone sheets and map
+controls clear of the dispatch action and its outcomes. One camera toggle shares a toolbar with
+Dispatch settings: Follow vehicle from overview/suspension, Show route while following or when
+telemetry cannot be followed. Comparison follows its fresh running members together; route overview
+remains available for finished members. The settings popover contains no duplicate follow switch.
+
+Map phase detail draws vehicle lights only. Pedestrian indications remain in each tick's
+`signal_phases` and the Diagnostics JSON inspector. Phase entries expose `controlled_edge_ids`
+for road approaches and `is_route_movement` for the vehicle movement followed by the route.
+The dataset identifies approaches, not individual lanes; mock signals have no real edge IDs.
+Priority targets route vehicle movements green and other movements red, preserving clearance
+transitions; ordinary cycles remain unchanged outside priority.
+
+Camera view changes share the existing 600 ms station/incident focus timing. Show route uses an eased
+pan/zoom rather than a flight arc; reduced-motion preferences keep view changes immediate. Both
+camera actions stop an old gesture before applying the new view so rapid toggles remain interruptible.

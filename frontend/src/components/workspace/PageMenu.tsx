@@ -10,13 +10,11 @@ import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation"
 export function PageMenu({
   current,
   title,
-  detail,
   tools,
   heading = true,
 }: {
   current: string;
   title: string;
-  detail: string;
   tools?: ReactNode;
   heading?: boolean;
 }) {
@@ -63,8 +61,7 @@ export function PageMenu({
           onClick={() => setOpen(!open)}
         >
           <Menu aria-hidden />
-          {title}
-          <span className="text-muted-foreground">/ {detail}</span>
+          <span className="page-menu-label">{title}</span>
           <ChevronDown aria-hidden className="page-menu-chevron" />
         </button>
       </Heading>

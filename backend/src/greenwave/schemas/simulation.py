@@ -237,6 +237,18 @@ class SignalPhaseIndicator(BaseModel):
     intersection_id: str
     signal_key: Annotated[str, Field(min_length=1)]  # stable within the intersection
     kind: SignalMovementKind
+    # Approach identity from the road graph, not individual lanes. Empty when unknown/synthetic.
+    controlled_edge_ids: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Controlled road approach edge IDs, not individual lanes; "
+            "empty if unknown or synthetic."
+        ),
+    )
+    is_route_movement: bool = Field(
+        default_factory=bool,
+        description="Whether this is a vehicle movement followed by the simulated route.",
+    )
     color: SignalPhaseColor
     position: Position
     accessible_label: Annotated[str, Field(min_length=1)]

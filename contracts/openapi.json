@@ -1047,9 +1047,22 @@
           "color": {
             "$ref": "#/components/schemas/SignalPhaseColor"
           },
+          "controlled_edge_ids": {
+            "description": "Controlled road approach edge IDs, not individual lanes; empty if unknown or synthetic.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Controlled Edge Ids",
+            "type": "array"
+          },
           "intersection_id": {
             "title": "Intersection Id",
             "type": "string"
+          },
+          "is_route_movement": {
+            "description": "Whether this is a vehicle movement followed by the simulated route.",
+            "title": "Is Route Movement",
+            "type": "boolean"
           },
           "kind": {
             "$ref": "#/components/schemas/SignalMovementKind"

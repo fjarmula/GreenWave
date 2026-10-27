@@ -621,8 +621,18 @@ export interface components {
             /** Accessible Label */
             accessible_label: string;
             color: components["schemas"]["SignalPhaseColor"];
+            /**
+             * Controlled Edge Ids
+             * @description Controlled road approach edge IDs, not individual lanes; empty if unknown or synthetic.
+             */
+            controlled_edge_ids?: string[];
             /** Intersection Id */
             intersection_id: string;
+            /**
+             * Is Route Movement
+             * @description Whether this is a vehicle movement followed by the simulated route.
+             */
+            is_route_movement?: boolean;
             kind: components["schemas"]["SignalMovementKind"];
             position: components["schemas"]["Position"];
             /** Signal Key */
