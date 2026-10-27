@@ -33,6 +33,7 @@ STEPS = (
     "override-map",
     "intersections",
     "neighbours",
+    "places",
     "quality",
     "roundabouts",
     "cluster-map",

@@ -85,3 +85,8 @@ def test_compare_reports_differences_and_exit_status(
 
     assert harness.compare(base_path, new_path, allow) == expected_status
     assert expected_line in capsys.readouterr().out.splitlines()
+
+
+def test_places_runs_after_intersections_and_before_quality(harness: ModuleType) -> None:
+    steps = list(harness.STEPS)
+    assert steps.index("intersections") < steps.index("places") < steps.index("quality")
