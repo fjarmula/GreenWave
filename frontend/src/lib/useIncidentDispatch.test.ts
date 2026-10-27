@@ -491,6 +491,23 @@ describe("scenario time and team availability (ADR 0014)", () => {
     expect(plain.getState().resources).toBeNull();
   });
 
+  it("clears the previous shift roster when the new scenario roster cannot load", async () => {
+    const { adapter } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter, NOW);
+    dispatch.refreshResources();
+    await flush();
+    expect(dispatch.getState().resources?.at).toBe("2026-10-27T21:00:00");
+
+    adapter.listResources = async () => {
+      throw new Error("backend unavailable");
+    };
+    dispatch.setScenarioTime("2026-10-27T10:00");
+
+    expect(dispatch.getState().resources).toBeNull();
+    await flush();
+    expect(dispatch.getState().resources).toBeNull();
+  });
+
   it("sends availability overrides and drops one set back to unknown", () => {
     const { adapter, calls } = deferredAdapter();
     const dispatch = createIncidentDispatch(adapter, NOW);

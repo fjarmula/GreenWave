@@ -15,7 +15,7 @@ from typing import Literal
 
 from greenwave.places.incident_area import IncidentArea
 from greenwave.routing.access import access_nodes
-from greenwave.routing.errors import DestinationOffNetwork
+from greenwave.routing.errors import DestinationOffNetwork, NoStationReachable
 from greenwave.routing.network_index import RoutingIndex
 from greenwave.routing.planner import SnappedRouteEndpoint, node_position, snap_endpoint
 from greenwave.routing.station_ranking import (
@@ -133,10 +133,12 @@ def rank_teams(
     for entries in at_base.values():
         entries.sort(key=lambda e: (_in_area(e[0], area) is not True, e[0].team_code))
     eligible_nodes = [n for n in station_nodes if n.station.station_id in at_base]
-    if not eligible_nodes:
+    if not eligibility.eligible:
         return TeamRanking(
             _incident_snap(index, incident, settings), (), None, eligibility.excluded, area
         )
+    if not eligible_nodes:
+        raise NoStationReachable("No eligible ambulance base is on the routable network")
 
     in_area_bases = frozenset(
         station_id

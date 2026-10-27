@@ -280,6 +280,20 @@ def test_eligible_but_unreachable_raises() -> None:
         rank((team("K01 005", "STN-A-0005"),))
 
 
+def test_eligible_team_without_routable_base_raises() -> None:
+    with pytest.raises(NoStationReachable):
+        rank_teams(
+            corridor_index(),
+            (),
+            (team("K01 001", "STN-A-0001"),),
+            INCIDENT,
+            NOON,
+            {},
+            None,
+            SimulationSettings(),
+        )
+
+
 def test_team_of_an_unknown_station_is_ignored() -> None:
     ranking = rank((team("K01 004", "STN-A-0004"), team("K01 099", "STN-A-0099")))
 

@@ -384,6 +384,22 @@ def test_rank_unreachable_still_422(layout: Layout, monkeypatch: pytest.MonkeyPa
     assert response.json()["error_code"] == "NO_STATION_REACHABLE"
 
 
+def test_eligible_ambulance_without_routable_base_returns_422(layout: Layout) -> None:
+    with client(layout) as c:
+        c.app.state.station_nodes = ()
+        response = c.post(
+            "/api/v1/dispatch/rank",
+            json={
+                "incident": _poprzeczna(c),
+                "vehicle_type": "AMBULANCE",
+                "scenario_time": NOON,
+            },
+        )
+
+    assert response.status_code == 422
+    assert response.json()["error_code"] == "NO_STATION_REACHABLE"
+
+
 def test_rank_rejects_unknown_availability_value(layout: Layout) -> None:
     with client(layout) as c:
         response = c.post(

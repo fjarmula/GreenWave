@@ -201,12 +201,14 @@ export function createIncidentDispatch(
     const controller = new AbortController();
     resourcesInFlight = controller;
     const current = ++resourcesSequence;
+    // Shift flags belong to this exact scenario time; never show an older roster as current.
+    update({ resources: null });
     adapter.listResources(state.scenarioTime, controller.signal).then(
       (resources) => {
         if (current === resourcesSequence) update({ resources });
       },
       () => {
-        // The panel keeps its last roster; ranking still reports exclusions on its own.
+        // Ranking still reports exclusions if the current roster cannot be loaded.
       },
     );
   }

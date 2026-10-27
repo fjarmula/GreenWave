@@ -267,12 +267,47 @@
 
 ### Task 11: Acceptance on real data
 
-- [ ] **Step 1:** Run the backend and frontend checks, including the build.
-- [ ] **Step 2:** Run the ETL equivalence twice; outputs must be identical apart from the volatile keys.
-- [ ] **Step 3:** Playwright (`playwright-cli`, `http://localhost:3000`, output under `.tmp/playwright/`):
+- [x] **Step 1:** Run the backend and frontend checks, including the build.
+- [x] **Step 2:** Run the ETL equivalence twice; outputs must be identical apart from the volatile keys.
+- [x] **Step 3:** Playwright (`playwright-cli`, `http://localhost:3000`, output under `.tmp/playwright/`):
   1. Incident "Rynek Podgórski 2" at 10:00 gives a Podgórze-base team in area.
   2. Same incident at 21:00: K01 176 appears in excluded as "off shift (07:00–19:00)", and the chosen team has a reason line.
   3. Mark the chosen team busy: the choice changes and the excluded list shows "marked busy".
   4. Mark every in-scope team busy: the no-eligible state appears.
   5. Data Quality shows "Ambulance teams (PRM plan)".
-- [ ] **Step 4:** Report the counts, the rulings and the deferred minors; no push.
+- [x] **Step 4:** Report the counts, the rulings and the deferred minors; no push.
+
+## Acceptance closeout — 2026-10-27
+
+Tasks 1–10 were implemented in commits `77a3617` through `2cd5bcb`. Task 11 is now
+complete on the real inputs; the earlier task checkboxes remain the original implementation
+instructions, rather than a reconstructed record of their historical test-first runs.
+
+- Raw manifest: `build_manifest.py --check` passes. The spreadsheet contains 149 teams,
+  including all 23 Kraków teams. The rebuilt dataset contains 23 teams at 8 PRM bases
+  (2 matched to OSM), 38 stations overall and 70,261 addresses. Types: 20 P2, 2 P3, 1 S.
+  Hours: 19 teams work 24 h and 4 work 07:00–19:00. All 23 Kraków teams are in scope;
+  72 other RO12/01 teams are reported outside the simulated area.
+- Both full `etl_equivalence.py run` invocations completed. Comparison covers 25 entries:
+  only raw `etl_report.json` differs; the report hash with volatile keys removed and every
+  other artifact match. Rebuilt outputs were installed in `backend/data/processed/`.
+- Backend: Ruff lint and formatting, mypy, and **1,511 tests pass**, including real-data smoke.
+  Frontend: lint, typecheck, formatting, **1,143 tests**, and production build pass.
+  OpenAPI matches the canonical schemas. The station snapshot was regenerated from real data
+  (one floating-point coordinate changes in its last decimal place).
+- Browser acceptance uses the real backend on port 8001 and frontend on `localhost:3000`:
+  Rynek Podgórski 2 at 10:00 recommends K01 008 at the Podgórze base, in area. At 21:00,
+  K01 176 is excluded as `off shift (07:00–19:00)` and the recommendation has a reason line.
+  Marking K01 008 busy chooses K01 128 and displays `marked busy`. Marking all 19 on-shift
+  teams busy displays `No eligible ambulance team at 21:00. 4 off shift, 19 marked busy.`
+  Diagnostics → Data quality displays `Ambulance teams (PRM plan)`.
+  Scripts, results and screenshots are under `.tmp/playwright/prm-acceptance/` (ignored).
+- Fixed two review findings with RED→GREEN regressions: eligible teams without any routable
+  base now produce `422 NO_STATION_REACHABLE`, with domain and API coverage; changing scenario
+  time clears the previous roster, so failed refreshes cannot display stale shift flags.
+- Rulings: retained the existing feature checkout and branch, following the repository Git rule.
+  The existing 23-team/8-base curated scope is retained; uncurated regional teams are explicitly
+  reported outside scope. The published motorcycle row K01 051 M is parsed for the complete
+  149-row source roster and remains outside the dispatch scope. No live availability or real
+  signal actuation was added.
+- Final review found no remaining important issue. Deferred minors: none. No push.
