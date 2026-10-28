@@ -2431,6 +2431,18 @@ button,
   gap: 0.375rem;
   pointer-events: none;
 }
+/* Wide desktop: the chips rise level with the navigation tabs once the left pane clears them. */
+@media (min-width: 100rem) {
+  .comparison-pane-chips {
+    top: calc(var(--shell-gap) + env(safe-area-inset-top));
+  }
+  /* The right-hand pane ends under the header actions (theme switch). */
+  .comparison-pane:last-child .comparison-pane-chips {
+    right: calc(
+      var(--workspace-actions-width, 0px) + 2 * var(--shell-gap) + env(safe-area-inset-right)
+    );
+  }
+}
 .comparison-chip {
   display: inline-flex;
   align-items: center;
