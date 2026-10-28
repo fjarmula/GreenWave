@@ -208,7 +208,8 @@ export function Dashboard({
       )}
     </>
   );
-  const pending = simulationState === "STARTING" || operationOwner === "comparison";
+  const pending = simulationState === "STARTING";
+  const startBlockedReason = operationOwner === "comparison" ? "Comparison running" : undefined;
   const signal =
     driver && routeData && simulationState === "RUNNING"
       ? nextSignal(routeData, simulation.liveTelemetry, isTelemetryStale(simulation))
@@ -346,6 +347,7 @@ export function Dashboard({
             replacement={policy.requiresReplacement}
             onInitialize={initialize}
             errorMessage={startErrorMessage}
+            blockedReason={startBlockedReason}
           />
         ) : undefined
       }

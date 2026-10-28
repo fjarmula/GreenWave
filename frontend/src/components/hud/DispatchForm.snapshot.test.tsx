@@ -474,6 +474,22 @@ it("uses the shared dispatch controls to configure both comparison modes", () =>
   expect(html).not.toContain("Replay");
 });
 
+it("labels the start as blocked, not busy, while a comparison runs", () => {
+  const markup = renderToStaticMarkup(
+    <DispatchStartButton
+      dispatch={dispatchState()}
+      settings={DEFAULT_DISPATCH_SETTINGS}
+      pending={false}
+      blockedReason="Comparison running"
+      onInitialize={() => {}}
+    />,
+  );
+  expect(markup).toContain("Comparison running");
+  expect(markup).not.toContain("Computing route");
+  expect(markup).toMatch(/<button[^>]*disabled=""/);
+  expect(markup).toMatch(/aria-busy="false"/);
+});
+
 it("shows start failures beside the standalone action", () => {
   const markup = renderToStaticMarkup(
     <DispatchStartButton
