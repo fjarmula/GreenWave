@@ -260,6 +260,14 @@ sudo docker compose --env-file deploy/.env -f compose.production.yaml up -d --no
 ```
 
 Do not overwrite the rollback tags again until the new release passes step 7.
+
+**Known limitation:** rolling back the images does not roll back the data. The backend reads the
+processed data of the directory it runs from (`./backend/data/processed`, bind-mounted read-only),
+and step 4's commands write to `~/GreenWave`. If a new dataset (for example a rebuilt
+`etl_report.json`) was uploaded into the active directory instead of a fresh one, the rollback
+images read that new data. Roll back only from the backup directory, which holds the previous
+dataset.
+
 To stop without deleting certificate state:
 
 ```bash

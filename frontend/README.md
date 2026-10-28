@@ -63,10 +63,10 @@ never starts or stops a run; replacing an active run requires an explicit action
 Reload returns to setup and never reconnects to an unknown server run. No scenario or telemetry is
 stored in local storage.
 
-**Details** opens the bounded inspector. **Enter Focus** hides controls; **Exit Focus** or Escape
-restores them and returns keyboard focus. The map is preserved within a mounted workspace.
-Zoom above 16.5 to follow the vehicle; a deliberate pan suspends follow. **Resume following**
-restores it, and **Show route** returns to overview. All positions and signal states are simulated.
+**Focus Mode** hides or shows the details panel. On the map, **Follow vehicle** follows the running
+vehicle and **Show route** returns to the route overview. All positions and signal states are
+simulated. The canonical description of every workspace control is
+[frontend-dashboard.md](../docs/engineering/frontend-dashboard.md).
 
 Comparison opens with the same incident map, vehicle, station ranking, density, cascade and
 playback-speed controls as the individual simulation views. **Start comparison** starts the Green
@@ -96,21 +96,21 @@ The driver view needs no geolocation. It shares this browser session's enabled r
 feedback and recoverable Stop errors. Phone browser chrome, safe-area and keyboard behavior still
 need confirmation on physical iOS/Android hardware; desktop device emulation cannot prove them.
 
+## Phone testing over the LAN
+
+Use a production build: `next dev` blocks other hosts unless `allowedDevOrigins` is configured. Run
+`npm run build && npx next start -H 0.0.0.0` and open `http://<your-ip>:3000`. In backend mode,
+build with `NEXT_PUBLIC_API_BASE_URL=http://<your-ip>:8000`, start uvicorn with `--host 0.0.0.0`,
+and set `GREENWAVE_CORS_ORIGINS=http://<your-ip>:3000`.
+
+## Mock smoke test
+
+`npm run smoke:mock [base-url]` drives a mock-transport dashboard (default `http://localhost:3000`)
+with `@playwright/cli`; outputs go to `../.tmp/playwright/`.
+
 ## Simulated ITS feedback
 
-Priority submission creates REQUESTED only. A separate per-run in-process controller
-accepts/rejects it and supplies reported intersection/signal snapshots. Acceptance
-starts CLEARING; PRIORITY_GREEN requires supported route vehicle indications green.
-Nothing connects to or actuates a real controller. The payload is illustrative.
-
-Start requests accept `its_scenario`: NOMINAL (1 s acknowledgement), DELAYED (5 s),
-REJECTED or NO_FEEDBACK (8 s timeout). All timings are simulated seconds; playback
-changes wall-clock pacing only. Disabled runs normalize to NOMINAL; live comparisons use the selected scenario for the enabled member and NOMINAL for the baseline. The dispatch form preserves scenario selection across navigation.
-
-ITS_FEEDBACK has request identity and a per-run sequence. Each tick contains the full
-bounded request ledger and controller observation time for reconnect/drop recovery.
-Request status is displayed separately from reported traffic, with original JSON in
-diagnostics. Missing legacy feedback is labelled unavailable; ended runs show the
-last report. Rejection, timeout and enforced hold expiry cancel the run explicitly,
-without completion/successful comparison. Estimates are model baselines, not timing
-guarantees. See proposed [ADR 0008](../docs/adr/0008-simulated-its-feedback.md).
+The dashboard shows the simulated ITS request status separately from reported traffic, with the
+original JSON in diagnostics, and keeps the scenario selection across navigation. The protocol,
+scenarios and timings are described once, in the
+[backend README](../backend/README.md#simulated-its-feedback).

@@ -83,6 +83,10 @@ the `road_attributes` section and the EMUiA address reconciliation) and writes `
 `GET /api/v1/dataset/quality`. It records the hashes of the files it read in the `quality` report
 section. Re-run it after any of those steps.
 
+The `intersections` and `places` report sections record `curated_sha256`, the hashes of their
+curated inputs (`data/overrides/roundabouts.json` and `data/curated/prm_bases.json`); `quality`
+refuses to run when a curated file has changed since the step that read it.
+
 `intersections` also derives road attributes per network edge (`bus_lane`, `lanes_per_direction`,
 `surface_class`, `calming_count`, `tram_track` in `network_edges.parquet`), writes the
 `road_attributes` report section, and writes `bus_lane_crosscheck.csv`: each row of the Kraków
@@ -198,7 +202,8 @@ Nothing connects to or actuates a real controller. The payload is illustrative.
 
 Start requests accept `its_scenario`: NOMINAL (1 s acknowledgement), DELAYED (5 s),
 REJECTED or NO_FEEDBACK (8 s timeout). All timings are simulated seconds; playback
-changes wall-clock pacing only. Disabled runs normalize to NOMINAL; live comparisons use the selected scenario for the enabled member and NOMINAL for the baseline. The dispatch form preserves scenario selection across navigation.
+changes wall-clock pacing only; the payload's `expected_arrival_utc` is a wall-clock instant, so it
+scales with playback. Disabled runs normalize to NOMINAL; live comparisons use the selected scenario for the enabled member and NOMINAL for the baseline. The dispatch form preserves scenario selection across navigation.
 
 ITS_FEEDBACK has request identity and a per-run sequence. Each tick contains the full
 bounded request ledger and controller observation time for reconnect/drop recovery.
