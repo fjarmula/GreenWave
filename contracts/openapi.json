@@ -280,7 +280,7 @@
             "$ref": "#/components/schemas/Position"
           },
           "resource_aware": {
-            "default": true,
+            "default": false,
             "title": "Resource Aware",
             "type": "boolean"
           },

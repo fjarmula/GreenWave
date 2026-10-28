@@ -186,7 +186,7 @@ class DispatchRankRequest(BaseModel):
     ] = {}
     # False: AMBULANCE ranks PRM bases by time alone, like fire and police; scenario_time
     # (echoed only), availability and the area rule are ignored.
-    resource_aware: bool = True
+    resource_aware: bool = False
 
     @field_validator("scenario_time")
     @classmethod

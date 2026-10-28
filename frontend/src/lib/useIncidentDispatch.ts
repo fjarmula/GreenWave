@@ -103,7 +103,7 @@ export function createIncidentDispatch(
     selectedStationId: null,
     scenarioTime: scenarioTimeAt(now()),
     availability: {},
-    resourceAware: true,
+    resourceAware: false,
     rankTimeMode: "ENABLED",
     resources: null,
   };

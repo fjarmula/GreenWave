@@ -243,7 +243,12 @@ EVENING = "2026-10-27T21:00:00"
 def _rank_ambulance(c: TestClient, **extra: object) -> dict[str, Any]:
     response = c.post(
         "/api/v1/dispatch/rank",
-        json={"incident": _poprzeczna(c), "vehicle_type": "AMBULANCE", **extra},
+        json={
+            "incident": _poprzeczna(c),
+            "vehicle_type": "AMBULANCE",
+            "resource_aware": True,
+            **extra,
+        },
     )
     assert response.status_code == 200, response.text
     body: dict[str, Any] = response.json()
@@ -356,10 +361,24 @@ def test_all_busy_returns_no_eligible_outcome(layout: Layout) -> None:
     assert body["incident_snapped"]["snap_distance_m"] >= 0
 
 
-def test_rank_without_resource_awareness_ignores_shifts_and_status(layout: Layout) -> None:
+@pytest.mark.parametrize("extra", [{}, {"resource_aware": False}])
+def test_rank_without_resource_awareness_ignores_shifts_and_status(
+    layout: Layout, extra: dict[str, object]
+) -> None:
     busy = {code: "busy" for code in ("K01 008", "K01 162", "K01 176")}
     with client(layout) as c:
-        body = _rank_ambulance(c, scenario_time=EVENING, availability=busy, resource_aware=False)
+        response = c.post(
+            "/api/v1/dispatch/rank",
+            json={
+                "incident": _poprzeczna(c),
+                "vehicle_type": "AMBULANCE",
+                "scenario_time": EVENING,
+                "availability": busy,
+                **extra,
+            },
+        )
+        assert response.status_code == 200
+        body = response.json()
 
     assert body["outcome"] == "OK"
     assert len(body["candidates"]) == 2  # both bases, the off-shift one included
@@ -393,7 +412,7 @@ def test_rank_unreachable_still_422(layout: Layout, monkeypatch: pytest.MonkeyPa
     with client(layout) as c:
         response = c.post(
             "/api/v1/dispatch/rank",
-            json={"incident": _poprzeczna(c), "vehicle_type": "AMBULANCE"},
+            json={"incident": _poprzeczna(c), "vehicle_type": "AMBULANCE", "resource_aware": True},
         )
 
     assert response.status_code == 422
@@ -409,6 +428,7 @@ def test_eligible_ambulance_without_routable_base_returns_422(layout: Layout) ->
                 "incident": _poprzeczna(c),
                 "vehicle_type": "AMBULANCE",
                 "scenario_time": NOON,
+                "resource_aware": True,
             },
         )
 

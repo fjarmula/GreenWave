@@ -325,7 +325,7 @@ export interface components {
             incident: components["schemas"]["Position"];
             /**
              * Resource Aware
-             * @default true
+             * @default false
              */
             resource_aware: boolean;
             /** Scenario Time */

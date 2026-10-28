@@ -101,6 +101,7 @@ describe("createIncidentDispatch", () => {
 
     expect(dispatch.getState()).toMatchObject({
       vehicleType: "AMBULANCE",
+      resourceAware: false,
       incident: null,
       ranking: null,
       rankStatus: "idle",
@@ -125,7 +126,7 @@ describe("createIncidentDispatch", () => {
       scenario_time: "2026-10-27T21:00",
       time_mode: "ENABLED",
       availability: {},
-      resource_aware: true,
+      resource_aware: false,
     });
     expect(dispatch.getState().rankStatus).toBe("ready");
     expect(dispatch.getState().ranking?.candidates[0].station.station_id).toBe("STN-A-0001");
@@ -583,6 +584,7 @@ describe("scenario time and team availability (ADR 0014)", () => {
   it("re-ranks without resource awareness, resetting the pick and keeping overrides", async () => {
     const { adapter, calls } = deferredAdapter();
     const dispatch = createIncidentDispatch(adapter, NOW);
+    dispatch.setResourceAware(true);
     expect(dispatch.getState().resourceAware).toBe(true);
     dispatch.setTeamAvailability("K01 176", "busy");
     dispatch.setIncident(incident(50.01));
@@ -603,10 +605,10 @@ describe("scenario time and team availability (ADR 0014)", () => {
     const { adapter, calls } = deferredAdapter();
     const dispatch = createIncidentDispatch(adapter, NOW);
 
-    dispatch.setResourceAware(false);
+    dispatch.setResourceAware(true);
     expect(calls).toHaveLength(0);
     dispatch.setIncident(incident(50.01));
-    expect(calls[0].request.resource_aware).toBe(false);
+    expect(calls[0].request.resource_aware).toBe(true);
   });
 
   it("re-ranks on a time-mode change, keeping the pick", async () => {
