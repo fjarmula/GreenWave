@@ -217,6 +217,42 @@ describe("createIncidentDispatch", () => {
       expect(dispatch.getState().trafficDensity).toBe(3);
     });
 
+    it("starts at the given density", () => {
+      const { adapter, calls } = deferredAdapter();
+      const dispatch = createIncidentDispatch(adapter, NOW, { trafficDensity: 1.5 });
+
+      dispatch.setIncident(incident(50.01));
+
+      expect(calls[0].request.traffic_density_multiplier).toBe(1.5);
+    });
+
+    it("marks the ranking loading as soon as the density changes, keeping the pick", async () => {
+      const { adapter, calls } = deferredAdapter();
+      const dispatch = createIncidentDispatch(adapter);
+      dispatch.setIncident(incident(50.01));
+      calls[0].resolve(threeStations);
+      await settle();
+      dispatch.selectStation("B");
+
+      dispatch.setTrafficDensity(2);
+
+      expect(dispatch.getState().rankStatus).toBe("loading");
+      expect(dispatch.getState().selectedStationId).toBe("B");
+    });
+
+    it("ignores a response for the old density that settles during the debounce", async () => {
+      const { adapter, calls } = deferredAdapter();
+      const dispatch = createIncidentDispatch(adapter);
+      dispatch.setIncident(incident(50.01));
+
+      dispatch.setTrafficDensity(2);
+      calls[0].resolve(ranking("STN-A-0001"));
+      await settle();
+
+      expect(dispatch.getState().rankStatus).toBe("loading");
+      expect(calls[0].signal?.aborted).toBe(true);
+    });
+
     it("ranks once for a slider drag, with the last density", async () => {
       const { adapter, calls } = deferredAdapter();
       const dispatch = createIncidentDispatch(adapter);

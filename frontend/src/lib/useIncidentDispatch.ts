@@ -104,11 +104,12 @@ export function describeRankError(error: unknown): string {
 export function createIncidentDispatch(
   adapter: DispatchAdapter,
   now: () => Date = () => new Date(),
+  initial: { trafficDensity: number } = { trafficDensity: 1 },
 ) {
   let state: IncidentDispatchState = {
     vehicleType: "AMBULANCE",
     incident: null,
-    trafficDensity: 1,
+    trafficDensity: initial.trafficDensity,
     ranking: null,
     rankStatus: "idle",
     rankError: null,
@@ -235,8 +236,15 @@ export function createIncidentDispatch(
      */
     setTrafficDensity(trafficDensity: number) {
       if (trafficDensity === state.trafficDensity) return;
-      update({ trafficDensity });
-      if (state.incident === null) return;
+      if (state.incident === null) {
+        update({ trafficDensity });
+        return;
+      }
+      // The shown standard times are for the old density: never "ready" until the re-rank.
+      inFlight?.abort();
+      inFlight = null;
+      sequence += 1;
+      update({ trafficDensity, rankStatus: "loading", rankError: null });
       cancelDensityRerank();
       densityTimer = setTimeout(() => rank({}, true), DENSITY_RERANK_DELAY_MS);
     },
@@ -294,8 +302,11 @@ export type IncidentDispatch = IncidentDispatchState & {
   setRankTimeMode: (mode: GreenWaveMode) => void;
 };
 
-export function useIncidentDispatch(adapter: DispatchAdapter): IncidentDispatch {
-  const [dispatch] = useState(() => createIncidentDispatch(adapter));
+export function useIncidentDispatch(
+  adapter: DispatchAdapter,
+  initial?: { trafficDensity: number },
+): IncidentDispatch {
+  const [dispatch] = useState(() => createIncidentDispatch(adapter, undefined, initial));
   const state = useSyncExternalStore(dispatch.subscribe, dispatch.getState, dispatch.getState);
   useEffect(() => {
     dispatch.refreshResources();
