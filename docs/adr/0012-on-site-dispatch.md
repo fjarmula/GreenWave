@@ -11,7 +11,7 @@
 An incident whose snapped node is a station's own node could not be routed (`plan_route`
 raises `NoRoute`), so ranking reported that station as `station_at_incident` and dispatched the
 next one, often minutes away. Off the network, a station whose node was the only access node
-was dropped the same way. Design: `docs/superpowers/specs/2026-10-25-post-merge-regressions-design.md`
+was dropped the same way. Design: `docs/superpowers/specs/archive/2026-10-25-post-merge-regressions-design.md`
 (D6; finding B2).
 
 ## Decision
@@ -59,4 +59,4 @@ Additive to contract v1; `schema_version` stays `"1.0"`.
 - `frontend/src/lib/station-choice.test.ts` (`isOnSite`, `onSiteResult`, `shownOnSite`),
   `StationRanking.test.tsx`, `OnSiteResult.test.tsx`, `DispatchForm.snapshot.test.tsx`,
   `mock-dispatch.test.ts`, `validate.test.ts`.
-- Browser check: `docs/engineering/post-merge-regressions-verification.md`.
+- Browser check: `docs/engineering/history/post-merge-regressions-verification.md`.

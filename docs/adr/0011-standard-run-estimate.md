@@ -11,7 +11,7 @@ The standard-traffic page showed the green-wave time before a run, and its live 
 down `estimated_normal_time_sec` (car speeds x density plus 35 s per junction), not the
 ambulance-without-priority run it shows. An off-road incident showed one drive + walk total
 before start while only the drive is simulated. Design:
-`docs/superpowers/specs/2026-10-25-post-merge-regressions-design.md` (D4, D5; findings B4, B5,
+`docs/superpowers/specs/archive/2026-10-25-post-merge-regressions-design.md` (D4, D5; findings B4, B5,
 X2).
 
 ## Decision
@@ -68,4 +68,4 @@ Additive to contract v1; `schema_version` stays `"1.0"`.
   `StationRanking.test.tsx`, `KpiHeader.test.tsx`, `driver-status.test.tsx`, the dispatch form
   and dashboard markup snapshots.
 - `backend/scripts/sample_runs.py --routes 40 --seed 11` at density 1.0 and 2.5:
-  `docs/engineering/post-merge-regressions-verification.md`.
+  `docs/engineering/history/post-merge-regressions-verification.md`.
