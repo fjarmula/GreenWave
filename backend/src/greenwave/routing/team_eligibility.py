@@ -13,8 +13,10 @@ from datetime import datetime
 import polars as pl
 
 # The contract's literals, re-exported for routing callers.
-from greenwave.schemas.dispatch import AvailabilityOverride as Availability
+from greenwave.schemas.dispatch import AvailabilityOverride
 from greenwave.schemas.dispatch import ExclusionReason as ExclusionReason
+
+Availability = AvailabilityOverride
 
 
 @dataclass(frozen=True)
