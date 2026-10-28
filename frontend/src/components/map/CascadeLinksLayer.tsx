@@ -1,5 +1,6 @@
 "use client";
 
+import { addToStyle } from "@/components/map/style-guard";
 import { createContext, useContext, useEffect, type ReactNode } from "react";
 import type { Map } from "maplibre-gl";
 
@@ -50,20 +51,22 @@ export function CascadeLinksLayer({ route }: CascadeLinksLayerProps) {
 
     const sourceId = "greenwave-cascade-links";
     const layerId = "greenwave-cascade-links-line";
-    map.addSource(sourceId, { type: "geojson", data: features });
-    map.addLayer({
-      id: layerId,
-      type: "line",
-      source: sourceId,
-      paint: {
-        "line-color": mapPalette(theme).cascade,
-        "line-width": 4,
-        "line-dasharray": [1.5, 1.5],
-        "line-opacity": 0.9,
-      },
-      layout: { "line-cap": "round", "line-join": "round" },
+    // Mid theme swap the style is still loading: skip, the next styleRevision re-adds.
+    addToStyle(() => {
+      map.addSource(sourceId, { type: "geojson", data: features });
+      map.addLayer({
+        id: layerId,
+        type: "line",
+        source: sourceId,
+        paint: {
+          "line-color": mapPalette(theme).cascade,
+          "line-width": 4,
+          "line-dasharray": [1.5, 1.5],
+          "line-opacity": 0.9,
+        },
+        layout: { "line-cap": "round", "line-join": "round" },
+      });
     });
-
     return () => {
       if (map.getLayer(layerId)) map.removeLayer(layerId);
       if (map.getSource(sourceId)) map.removeSource(sourceId);

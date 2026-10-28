@@ -51,6 +51,11 @@ export function ComparisonWorkspace() {
   const config = getFrontendConfig();
   const active =
     simulation.simulationState === "RUNNING" || simulation.simulationState === "STARTING";
+  const replacementNotice = (
+    <p role="status" className="hud-alert tone-caution block text-sm">
+      Starting this comparison explicitly replaces the active simulation after a successful Stop.
+    </p>
+  );
   const starting = state.status === "starting";
   const live = state.status !== "idle" && !starting && !!state.runs.ENABLED.routeData;
   // A start that failed before any route exists is reported on the setup form.
@@ -137,7 +142,11 @@ export function ComparisonWorkspace() {
               }
               destination={
                 dispatch.incident
-                  ? { label: dispatch.incident.label, position: dispatch.incident.position }
+                  ? {
+                      label: dispatch.incident.label,
+                      position: dispatch.incident.position,
+                      osmPosition: dispatch.incident.address?.osmPosition ?? null,
+                    }
                   : null
               }
               focusRequest={mapFocusRequest}
@@ -171,6 +180,7 @@ export function ComparisonWorkspace() {
                   errorMessage={null}
                   onInitialize={() => void start(settings)}
                   startLabel="Start live comparison"
+                  notices={active ? replacementNotice : undefined}
                 />
               ),
               expanded: (
@@ -190,12 +200,7 @@ export function ComparisonWorkspace() {
       inspector={
         live || onSite ? undefined : (
           <>
-            {active && (
-              <p role="status" className="hud-alert tone-caution m-4 block text-sm">
-                Starting this comparison explicitly replaces the active simulation after a
-                successful Stop.
-              </p>
-            )}
+            {active && <div className="m-4">{replacementNotice}</div>}
             <DispatchForm
               showStartAction={false}
               intent="comparison"

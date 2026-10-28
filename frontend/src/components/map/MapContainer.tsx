@@ -151,7 +151,8 @@ function MapCanvas({
       <div
         ref={mapElement}
         className="dashboard-map !absolute inset-0 h-full w-full overflow-hidden"
-        aria-label="MapLibre map"
+        role="region"
+        aria-label="Map"
       >
         {!map && (
           <div className="absolute inset-0 grid place-items-center bg-[var(--map-surface)]">

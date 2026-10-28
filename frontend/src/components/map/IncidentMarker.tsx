@@ -29,6 +29,7 @@ export function IncidentMarker({ map, incident }: IncidentMarkerProps) {
 function createIncidentPin(label: string) {
   const element = document.createElement("div");
   element.className = "relative size-5 text-[11px] font-semibold text-foreground";
+  element.setAttribute("role", "img");
   element.setAttribute("aria-label", `Incident: ${label}`);
   element.style.zIndex = "2";
 

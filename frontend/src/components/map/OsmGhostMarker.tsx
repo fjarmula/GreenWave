@@ -1,5 +1,6 @@
 "use client";
 
+import { addToStyle } from "@/components/map/style-guard";
 import { useEffect } from "react";
 import { Marker, type Map } from "maplibre-gl";
 
@@ -33,21 +34,24 @@ export function OsmGhostMarker({ map, incident, styleRevision, theme }: OsmGhost
     const marker = new Marker({ element: createGhostPin(), anchor: "center" })
       .setLngLat([osmLng, osmLat])
       .addTo(map);
-    map.addSource(SOURCE_ID, {
-      type: "geojson",
-      data: osmGhostFeatures({ lat, lng }, { lat: osmLat, lng: osmLng }),
-    });
-    map.addLayer({
-      id: LAYER_ID,
-      type: "line",
-      source: SOURCE_ID,
-      paint: {
-        "line-color": mapPalette(theme).endpointLine,
-        "line-width": 1.5,
-        "line-dasharray": [1, 2],
-        "line-opacity": 0.8,
-      },
-      layout: { "line-cap": "round" },
+    // Mid theme swap the style is still loading: skip, the next styleRevision re-adds.
+    addToStyle(() => {
+      map.addSource(SOURCE_ID, {
+        type: "geojson",
+        data: osmGhostFeatures({ lat, lng }, { lat: osmLat, lng: osmLng }),
+      });
+      map.addLayer({
+        id: LAYER_ID,
+        type: "line",
+        source: SOURCE_ID,
+        paint: {
+          "line-color": mapPalette(theme).endpointLine,
+          "line-width": 1.5,
+          "line-dasharray": [1, 2],
+          "line-opacity": 0.8,
+        },
+        layout: { "line-cap": "round" },
+      });
     });
     return () => {
       marker.remove();
@@ -62,6 +66,7 @@ export function OsmGhostMarker({ map, incident, styleRevision, theme }: OsmGhost
 function createGhostPin() {
   const element = document.createElement("div");
   element.className = "relative size-4 text-[11px] font-medium text-muted-foreground";
+  element.setAttribute("role", "img");
   element.setAttribute("aria-label", "OSM position");
 
   const labelElement = document.createElement("span");

@@ -15,6 +15,8 @@ it("keeps navigation and map visible while focus mode hides the inspector", () =
   expect(html).toContain("Vehicle and route");
   expect(html).toContain("Focus Mode");
   expect(html).toContain('aria-pressed="true"');
+  // A mode toggle: "pressed" only; aria-expanded alongside it reads as "pressed, collapsed".
+  expect(html).not.toMatch(/aria-label="Focus Mode"[^>]*aria-expanded/);
   expect(html).not.toMatch(/<header[^>]*hidden/);
   expect(html).toContain('inert=""');
   expect(html).toContain("Simulated");

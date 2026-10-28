@@ -109,7 +109,6 @@ export function WorkspaceShell({
                   className="workspace-button"
                   aria-label="Focus Mode"
                   aria-pressed={!details}
-                  aria-expanded={details}
                   aria-controls="workspace-inspector"
                   onClick={() => setDetails(!details)}
                 >

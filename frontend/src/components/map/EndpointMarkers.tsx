@@ -1,5 +1,6 @@
 "use client";
 
+import { addToStyle } from "@/components/map/style-guard";
 import { useEffect, useRef } from "react";
 import type { Map } from "maplibre-gl";
 
@@ -74,32 +75,35 @@ export function EndpointMarkers({
     const sourceId = "greenwave-snap-connectors";
     const layerId = "greenwave-snap-connectors-line";
     const onFootLayerId = "greenwave-on-foot-line";
-    map.addSource(sourceId, { type: "geojson", data: connectors });
-    map.addLayer({
-      id: layerId,
-      type: "line",
-      source: sourceId,
-      filter: ["!", ["get", "onFoot"]],
-      paint: {
-        "line-color": mapPalette(theme).endpointLine,
-        "line-width": 2,
-        "line-dasharray": [2, 2],
-        "line-opacity": 0.9,
-      },
-      layout: { "line-cap": "round" },
-    });
-    // The walk to an off-road incident: dotted, in the beacon colour, not the snap dash.
-    map.addLayer({
-      id: onFootLayerId,
-      type: "line",
-      source: sourceId,
-      filter: ["get", "onFoot"],
-      paint: {
-        "line-color": mapPalette(theme).onFootLine,
-        "line-width": 2.5,
-        "line-dasharray": [0.5, 2],
-      },
-      layout: { "line-cap": "round" },
+    // Mid theme swap the style is still loading: skip, the next styleRevision re-adds.
+    addToStyle(() => {
+      map.addSource(sourceId, { type: "geojson", data: connectors });
+      map.addLayer({
+        id: layerId,
+        type: "line",
+        source: sourceId,
+        filter: ["!", ["get", "onFoot"]],
+        paint: {
+          "line-color": mapPalette(theme).endpointLine,
+          "line-width": 2,
+          "line-dasharray": [2, 2],
+          "line-opacity": 0.9,
+        },
+        layout: { "line-cap": "round" },
+      });
+      // The walk to an off-road incident: dotted, in the beacon colour, not the snap dash.
+      map.addLayer({
+        id: onFootLayerId,
+        type: "line",
+        source: sourceId,
+        filter: ["get", "onFoot"],
+        paint: {
+          "line-color": mapPalette(theme).onFootLine,
+          "line-width": 2.5,
+          "line-dasharray": [0.5, 2],
+        },
+        layout: { "line-cap": "round" },
+      });
     });
     return () => {
       if (map.getLayer(onFootLayerId)) map.removeLayer(onFootLayerId);

@@ -115,7 +115,7 @@ export function IncidentInput({
           >
             {results.map((result, index) => (
               <li
-                key={result.label}
+                key={`${result.label}@${result.position.lat},${result.position.lng}`}
                 id={`${LISTBOX_ID}-${index}`}
                 role="option"
                 aria-selected={index === active}
