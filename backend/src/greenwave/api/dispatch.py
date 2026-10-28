@@ -165,6 +165,7 @@ def rank(body: DispatchRankRequest, request: Request) -> DispatchRankResponse | 
             body.vehicle_type,
             settings,
             body.traffic_density_multiplier,
+            time_mode=body.time_mode,
         )
     except DestinationOffNetwork as error:
         return error_response(422, ErrorCode.DESTINATION_OFF_NETWORK, str(error))

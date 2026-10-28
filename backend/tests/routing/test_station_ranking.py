@@ -15,6 +15,7 @@ from tests.support.route_fixtures import (
 
 from greenwave.dataset.errors import MalformedArtifactError
 from greenwave.its import MockItsGateway
+from greenwave.routing import station_ranking
 from greenwave.routing.access import walk_between
 from greenwave.routing.errors import DestinationOffNetwork, NoRoute, NoStationReachable
 from greenwave.routing.estimates import estimate_times
@@ -182,7 +183,7 @@ def test_station_on_the_incident_node_is_an_on_site_candidate() -> None:
     assert first.on_site and first.station.station_id == "STN-A-0004"
     assert first.greenwave_seconds == first.standard_seconds == first.distance_m == 0.0
     assert first.walk_m == pytest.approx(20 * 1.3, rel=1e-6)
-    assert first.total_seconds == pytest.approx(20 * 1.3 / 1.4, rel=1e-6)
+    assert first.total_seconds_for(GreenWaveMode.ENABLED) == pytest.approx(20 * 1.3 / 1.4, rel=1e-6)
     assert not any(c.on_site for c in ranking.candidates[1:])
     assert ranking.incident_snap.node_key == "corridor-4"
 
@@ -195,7 +196,7 @@ def test_incident_on_the_station_point_walks_zero_metres() -> None:
     ).candidates[0]
 
     assert first.on_site and first.station.station_id == "STN-A-0004"
-    assert first.walk_m == 0.0 and first.total_seconds == 0.0
+    assert first.walk_m == 0.0 and first.total_seconds_for(GreenWaveMode.ENABLED) == 0.0
 
 
 def test_two_on_site_stations_tie_break_by_id() -> None:
@@ -232,7 +233,9 @@ def test_off_road_only_access_is_the_station_node() -> None:
 
     first = ranking.candidates[0]
     assert first.on_site and first.station.station_id == "STN-A-0009"
-    assert first.total_seconds == pytest.approx(200 * 1.3 / 1.4, rel=1e-6)
+    assert first.total_seconds_for(GreenWaveMode.ENABLED) == pytest.approx(
+        200 * 1.3 / 1.4, rel=1e-6
+    )
     assert all(not c.on_site for c in ranking.candidates[1:])
 
 
@@ -248,7 +251,7 @@ def test_off_road_prefers_driving_when_faster() -> None:
 
     [only] = ranking.candidates
     assert not only.on_site and only.on_foot is not None
-    assert only.total_seconds < 600 * 1.3 / 1.4
+    assert only.total_seconds_for(GreenWaveMode.ENABLED) < 600 * 1.3 / 1.4
 
 
 def test_off_network_incident_raises() -> None:
@@ -402,3 +405,51 @@ def test_off_network_prm_base_fails_startup() -> None:
 
     with pytest.raises(MalformedArtifactError, match="STN-A-0001"):
         build_station_nodes(stations, corridor_index())
+
+
+def _standard_favours_long_routes(monkeypatch: pytest.MonkeyPatch, base: float = 10_000) -> None:
+    """Standard times that invert the green-wave order: the longest route is the fastest."""
+    monkeypatch.setattr(
+        station_ranking,
+        "standard_run_seconds",
+        lambda route, *_: base - route.total_distance_m,
+    )
+
+
+def test_standard_mode_orders_by_standard_total(monkeypatch: pytest.MonkeyPatch) -> None:
+    _standard_favours_long_routes(monkeypatch)
+    index, nodes = _corridor()
+    incident = position_at(_X + 1_950.02)
+
+    def order(mode: GreenWaveMode) -> list[str]:
+        ranking = rank_stations(
+            index,
+            nodes,
+            incident,
+            VehicleType.AMBULANCE,
+            SETTINGS,
+            time_mode=mode,
+            max_candidates=9,
+        )
+        return [c.station.station_id for c in ranking.candidates]
+
+    assert order(GreenWaveMode.ENABLED) == ["STN-A-0004", "STN-A-0003", "STN-A-0002", "STN-A-0001"]
+    assert order(GreenWaveMode.DISABLED) == ["STN-A-0001", "STN-A-0002", "STN-A-0003", "STN-A-0004"]
+
+
+def test_standard_mode_on_site_vs_drive_uses_standard_total(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # As test_off_road_prefers_driving_when_faster, but the standard drive takes 1e6 s.
+    monkeypatch.setattr(station_ranking, "standard_run_seconds", lambda *_: 1e6)
+    index = park_index()
+    nodes = build_station_nodes(stations_frame(("STN-A-0009", "AMBULANCE", _X + 500, _Y)), index)
+    incident = position_at(_X + 500, _Y + 600)
+
+    [standard] = rank_stations(
+        index, nodes, incident, VehicleType.AMBULANCE, SETTINGS, time_mode=GreenWaveMode.DISABLED
+    ).candidates
+    [enabled] = rank_stations(index, nodes, incident, VehicleType.AMBULANCE, SETTINGS).candidates
+
+    assert standard.on_site
+    assert not enabled.on_site

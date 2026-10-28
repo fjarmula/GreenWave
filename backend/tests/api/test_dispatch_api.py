@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from greenwave.api import dispatch as dispatch_api
 from greenwave.main import create_app
 from greenwave.routing.errors import NoStationReachable
+from greenwave.schemas import GreenWaveMode
 from tests.support.processed import Layout
 
 
@@ -427,3 +428,28 @@ def test_rank_rejects_unknown_availability_value(layout: Layout) -> None:
         )
 
     assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [{"vehicle_type": "FIRE_TRUCK"}, {"vehicle_type": "AMBULANCE", "resource_aware": False}],
+)
+def test_station_ranking_honours_time_mode(
+    layout: Layout, monkeypatch: pytest.MonkeyPatch, extra: dict[str, object]
+) -> None:
+    seen: list[object] = []
+    original = dispatch_api.rank_stations
+
+    def spy(*args: Any, **kwargs: Any) -> Any:
+        seen.append(kwargs.get("time_mode"))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(dispatch_api, "rank_stations", spy)
+    with client(layout) as c:
+        response = c.post(
+            "/api/v1/dispatch/rank",
+            json={"incident": _poprzeczna(c), "time_mode": "DISABLED", **extra},
+        )
+
+    assert response.status_code == 200, response.text
+    assert seen == [GreenWaveMode.DISABLED]

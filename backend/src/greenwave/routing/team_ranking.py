@@ -152,8 +152,10 @@ def rank_teams(
         VehicleType.AMBULANCE,
         settings,
         traffic_density_multiplier,
+        time_mode=time_mode,
         include_fastest_of=in_area_bases,
         max_candidates=len(eligible_nodes),
+        shortlist_size=len(eligible_nodes),  # at most 8 bases: no motion-time cut
     )
     candidates = [
         RankedTeam(
