@@ -4,6 +4,7 @@
 - Date: 2026-10-20
 - Owners: @fjarmula @Piotrek406
 - Supersedes: None (amends ADR 0003 additively)
+- Amended (2026-10-28): candidates rank by the request's `time_mode` totals (ADR 0014); `station_at_incident` is removed from `DispatchRankResponse`; ambulance origins are PRM bases (`prm_base`), and the `ambulance_base` / `hospital_ed` station kinds are gone.
 
 ## Context
 

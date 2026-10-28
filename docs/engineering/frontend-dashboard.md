@@ -2,7 +2,7 @@
 
 Scope: maintain the official `frontend/` Next.js dashboard and simulated MapLibre workflow according to `GreenWave_ARCHITECTURE.md`. All UI text remains English.
 
-The static v0 design source is `er-green-wave-dashboard-design/`; the official target is `frontend/`.
+The static v0 design source is no longer in the repository; `frontend/` is the only dashboard.
 
 The delivered dashboard uses the canonical v1 generated contract. Mock transport remains the default and offline fallback; the selectable backend transport is implemented. Do not repeat completed dashboard build phases or start unrelated work without approval.
 

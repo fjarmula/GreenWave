@@ -9,7 +9,7 @@ Before planning or editing, inspect the relevant structure, source, related docu
 ## Stack and design rules
 
 - Backend: Python 3.12+, `uv`, FastAPI/ASGI, Pydantic v2, GeoPandas, Polars, NetworkX, Shapely, Ruff, mypy, and pytest. Use the repository configuration as the source of truth; do not introduce a listed technology merely because it appears here.
-- Frontend: Next.js App Router, strict TypeScript, React, Tailwind, shadcn/ui, MapLibre, and the existing real-time state approach. `frontend/AGENTS.md` adds required Next.js guidance.
+- Frontend: Next.js App Router, strict TypeScript, React, Tailwind, lucide icons, MapLibre, and the existing real-time state approach. `frontend/AGENTS.md` adds required Next.js guidance.
 - Keep GIS ingestion and graph construction separate from the simulation loop; keep domain logic out of FastAPI/transport code; keep MapLibre within the map boundary and HUD components separate. Keep transport, validation, domain, persistence, and presentation responsibilities distinct.
 - Use explicit Python parameter/return annotations and precise TypeScript types. Avoid Python `Any` and TypeScript `any`; validate untrusted boundaries. Use Pydantic for parsing/validation and keep stateful domain decisions in domain/service modules.
 - Keep tunable values in existing configuration with explicit units and range validation. Reuse existing configuration; do not invent unspecified thresholds or turn local implementation literals into global settings without reason.

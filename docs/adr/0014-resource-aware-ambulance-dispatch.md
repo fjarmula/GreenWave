@@ -42,6 +42,13 @@ Additive in shape to contract v1; `schema_version` stays `"1.0"`. Pydantic model
     For AMBULANCE the first candidate is the recommended team, not necessarily the fastest.
   - `RankedCandidate` gains `team` (`TeamAssignment`) and `selection_reason` (first only).
   - New `GET /api/v1/resources?at=` returns the roster and each team's `on_shift` at `at`.
+  - Amendment (2026-10-28): `AreaRuleOutcome` gains `margin_seconds`, the margin the rule used.
+    Every ranking (fire, police, both ambulance paths) orders candidates by the request's
+    `time_mode` totals, and on site versus drive uses the same totals. Team ranking estimates
+    every base with an eligible team (the shortlist is not cut by motion time).
+    `DispatchRankResponse.station_at_incident` and the `ambulance_base` / `hospital_ed` station
+    kinds are removed (the ETL keeps them only as internal OSM classifications); the off-network
+    message carries the on-foot limit and the dashboard shows it.
 - No eligible team is a 200 with `outcome = NO_ELIGIBLE_RESOURCE` and the exclusions; eligible
   teams that cannot reach the incident stay a 422 `NO_STATION_REACHABLE`.
 - Non-goals: no live availability or positions, no severity model (type is shown only), no

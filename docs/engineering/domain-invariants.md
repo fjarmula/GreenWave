@@ -4,7 +4,7 @@
 
 ER-GreenWave models emergency-vehicle routing and traffic-signal priority for analysis and demonstration. Signal states and green corridors are simulation state, not physical actuation. Never add controller protocols, live signal commands, deployment behavior, or safety claims without explicit requirements, authorization, and safety review. Clearly label simulated values so users cannot mistake them for verified physical states.
 
-Core capabilities are spatial ETL into a directed road graph, a 1 Hz simulation that calculates time to intersection and documented signal states, corridor batching/cascade behavior, and dispatcher telemetry over the architecture's WebSocket/SSE transport. Context is not permission to invent unspecified behavior.
+Core capabilities are spatial ETL into a directed road graph, a 1 Hz simulation that calculates time to intersection and documented signal states, corridor batching/cascade behavior, and dispatcher telemetry over SSE (the only streaming transport; there are no WebSockets). Context is not permission to invent unspecified behavior.
 
 The documented state sequence is `NORMAL` → `CLEARING` → `PRIORITY_GREEN` → `RECOVERY`. Confirm exact transitions, timing, and exceptions in `GreenWave_ARCHITECTURE.md` and existing code; do not invent them.
 

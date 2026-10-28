@@ -4,6 +4,7 @@
 - Date: 2026-10-25
 - Owners: @fjarmula @Piotrek406
 - Supersedes: None (amends ADR 0006 ranking step 6 and ADR 0009)
+- Amended (2026-10-28): `station_at_incident` is removed (it was always `null`); on site versus drive is decided on the request's `time_mode` totals.
 
 ## Context
 
