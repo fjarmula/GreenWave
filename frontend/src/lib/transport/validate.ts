@@ -21,6 +21,8 @@ import type {
   GeocodeResponse,
   GreenWaveMode,
   IntersectionState,
+  ItsRequestStatus,
+  ItsScenario,
   QualityStatus,
   RouteIntersection,
   SignalMovementKind,
@@ -86,6 +88,21 @@ const STATION_SOURCE_KINDS: Record<StationSourceKind, true> = {
   fire_volunteer: true,
   fire_other: true,
   police: true,
+};
+// Typed against the contract: a new enum value fails the type check, not the run.
+const ITS_SCENARIOS: Record<ItsScenario, true> = {
+  NOMINAL: true,
+  DELAYED: true,
+  REJECTED: true,
+  NO_FEEDBACK: true,
+};
+const ITS_REQUEST_STATUSES: Record<ItsRequestStatus, true> = {
+  REQUESTED: true,
+  ACCEPTED: true,
+  RELEASED: true,
+  REJECTED: true,
+  TIMED_OUT: true,
+  EXPIRED: true,
 };
 const STATION_ID = /^STN-[AFP]-\d{4}$/;
 const STREAM_EVENT_TYPES: Record<SimulationStreamEvent["event_type"], true> = {
@@ -255,27 +272,12 @@ export function parseStartResponse(value: unknown): SimulationStartResponse {
   snappedEndpoint(body.destination_snapped, "destination_snapped");
   optionalOnFootLeg(body.destination_on_foot, "destination_on_foot");
   member(GREEN_WAVE_MODES, body.green_wave_mode, "green_wave_mode");
-  member(
-    { NOMINAL: true, DELAYED: true, REJECTED: true, NO_FEEDBACK: true },
-    body.its_scenario ?? "NOMINAL",
-    "its_scenario",
-  );
+  member(ITS_SCENARIOS, body.its_scenario ?? "NOMINAL", "its_scenario");
   return { ...body, its_scenario: body.its_scenario ?? "NOMINAL" } as SimulationStartResponse;
 }
 
 function checkItsStatus(event: UnknownRecord, snapshot: boolean): void {
-  const status = member(
-    {
-      REQUESTED: true,
-      ACCEPTED: true,
-      RELEASED: true,
-      REJECTED: true,
-      TIMED_OUT: true,
-      EXPIRED: true,
-    },
-    event.status,
-    "status",
-  );
+  const status = member(ITS_REQUEST_STATUSES, event.status, "status");
   if (!snapshot && status === "REQUESTED") fail("status", "feedback status");
   const expected =
     status === "REJECTED"
@@ -297,7 +299,7 @@ export function parseComparisonStartResponse(value: unknown): ComparisonStartRes
   const body = record(value, "response");
   if (body.schema_version !== "1.0") fail("schema_version", '"1.0"');
   if (body.is_simulated !== true) fail("is_simulated", "true");
-  (["enabled", "disabled"] as const).forEach((key) => {
+  const parsedRun = (key: "enabled" | "disabled"): SimulationStartResponse => {
     let run: SimulationStartResponse;
     try {
       run = parseStartResponse(body[key]);
@@ -306,8 +308,14 @@ export function parseComparisonStartResponse(value: unknown): ComparisonStartRes
     }
     const mode = key === "enabled" ? "ENABLED" : "DISABLED";
     if (run.green_wave_mode !== mode) fail(`${key}.green_wave_mode`, `"${mode}"`);
-  });
-  return body as ComparisonStartResponse;
+    return run;
+  };
+  // The parsed members carry parseStartResponse's defaults (its_scenario).
+  return {
+    ...body,
+    enabled: parsedRun("enabled"),
+    disabled: parsedRun("disabled"),
+  } as ComparisonStartResponse;
 }
 
 function checkStreamEvent(
@@ -345,7 +353,7 @@ function checkStreamEvent(
         text(r.message_id, "message_id");
         nonNegative(r.submitted_at_simulated_sec, "submitted_at_simulated_sec");
         nonNegative(r.last_updated_at_simulated_sec, "last_updated_at_simulated_sec");
-        const seq = finite(r.last_feedback_sequence, "last_feedback_sequence");
+        const seq = finite(r.last_feedback_sequence ?? 0, "last_feedback_sequence");
         if (
           !Number.isInteger(seq) ||
           seq < 0 ||
@@ -451,7 +459,13 @@ export function parseStreamEvent(
     eventType === "SIMULATION_TICK"
       ? {
           ...value,
-          its_requests: value.its_requests ?? [],
+          // Contract defaults the backend may omit.
+          its_requests: ((value.its_requests ?? []) as UnknownRecord[]).map((r) => ({
+            ...r,
+            last_feedback_sequence: r.last_feedback_sequence ?? 0,
+            acknowledged_at_simulated_sec: r.acknowledged_at_simulated_sec ?? null,
+            reason: r.reason ?? null,
+          })),
           its_observed_at_simulated_sec: value.its_observed_at_simulated_sec ?? null,
         }
       : value
@@ -643,18 +657,20 @@ export function validateRank(body: unknown): DispatchRankResponse {
   const response = record(body, "response");
   if (response.schema_version !== "1.0") fail("schema_version", '"1.0"');
   snappedEndpoint(response.incident_snapped, "incident_snapped");
-  const candidates = list(response.candidates, "candidates");
+  // Normalised copies: an older backend omits on_site (ADR 0012); its candidates always drive.
+  const candidates = list(response.candidates, "candidates").map((value, index) => {
+    const candidate = record(value, `candidates[${index}]`);
+    const normalised: UnknownRecord = { ...candidate, on_site: candidate.on_site ?? false };
+    return normalised;
+  });
   if (candidates.length > 3) fail("candidates", "0 to 3 items");
-  candidates.forEach((value, index) => {
+  candidates.forEach((candidate, index) => {
     const path = `candidates[${index}]`;
-    const candidate = record(value, path);
     station(candidate.station, `${path}.station`);
     nonNegative(candidate.greenwave_seconds, `${path}.greenwave_seconds`);
     nonNegative(candidate.standard_seconds, `${path}.standard_seconds`);
     nonNegative(candidate.distance_m, `${path}.distance_m`);
     optionalOnFootLeg(candidate.on_foot, `${path}.on_foot`);
-    // Additive (ADR 0012): an older backend omits it; its candidates always drive.
-    if (candidate.on_site === undefined) candidate.on_site = false;
     bool(candidate.on_site, `${path}.on_site`);
     teamAssignment(candidate.team, `${path}.team`);
     if (candidate.selection_reason != null) {
@@ -662,5 +678,5 @@ export function validateRank(body: unknown): DispatchRankResponse {
     }
   });
   resourceFields(response, candidates.length);
-  return response as DispatchRankResponse;
+  return { ...response, candidates } as DispatchRankResponse;
 }

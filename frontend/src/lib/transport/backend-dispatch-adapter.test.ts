@@ -237,3 +237,45 @@ it("labels an HTTP 200 body rejected by validation as a failure with its origina
     },
   });
 });
+
+it("reports a timeout during the body read as a timeout", async () => {
+  const response = new Response("{}");
+  // Headers arrived; the body never finishes and fails once the request is aborted.
+  vi.spyOn(response, "text").mockImplementation(
+    () => new Promise((_resolve, reject) => setTimeout(() => reject(new Error("aborted")), 20)),
+  );
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => response),
+  );
+  const adapter = createBackendDispatchAdapter(BASE, { timeoutMilliseconds: 5 });
+
+  const error = await adapter.listStations().catch((e: unknown) => e);
+
+  expect(error).toBeInstanceOf(SimulationAdapterError);
+  expect((error as SimulationAdapterError).reason).toBe("timeout");
+});
+
+it("records a superseded request as cancelled, not failed", async () => {
+  const { diagnosticStore } = await import("@/lib/diagnostics/store");
+  diagnosticStore.clear();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      (_url: string, init: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () =>
+            reject(new DOMException("The operation was aborted.", "AbortError")),
+          );
+        }),
+    ),
+  );
+  const controller = new AbortController();
+  const pending = createBackendDispatchAdapter(BASE, OPTIONS)
+    .geocode("Floriańska", controller.signal)
+    .catch(() => undefined);
+  controller.abort();
+  await pending;
+
+  expect(diagnosticStore.getSnapshot().at(-1)?.outcome).toBe("cancelled");
+});

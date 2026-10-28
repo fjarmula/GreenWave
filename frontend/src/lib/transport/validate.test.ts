@@ -307,6 +307,31 @@ describe("ER Green Wave mode and signal phases", () => {
   });
 });
 
+describe("ITS request snapshots", () => {
+  it("accepts a snapshot without last_feedback_sequence and defaults it to 0", () => {
+    const parsed = parseStreamEvent(
+      wire(tickEventExample, (copy) => {
+        copy.its_requests = [
+          {
+            message_id: "MSG-ITS-1",
+            intersections_group: ["INT-0360"],
+            status: "REQUESTED",
+            submitted_at_simulated_sec: 3,
+            last_updated_at_simulated_sec: 3,
+          },
+        ];
+      }),
+      SIMULATION_ID,
+    );
+    if (parsed?.event_type !== "SIMULATION_TICK") throw new Error("tick dropped");
+    expect(parsed.its_requests?.[0]).toMatchObject({
+      last_feedback_sequence: 0,
+      acknowledged_at_simulated_sec: null,
+      reason: null,
+    });
+  });
+});
+
 describe("parseComparisonStartResponse", () => {
   const pair = {
     schema_version: "1.0",
@@ -316,6 +341,18 @@ describe("parseComparisonStartResponse", () => {
   };
   it("accepts both runs of the pair", () => {
     expect(parseComparisonStartResponse(wire(pair))).toEqual(pair);
+  });
+  it("defaults its_scenario for both members", () => {
+    const parsed = parseComparisonStartResponse(
+      wire(pair, (copy) => {
+        delete record(copy.enabled).its_scenario;
+        delete record(copy.disabled).its_scenario;
+      }),
+    );
+    expect([parsed.enabled.its_scenario, parsed.disabled.its_scenario]).toEqual([
+      "NOMINAL",
+      "NOMINAL",
+    ]);
   });
   it("rejects a member in the wrong mode", () => {
     expect(() =>
@@ -390,6 +427,12 @@ describe("on-foot legs", () => {
     expect(validateRank(onSite).candidates[0].on_site).toBe(true);
     record((onSite.candidates as unknown[])[0]).on_site = "yes";
     expect(() => validateRank(onSite)).toThrow("candidates[0].on_site");
+  });
+
+  it("does not mutate the rank body it validates", () => {
+    const body = record(wire(rank()));
+    validateRank(body);
+    expect(record((body.candidates as unknown[])[0])).not.toHaveProperty("on_site");
   });
 
   it("accepts a PRM base station", () => {

@@ -33,6 +33,12 @@ export function createBackendDispatchAdapter(
     signal?: AbortSignal,
   ): Promise<T> {
     signal?.throwIfAborted();
+    const timeoutError = () =>
+      new SimulationAdapterError({
+        kind: "network",
+        reason: "timeout",
+        message: `Dispatch backend at ${baseUrl} did not answer within ${Math.round(options.timeoutMilliseconds / 1000)} s`,
+      });
     const controller = new AbortController();
     const abort = () => controller.abort(signal?.reason);
     signal?.addEventListener("abort", abort, { once: true });
@@ -61,17 +67,13 @@ export function createBackendDispatchAdapter(
         json = await capture.read(response);
       } catch (error) {
         if (signal?.aborted) throw error;
-        throw new SimulationAdapterError(
-          controller.signal.aborted
-            ? {
-                kind: "network",
-                reason: "timeout",
-                message: `Dispatch backend at ${baseUrl} did not answer within ${Math.round(options.timeoutMilliseconds / 1000)} s`,
-              }
-            : { kind: "network", message: unreachableMessage(baseUrl) },
-        );
+        throw controller.signal.aborted
+          ? timeoutError()
+          : new SimulationAdapterError({ kind: "network", message: unreachableMessage(baseUrl) });
       }
       signal?.throwIfAborted();
+      // The body read swallows its own abort: a timeout there must not look like a bad body.
+      if (controller.signal.aborted) throw timeoutError();
       if (!response.ok) {
         const error = parseErrorResponse(json);
         throw new SimulationAdapterError({
@@ -94,7 +96,8 @@ export function createBackendDispatchAdapter(
         });
       }
     } finally {
-      capture.failed();
+      if (signal?.aborted) capture.cancelled();
+      else capture.failed(); // no-op once accepted or rejected
       clearTimeout(timer);
       signal?.removeEventListener("abort", abort);
     }

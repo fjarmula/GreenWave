@@ -60,3 +60,4 @@ export type ResourcesResponse = Schemas["ResourcesResponse"];
 export type ItsFeedbackEvent = Schemas["ItsFeedbackEvent"];
 export type ItsRequestSnapshot = Schemas["ItsRequestSnapshot"];
 export type ItsScenario = Schemas["ItsScenario"];
+export type ItsRequestStatus = Schemas["ItsRequestStatus"];
