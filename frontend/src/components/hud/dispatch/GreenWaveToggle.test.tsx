@@ -1,5 +1,5 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { describe, expect, it, vi } from "vitest";
 
 import { CascadeToggle } from "@/components/hud/dispatch/CascadeToggle";
@@ -90,4 +90,10 @@ describe("CascadeToggle", () => {
 
     expect(markup).not.toMatch(/role="switch"[^>]*disabled=""/);
   });
+});
+
+// These tests inspect callback props by calling controls directly, outside React rendering.
+vi.mock("@/components/language-provider", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/components/language-provider")>();
+  return { ...actual, useTranslation: () => ({ language: "en", t: <T,>(value: T) => value }) };
 });

@@ -2,7 +2,7 @@ import {
   startResponseExample,
   tickEventExample,
 } from "@/lib/transport/__fixtures__/architecture-examples";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { describe, expect, it, vi } from "vitest";
 
 import { KpiHeader } from "@/components/hud/KpiHeader";

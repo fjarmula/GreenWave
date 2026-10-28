@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -40,6 +41,7 @@ export function VehicleMarker({
   stale,
   animationMilliseconds,
 }: VehicleMarkerProps) {
+  const { t } = useTranslation();
   const markerRef = useRef<Marker | null>(null);
   const slideRef = useRef<MarkerSlide<[number, number]> | null>(null);
   const routeRef = useRef(routeGeometry);
@@ -92,11 +94,13 @@ export function VehicleMarker({
     element.style.opacity = stale ? "0.45" : "1";
     element.setAttribute(
       "aria-label",
-      stale
-        ? `Simulated ${name} position (last received, telemetry paused)`
-        : `Simulated ${name} position`,
+      t(
+        stale
+          ? `Simulated ${name} position (last received, telemetry paused)`
+          : `Simulated ${name} position`,
+      ),
     );
-  }, [map, visible, stale, vehicleType]);
+  }, [map, visible, stale, vehicleType, t]);
 
   const longitude = coordinates?.[0];
   const latitude = coordinates?.[1];

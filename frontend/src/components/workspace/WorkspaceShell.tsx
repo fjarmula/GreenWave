@@ -1,4 +1,6 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
+
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PanelRight } from "lucide-react";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
@@ -46,6 +48,7 @@ export function WorkspaceShell({
   defaultDetails?: boolean;
   provenance?: string;
 }) {
+  const { t } = useTranslation();
   const [details, setDetails] = useState(defaultDetails);
   const trigger = useRef<HTMLButtonElement>(null);
   const shell = useRef<HTMLElement>(null);
@@ -93,9 +96,9 @@ export function WorkspaceShell({
         data-sheet={sheet && phone && !panelHidden ? sheet.snap : undefined}
       >
         <div className="workspace-map-slot" data-map-slot>
-          {map}
+          {t(map)}
           <span className="workspace-provenance" data-map-occluder>
-            {provenance}
+            {t(provenance)}
           </span>
         </div>
         <WorkspaceHeader
@@ -107,30 +110,30 @@ export function WorkspaceShell({
                 <button
                   ref={trigger}
                   className="workspace-button"
-                  aria-label="Focus Mode"
+                  aria-label={t("Focus Mode")}
                   aria-pressed={!details}
                   aria-controls="workspace-inspector"
                   onClick={() => setDetails(!details)}
                 >
                   <PanelRight aria-hidden />
-                  <span className="workspace-button-label">Focus Mode</span>
+                  <span className="workspace-button-label">{t("Focus Mode")}</span>
                 </button>
               )}
             </>
           }
         >
-          {header}
+          {t(header)}
         </WorkspaceHeader>
-        <WorkspaceControls>{controls}</WorkspaceControls>
+        <WorkspaceControls>{t(controls)}</WorkspaceControls>
         {primaryAction && (
           <div ref={action} className="workspace-primary-action" data-map-occluder>
-            {primaryAction}
+            {t(primaryAction)}
           </div>
         )}
         {sheet && phone ? (
           <div id="workspace-inspector" hidden={panelHidden} inert={panelHidden}>
             <BottomSheet
-              label="Simulation details"
+              label={t("Simulation details")}
               snap={sheet.snap}
               onSnapChange={sheet.onSnapChange}
               collapsed={sheet.collapsed}
@@ -141,18 +144,18 @@ export function WorkspaceShell({
         ) : !hasPanel ? null : (
           <aside
             id="workspace-inspector"
-            aria-label="Simulation details"
+            aria-label={t("Simulation details")}
             className="workspace-inspector surface-glass"
             data-map-occluder
             hidden={panelHidden}
             inert={panelHidden}
           >
-            {inspector}
+            {t(inspector)}
           </aside>
         )}
         {status && (
           <div className="workspace-status" data-align={statusAlign} data-map-occluder>
-            {status}
+            {t(status)}
           </div>
         )}
       </main>

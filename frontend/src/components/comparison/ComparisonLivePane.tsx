@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 import { MapContainer } from "@/components/map/MapContainer";
 import { formatSignalDistance } from "@/lib/driver-presentation";
 import { cancelReasonLabel, vehicleSpeedPresentation } from "@/lib/simulation-copy";
@@ -24,6 +26,7 @@ export function ComparisonLivePane({
   /** Share of the route driven, 0–1 (from the race standing). */
   share: number;
 }) {
+  const { t } = useTranslation();
   const request = run.startRequest;
   const route = run.routeData;
   const speed = vehicleSpeedPresentation(run.simulationState, run.liveTelemetry);
@@ -34,7 +37,7 @@ export function ComparisonLivePane({
       className="comparison-pane"
       data-mode={mode}
       data-tick={run.lastTick}
-      aria-label={`${MODE_LABELS[mode]} live simulation`}
+      aria-label={t(`${MODE_LABELS[mode]} live simulation`)}
     >
       {request && (
         <MapContainer
@@ -53,28 +56,30 @@ export function ComparisonLivePane({
       <div className="comparison-pane-chips">
         <p className={`comparison-chip surface-glass ${MODE_TONES[mode]}`}>
           <span aria-hidden className="comparison-chip-dot" />
-          {MODE_LABELS[mode]}
+          {t(MODE_LABELS[mode])}
         </p>
         <p className="comparison-chip comparison-stat surface-glass">
           <span className="hud-value">
-            {speed.value}
-            <span className="text-muted-foreground"> km/h</span>
+            {t(speed.value)}
+            <span className="text-muted-foreground">{t(" km/h")}</span>
           </span>
           <span className="text-muted-foreground" aria-hidden>
-            ·
+            {t("·")}
           </span>
           <span className="hud-value">
-            {run.cancelReason
-              ? cancelReasonLabel(run.cancelReason)
-              : run.simulationState === "ERROR"
-                ? "Telemetry stopped"
-                : arrivalTimeSeconds(run) !== null
-                  ? "Arrived"
-                  : stale
-                    ? "Reconnecting…"
-                    : left === null
-                      ? "—"
-                      : `${formatSignalDistance(left)} left`}
+            {t(
+              run.cancelReason
+                ? cancelReasonLabel(run.cancelReason)
+                : run.simulationState === "ERROR"
+                  ? "Telemetry stopped"
+                  : arrivalTimeSeconds(run) !== null
+                    ? "Arrived"
+                    : stale
+                      ? "Reconnecting…"
+                      : left === null
+                        ? "—"
+                        : `${formatSignalDistance(left)} left`,
+            )}
           </span>
         </p>
       </div>

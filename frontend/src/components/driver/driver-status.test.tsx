@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { expect, it } from "vitest";
 import { DriverStatus } from "./DriverStatus";
 import { initialSimulationState } from "@/lib/simulation-state";

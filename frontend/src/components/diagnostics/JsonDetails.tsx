@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Braces, X } from "lucide-react";
@@ -36,15 +37,16 @@ export function formatJsonBody(body: string) {
 export type JsonInspection = { capture: DiagnosticCapture; title: string; description?: string };
 
 export function JsonInspectButton({ title, onClick }: { title: string; onClick: () => void }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
       className="json-inspect-button"
-      aria-label={`View JSON for ${title}`}
+      aria-label={t(`View JSON for ${title}`)}
       onClick={onClick}
     >
       <Braces size={14} aria-hidden />
-      View JSON
+      {t("View JSON")}
     </button>
   );
 }
@@ -66,6 +68,7 @@ function OpenJsonViewer({
   selection: JsonInspection;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const {
     capture: snapshot,
     title,
@@ -87,15 +90,17 @@ function OpenJsonViewer({
         <>
           <header className="json-dialog-header">
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Simulation payload · frozen snapshot</p>
+              <p className="text-xs text-muted-foreground">
+                {t("Simulation payload · frozen snapshot")}
+              </p>
               <h2 id={id} className="mt-1 text-lg font-semibold">
-                {title}
+                {t(title)}
               </h2>
             </div>
             <button
               type="button"
               className="workspace-button shrink-0"
-              aria-label="Close JSON viewer"
+              aria-label={t("Close JSON viewer")}
               onClick={() => dialog.current?.close()}
             >
               <X size={18} aria-hidden />
@@ -103,27 +108,31 @@ function OpenJsonViewer({
           </header>
           <div className="json-dialog-content">
             <p className="json-endpoint font-mono text-sm">
-              {snapshot.method} {snapshot.path}
+              {t(snapshot.method)} {t(snapshot.path)}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {snapshot.status !== undefined && `HTTP ${snapshot.status}`}
-              {snapshot.eventType && ` · ${snapshot.eventType}`}
-              {snapshot.validation &&
-                ` · ${snapshot.validation === "accepted" ? "Payload format valid" : "Payload format invalid"}`}
+              {t(snapshot.status !== undefined && `HTTP ${snapshot.status}`)}
+              {t(snapshot.eventType && ` · ${snapshot.eventType}`)}
+              {t(
+                snapshot.validation &&
+                  ` · ${snapshot.validation === "accepted" ? "Payload format valid" : "Payload format invalid"}`,
+              )}
             </p>
             {snapshot.eventType === "ITS_DISPATCH" && snapshot.validation !== "rejected" && (
               <p className="mt-3 text-sm text-muted-foreground">
-                Priority request submitted; awaiting controller feedback at this event’s simulated
-                time.
+                {t(
+                  "Priority request submitted; awaiting controller feedback at this event’s simulated time.",
+                )}
               </p>
             )}
             {snapshot.eventType === "ITS_FEEDBACK" && snapshot.validation !== "rejected" && (
               <p className="mt-3 text-sm text-muted-foreground">
-                The request outcome is in the status field. Signal colours are reported separately
-                in SIMULATION_TICK.
+                {t(
+                  "The request outcome is in the status field. Signal colours are reported separately in SIMULATION_TICK.",
+                )}
               </p>
             )}
-            <p className="mt-3 text-sm text-muted-foreground">{description}</p>
+            <p className="mt-3 text-sm text-muted-foreground">{t(description)}</p>
             <div className="json-dialog-actions">
               <button
                 type="button"
@@ -139,21 +148,25 @@ function OpenJsonViewer({
                   }
                 }}
               >
-                Copy {kind.toLowerCase()}
+                {t("Copy ")}
+                {t(kind.toLowerCase())}
               </button>
             </div>
             <p className="text-sm" role="status">
-              {copied}
+              {t(copied)}
             </p>
             {omitted ? (
               <p className="json-body-note">
-                Body unavailable: it exceeded the 2 MiB capture limit or could not be read. It has
-                not been truncated or reconstructed.
+                {t(
+                  "Body unavailable: it exceeded the 2 MiB capture limit or could not be read. It has not been truncated or reconstructed.",
+                )}
               </p>
             ) : body === undefined || body === "" ? (
-              <p className="json-body-note">No response body captured for this observation.</p>
+              <p className="json-body-note">
+                {t("No response body captured for this observation.")}
+              </p>
             ) : (
-              <pre className="json-body" tabIndex={0} aria-label={`${kind} body`}>
+              <pre className="json-body" tabIndex={0} aria-label={t(`${kind} body`)}>
                 <code>{formatted}</code>
               </pre>
             )}

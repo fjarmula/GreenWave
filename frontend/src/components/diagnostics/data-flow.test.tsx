@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { expect, it } from "vitest";
 import { DataFlowView } from "./DataFlowView";
 it("separates architecture from unobserved endpoints and synthetic activity", () => {

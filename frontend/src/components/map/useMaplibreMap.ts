@@ -1,3 +1,5 @@
+import { useTranslation } from "@/components/language-provider";
+import { localizeMapControls } from "./control-localization";
 import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import type { Map } from "maplibre-gl";
@@ -40,6 +42,7 @@ export function useMaplibreMap(
     controls?: boolean;
   } = {},
 ) {
+  const { language } = useTranslation();
   const mapElement = useRef<HTMLDivElement>(null);
   // Read once: the map is created a single time per container.
   const options = useRef({ interactive, controls });
@@ -122,6 +125,10 @@ export function useMaplibreMap(
   useEffect(() => {
     void swapRef.current?.to(theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (mapElement.current) localizeMapControls(mapElement.current, language);
+  }, [language, map, styleRevision]);
 
   return { mapElement, map, styleRevision };
 }

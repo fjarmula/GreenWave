@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { Radio } from "lucide-react";
 import type { ReactNode } from "react";
@@ -42,6 +43,7 @@ export function DispatchForm({
   onFocusMap,
   children,
 }: DispatchFormProps) {
+  const { t } = useTranslation();
   const { incident } = dispatch;
   const incidentKey = incident
     ? `${incident.label}@${incident.position.lat},${incident.position.lng}`
@@ -51,8 +53,8 @@ export function DispatchForm({
     <aside className="p-5 sm:p-6 lg:h-full lg:overflow-y-auto">
       <div className="hud-head">
         <div>
-          <p className="dashboard-eyebrow">Dispatch console / 01</p>
-          <h2 className="hud-title text-lg">Incident dispatch</h2>
+          <p className="dashboard-eyebrow">{t("Dispatch console / 01")}</p>
+          <h2 className="hud-title text-lg">{t("Incident dispatch")}</h2>
         </div>
         <span className="hud-icon tone-emergency">
           <Radio aria-hidden />
@@ -83,7 +85,7 @@ export function DispatchForm({
         previousRun={previousRun}
       />
 
-      {children && <div className="mt-6">{children}</div>}
+      {children && <div className="mt-6">{t(children)}</div>}
     </aside>
   );
 }

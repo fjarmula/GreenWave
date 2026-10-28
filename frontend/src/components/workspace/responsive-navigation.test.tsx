@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { expect, it, vi } from "vitest";
 import { ResponsiveNavigation } from "./ResponsiveNavigation";
 const viewport = vi.hoisted(() => ({ phone: false }));

@@ -1,4 +1,6 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
+
 import {
   useCallback,
   useId,
@@ -70,6 +72,7 @@ export function BottomSheet({
   /** Adds the minimized snap: only the `[data-sheet-peek]` row of the collapsed slot shows. */
   minimizable?: boolean;
 }) {
+  const { t } = useTranslation();
   const detailsId = useId();
   const sheet = useRef<HTMLElement>(null);
   const collapsedSlot = useRef<HTMLDivElement>(null);
@@ -218,7 +221,7 @@ export function BottomSheet({
   return (
     <section
       ref={sheet}
-      aria-label={label}
+      aria-label={t(label)}
       className="bottom-sheet surface-glass"
       data-map-occluder
       data-snap={snap}
@@ -242,7 +245,7 @@ export function BottomSheet({
         onPointerDown={onPointerDown}
         aria-expanded={snap === "expanded"}
         aria-controls={detailsId}
-        aria-label={GRABBER_LABEL[snap]}
+        aria-label={t(GRABBER_LABEL[snap])}
         onClick={(event) => {
           event.stopPropagation();
           onSnapChange(GRABBER_NEXT[snap]);
@@ -251,7 +254,7 @@ export function BottomSheet({
         <span aria-hidden />
       </button>
       <div ref={collapsedSlot} className="bottom-sheet-collapsed" inert={snap === "minimized"}>
-        {collapsed}
+        {t(collapsed)}
       </div>
       <div
         ref={details}
@@ -259,7 +262,7 @@ export function BottomSheet({
         className="bottom-sheet-expanded"
         inert={snap !== "expanded"}
       >
-        {expanded}
+        {t(expanded)}
       </div>
     </section>
   );

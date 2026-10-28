@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { CircleCheck, Navigation, Square, TriangleAlert } from "lucide-react";
 import { VehicleIcon } from "@/components/map/VehicleIcon";
@@ -55,6 +56,7 @@ type KpiHeaderProps = {
 };
 
 export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
+  const { t } = useTranslation();
   const {
     liveTelemetry,
     simulationState,
@@ -73,21 +75,21 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
   const stale = isTelemetryStale({ simulationState, connection });
   const elapsedLabel = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
   return (
-    <section aria-label="Simulation telemetry" className="kpi-panel hud-panel">
+    <section aria-label={t("Simulation telemetry")} className="kpi-panel hud-panel">
       <div className="kpi-vehicle">
         <span
-          title={VEHICLE_NAMES[vehicleType]}
+          title={t(VEHICLE_NAMES[vehicleType])}
           className={`grid size-9 shrink-0 place-items-center rounded-lg ${VEHICLE_ICON_COLORS[vehicleType]}`}
         >
           <VehicleIcon type={vehicleType} className="size-[1.125rem]" />
         </span>
         <div className="min-w-0">
-          <span className="sr-only">{VEHICLE_NAMES[vehicleType]} </span>
+          <span className="sr-only">{t(VEHICLE_NAMES[vehicleType])} </span>
           <strong
             className="hud-value block truncate text-sm font-semibold"
-            title={liveTelemetry?.ambulance.id}
+            title={t(liveTelemetry?.ambulance.id)}
           >
-            {liveTelemetry?.ambulance.id ?? "Awaiting telemetry"}
+            {t(liveTelemetry?.ambulance.id ?? "Awaiting telemetry")}
           </strong>
         </div>
         <div className="kpi-statuses">
@@ -99,9 +101,11 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
             ) : (
               <Navigation aria-hidden />
             )}
-            {OUTCOME_BADGES[status] ??
-              liveTelemetry?.ambulance.status.replaceAll("_", " ") ??
-              "WAITING"}
+            {t(
+              OUTCOME_BADGES[status] ??
+                liveTelemetry?.ambulance.status.replaceAll("_", " ") ??
+                "WAITING",
+            )}
           </span>
           {/* Always mounted so screen readers announce every change, including the first. */}
           <span role="status" className="contents">
@@ -111,8 +115,8 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
                   aria-hidden
                   className={`hud-dot ${connection === "open" ? "status-breathe" : ""}`}
                 />
-                <span className="sr-only">Simulation stream: </span>
-                {connectionLabel(connection)}
+                <span className="sr-only">{t("Simulation stream: ")}</span>
+                {t(connectionLabel(connection))}
               </span>
             )}
           </span>
@@ -120,37 +124,42 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
       </div>
 
       <div className="kpi-speed">
-        <span className="hud-stat-label">{stale ? "Last received speed" : "Speed"}</span>
-        <strong className="kpi-value hud-value mt-0.5 text-3xl font-semibold" title={speed.label}>
-          {speed.value}
-          <span className="kpi-unit"> km/h</span>
+        <span className="hud-stat-label">{t(stale ? "Last received speed" : "Speed")}</span>
+        <strong
+          className="kpi-value hud-value mt-0.5 text-3xl font-semibold"
+          title={t(speed.label)}
+        >
+          {t(speed.value)}
+          <span className="kpi-unit">{t(" km/h")}</span>
         </strong>
-        <span className="sr-only">{speed.label}</span>
+        <span className="sr-only">{t(speed.label)}</span>
       </div>
 
       <div className="kpi-saved">
         <span className="hud-stat-label">
-          {failedIts
-            ? "No completed savings"
-            : routeData?.green_wave_mode === "DISABLED"
-              ? "vs normal traffic"
-              : "Time saved"}
+          {t(
+            failedIts
+              ? "No completed savings"
+              : routeData?.green_wave_mode === "DISABLED"
+                ? "vs normal traffic"
+                : "Time saved",
+          )}
         </span>
         <strong
           className={`kpi-value hud-value mt-0.5 text-3xl font-semibold ${TIME_SAVED_STYLES[failedIts ? "neutral" : timeSavedTone(saved)]}`}
         >
-          {failedIts ? "—" : formatSignedSeconds(saved)}
+          {t(failedIts ? "—" : formatSignedSeconds(saved))}
         </strong>
       </div>
 
       <div className="kpi-elapsed">
-        <span className="hud-stat-label">Elapsed</span>
+        <span className="hud-stat-label">{t("Elapsed")}</span>
         <strong className="kpi-value hud-value mt-0.5 text-3xl font-semibold">
-          {elapsedLabel}
+          {t(elapsedLabel)}
         </strong>
         {routeData && (
           <span className="mt-1 block text-xs text-muted-foreground">
-            {greenWaveModeLabel(routeData.green_wave_mode)}
+            {t(greenWaveModeLabel(routeData.green_wave_mode))}
           </span>
         )}
         {onStop && simulationState === "RUNNING" && (
@@ -161,11 +170,11 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
             onClick={onStop}
             disabled={stopRequested}
             aria-busy={stopRequested}
-            aria-label="Stop simulation"
+            aria-label={t("Stop simulation")}
             className="hud-danger pressable mt-1.5 ml-auto min-h-9 w-auto px-3 text-xs lg:hidden"
           >
             <Square className="size-3 fill-current" aria-hidden />
-            {stopRequested ? "Stopping…" : "Stop"}
+            {t(stopRequested ? "Stopping…" : "Stop")}
           </button>
         )}
       </div>

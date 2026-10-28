@@ -1,4 +1,6 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
+
 import Link from "next/link";
 import { Activity, ArrowRight, ArrowUpRight, Info, Smartphone } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
@@ -29,29 +31,35 @@ const MODES = [
 const TOOL_ICONS = [Activity, Smartphone];
 
 export function HomeMenu() {
+  const { t } = useTranslation();
   const { startRequest, simulationState } = useSimulationState();
   return (
     <main className="home-main">
       <HomeBackdrop />
       <div className="home-scrim" aria-hidden />
       <p className="home-corridor-caption">
-        <strong>Aleje Trzech Wieszczów</strong>
-        <span>{corridor.signals.length} traffic signals · real geometry</span>
+        <strong>{t("Aleje Trzech Wieszczów")}</strong>
+        <span>
+          {t(corridor.signals.length)}
+          {t(" traffic signals · real geometry")}
+        </span>
         <span className="flex gap-3">
           <span className="home-legend">
-            <i className="bg-[var(--vehicle)]" /> Vehicle
+            <i className="bg-[var(--vehicle)]" />
+            {t(" Vehicle")}
           </span>
           <span className="home-legend">
-            <i className="bg-[var(--signal-green)]" /> Priority green
+            <i className="bg-[var(--signal-green)]" />
+            {t(" Priority green")}
           </span>
         </span>
-        <span>Simulated</span>
+        <span>{t("Simulated")}</span>
       </p>
 
       <WorkspaceHeader compact actions={<ThemeToggle />}>
         <p className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-          ER–GreenWave
-          <span className="font-normal text-muted-foreground">/ Kraków</span>
+          {t("ER–GreenWave")}
+          <span className="font-normal text-muted-foreground">{t("/ Kraków")}</span>
         </p>
       </WorkspaceHeader>
 
@@ -60,12 +68,13 @@ export function HomeMenu() {
           <section>
             <p className="home-eyebrow">
               <span aria-hidden className="size-1.5 rounded-full bg-go" />
-              Emergency corridor simulation
+              {t("Emergency corridor simulation")}
             </p>
-            <h1 className="home-title">A clearer path to the incident.</h1>
+            <h1 className="home-title">{t("A clearer path to the incident.")}</h1>
             <p className="home-lede">
-              Explore simulated emergency response, compare recorded runs and follow the data behind
-              the corridor.
+              {t(
+                "Explore simulated emergency response, compare recorded runs and follow the data behind the corridor.",
+              )}
             </p>
             {startRequest && (
               <Link
@@ -77,7 +86,9 @@ export function HomeMenu() {
                   className="home-return-dot"
                   data-live={simulationState === "RUNNING" || undefined}
                 />
-                Return to {simulationState.toLowerCase()} simulation
+                {t("Return to ")}
+                {t(simulationState.toLowerCase())}
+                {t(" simulation")}
                 <ArrowRight className="size-3.5" aria-hidden />
               </Link>
             )}
@@ -93,13 +104,16 @@ export function HomeMenu() {
                   <span className={`home-card-icon ${tone}`}>
                     <Icon className="size-[18px]" />
                   </span>
-                  <span className="home-card-number">0{i + 1}</span>
+                  <span className="home-card-number">
+                    {t("0")}
+                    {t(i + 1)}
+                  </span>
                   <div className="home-card-text">
                     <h2 className="flex items-center gap-1.5 font-semibold tracking-tight">
-                      {d.label}
+                      {t(d.label)}
                       <ArrowRight className="home-card-arrow size-4" aria-hidden />
                     </h2>
-                    <span className="home-card-copy">{copy}</span>
+                    <span className="home-card-copy">{t(copy)}</span>
                   </div>
                 </Link>
               );
@@ -107,13 +121,13 @@ export function HomeMenu() {
           </div>
 
           <div className="home-foot">
-            <nav className="flex flex-wrap gap-2" aria-label="Tools">
+            <nav className="flex flex-wrap gap-2" aria-label={t("Tools")}>
               {destinations.slice(4).map((d, i) => {
                 const Icon = TOOL_ICONS[i];
                 return (
                   <Link className="home-tool pressable" key={d.href} href={d.href}>
                     <Icon className="size-4 text-muted-foreground" aria-hidden />
-                    {d.label}
+                    {t(d.label)}
                     <ArrowUpRight className="size-3.5 text-muted-foreground" aria-hidden />
                   </Link>
                 );
@@ -122,14 +136,18 @@ export function HomeMenu() {
             <p className="home-disclaimer">
               <Info className="size-3.5 shrink-0" aria-hidden />
               <span>
-                Simulation only. Signal states and response times do not describe real traffic
-                conditions. Map data ©{" "}
+                {t(
+                  "Simulation only. Signal states and response times do not describe real traffic conditions. Map data ©",
+                )}
+                {t(" ")}
                 <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">
-                  OpenStreetMap contributors
-                </a>{" "}
-                (ODbL) · Street registry © City of Kraków (MSIP) ·{" "}
+                  {t("OpenStreetMap contributors")}
+                </a>
+                {t(" ")}
+                {t("(ODbL) · Street registry © City of Kraków (MSIP) ·")}
+                {t(" ")}
                 <a href="https://carto.com/attributions" target="_blank" rel="noopener">
-                  © CARTO
+                  {t("© CARTO")}
                 </a>
               </span>
             </p>

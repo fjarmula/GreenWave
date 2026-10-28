@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { ItsFeedbackStatus } from "./ItsFeedbackStatus";
 import { useState, type CSSProperties } from "react";
@@ -20,6 +21,7 @@ const KIND_LABELS: Record<RouteIntersection["kind"], string> = {
 };
 
 export function IntersectionList() {
+  const { t } = useTranslation();
   const [selection, setSelection] = useState<JsonInspection | null>(null);
   const { liveTelemetry, routeData, startRequest, itsRequests, simulationState } =
     useSimulationState();
@@ -64,9 +66,10 @@ export function IntersectionList() {
     <section className="hud-panel" style={tick as CSSProperties}>
       <div className="hud-head">
         <div>
-          <p className="dashboard-eyebrow">Corridor monitoring</p>
+          <p className="dashboard-eyebrow">{t("Corridor monitoring")}</p>
           <h2 className="hud-title">
-            Route signals <span className="font-normal text-muted-foreground">(TTI)</span>
+            {t("Route signals ")}
+            <span className="font-normal text-muted-foreground">{t("(TTI)")}</span>
           </h2>
         </div>
         <span className="hud-icon tone-beacon">
@@ -76,9 +79,9 @@ export function IntersectionList() {
 
       <div className="mt-3 space-y-3">
         {!intersections.length && (
-          <p className="text-xs text-muted-foreground">Waiting for simulation telemetry.</p>
+          <p className="text-xs text-muted-foreground">{t("Waiting for simulation telemetry.")}</p>
         )}
-        {upcoming.map(card)}
+        {t(upcoming.map(card))}
         {passed.length > 0 && (
           <details className="group">
             <summary className="flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md text-xs font-semibold text-muted-foreground select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
@@ -86,9 +89,11 @@ export function IntersectionList() {
                 className="size-3.5 transition-transform duration-200 ease-out group-open:rotate-90 motion-reduce:transition-none"
                 aria-hidden
               />
-              Passed ({passed.length})
+              {t("Passed (")}
+              {t(passed.length)}
+              {t(")")}
             </summary>
-            <div className="mt-2 space-y-3">{passed.map(card)}</div>
+            <div className="mt-2 space-y-3">{t(passed.map(card))}</div>
           </details>
         )}
       </div>
@@ -126,6 +131,7 @@ function IntersectionCard({
   onInspect?: () => void;
   detail: RouteIntersection | undefined;
 }) {
+  const { t } = useTranslation();
   const { id, name, state, tti_seconds: ttiSeconds, is_active_corridor: active } = intersection;
   const isCascade = isCascadeClearing(intersection);
   const detail = active ? "SIMULATED CORRIDOR ACTIVE" : "ORDINARY TRAFFIC REPORT";
@@ -135,18 +141,21 @@ function IntersectionCard({
       {/* A long state chip drops below the name instead of squeezing it on narrow panels. */}
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
         <div className="min-w-[min(9rem,100%)] flex-1">
-          <strong className="hud-value block text-xs font-semibold">{id}</strong>
+          <strong className="hud-value block text-xs font-semibold">{t(id)}</strong>
           <span className="mt-1 block text-xs text-muted-foreground">
-            {name ?? routeDetail?.name ?? "Unnamed intersection"}
+            {t(name ?? routeDetail?.name ?? "Unnamed intersection")}
           </span>
           {routeDetail && (
             <span className="mt-0.5 block text-2xs text-muted-foreground">
-              {KIND_LABELS[routeDetail.kind]} · {routeDetail.signal_count} signals
+              {t(KIND_LABELS[routeDetail.kind])}
+              {t(" · ")}
+              {t(routeDetail.signal_count)}
+              {t(" signals")}
             </span>
           )}
           {routeDetail?.needs_review && (
             <span className="mt-1 block text-2xs font-semibold text-caution">
-              Source data flagged for review
+              {t("Source data flagged for review")}
             </span>
           )}
         </div>
@@ -156,18 +165,19 @@ function IntersectionCard({
           }`}
         >
           <i className="hud-dot shadow-[0_0_8px_currentColor]" />
-          {state}
-          {isCascade && " · CASCADE"}
+          {t(state)}
+          {t(isCascade && " · CASCADE")}
         </span>
       </div>
       <div className="hud-value mt-3 flex flex-wrap items-center justify-between gap-2">
         <strong className="text-xs font-medium text-muted-foreground">
-          TTI{" "}
+          {t("TTI")}
+          {t(" ")}
           <span className="text-sm font-semibold text-foreground">
-            {ttiSeconds === null ? "Passed" : `${ttiSeconds}s`}
+            {t(ttiSeconds === null ? "Passed" : `${ttiSeconds}s`)}
           </span>
         </strong>
-        <span className="text-2xs text-muted-foreground">{detail}</span>
+        <span className="text-2xs text-muted-foreground">{t(detail)}</span>
       </div>
       <div className="intersection-tti">
         <span
@@ -179,7 +189,7 @@ function IntersectionCard({
       </div>
       {onInspect && (
         <div className="mt-2 flex justify-end">
-          <JsonInspectButton title={id} onClick={onInspect} />
+          <JsonInspectButton title={t(id)} onClick={onInspect} />
         </div>
       )}
     </article>

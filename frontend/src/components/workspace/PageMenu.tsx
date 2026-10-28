@@ -1,4 +1,6 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
+
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, Menu } from "lucide-react";
 import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation";
@@ -18,6 +20,7 @@ export function PageMenu({
   tools?: ReactNode;
   heading?: boolean;
 }) {
+  const { t } = useTranslation();
   const Heading = heading ? "h1" : "p";
   const [open, setOpen] = useState(false);
   const menuId = useId();
@@ -61,13 +64,13 @@ export function PageMenu({
           onClick={() => setOpen(!open)}
         >
           <Menu aria-hidden />
-          <span className="page-menu-label">{title}</span>
+          <span className="page-menu-label">{t(title)}</span>
           <ChevronDown aria-hidden className="page-menu-chevron" />
         </button>
       </Heading>
       <div id={menuId} className="page-menu surface-glass" hidden={!open}>
         <WorkspaceNavigation current={current} />
-        {tools && <div className="page-menu-tools">{tools}</div>}
+        {tools && <div className="page-menu-tools">{t(tools)}</div>}
       </div>
     </div>
   );

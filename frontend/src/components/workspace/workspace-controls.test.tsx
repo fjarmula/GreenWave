@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { expect, it, vi } from "vitest";
 import { WorkspaceControls } from "./WorkspaceControls";
 const follow = vi.hoisted(() => ({

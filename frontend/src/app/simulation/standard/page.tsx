@@ -1,6 +1,8 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/localized-metadata";
 import { SimulationWorkspace } from "@/components/workspace/SimulationWorkspace";
-export const metadata: Metadata = { title: "Standard traffic" };
+export async function generateMetadata() {
+  return pageMetadata("Standard traffic");
+}
 export default function Page() {
   return <SimulationWorkspace mode="DISABLED" />;
 }

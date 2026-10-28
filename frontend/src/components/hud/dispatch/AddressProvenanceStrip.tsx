@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 import { TriangleAlert } from "lucide-react";
 
 import { provenanceStrip } from "@/lib/address-provenance";
@@ -8,14 +10,15 @@ import type { IncidentAddress } from "@/lib/useIncidentDispatch";
  * status, not an alert: the user chose the address and nothing failed.
  */
 export function AddressProvenanceStrip({ address }: { address: IncidentAddress }) {
+  const { t } = useTranslation();
   const { lines, warning } = provenanceStrip(address);
   return (
     <div className="mt-1.5 space-y-1.5">
-      <p className="text-2xs text-muted-foreground">{lines.join(" · ")}</p>
+      <p className="text-2xs text-muted-foreground">{t(lines.join(" · "))}</p>
       {warning && (
         <p role="status" className="hud-alert tone-caution">
           <TriangleAlert aria-hidden />
-          {warning}
+          {t(warning)}
         </p>
       )}
     </div>

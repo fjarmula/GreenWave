@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 import { PLAYBACK_SPEEDS, type PlaybackSpeed } from "@/lib/playback-speed";
 
 type PlaybackSpeedSelectorProps = {
@@ -11,13 +13,14 @@ export function PlaybackSpeedSelector({
   onChange,
   label = "Playback speed",
 }: PlaybackSpeedSelectorProps) {
+  const { t } = useTranslation();
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
         <span id="playback-speed-label" className="dashboard-label">
-          {label}
+          {t(label)}
         </span>
-        <span className="text-2xs text-muted-foreground">simulated s per real s</span>
+        <span className="text-2xs text-muted-foreground">{t("simulated s per real s")}</span>
       </div>
       <div role="radiogroup" aria-labelledby="playback-speed-label" className="hud-segmented mt-2">
         {PLAYBACK_SPEEDS.map((speed) => (
@@ -29,7 +32,8 @@ export function PlaybackSpeedSelector({
             onClick={() => onChange(speed)}
             className="hud-segment hud-value"
           >
-            {speed}×
+            {t(speed)}
+            {t("×")}
           </button>
         ))}
       </div>

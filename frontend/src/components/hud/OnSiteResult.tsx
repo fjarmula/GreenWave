@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 import { Footprints, Settings2 } from "lucide-react";
 
 import { formatSignalDistance } from "@/lib/driver-presentation";
@@ -14,6 +16,7 @@ export function OnSiteResult({
   walk: OnFootLeg;
   onBackToSetup: () => void;
 }) {
+  const { t } = useTranslation();
   const duration = formatMinutesSeconds(Math.round(walk.seconds));
   const distance = formatSignalDistance(walk.distance_m);
   return (
@@ -23,15 +26,18 @@ export function OnSiteResult({
           <Footprints aria-hidden />
         </span>
         <div className="min-w-0">
-          <h2 className="hud-title">Incident at {station.name}</h2>
+          <h2 className="hud-title">
+            {t("Incident at ")}
+            {t(station.name)}
+          </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {`No drive needed. On foot about ${duration} (${distance}) · simulated estimate.`}
+            {t(`No drive needed. On foot about ${duration} (${distance}) · simulated estimate.`)}
           </p>
         </div>
       </div>
       <button type="button" onClick={onBackToSetup} className="hud-secondary pressable mt-4">
         <Settings2 aria-hidden />
-        Back to setup
+        {t("Back to setup")}
       </button>
     </section>
   );

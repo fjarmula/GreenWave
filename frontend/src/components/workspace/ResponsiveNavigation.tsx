@@ -1,4 +1,6 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
+
 import { PageMenu } from "@/components/workspace/PageMenu";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation";
@@ -16,19 +18,20 @@ export function ResponsiveNavigation({
   heading?: boolean;
   themeInMenu?: boolean;
 }) {
+  const { t } = useTranslation();
   const phone = useIsPhone();
   const Heading = heading ? "h1" : "p";
   return phone ? (
     <PageMenu
       current={current}
-      title={title}
+      title={t(title)}
       heading={heading}
       tools={themeInMenu ? <ThemeToggle /> : undefined}
     />
   ) : (
     <div className="min-w-0 flex-1">
       <WorkspaceNavigation current={current} />
-      <Heading className="sr-only">{title}</Heading>
+      <Heading className="sr-only">{t(title)}</Heading>
     </div>
   );
 }

@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 import { VEHICLE_TYPE_LABELS } from "@/lib/station-copy";
 import type { VehicleType } from "@/types/telemetry";
 
@@ -10,10 +12,11 @@ type VehicleTypeControlProps = {
 
 /** Segmented control; the type picks the candidate stations and the vehicle icon only. */
 export function VehicleTypeControl({ value, onChange }: VehicleTypeControlProps) {
+  const { t } = useTranslation();
   return (
     <div>
       <p id="vehicle-type-label" className="dashboard-label">
-        Vehicle type
+        {t("Vehicle type")}
       </p>
       <div role="group" aria-labelledby="vehicle-type-label" className="hud-segmented mt-2">
         {VEHICLE_TYPES.map((type) => (
@@ -24,7 +27,7 @@ export function VehicleTypeControl({ value, onChange }: VehicleTypeControlProps)
             onClick={() => onChange(type)}
             className="hud-segment"
           >
-            {VEHICLE_TYPE_LABELS[type]}
+            {t(VEHICLE_TYPE_LABELS[type])}
           </button>
         ))}
       </div>

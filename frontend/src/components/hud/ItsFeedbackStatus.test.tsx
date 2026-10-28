@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { it, expect } from "vitest";
 import { ItsFeedbackStatus } from "./ItsFeedbackStatus";
 import type { ItsRequestSnapshot } from "@/types/telemetry";

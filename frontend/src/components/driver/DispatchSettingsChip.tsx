@@ -1,4 +1,6 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
+
 import { Settings2, X } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { itsScenarioLabel } from "@/lib/driver-presentation";
@@ -7,6 +9,7 @@ import type { SimulationStartRequest } from "@/types/telemetry";
 
 /** The active run's settings, read-only: a running run never starts another. */
 export function DispatchSettingsChip({ request }: { request: SimulationStartRequest }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -33,20 +36,20 @@ export function DispatchSettingsChip({ request }: { request: SimulationStartRequ
         onClick={() => setOpen(!open)}
       >
         <Settings2 aria-hidden />
-        Dispatch settings
+        {t("Dispatch settings")}
       </button>
       <section
         id={panelId}
-        aria-label="Active run settings"
+        aria-label={t("Active run settings")}
         className="settings-popover surface-glass"
         hidden={!open}
       >
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">Dispatch settings</h2>
+          <h2 className="text-sm font-semibold">{t("Dispatch settings")}</h2>
           <button
             type="button"
             className="settings-popover-close pressable"
-            aria-label="Close dispatch settings"
+            aria-label={t("Close dispatch settings")}
             onClick={close}
           >
             <X aria-hidden />
@@ -54,32 +57,40 @@ export function DispatchSettingsChip({ request }: { request: SimulationStartRequ
         </div>
         <dl className="settings-popover-list">
           <div>
-            <dt>Vehicle</dt>
-            <dd>{VEHICLE_NAMES[request.vehicle_type]}</dd>
+            <dt>{t("Vehicle")}</dt>
+            <dd>{t(VEHICLE_NAMES[request.vehicle_type])}</dd>
           </div>
           <div>
-            <dt>Traffic density</dt>
-            <dd className="hud-value">{request.traffic_density_multiplier}×</dd>
+            <dt>{t("Traffic density")}</dt>
+            <dd className="hud-value">
+              {t(request.traffic_density_multiplier)}
+              {t("×")}
+            </dd>
           </div>
           <div>
-            <dt>Cascade corridor mode</dt>
-            <dd>{request.enable_cascade_mode ? "On" : "Off"}</dd>
+            <dt>{t("Cascade corridor mode")}</dt>
+            <dd>{t(request.enable_cascade_mode ? "On" : "Off")}</dd>
           </div>
           <div>
-            <dt>Simulated ITS feedback</dt>
+            <dt>{t("Simulated ITS feedback")}</dt>
             <dd>
-              {itsScenarioLabel(
-                request.green_wave_mode === "DISABLED" ? "NOMINAL" : request.its_scenario,
+              {t(
+                itsScenarioLabel(
+                  request.green_wave_mode === "DISABLED" ? "NOMINAL" : request.its_scenario,
+                ),
               )}
             </dd>
           </div>
           <div>
-            <dt>Playback speed</dt>
-            <dd className="hud-value">{request.playback_speed}×</dd>
+            <dt>{t("Playback speed")}</dt>
+            <dd className="hud-value">
+              {t(request.playback_speed)}
+              {t("×")}
+            </dd>
           </div>
         </dl>
         <p className="mt-3 text-xs text-muted-foreground">
-          Settings are locked while the simulated run is active. Stop the run to change them.
+          {t("Settings are locked while the simulated run is active. Stop the run to change them.")}
         </p>
       </section>
     </div>

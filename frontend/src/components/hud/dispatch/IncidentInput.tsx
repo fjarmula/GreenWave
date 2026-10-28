@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { LoaderCircle, MapPin, SearchX, TriangleAlert } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore, type KeyboardEvent } from "react";
@@ -34,6 +35,7 @@ export function IncidentInput({
   geocode,
   onIncidentChange,
 }: IncidentInputProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState(incident?.label ?? "");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -69,7 +71,7 @@ export function IncidentInput({
   return (
     <div>
       <label htmlFor="incident" className="dashboard-label">
-        Incident location
+        {t("Incident location")}
       </label>
       <div className="relative mt-2">
         <input
@@ -83,8 +85,8 @@ export function IncidentInput({
           aria-controls={LISTBOX_ID}
           aria-activedescendant={expanded && active >= 0 ? `${LISTBOX_ID}-${active}` : undefined}
           disabled={!geocodeEnabled}
-          placeholder={geocodeEnabled ? "Street and number, e.g. Floriańska 1" : "Click the map"}
-          value={query}
+          placeholder={t(geocodeEnabled ? "Street and number, e.g. Floriańska 1" : "Click the map")}
+          value={incident?.source === "map" && query === incident.label ? t(query) : query}
           onChange={(event) => {
             setQuery(event.target.value);
             setOpen(true);
@@ -134,9 +136,11 @@ export function IncidentInput({
       </div>
       <SearchFeedback feedback={geocodeEnabled ? searchFeedback(searchState, query) : null} />
       {incident?.address && <AddressProvenanceStrip address={incident.address} />}
-      <p className="mt-1.5 text-2xs text-muted-foreground">or click the map</p>
+      <p className="mt-1.5 text-2xs text-muted-foreground">{t("or click the map")}</p>
       {!geocodeEnabled && (
-        <p className="mt-1 text-2xs text-muted-foreground">Address search needs the backend</p>
+        <p className="mt-1 text-2xs text-muted-foreground">
+          {t("Address search needs the backend")}
+        </p>
       )}
     </div>
   );
@@ -144,6 +148,7 @@ export function IncidentInput({
 
 /** Inline outcome of the last address search: a failure is an alert, no match is a status. */
 export function SearchFeedback({ feedback }: { feedback: Feedback }) {
+  const { t } = useTranslation();
   if (feedback === "error") {
     return (
       <p
@@ -151,7 +156,7 @@ export function SearchFeedback({ feedback }: { feedback: Feedback }) {
         className="mt-1.5 flex items-center gap-1.5 text-2xs font-medium text-emergency"
       >
         <TriangleAlert className="size-3.5 shrink-0" aria-hidden />
-        Address search unavailable — click the map instead
+        {t("Address search unavailable — click the map instead")}
       </p>
     );
   }
@@ -162,7 +167,7 @@ export function SearchFeedback({ feedback }: { feedback: Feedback }) {
         className="mt-1.5 flex items-center gap-1.5 text-2xs font-medium text-caution"
       >
         <SearchX className="size-3.5 shrink-0" aria-hidden />
-        No matching address
+        {t("No matching address")}
       </p>
     );
   }

@@ -1,4 +1,6 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
+
 import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -32,6 +34,7 @@ export function DriverSetupCard({
   notices?: ReactNode;
   intent?: "simulation" | "comparison";
 }) {
+  const { t } = useTranslation();
   const { incident } = dispatch;
   const incidentKey = incident
     ? `${incident.label}@${incident.position.lat},${incident.position.lng}`
@@ -39,10 +42,13 @@ export function DriverSetupCard({
   return (
     <section aria-labelledby="driver-setup-title" className="driver-setup">
       <h2 id="driver-setup-title" className="driver-setup-title" data-sheet-peek>
-        Where’s the incident?
+        {t("Where’s the incident?")}
         {incident && (
           // Shown only on the minimized sheet, where the input below is out of view.
-          <span className="driver-setup-peek-incident"> · {incident.label}</span>
+          <span className="driver-setup-peek-incident">
+            {t(" · ")}
+            {t(incident.label)}
+          </span>
         )}
       </h2>
       <div className="mt-3 space-y-4">
@@ -62,13 +68,15 @@ export function DriverSetupCard({
         onClick={onToggleDetails}
       >
         <span className="min-w-0 py-2 text-left">
-          {settingsSummary(
-            intent === "comparison" ? { ...settings, greenWaveMode: "ENABLED" } : settings,
+          {t(
+            settingsSummary(
+              intent === "comparison" ? { ...settings, greenWaveMode: "ENABLED" } : settings,
+            ),
           )}
         </span>
         <ChevronRight aria-hidden data-open={detailsOpen} />
       </button>
-      {notices}
+      {t(notices)}
     </section>
   );
 }
@@ -77,8 +85,9 @@ export function DriverSetupCard({
 export function DriverSetupDetails(
   props: Omit<Parameters<typeof DispatchSettingsFields>[0], "layout" | "modeLocked">,
 ) {
+  const { t } = useTranslation();
   return (
-    <section aria-label="Dispatch settings" className="driver-setup-details">
+    <section aria-label={t("Dispatch settings")} className="driver-setup-details">
       <DispatchSettingsFields {...props} layout="sheet" modeLocked />
     </section>
   );

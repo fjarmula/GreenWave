@@ -1,4 +1,7 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
+
+import { LanguageSwitch } from "./LanguageSwitch";
 import Link from "next/link";
 import { GreenWaveMark } from "./GreenWaveMark";
 import { useEffect, useRef, type ReactNode } from "react";
@@ -19,6 +22,7 @@ export function WorkspaceHeader({
   /** Compact phone header paired with the shared page menu. */
   compact?: boolean;
 }) {
+  const { t } = useTranslation();
   const element = useRef<HTMLElement>(null);
   useEffect(() => {
     const header = element.current;
@@ -51,12 +55,15 @@ export function WorkspaceHeader({
       inert={hidden}
     >
       <div className="workspace-heading">
-        <Link href="/" aria-label="ER–GreenWave home" className="workspace-brand">
+        <Link href="/" aria-label={t("ER–GreenWave home")} className="workspace-brand">
           <GreenWaveMark className="size-8" />
         </Link>
-        {children}
+        {t(children)}
       </div>
-      <div className="workspace-actions">{actions}</div>
+      <div className="workspace-actions">
+        <LanguageSwitch />
+        {actions}
+      </div>
     </header>
   );
 }

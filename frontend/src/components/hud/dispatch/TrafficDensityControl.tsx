@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 import type { CSSProperties } from "react";
 
 type TrafficDensityControlProps = {
@@ -6,14 +8,16 @@ type TrafficDensityControlProps = {
 };
 
 export function TrafficDensityControl({ value, onChange }: TrafficDensityControlProps) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="mt-5 flex items-center justify-between gap-3">
         <label htmlFor="traffic-density" className="dashboard-label">
-          Traffic density multiplier
+          {t("Traffic density multiplier")}
         </label>
         <output htmlFor="traffic-density" className="hud-value text-base font-semibold">
-          {value.toFixed(1)}x
+          {t(value.toFixed(1))}
+          {t("x")}
         </output>
       </div>
       <input
@@ -28,8 +32,8 @@ export function TrafficDensityControl({ value, onChange }: TrafficDensityControl
         style={{ "--fill": `${((value - 1) / 2) * 100}%` } as CSSProperties}
       />
       <div className="mt-1 flex justify-between text-2xs text-muted-foreground tabular-nums">
-        <span>1.0x normal</span>
-        <span>3.0x peak</span>
+        <span>{t("1.0x normal")}</span>
+        <span>{t("3.0x peak")}</span>
       </div>
     </>
   );

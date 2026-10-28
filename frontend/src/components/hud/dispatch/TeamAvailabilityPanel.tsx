@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 import { hoursText } from "@/lib/team-dispatch-copy";
 import type { TeamAvailability } from "@/lib/useIncidentDispatch";
 import type { PrmTeam, ResourcesResponse } from "@/types/telemetry";
@@ -41,18 +43,19 @@ export function TeamAvailabilityPanel({
   availability,
   onChange,
 }: TeamAvailabilityPanelProps) {
+  const { t } = useTranslation();
   if (!resources) return null;
   return (
     <details className="mt-4 rounded-xl border border-border bg-card">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
-        <span className="dashboard-eyebrow">Team availability</span>
-        <span className="hud-chip tone-caution text-2xs">Simulated</span>
+        <span className="dashboard-eyebrow">{t("Team availability")}</span>
+        <span className="hud-chip tone-caution text-2xs">{t("Simulated")}</span>
       </summary>
       <div className="space-y-3 px-4 pb-4">
         {byBase(resources.teams).map(([base, teams]) => (
           <section key={base}>
-            <h3 className="truncate text-2xs font-semibold text-muted-foreground" title={base}>
-              {base}
+            <h3 className="truncate text-2xs font-semibold text-muted-foreground" title={t(base)}>
+              {t(base)}
             </h3>
             <ul className="mt-1 space-y-1">
               {teams.map((team) => {
@@ -60,19 +63,19 @@ export function TeamAvailabilityPanel({
                 return (
                   <li key={team.team_code} className="flex items-center justify-between gap-2">
                     <span className="flex min-w-0 items-center gap-1.5 text-xs">
-                      <span className="font-mono font-medium">{team.team_code}</span>
-                      <span className="hud-chip tone-muted text-2xs">{team.team_type}</span>
-                      <span className="text-2xs text-muted-foreground">{hoursText(team)}</span>
+                      <span className="font-mono font-medium">{t(team.team_code)}</span>
+                      <span className="hud-chip tone-muted text-2xs">{t(team.team_type)}</span>
+                      <span className="text-2xs text-muted-foreground">{t(hoursText(team))}</span>
                     </span>
                     {team.on_shift ? (
                       <button
                         type="button"
                         data-team-code={team.team_code}
-                        aria-label={`${team.team_code} status: ${LABELS[value]}`}
+                        aria-label={t(`${team.team_code} status: ${LABELS[value]}`)}
                         onClick={() => onChange(team.team_code, nextAvailability(value))}
                         className={`hud-chip ${TONES[value]} shrink-0 cursor-pointer text-2xs`}
                       >
-                        {LABELS[value]}
+                        {t(LABELS[value])}
                       </button>
                     ) : (
                       <button
@@ -81,7 +84,7 @@ export function TeamAvailabilityPanel({
                         disabled
                         className="hud-chip tone-muted shrink-0 text-2xs opacity-60"
                       >
-                        off shift
+                        {t("off shift")}
                       </button>
                     )}
                   </li>

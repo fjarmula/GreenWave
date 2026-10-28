@@ -1,4 +1,6 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
+
 import type { LiveComparisonState } from "@/lib/comparison/live-comparison";
 import { tickIntervalMilliseconds } from "@/lib/playback-speed";
 import { raceStanding, type ComparisonMode } from "@/lib/comparison/race";
@@ -22,6 +24,7 @@ export function ComparisonStage({
   onStop: () => void;
   onReset: () => void;
 }) {
+  const { t } = useTranslation();
   const route = state.runs.ENABLED.routeData;
   const standing = route ? raceStanding(route, state.runs) : null;
   const interrupted = Object.values(state.runs).some(
@@ -43,7 +46,7 @@ export function ComparisonStage({
         ))}
       </div>
       <div className="comparison-dock">
-        <div className="comparison-phone-toggle hud-segmented" role="group" aria-label="Map">
+        <div className="comparison-phone-toggle hud-segmented" role="group" aria-label={t("Map")}>
           {MODES.map((mode) => (
             <button
               key={mode}
@@ -52,7 +55,7 @@ export function ComparisonStage({
               aria-pressed={pane === mode}
               onClick={() => onPaneChange(mode)}
             >
-              {MODE_LABELS[mode]}
+              {t(MODE_LABELS[mode])}
             </button>
           ))}
         </div>
@@ -76,7 +79,7 @@ export function ComparisonStage({
         )}
         {state.reason && running && (
           <p role="alert" className="hud-alert tone-emergency">
-            {state.reason}
+            {t(state.reason)}
           </p>
         )}
       </div>

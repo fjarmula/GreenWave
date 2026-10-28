@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 import { ArrowDownRight, TimerReset } from "lucide-react";
 
 import { formatSignalDistance } from "@/lib/driver-presentation";
@@ -21,6 +23,7 @@ export function PreflightEstimate({
   incident,
   candidate = null,
 }: PreflightEstimateProps) {
+  const { t } = useTranslation();
   const metrics =
     isMockTransport && origin && incident
       ? estimateMockRoute(origin, incident, trafficDensity)
@@ -41,41 +44,47 @@ export function PreflightEstimate({
     <div className="mt-5 rounded-xl border border-border bg-muted/40 p-4">
       <div className="flex items-center gap-2 text-2xs font-medium">
         <TimerReset className="size-4 text-beacon" aria-hidden />
-        <span>{isMockTransport ? "Mock pre-flight estimation" : "Pre-flight estimation"}</span>
+        <span>{t(isMockTransport ? "Mock pre-flight estimation" : "Pre-flight estimation")}</span>
         <span className="hud-value ml-auto text-2xs font-semibold text-muted-foreground">
-          {hasEstimate ? "READY" : "SELECT INCIDENT"}
+          {t(hasEstimate ? "READY" : "SELECT INCIDENT")}
         </span>
       </div>
       {/* Never show mock numbers as backend ones, or backend ones as measured times. */}
       {onFoot && candidate?.on_site ? (
         // On site (ADR 0012): no drive and no simulated run, only the walk.
         <p className="mt-3 text-2xs text-muted-foreground">
-          {`On site · no drive · on foot about ${formatMinutesSeconds(Math.round(onFoot.seconds))} (${formatSignalDistance(onFoot.distance_m)}) · simulated estimate.`}
+          {t(
+            `On site · no drive · on foot about ${formatMinutesSeconds(Math.round(onFoot.seconds))} (${formatSignalDistance(onFoot.distance_m)}) · simulated estimate.`,
+          )}
         </p>
       ) : !hasEstimate ? (
         <p className="mt-3 text-2xs text-muted-foreground">
-          {isMockTransport
-            ? "Select an incident and wait for a station selection to see approximate mock estimates."
-            : "Select an incident and wait for a station selection to see the simulated run times."}
+          {t(
+            isMockTransport
+              ? "Select an incident and wait for a station selection to see approximate mock estimates."
+              : "Select an incident and wait for a station selection to see the simulated run times.",
+          )}
         </p>
       ) : (
         <>
           <p className="mt-3 text-2xs text-muted-foreground">
-            {isMockTransport
-              ? "Approximate (mock) · straight line, not a drivable route or a real response-time prediction."
-              : `Simulated runs from the selected station, without and with ER Green Wave${
-                  onFoot
-                    ? ` · drive only, plus ${formatMinutesSeconds(Math.round(onFoot.seconds))} on foot`
-                    : ""
-                }.`}
+            {t(
+              isMockTransport
+                ? "Approximate (mock) · straight line, not a drivable route or a real response-time prediction."
+                : `Simulated runs from the selected station, without and with ER Green Wave${
+                    onFoot
+                      ? ` · drive only, plus ${formatMinutesSeconds(Math.round(onFoot.seconds))} on foot`
+                      : ""
+                  }.`,
+            )}
           </p>
           <div className="my-4 grid grid-cols-2 gap-3">
             <Estimate
-              label="Standard time"
+              label={t("Standard time")}
               value={formatMinutesSeconds(Math.round(normalSeconds))}
             />
             <Estimate
-              label="GreenWave time"
+              label={t("GreenWave time")}
               value={formatMinutesSeconds(Math.round(greenwaveSeconds))}
               highlighted
             />
@@ -85,17 +94,19 @@ export function PreflightEstimate({
             <div className="flex items-center gap-2 border-t border-border pt-3 text-go">
               <ArrowDownRight className="size-4" aria-hidden />
               <strong className="text-xs font-semibold">
-                {Math.round((saved / normalSeconds) * 100)}% TIME SAVED
+                {t(Math.round((saved / normalSeconds) * 100))}
+                {t("% TIME SAVED")}
               </strong>
               <span className="hud-value ml-auto text-2xs text-muted-foreground">
-                −{formatMinutesSeconds(saved)}
+                {t("−")}
+                {t(formatMinutesSeconds(saved))}
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-2 border-t border-border pt-3 text-muted-foreground">
-              <strong className="text-xs font-semibold">NO TIME SAVED</strong>
+              <strong className="text-xs font-semibold">{t("NO TIME SAVED")}</strong>
               <span className="hud-value ml-auto text-2xs">
-                {saved === 0 ? formatMinutesSeconds(0) : `+${formatMinutesSeconds(-saved)}`}
+                {t(saved === 0 ? formatMinutesSeconds(0) : `+${formatMinutesSeconds(-saved)}`)}
               </span>
             </div>
           )}
@@ -114,13 +125,14 @@ function Estimate({
   value: string;
   highlighted?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div>
-      <span className="block text-2xs text-muted-foreground">{label}</span>
+      <span className="block text-2xs text-muted-foreground">{t(label)}</span>
       <strong
         className={`hud-value mt-1 block text-base font-semibold ${highlighted ? "text-go" : ""}`}
       >
-        {value}
+        {t(value)}
       </strong>
     </div>
   );

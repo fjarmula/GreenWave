@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { CircleCheck, CircleSlash, Radio, Settings2, Square, TriangleAlert } from "lucide-react";
 
@@ -25,6 +26,7 @@ type RunSummaryProps = {
 
 /** Live-run panel: Stop while running, then the completed summary, cancellation or lost stream. */
 export function RunSummary({ onBackToSetup, onStop, showStop = true }: RunSummaryProps) {
+  const { t } = useTranslation();
   const { simulationState, routeData, completion, cancelReason, error, stopRequested, stopError } =
     useSimulationState();
 
@@ -45,7 +47,7 @@ export function RunSummary({ onBackToSetup, onStop, showStop = true }: RunSummar
     return (
       <SummaryCard
         tone="neutral"
-        title="Simulation stopped"
+        title={t("Simulation stopped")}
         detail="You stopped the simulated run; the map keeps its last simulated position."
         onBackToSetup={onBackToSetup}
       />
@@ -56,7 +58,7 @@ export function RunSummary({ onBackToSetup, onStop, showStop = true }: RunSummar
     return (
       <SummaryCard
         tone="error"
-        title={SERVER_ERROR_COPY}
+        title={t(SERVER_ERROR_COPY)}
         detail="The simulation stopped on the server; the map shows the last received simulated position."
         onBackToSetup={onBackToSetup}
       />
@@ -67,7 +69,7 @@ export function RunSummary({ onBackToSetup, onStop, showStop = true }: RunSummar
     return (
       <SummaryCard
         tone="error"
-        title={cancelReasonLabel(cancelReason)}
+        title={t(cancelReasonLabel(cancelReason))}
         detail="Simulation ended. The map retains the last simulated controller report and vehicle position. Start a new run explicitly from dispatch setup."
         onBackToSetup={onBackToSetup}
       />
@@ -76,7 +78,7 @@ export function RunSummary({ onBackToSetup, onStop, showStop = true }: RunSummar
     return (
       <SummaryCard
         tone="neutral"
-        title={`Simulation cancelled · ${cancelReasonLabel(cancelReason)}`}
+        title={t(`Simulation cancelled · ${cancelReasonLabel(cancelReason)}`)}
         detail="Another dispatch started a new simulation (only one runs at a time). This tab will not restart it."
         onBackToSetup={onBackToSetup}
       />
@@ -87,7 +89,7 @@ export function RunSummary({ onBackToSetup, onStop, showStop = true }: RunSummar
     return (
       <SummaryCard
         tone="error"
-        title={describeSimulationError(error, getFrontendConfig().apiBaseUrl)}
+        title={t(describeSimulationError(error, getFrontendConfig().apiBaseUrl))}
         detail="Telemetry stopped; the map shows the last received simulated position."
         onBackToSetup={onBackToSetup}
       />
@@ -107,6 +109,7 @@ function RunningRunControls({
   stopError: string | null;
   onStop: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="hud-panel">
       <div className="flex items-start gap-3">
@@ -114,16 +117,17 @@ function RunningRunControls({
           <Radio aria-hidden />
         </span>
         <div className="min-w-0">
-          <h2 className="hud-title">Simulation running</h2>
+          <h2 className="hud-title">{t("Simulation running")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Stop ends the simulated run; you can then return to dispatch setup.
+            {t("Stop ends the simulated run; you can then return to dispatch setup.")}
           </p>
         </div>
       </div>
       {stopError && (
         <p role="alert" className="hud-alert tone-emergency mt-3">
           <TriangleAlert aria-hidden />
-          Could not stop the simulation: {stopError}
+          {t("Could not stop the simulation: ")}
+          {t(stopError)}
         </p>
       )}
       <button
@@ -135,7 +139,7 @@ function RunningRunControls({
         className="hud-danger pressable mt-4 hidden lg:flex"
       >
         <Square className="size-3.5 fill-current" aria-hidden />
-        {stopRequested ? "Stopping…" : "Stop simulation"}
+        {t(stopRequested ? "Stopping…" : "Stop simulation")}
       </button>
     </section>
   );
@@ -151,12 +155,13 @@ export function FinishedRunSummary({
   completion: SimulationCompletedEvent;
   onBackToSetup: () => void;
 }) {
+  const { t } = useTranslation();
   const [total, ...details] = summarizeFinishedRun(route, completion.kpi_metrics);
   const savedTone = SAVED_VALUE_TONES[timeSavedTone(completion.kpi_metrics.current_time_saved_sec)];
   return (
     <SummaryCard
       tone="success"
-      title="Simulated run completed"
+      title={t("Simulated run completed")}
       detail={
         route.destination_on_foot
           ? "The simulated vehicle arrived at the access point and every simulated signal is back to NORMAL. The remaining walk is an estimate. Simulated times, not a real-world measurement."
@@ -166,12 +171,12 @@ export function FinishedRunSummary({
     >
       <dl className="mt-3 grid grid-cols-2 gap-3">
         <div className="col-span-2 rounded-lg border border-go/25 bg-go/8 px-3 py-2.5">
-          <dt className="hud-stat-label">{total.label}</dt>
-          <dd className="hud-value mt-1 text-3xl font-semibold">{total.value}</dd>
+          <dt className="hud-stat-label">{t(total.label)}</dt>
+          <dd className="hud-value mt-1 text-3xl font-semibold">{t(total.value)}</dd>
         </div>
         {details.map(({ label, value }) => (
           <div key={label}>
-            <dt className="hud-stat-label">{label}</dt>
+            <dt className="hud-stat-label">{t(label)}</dt>
             <dd
               className={[
                 "hud-value mt-1 text-sm font-semibold",
@@ -180,7 +185,7 @@ export function FinishedRunSummary({
                 .filter(Boolean)
                 .join(" ")}
             >
-              {value}
+              {t(value)}
             </dd>
           </div>
         ))}
@@ -208,6 +213,7 @@ function SummaryCard({
   onBackToSetup: () => void;
   children?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   const { icon: Icon, className } = TONES[tone];
   return (
     <section
@@ -219,14 +225,14 @@ function SummaryCard({
           <Icon aria-hidden />
         </span>
         <div className="min-w-0">
-          <h2 className="hud-title">{title}</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
+          <h2 className="hud-title">{t(title)}</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t(detail)}</p>
         </div>
       </div>
-      <div>{children}</div>
+      <div>{t(children)}</div>
       <button type="button" onClick={onBackToSetup} className="hud-secondary pressable mt-4">
         <Settings2 aria-hidden />
-        Back to dispatch setup
+        {t("Back to dispatch setup")}
       </button>
     </section>
   );

@@ -1,3 +1,7 @@
+import { cookies } from "next/headers";
+import { LanguageMetadata } from "@/components/language-metadata";
+import { LanguageProvider } from "@/components/language-provider";
+import { LANGUAGE_COOKIE, resolveLanguage } from "@/lib/localization";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
@@ -34,13 +38,14 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: { default: "ER-GreenWave", template: "%s · ER-GreenWave" },
   description:
-    "Proof-of-concept dispatcher dashboard for emergency-vehicle green corridors in Kraków (simulated).",
+    "Symulacyjny panel dyspozytorski zielonych korytarzy dla pojazdów ratunkowych w Krakowie.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const language = resolveLanguage((await cookies()).get(LANGUAGE_COOKIE)?.value);
   return (
     <html
-      lang="en"
+      lang={language}
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
@@ -51,13 +56,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
-          <SimulationProvider>
-            <SimulationRuntime>
-              <ScenarioProvider>
-                <ComparisonProvider>{children}</ComparisonProvider>
-              </ScenarioProvider>
-            </SimulationRuntime>
-          </SimulationProvider>
+          <LanguageProvider initialLanguage={language}>
+            <LanguageMetadata />
+            <SimulationProvider>
+              <SimulationRuntime>
+                <ScenarioProvider>
+                  <ComparisonProvider>{children}</ComparisonProvider>
+                </ScenarioProvider>
+              </SimulationRuntime>
+            </SimulationProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>
