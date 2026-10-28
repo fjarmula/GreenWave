@@ -312,10 +312,21 @@ async def test_every_simulated_second_is_streamed_whatever_the_playback_speed(mo
     assert ticks == list(range(1, len(ticks) + 1))
     for playback in (2, 5, 10):
         events, sleeps = await _stream_at(playback, mode)
-        assert events == baseline
+        # Only the ITS arrival estimate is wall-clock, so it alone depends on the speed.
+        assert _without_arrival(events) == _without_arrival(baseline)
         assert sleeps
         assert all(seconds <= 1 / playback for seconds in sleeps)
         assert max(sleeps) == pytest.approx(1 / playback, abs=0.01)
+
+
+def _without_arrival(events: list[dict[str, object]]) -> list[dict[str, object]]:
+    def strip(event: dict[str, object]) -> dict[str, object]:
+        payload = event.get("payload")
+        if not isinstance(payload, dict):
+            return event
+        return {**event, "payload": {**payload, "expected_arrival_utc": None}}
+
+    return [strip(e) for e in events]
 
 
 def _limited(manager: SessionManager, limit: int) -> SessionManager:

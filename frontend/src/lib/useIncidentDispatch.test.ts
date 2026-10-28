@@ -7,9 +7,9 @@ import {
   DENSITY_RERANK_DELAY_MS,
   describeRankError,
   pinnedIncident,
-  selectedCandidate,
   type Incident,
 } from "@/lib/useIncidentDispatch";
+import { pageCandidate } from "@/lib/station-choice";
 import { RESOURCES } from "@/lib/transport/__fixtures__/team-dispatch";
 import type { DispatchRankRequest, DispatchRankResponse } from "@/types/telemetry";
 
@@ -38,8 +38,8 @@ function deferredAdapter(resources = true) {
   return { adapter, calls, resourceCalls };
 }
 
-/** Tuesday 27 October 2026, 21:03 local time. */
-const NOW = () => new Date(2026, 9, 27, 21, 3, 30);
+/** Tuesday 27 October 2026, 21:03 Kraków time. */
+const NOW = () => new Date("2026-10-27T20:03:30Z");
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -57,7 +57,7 @@ const ranking = (stationId: string): DispatchRankResponse => ({
       station: {
         station_id: stationId,
         vehicle_type: "AMBULANCE",
-        source_kind: "ambulance_base",
+        source_kind: "prm_base",
         name: stationId,
         position: { lat: 50, lng: 19.9 },
       },
@@ -67,7 +67,6 @@ const ranking = (stationId: string): DispatchRankResponse => ({
       on_site: false,
     },
   ],
-  station_at_incident: null,
   scenario_time: "2026-10-27T12:00:00",
   outcome: "OK",
   incident_area: null,
@@ -80,7 +79,7 @@ const candidate = (stationId: string, seconds: number) => ({
   station: {
     station_id: stationId,
     vehicle_type: "AMBULANCE" as const,
-    source_kind: "ambulance_base" as const,
+    source_kind: "prm_base" as const,
     name: stationId,
     position: { lat: 50, lng: 19.9 },
   },
@@ -126,6 +125,7 @@ describe("createIncidentDispatch", () => {
       scenario_time: "2026-10-27T21:00",
       time_mode: "ENABLED",
       availability: {},
+      resource_aware: true,
     });
     expect(dispatch.getState().rankStatus).toBe("ready");
     expect(dispatch.getState().ranking?.candidates[0].station.station_id).toBe("STN-A-0001");
@@ -217,6 +217,42 @@ describe("createIncidentDispatch", () => {
       expect(dispatch.getState().trafficDensity).toBe(3);
     });
 
+    it("starts at the given density", () => {
+      const { adapter, calls } = deferredAdapter();
+      const dispatch = createIncidentDispatch(adapter, NOW, { trafficDensity: 1.5 });
+
+      dispatch.setIncident(incident(50.01));
+
+      expect(calls[0].request.traffic_density_multiplier).toBe(1.5);
+    });
+
+    it("marks the ranking loading as soon as the density changes, keeping the pick", async () => {
+      const { adapter, calls } = deferredAdapter();
+      const dispatch = createIncidentDispatch(adapter);
+      dispatch.setIncident(incident(50.01));
+      calls[0].resolve(threeStations);
+      await settle();
+      dispatch.selectStation("B");
+
+      dispatch.setTrafficDensity(2);
+
+      expect(dispatch.getState().rankStatus).toBe("loading");
+      expect(dispatch.getState().selectedStationId).toBe("B");
+    });
+
+    it("ignores a response for the old density that settles during the debounce", async () => {
+      const { adapter, calls } = deferredAdapter();
+      const dispatch = createIncidentDispatch(adapter);
+      dispatch.setIncident(incident(50.01));
+
+      dispatch.setTrafficDensity(2);
+      calls[0].resolve(ranking("STN-A-0001"));
+      await settle();
+
+      expect(dispatch.getState().rankStatus).toBe("loading");
+      expect(calls[0].signal?.aborted).toBe(true);
+    });
+
     it("ranks once for a slider drag, with the last density", async () => {
       const { adapter, calls } = deferredAdapter();
       const dispatch = createIncidentDispatch(adapter);
@@ -289,23 +325,25 @@ describe("createIncidentDispatch", () => {
     expect(dispatch.getState()).toMatchObject({ vehicleType: "POLICE_CAR", rankStatus: "idle" });
   });
 
-  it.each([
-    ["DESTINATION_OFF_NETWORK", "No vehicle access within 800 m of this location"],
-    ["NO_STATION_REACHABLE", "No station of this type can reach this location"],
-  ] as const)("test_error_copy: %s", async (code, copy) => {
-    const { adapter, calls } = deferredAdapter();
-    const dispatch = createIncidentDispatch(adapter);
+  it.each([["NO_STATION_REACHABLE", "No station of this type can reach this location"]] as const)(
+    "test_error_copy: %s",
+    async (code, copy) => {
+      const { adapter, calls } = deferredAdapter();
+      const dispatch = createIncidentDispatch(adapter);
 
-    dispatch.setIncident(incident(50.01));
-    calls[0].reject(new SimulationAdapterError({ kind: "http", status: 422, code, message: "x" }));
-    await flush();
+      dispatch.setIncident(incident(50.01));
+      calls[0].reject(
+        new SimulationAdapterError({ kind: "http", status: 422, code, message: "x" }),
+      );
+      await flush();
 
-    expect(dispatch.getState()).toMatchObject({
-      rankStatus: "error",
-      rankError: copy,
-      ranking: null,
-    });
-  });
+      expect(dispatch.getState()).toMatchObject({
+        rankStatus: "error",
+        rankError: copy,
+        ranking: null,
+      });
+    },
+  );
 
   it("shows the transport message for other failures", async () => {
     const { adapter, calls } = deferredAdapter();
@@ -342,7 +380,7 @@ describe("createIncidentDispatch", () => {
     await flush();
 
     expect(dispatch.getState().selectedStationId).toBeNull();
-    expect(selectedCandidate(dispatch.getState())?.station.station_id).toBe("A");
+    expect(pageCandidate(dispatch.getState(), "BOTH")?.station.station_id).toBe("A");
   });
 
   it("selects another candidate", async () => {
@@ -355,7 +393,7 @@ describe("createIncidentDispatch", () => {
     dispatch.selectStation("B");
 
     expect(dispatch.getState().selectedStationId).toBe("B");
-    expect(selectedCandidate(dispatch.getState())?.station.station_id).toBe("B");
+    expect(pageCandidate(dispatch.getState(), "BOTH")?.station.station_id).toBe("B");
   });
 
   it("ignores unknown station ids", async () => {
@@ -398,9 +436,10 @@ describe("createIncidentDispatch", () => {
 
   it("falls back to the fastest", () => {
     expect(
-      selectedCandidate({ ranking: threeStations, selectedStationId: "gone" })?.station.station_id,
+      pageCandidate({ ranking: threeStations, selectedStationId: "gone" }, "BOTH")?.station
+        .station_id,
     ).toBe("A");
-    expect(selectedCandidate({ ranking: null, selectedStationId: null })).toBeNull();
+    expect(pageCandidate({ ranking: null, selectedStationId: null }, "BOTH")).toBeNull();
   });
 
   it("dispose aborts the request in flight", () => {
@@ -425,14 +464,16 @@ describe("pinnedIncident", () => {
 });
 
 describe("describeRankError", () => {
-  it("explains an incident beyond walking reach of any vehicle access", () => {
+  it("shows the backend's walking limit for an incident beyond reach of any vehicle access", () => {
     const error = new SimulationAdapterError({
       kind: "http",
       status: 422,
       code: "DESTINATION_OFF_NETWORK",
-      message: "Incident is farther than 800 m on foot from any vehicle access point",
+      message: "Incident is farther than 650 m on foot from any vehicle access point",
     });
-    expect(describeRankError(error)).toBe("No vehicle access within 800 m of this location");
+    expect(describeRankError(error)).toBe(
+      "Incident is farther than 650 m on foot from any vehicle access point",
+    );
   });
 });
 
@@ -537,6 +578,35 @@ describe("scenario time and team availability (ADR 0014)", () => {
     expect(calls[0].request.availability).toEqual({});
     dispatch.setTeamAvailability("K01 008", "busy");
     expect(calls).toHaveLength(1);
+  });
+
+  it("re-ranks without resource awareness, resetting the pick and keeping overrides", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter, NOW);
+    expect(dispatch.getState().resourceAware).toBe(true);
+    dispatch.setTeamAvailability("K01 176", "busy");
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(threeStations);
+    await flush();
+    dispatch.selectStation("B");
+
+    dispatch.setResourceAware(false);
+    dispatch.setResourceAware(false);
+
+    expect(calls).toHaveLength(2);
+    expect(calls[1].request.resource_aware).toBe(false);
+    expect(dispatch.getState().selectedStationId).toBeNull();
+    expect(dispatch.getState().availability).toEqual({ "K01 176": "busy" });
+  });
+
+  it("remembers resource awareness without an incident", () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter, NOW);
+
+    dispatch.setResourceAware(false);
+    expect(calls).toHaveLength(0);
+    dispatch.setIncident(incident(50.01));
+    expect(calls[0].request.resource_aware).toBe(false);
   });
 
   it("re-ranks on a time-mode change, keeping the pick", async () => {

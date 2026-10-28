@@ -27,7 +27,6 @@ const RANK: DispatchRankResponse = {
       on_site: false,
     },
   ],
-  station_at_incident: null,
   scenario_time: "2026-10-27T12:00:00",
   outcome: "OK",
   incident_area: null,
@@ -98,6 +97,7 @@ describe("createBackendDispatchAdapter", () => {
       traffic_density_multiplier: 1,
       time_mode: "ENABLED" as const,
       availability: {},
+      resource_aware: true,
     };
 
     await expect(adapter.rank(request)).resolves.toEqual(RANK);
@@ -112,7 +112,10 @@ describe("createBackendDispatchAdapter", () => {
     ["four candidates", { ...RANK, candidates: Array(4).fill(RANK.candidates[0]) }],
     [
       "an unknown vehicle type",
-      { ...RANK, station_at_incident: { ...STATION, vehicle_type: "TANK" } },
+      {
+        ...RANK,
+        candidates: [{ ...RANK.candidates[0], station: { ...STATION, vehicle_type: "TANK" } }],
+      },
     ],
     ["a missing time", { ...RANK, candidates: [{ station: STATION, distance_m: 1 }] }],
   ])("rejects a ranking with %s", async (_name, body) => {
@@ -124,6 +127,7 @@ describe("createBackendDispatchAdapter", () => {
         traffic_density_multiplier: 1,
         time_mode: "ENABLED",
         availability: {},
+        resource_aware: true,
       })
       .catch((e) => e);
     expect(error).toBeInstanceOf(SimulationAdapterError);
@@ -141,6 +145,7 @@ describe("createBackendDispatchAdapter", () => {
           traffic_density_multiplier: 1,
           time_mode: "ENABLED",
           availability: {},
+          resource_aware: true,
         })
         .catch((e) => e);
       expect(error).toBeInstanceOf(SimulationAdapterError);
@@ -203,6 +208,7 @@ it("captures the full wire envelope and error JSON without changing validation",
     traffic_density_multiplier: 1,
     time_mode: "ENABLED" as const,
     availability: {},
+    resource_aware: true,
   };
   await expect(adapter.rank(request)).rejects.toBeInstanceOf(SimulationAdapterError);
   expect(diagnosticStore.getSnapshot().at(-1)).toMatchObject({
@@ -230,4 +236,46 @@ it("labels an HTTP 200 body rejected by validation as a failure with its origina
       responseBody: JSON.stringify({ schema_version: "1.0", stations: "invalid" }),
     },
   });
+});
+
+it("reports a timeout during the body read as a timeout", async () => {
+  const response = new Response("{}");
+  // Headers arrived; the body never finishes and fails once the request is aborted.
+  vi.spyOn(response, "text").mockImplementation(
+    () => new Promise((_resolve, reject) => setTimeout(() => reject(new Error("aborted")), 20)),
+  );
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => response),
+  );
+  const adapter = createBackendDispatchAdapter(BASE, { timeoutMilliseconds: 5 });
+
+  const error = await adapter.listStations().catch((e: unknown) => e);
+
+  expect(error).toBeInstanceOf(SimulationAdapterError);
+  expect((error as SimulationAdapterError).reason).toBe("timeout");
+});
+
+it("records a superseded request as cancelled, not failed", async () => {
+  const { diagnosticStore } = await import("@/lib/diagnostics/store");
+  diagnosticStore.clear();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      (_url: string, init: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () =>
+            reject(new DOMException("The operation was aborted.", "AbortError")),
+          );
+        }),
+    ),
+  );
+  const controller = new AbortController();
+  const pending = createBackendDispatchAdapter(BASE, OPTIONS)
+    .geocode("Floriańska", controller.signal)
+    .catch(() => undefined);
+  controller.abort();
+  await pending;
+
+  expect(diagnosticStore.getSnapshot().at(-1)?.outcome).toBe("cancelled");
 });

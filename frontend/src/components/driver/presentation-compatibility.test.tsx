@@ -19,6 +19,7 @@ const dispatch: IncidentDispatch = {
   selectedStationId: null,
   scenarioTime: "2026-10-27T12:00",
   availability: {},
+  resourceAware: true,
   rankTimeMode: "ENABLED",
   resources: null,
   setVehicleType: () => {},
@@ -27,6 +28,7 @@ const dispatch: IncidentDispatch = {
   selectStation: () => {},
   setScenarioTime: () => {},
   setTeamAvailability: () => {},
+  setResourceAware: () => {},
   setRankTimeMode: () => {},
 };
 const settings = { ...DEFAULT_DISPATCH_SETTINGS, itsScenario: "REJECTED" as const };
@@ -138,10 +140,6 @@ it("shows the configured comparison feedback after visiting standard traffic", (
       settings={{ ...settings, greenWaveMode: "DISABLED" }}
       detailsOpen={false}
       onToggleDetails={() => {}}
-      pending={false}
-      replacement={false}
-      errorMessage={null}
-      onInitialize={() => {}}
     />,
   );
   expect(html).toContain("ITS Rejected");

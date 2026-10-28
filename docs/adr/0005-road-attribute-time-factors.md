@@ -11,7 +11,7 @@ Edge travel times used only length and speed. The pinned OSM extract also record
 per direction, surface, traffic calming and tram tracks, which a dispatcher would expect to matter:
 an ambulance uses bus lanes and tram tracks to pass queues; normal traffic is slowed by
 single-lane roads, unpaved surfaces and speed bumps. Using them makes the normal-vs-GreenWave
-comparison more credible. Design: `docs/superpowers/specs/2026-10-19-road-attributes-design.md`.
+comparison more credible. Design: `docs/superpowers/specs/archive/2026-10-19-road-attributes-design.md`.
 Values had to be chosen by a human (no invented modelling factors, `docs/engineering/data-pipeline.md`).
 
 ## Decision

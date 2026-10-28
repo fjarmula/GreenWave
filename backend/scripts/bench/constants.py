@@ -15,7 +15,15 @@ STRATA_KM = ((0.0, 1.0), (1.0, 3.0), (3.0, 6.0), (6.0, 10.0), (10.0, float("inf"
 PAIRS_PER_STRATUM = 200
 TIMING_PASSES = 5
 WARMUP_PAIRS = 50
-ETL_REPS = {"profile": 3, "signals": 3, "graph": 3, "intersections": 3, "neighbours": 5}
+ETL_REPS = {
+    "profile": 3,
+    "signals": 3,
+    "graph": 3,
+    "intersections": 3,
+    "neighbours": 5,
+    "places": 3,
+    "quality": 3,
+}
 LOAD_COLD_PROCESSES = 10
 LOAD_WARM_CALLS = 10
 SERVER_RUNS = 5

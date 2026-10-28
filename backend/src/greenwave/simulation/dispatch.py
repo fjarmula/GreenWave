@@ -55,8 +55,12 @@ def build_dispatch_payload(
     now: datetime,
     settings: SimulationSettings,
     vehicle_type: VehicleType,
+    playback_speed: int = 1,
 ) -> ItsDispatchPayload:
-    """Hold green until the farthest member can be cleared plus a buffer; arrive at the nearest."""
+    """Hold green until the farthest member can be cleared plus a buffer; arrive at the nearest.
+
+    The arrival is wall-clock: ``playback_speed`` simulated seconds pass per real second.
+    """
     tti_by_id = {
         item.id: time_to_intersection(item.first_stop_line_m, runtime, state) or 0.0
         for item, runtime in route_runtimes(route_model, state)
@@ -77,7 +81,7 @@ def build_dispatch_payload(
             )
             + settings.its_hold_buffer_seconds,
         ),
-        expected_arrival_utc=now + timedelta(seconds=min(ttis)),
+        expected_arrival_utc=now + timedelta(seconds=min(ttis) / playback_speed),
     )
 
 

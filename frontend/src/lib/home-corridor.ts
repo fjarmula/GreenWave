@@ -1,7 +1,7 @@
 import corridorData from "@/data/home-corridor.json";
 
 /** One junction on the home corridor; `t` is its share of the route (0 start, 1 end). */
-export type CorridorSignal = {
+type CorridorSignal = {
   id: string;
   name: string;
   t: number;
@@ -23,9 +23,9 @@ export const corridor = corridorData as unknown as Corridor;
 
 export const LOOP_MS = 16000;
 /** A signal turns green when the vehicle is this share of the route away... */
-export const GREEN_LEAD = 0.14;
+const GREEN_LEAD = 0.14;
 /** ...and stays green this long after it passed. */
-export const GREEN_HOLD = 0.05;
+const GREEN_HOLD = 0.05;
 /** The green wake behind the vehicle, as a share of the route. */
 export const TRAIL = 0.22;
 /** Reduced motion shows one still frame: mid-corridor, the signal ahead already green. */

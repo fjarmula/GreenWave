@@ -710,3 +710,16 @@ def test_the_frame_has_a_delay_per_intersection_and_refuses_an_unmapped_kind() -
             _signal_review_frame(attached.attachments),
             {"signalised_junction": 30.0, "pedestrian_crossing": 12.0},
         )
+
+
+def test_best_incident_class_tie_is_alphabetical() -> None:
+    """Unranked classes tie; the pick must not depend on set order (PYTHONHASHSEED)."""
+    graph = build_graph(
+        [
+            way(1, [at(0, 0), at(2, 0)], "track"),
+            way(2, [at(2, 0), at(4, 0)], "pedestrian"),
+            way(3, [at(2, 0), at(2, 2)], "road"),
+        ]
+    ).graph
+
+    assert best_incident_class(graph, node_key(*at(2, 0))) == "pedestrian"

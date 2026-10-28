@@ -1,5 +1,6 @@
 "use client";
 
+import { addToStyle } from "@/components/map/style-guard";
 import { useEffect } from "react";
 import type { Map } from "maplibre-gl";
 
@@ -25,37 +26,39 @@ export function RouteLayer({ map, routeGeometry, styleRevision, theme, mode }: R
 
     const sourceId = "greenwave-route";
     const lineLayerId = "greenwave-route-line";
-    map.addSource(sourceId, {
-      type: "geojson",
-      data: { type: "Feature", properties: {}, geometry: routeGeometry },
-    });
     const casingId = "greenwave-route-casing";
-    // Below the vehicle wake when it is already drawn, whichever re-adds first after a style load.
-    const beforeId = map.getLayer(VEHICLE_WAKE_LAYER) ? VEHICLE_WAKE_LAYER : undefined;
-    map.addLayer(
-      {
-        id: casingId,
-        type: "line",
-        source: sourceId,
-        paint: { "line-color": palette.routeCasing, "line-width": 14 },
-        layout: { "line-cap": "round", "line-join": "round" },
-      },
-      beforeId,
-    );
-    map.addLayer(
-      {
-        id: lineLayerId,
-        type: "line",
-        source: sourceId,
-        paint: {
-          "line-color": mode === "DISABLED" ? palette.routeStandard : palette.routeLive,
-          "line-width": 7,
+    // Mid theme swap the style is still loading: skip, the next styleRevision re-adds.
+    addToStyle(() => {
+      map.addSource(sourceId, {
+        type: "geojson",
+        data: { type: "Feature", properties: {}, geometry: routeGeometry },
+      });
+      // Below the vehicle wake when it is already drawn, whichever re-adds first after a style load.
+      const beforeId = map.getLayer(VEHICLE_WAKE_LAYER) ? VEHICLE_WAKE_LAYER : undefined;
+      map.addLayer(
+        {
+          id: casingId,
+          type: "line",
+          source: sourceId,
+          paint: { "line-color": palette.routeCasing, "line-width": 14 },
+          layout: { "line-cap": "round", "line-join": "round" },
         },
-        layout: { "line-cap": "round", "line-join": "round" },
-      },
-      beforeId,
-    );
-
+        beforeId,
+      );
+      map.addLayer(
+        {
+          id: lineLayerId,
+          type: "line",
+          source: sourceId,
+          paint: {
+            "line-color": mode === "DISABLED" ? palette.routeStandard : palette.routeLive,
+            "line-width": 7,
+          },
+          layout: { "line-cap": "round", "line-join": "round" },
+        },
+        beforeId,
+      );
+    });
     return () => {
       if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
       if (map.getLayer(casingId)) map.removeLayer(casingId);

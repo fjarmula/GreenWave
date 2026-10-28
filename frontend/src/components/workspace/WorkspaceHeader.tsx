@@ -24,16 +24,20 @@ export function WorkspaceHeader({
     const header = element.current;
     const shell = header?.closest<HTMLElement>(".workspace-shell");
     if (!header || !shell) return;
+    const actions = header.querySelector<HTMLElement>(".workspace-actions");
     const measure = () => {
-      if (!header.hidden)
-        shell.style.setProperty(
-          "--workspace-header-bottom",
-          `${header.offsetTop + header.offsetHeight}px`,
-        );
+      if (header.hidden) return;
+      shell.style.setProperty(
+        "--workspace-header-bottom",
+        `${header.offsetTop + header.offsetHeight}px`,
+      );
+      // Map overlays beside the header keep clear of its right-hand actions.
+      shell.style.setProperty("--workspace-actions-width", `${actions?.offsetWidth ?? 0}px`);
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(header);
+    if (actions) observer.observe(actions);
     return () => observer.disconnect();
   }, []);
   return (

@@ -3,7 +3,7 @@ async (page) => {
   const assertHome = async () => {
     if (await page.getByRole("navigation", { name: "Workspace navigation" }).count())
       throw new Error("Home has a duplicate workspace menu");
-    for (const selector of [".home-title", ".home-lede", ".home-header"]) {
+    for (const selector of [".home-title", ".home-lede"]) {
       const visible = await page.locator(selector).evaluate((element) => {
         // Restoring a backgrounded page must not leave essential text in a hidden frame.
         for (const animation of element.getAnimations({ subtree: true })) {
@@ -17,7 +17,9 @@ async (page) => {
     }
   };
   const results = [];
-  await page.goto("http://127.0.0.1:3100");
+  // The smoke runner opened the base URL; return to its home page.
+  const home = new URL("/", page.url()).href;
+  await page.goto(home);
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: width < 768 ? 844 : 1000 });
     for (const theme of ["Light theme", "Dark theme"]) {
@@ -33,7 +35,7 @@ async (page) => {
           await page.getByRole("navigation", { name: "Workspace navigation" })
             .getByRole("link", { name: "Home", exact: true }).click();
         }
-        await page.waitForURL("http://127.0.0.1:3100/");
+        await page.waitForURL(home);
         await assertHome();
         results.push({ width, theme, route, visible: true });
       }

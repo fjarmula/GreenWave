@@ -11,13 +11,6 @@ export const destinations = [
 export function routeForMode(mode: GreenWaveMode) {
   return mode === "ENABLED" ? "/simulation/green-wave" : "/simulation/standard";
 }
-export function modeForDestination(href: string): GreenWaveMode | null {
-  return href === "/driver" || href === "/simulation/green-wave"
-    ? "ENABLED"
-    : href === "/simulation/standard"
-      ? "DISABLED"
-      : null;
-}
 export function viewRunPolicy(
   mode: GreenWaveMode,
   activeMode: GreenWaveMode | null,

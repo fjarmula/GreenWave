@@ -4,7 +4,7 @@ import type { GeocodeResult } from "@/types/telemetry";
 
 export const GEOCODE_DEBOUNCE_MILLISECONDS = 250;
 /** The backend rejects shorter queries (`q` is 2–100 characters). */
-export const GEOCODE_MIN_QUERY_LENGTH = 2;
+const GEOCODE_MIN_QUERY_LENGTH = 2;
 
 export type AddressSearchState = {
   results: GeocodeResult[];

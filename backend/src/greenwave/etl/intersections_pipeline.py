@@ -1,6 +1,5 @@
 """Step T4 orchestration: weld, attach signals, build intersections, write the network artifacts."""
 
-import hashlib
 import json
 import logging
 from collections import Counter
@@ -50,7 +49,7 @@ from greenwave.etl.intersections import (
     prepare_rings,
 )
 from greenwave.etl.junctions import Ring, find_junction_nodes, undirected_adjacency
-from greenwave.etl.manifest import MANIFEST_FILENAME
+from greenwave.etl.manifest import MANIFEST_FILENAME, sha256_of_file
 from greenwave.etl.near_misses import NearMissReport, find_near_misses
 from greenwave.etl.network import (
     DIRECTION_UNRESOLVED,
@@ -118,6 +117,7 @@ class IntersectionsSection(BaseModel):
     inputs_sha256: dict[str, str]
     manifest_sha256: str
     artifact_sha256: dict[str, str]
+    curated_sha256: dict[str, str]  # the roundabout overrides, keyed relative to backend/
     delay_seconds_by_kind: dict[str, float]
     snapping: SnapReport
     assignment_distance: AssignmentDistribution
@@ -147,10 +147,6 @@ def _signal_points(frame: pl.DataFrame) -> list[SignalPoint]:
         )
         for row in counted.iter_rows(named=True)
     ]
-
-
-def _file_sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
@@ -330,7 +326,7 @@ def write_intersection_artifacts(
     build.bus_lane_crosscheck.write_csv(processed_dir / BUS_LANE_CROSSCHECK_FILENAME)
     build.tertiary.write_csv(processed_dir / TERTIARY_PLUS_FILENAME)
     welds_frame(build.prepared.weld_report).write_csv(processed_dir / WELDS_FILENAME)
-    manifest_sha256 = _file_sha256(raw_dir / MANIFEST_FILENAME)
+    manifest_sha256 = sha256_of_file(raw_dir / MANIFEST_FILENAME)
     _write_ids(
         processed_dir / IDS_FILENAME,
         build.intersections_frame,
@@ -350,6 +346,7 @@ def intersections_section(
         inputs_sha256=prepared.inputs_sha256,
         manifest_sha256=manifest_sha256,
         artifact_sha256=artifact_hashes(processed_dir, T4_ARTIFACT_FILENAMES),
+        curated_sha256=artifacts.input_hashes([overrides_dir / OVERRIDE_FILENAME]),
         delay_seconds_by_kind=build.delay_by_kind,
         snapping=_snap_report(build.attached, build.snap_tolerance_meters, build.largest_scc),
         assignment_distance=distance_distribution(
@@ -502,7 +499,7 @@ def _ring_report(
             approaches_per_ring[intersection.ring_id] += len(intersection.approach_indices)
     overrides = [r for r in rings if r.source == "override"]
     return RingReport(
-        override_file=str(path),
+        override_file=artifacts.input_key(path),
         override_entries=len(entries),
         override_rings_applied=len(overrides),
         override_rings_verified=sum(bool(r.verified) for r in overrides),

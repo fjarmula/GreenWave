@@ -12,7 +12,9 @@ import type { SimulationState } from "@/lib/simulation-state";
 
 function useScenarioOwner() {
   const simulation = useSimulationState();
-  const dispatch = useIncidentDispatch(dispatchAdapter);
+  const dispatch = useIncidentDispatch(dispatchAdapter, {
+    trafficDensity: DEFAULT_DISPATCH_SETTINGS.trafficDensity,
+  });
   const stationState = useStations(dispatchAdapter);
   const [settings, setSettings] = useState(DEFAULT_DISPATCH_SETTINGS);
   const [runLabels, setRunLabels] = useState<RunLabels | null>(null);

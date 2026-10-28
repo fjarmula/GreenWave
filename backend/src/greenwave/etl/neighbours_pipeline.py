@@ -1,6 +1,5 @@
 """Step T5 orchestration: neighbour pairs from the processed network and signal approaches."""
 
-import hashlib
 import json
 import logging
 from datetime import UTC, datetime
@@ -22,7 +21,7 @@ from greenwave.etl.intersections_pipeline import (
     artifact_hashes,
 )
 from greenwave.etl.io import REPORT_FILENAME
-from greenwave.etl.manifest import MANIFEST_FILENAME
+from greenwave.etl.manifest import MANIFEST_FILENAME, sha256_of_file
 from greenwave.etl.neighbours import (
     NeighboursReport,
     approach_edges,
@@ -35,10 +34,7 @@ logger = logging.getLogger(__name__)
 
 # Moved to greenwave.artifacts (shared with the dataset loader); still importable from here.
 NEIGHBOURS_FILENAME = artifacts.NEIGHBOURS_FILENAME
-
-
-class StaleArtifactError(RuntimeError):
-    """The processed artifacts come from different raw inputs or from different runs."""
+StaleArtifactError = artifacts.StaleArtifactError
 
 
 class NeighboursSection(BaseModel):
@@ -78,30 +74,39 @@ def _recorded_t4_hashes(report_path: Path) -> dict[str, str]:
     return {name: str(recorded[name]) for name in T4_ARTIFACT_FILENAMES}
 
 
-def run_neighbours(
-    raw_dir: Path,
-    processed_dir: Path,
-    threshold_meters: float = CASCADE_THRESHOLD_METERS,
-    allow_u_turns: bool = CASCADE_ALLOW_U_TURNS,
-) -> NeighboursSection:
-    manifest_sha256 = hashlib.sha256((raw_dir / MANIFEST_FILENAME).read_bytes()).hexdigest()
+def verify_t4_inputs(
+    raw_dir: Path, processed_dir: Path, names: tuple[str, ...]
+) -> tuple[str, dict[str, str]]:
+    """The current manifest's sha256 and the hashes of the T4 files ``names`` (taken just before
+    the caller reads them). Raises ``StaleArtifactError`` when the intersections step ran on
+    another manifest or the files differ from the hashes it recorded."""
+    manifest_sha256 = sha256_of_file(raw_dir / MANIFEST_FILENAME)
     ids = json.loads((processed_dir / IDS_FILENAME).read_text(encoding="utf-8"))
-    built_from = ids["valid_for"]["manifest_sha256"]
+    built_from = ids.get("valid_for", {}).get("manifest_sha256")
     if built_from != manifest_sha256:
         raise StaleArtifactError(
-            f"processed intersections were built from manifest {built_from[:12]}..., but the "
-            f"current manifest is {manifest_sha256[:12]}...; re-run the intersections step"
+            f"processed intersections were built from manifest {(built_from or 'none')[:12]}..., "
+            f"but the current manifest is {manifest_sha256[:12]}...; re-run the intersections step"
         )
-
     recorded = _recorded_t4_hashes(processed_dir / REPORT_FILENAME)
-    consumed = artifact_hashes(processed_dir, T4_ARTIFACT_FILENAMES)  # hashed just before reading
-    changed = [name for name in T4_ARTIFACT_FILENAMES if consumed[name] != recorded[name]]
+    consumed = artifact_hashes(processed_dir, names)
+    changed = [name for name in names if consumed[name] != recorded[name]]
     if changed:
         raise StaleArtifactError(
             f"{', '.join(changed)} differ from the hashes the intersections step recorded in "
             f"{REPORT_FILENAME}; the artifacts come from different runs, re-run the "
             "intersections step"
         )
+    return manifest_sha256, consumed
+
+
+def run_neighbours(
+    raw_dir: Path,
+    processed_dir: Path,
+    threshold_meters: float = CASCADE_THRESHOLD_METERS,
+    allow_u_turns: bool = CASCADE_ALLOW_U_TURNS,
+) -> NeighboursSection:
+    manifest_sha256, consumed = verify_t4_inputs(raw_dir, processed_dir, T4_ARTIFACT_FILENAMES)
 
     graph = read_graph(processed_dir, NETWORK_NODES_FILENAME, NETWORK_EDGES_FILENAME)
     approaches = approach_edges(pl.read_parquet(processed_dir / APPROACHES_FILENAME))

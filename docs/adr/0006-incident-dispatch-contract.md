@@ -4,6 +4,7 @@
 - Date: 2026-10-20
 - Owners: @fjarmula @Piotrek406
 - Supersedes: None (amends ADR 0003 additively)
+- Amended (2026-10-28): candidates rank by the request's `time_mode` totals (ADR 0014); `station_at_incident` is removed from `DispatchRankResponse`; ambulance origins are PRM bases (`prm_base`), and the `ambulance_base` / `hospital_ed` station kinds are gone.
 
 ## Context
 
@@ -11,7 +12,7 @@ The dashboard used to start a run between two hardcoded endpoints. Dispatch now 
 incident: the operator picks a vehicle type and an incident location, and the backend ranks that
 type's stations by the green-wave estimate the run will show. That needs a station list, local
 address search and a ranking call, and the simulated ITS payload must stop calling every vehicle an
-ambulance. Design: `docs/superpowers/specs/2026-10-19-incident-dispatch-design.md`.
+ambulance. Design: `docs/superpowers/specs/archive/2026-10-19-incident-dispatch-design.md`.
 
 ## Decision
 

@@ -1,6 +1,6 @@
 # Visual audit scripts
 
-Browser checks for the UI overhaul plan (`docs/superpowers/plans/2026-10-23-ui-overhaul.md`). Start the app on port 3000 (`npm run build && npm start` for timings; dev mode inflates them), then from the repo root:
+Browser checks for the UI overhaul plan (`docs/superpowers/plans/archive/2026-10-23-ui-overhaul.md`). Start the app on port 3000 (`npm run build && npm start` for timings; dev mode inflates them), then from the repo root:
 
 ```bash
 playwright-cli open http://localhost:3000

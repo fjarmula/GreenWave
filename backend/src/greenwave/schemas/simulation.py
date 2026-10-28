@@ -10,11 +10,11 @@ from typing import Annotated, Literal, Self
 
 from pydantic import AwareDatetime, BaseModel, Field, RootModel, model_validator
 
+from greenwave.schemas.ids import SIMULATION_ID_PATTERN as SIMULATION_ID_PATTERN
+from greenwave.schemas.ids import MessageId, SimulationId
 from greenwave.schemas.its import ItsFeedbackEvent, ItsRequestSnapshot, ItsScenario
 
 SchemaVersion = Literal["1.0"]
-SIMULATION_ID_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"
-SimulationId = Annotated[str, Field(pattern=SIMULATION_ID_PATTERN)]
 
 HOLD_DURATION_FLOOR_SEC = 40  # contract floor; the engine adds its TTI-based extension (ADR 0003)
 
@@ -285,7 +285,7 @@ class ItsDispatchEvent(BaseModel):
     schema_version: SchemaVersion
     is_simulated: Literal[True]
     event_type: Literal["ITS_DISPATCH"]
-    message_id: Annotated[str, Field(pattern=r"^MSG-ITS-[0-9]+$")]
+    message_id: MessageId
     simulation_id: SimulationId
     tick: Annotated[int, Field(ge=0)]
     timestamp: AwareDatetime

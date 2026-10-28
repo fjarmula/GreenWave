@@ -20,13 +20,13 @@ export type FrontendConfig = {
   lostAfterSeconds: number;
 };
 
-export const DEFAULT_TRANSPORT: SimulationTransport = "mock";
+const DEFAULT_TRANSPORT: SimulationTransport = "mock";
 export const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
-export const STALE_AFTER_SECONDS = 3;
-export const START_TIMEOUT_MILLISECONDS = 10_000;
-export const RECONNECT_ATTEMPT_LIMIT = 5;
+const STALE_AFTER_SECONDS = 3;
+const START_TIMEOUT_MILLISECONDS = 10_000;
+const RECONNECT_ATTEMPT_LIMIT = 5;
 // Stale (3 s) + the reconnect budget (5 × 2 s) + slack: past this, nothing is coming back.
-export const LOST_AFTER_SECONDS = 15;
+const LOST_AFTER_SECONDS = 15;
 
 function parseTransport(value: string | undefined, warn: (message: string) => void) {
   const transport = value?.trim();

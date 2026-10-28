@@ -1,7 +1,7 @@
 # Post-merge regressions verification — 2026-10-25
 
 Branch `fix/post-merge-regressions`. Spec:
-`docs/superpowers/specs/2026-10-25-post-merge-regressions-design.md`.
+`docs/superpowers/specs/archive/2026-10-25-post-merge-regressions-design.md`.
 
 ## Plan 1: junction motion and ITS hold (D1–D3, ADR 0010)
 
@@ -137,7 +137,7 @@ Scripts (ignored): `.tmp/playwright/mode-estimates/`.
 - `244d50c`: an on-site row shows one chip ("On site"), so the station name is not cut.
 - Next commit: ADR 0012, this record, `GreenWave_ARCHITECTURE.md` (dispatch section, item 10;
   human informed of architecture edits on this branch) and a superseded note in
-  `docs/superpowers/specs/2026-10-19-incident-dispatch-design.md` step 6.
+  `docs/superpowers/specs/archive/2026-10-19-incident-dispatch-design.md` step 6.
 
 ### Browser check
 

@@ -6,13 +6,16 @@ export function beginHttpCapture(operation: Operation, request: DiagnosticCaptur
   diagnosticStore.record({ operation, transport: "backend", outcome: "pending", capture: request });
   let finished = false;
   let capture = request;
-  const finish = (success: boolean, validation?: "accepted" | "rejected") => {
+  const finish = (
+    outcome: "success" | "failure" | "cancelled",
+    validation?: "accepted" | "rejected",
+  ) => {
     if (finished) return;
     finished = true;
     diagnosticStore.record({
       operation,
       transport: "backend",
-      outcome: success ? "success" : "failure",
+      outcome,
       durationMs: Math.max(0, performance.now() - started),
       capture: { ...capture, ...(validation ? { validation } : {}) },
     });
@@ -32,13 +35,17 @@ export function beginHttpCapture(operation: Operation, request: DiagnosticCaptur
       }
     },
     accepted(validated = true) {
-      finish(true, validated ? "accepted" : undefined);
+      finish("success", validated ? "accepted" : undefined);
     },
     rejected() {
-      finish(false, "rejected");
+      finish("failure", "rejected");
     },
     failed() {
-      finish(false);
+      finish("failure");
+    },
+    /** The caller abandoned the request (superseded); not a failure of the backend. */
+    cancelled() {
+      finish("cancelled");
     },
   };
 }

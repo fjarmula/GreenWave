@@ -29,9 +29,12 @@ TEAM_CODE_PATTERN = r"^K\d{2} \d{3}( M)?$"
 LOCAL_ZONE = ZoneInfo("Europe/Warsaw")
 MAX_AVAILABILITY_OVERRIDES = 200
 
+TERYT_PATTERN = r"^\d{7}$"
+MONTH_DAY_PATTERN = r"^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$"
+
 TeamCode = Annotated[str, StringConstraints(pattern=TEAM_CODE_PATTERN)]
-Teryt = Annotated[str, StringConstraints(pattern=r"^\d{7}$")]
-MonthDay = Annotated[str, StringConstraints(pattern=r"^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$")]
+Teryt = Annotated[str, StringConstraints(pattern=TERYT_PATTERN)]
+MonthDay = Annotated[str, StringConstraints(pattern=MONTH_DAY_PATTERN)]
 # Simulated availability set by the dispatcher in the scenario; never a live status.
 AvailabilityOverride = Literal["free", "busy"]
 ExclusionReason = Literal["OFF_SHIFT", "BUSY_OVERRIDE"]
@@ -40,11 +43,9 @@ DispatchOutcome = Literal["OK", "NO_ELIGIBLE_RESOURCE"]
 
 
 class StationSourceKind(StrEnum):
-    """Where a station comes from; the UI names it, so hospital EDs are not passed off as bases."""
+    """Where a station comes from; the UI names it. Ambulances start only from PRM bases."""
 
     PRM_BASE = "prm_base"  # an official PRM team base (ambulance origins since ADR 0014)
-    AMBULANCE_BASE = "ambulance_base"
-    HOSPITAL_ED = "hospital_ed"
     FIRE_STATE = "fire_state"
     FIRE_VOLUNTEER = "fire_volunteer"
     FIRE_OTHER = "fire_other"
@@ -143,6 +144,8 @@ class AreaRuleOutcome(BaseModel):
     nearest_team_code: TeamCode
     in_area_team_code: TeamCode | None
     delta_seconds: float | None  # in-area total minus the nearest total, in the request's mode
+    # An out-of-area team is sent only when it arrives more than this much sooner (D4).
+    margin_seconds: Annotated[float, Field(ge=0.0)]
 
 
 class Team(BaseModel):
@@ -181,6 +184,9 @@ class DispatchRankRequest(BaseModel):
     availability: Annotated[
         dict[TeamCode, AvailabilityOverride], Field(max_length=MAX_AVAILABILITY_OVERRIDES)
     ] = {}
+    # False: AMBULANCE ranks PRM bases by time alone, like fire and police; scenario_time
+    # (echoed only), availability and the area rule are ignored.
+    resource_aware: bool = True
 
     @field_validator("scenario_time")
     @classmethod
@@ -210,8 +216,6 @@ class DispatchRankResponse(BaseModel):
     # Best first; for AMBULANCE the first is the recommended team (area rule), not necessarily
     # the fastest. Empty exactly when outcome is NO_ELIGIBLE_RESOURCE.
     candidates: Annotated[list[RankedCandidate], Field(max_length=3)]
-    # Deprecated: on-site stations are candidates (ADR 0012).
-    station_at_incident: Station | None
     scenario_time: datetime  # naive local time the ranking is for
     outcome: DispatchOutcome
     incident_area: IncidentArea | None  # AMBULANCE only; None also when unknown

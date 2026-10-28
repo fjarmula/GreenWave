@@ -92,6 +92,25 @@ def test_payload_holds_until_last_member_plus_buffer() -> None:
     assert payload.intersections_group == ["FAR", "NEAR"]
 
 
+def test_expected_arrival_scales_with_playback_speed() -> None:
+    def arrival(playback_speed: int) -> timedelta:
+        payload = build_dispatch_payload(
+            _model(),
+            _track((20.0, 1.0)),
+            _state(),
+            ("FAR", "NEAR"),
+            _NOW,
+            SimulationSettings(),
+            VehicleType.AMBULANCE,
+            playback_speed,
+        )
+        return payload.expected_arrival_utc - _NOW
+
+    # 4.2 simulated seconds take 4.2 s of wall-clock time at 1x and 0.42 s at 10x.
+    assert arrival(1) == timedelta(seconds=4.2)
+    assert arrival(10) == timedelta(seconds=0.42)
+
+
 def _three_junction_state(passed_first: bool = False) -> EngineState:
     return replace(
         _state(),

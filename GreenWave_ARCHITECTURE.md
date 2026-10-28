@@ -1,6 +1,6 @@
 # ER-GreenWave: Emergency Response GreenWave System
 
-**Project developed for the "Open Data App" Hackathon (Kraków)**
+**Project developed for Kraków's "Open Data App" contest**
 
 ER-GreenWave is a proof-of-concept (PoC) platform demonstrating dynamic
 routing and preemptive traffic-light clearing for emergency vehicles.
@@ -37,9 +37,8 @@ response times without compromising civilian traffic safety.
   `INT-xxxx` whose controlled approach the route passes.
 - **Datex II / NTCIP 1211:** Standards associated with communication
   and priority control in intelligent transportation systems.
-- **SSE (Server-Sent Events) / WebSockets:** Technologies for
-  streaming real-time data from the backend to the frontend,
-  respectively unidirectionally or bidirectionally.
+- **SSE (Server-Sent Events):** The one-way HTTP stream the backend
+  uses to push telemetry to the frontend. The system uses no WebSockets.
 - **PoC (Proof of Concept):** A scaled-down implementation built to
   validate core logic and technical feasibility.
 - **ER Green Wave mode:** The per-run choice `green_wave_mode`
@@ -63,8 +62,8 @@ assistants.
   dependencies managed by **`uv`**.
 - **Data processing engine:** **GeoPandas**, **Polars**, and
   **NetworkX** for graph-based pathfinding and spatial joins.
-- **Frontend:** **Next.js** (React), **Tailwind CSS**, and
-  **shadcn/ui** for dashboard development; run locally for the demo.
+- **Frontend:** **Next.js** (React) and **Tailwind CSS**, with
+  lucide icons; run locally or on the documented Oracle VM deployment.
 - **Mapping engine:** **MapLibre GL JS** (free, token-free fork of Mapbox GL; OSM-based tiles) for GPU-accelerated WebGL
   rendering of vehicle routes and intersection states.
 
@@ -74,7 +73,7 @@ assistants.
     with physical traffic lights because physical overrides are
     safety-critical. Instead, the system acts as an analytical layer
     that sends standardized priority requests to a mocked central ITS.
-2.  **JSON contracts over WebSockets/SSE:** The frontend is passive and
+2.  **JSON contracts over SSE:** The frontend is passive and
     stateless. It consumes one event per simulated second (1 Hz at
     normal speed, up to 10 Hz at the fastest playback) and renders the
     interface, keeping UI complexity low.
@@ -122,7 +121,7 @@ The system compares normal routing with ER-GreenWave routing to estimate potenti
 
 $$T_{\mathrm{normal}} = \sum_{e \in \mathrm{Edges}} \left( \frac{L_e \cdot \mu_{\mathrm{traffic}} \cdot f_{\mathrm{lane}}(e) \cdot f_{\mathrm{surface}}(e)}{V_e} + n_e \cdot s_{\mathrm{normal}} \right) + \sum_{u \in \mathrm{Intersections}} D_u$$
 
-Where $V_e$ is the edge speed (`speed_kmh`: the OSM `maxspeed` where it parses, otherwise a road-class default, recorded in `speed_source`), $\mu_{\mathrm{traffic}} \in [1.0, 3.0]$ is the traffic-density multiplier ($\mu_{\mathrm{traffic}} = 1.0$ is free-flow; $1.5$ increases edge traversal time by 50%), and $D_u$ is the delay of intersection $u$ (`delay_seconds` in the ETL's `intersections` table). Signalised junctions, mid-block signals and pedestrian crossings have independent configuration keys; each is provisionally 35 s. These values are modeling assumptions, not empirical measurements. Calibration is deferred to a dedicated modeling task after dynamic ambulance dispatch is implemented and before final end-to-end performance evaluation. $D_u$ is applied once per unique intersection (`INT-xxxx`) whose controlled approach the route passes: a route that passes two approaches of one intersection pays it once, and the per-signal `signal_approaches.delay_seconds` is never summed along a route.
+Where $V_e$ is the edge speed (`speed_kmh`: the OSM `maxspeed` where it parses, otherwise a road-class default, recorded in `speed_source`), $\mu_{\mathrm{traffic}} \in [1.0, 3.0]$ is the traffic-density multiplier ($\mu_{\mathrm{traffic}} = 1.0$ is free-flow; $1.5$ increases edge traversal time by 50%), and $D_u$ is the delay of intersection $u$ (`delay_seconds` in the ETL's `intersections` table). Signalised junctions, mid-block signals and pedestrian crossings have independent configuration keys; each is provisionally 35 s. These values are modeling assumptions, not empirical measurements. Dispatch is implemented; calibration remains deferred to a dedicated modeling task before any end-to-end performance evaluation, so these values stay PoC placeholders. $D_u$ is applied once per unique intersection (`INT-xxxx`) whose controlled approach the route passes: a route that passes two approaches of one intersection pays it once, and the per-signal `signal_approaches.delay_seconds` is never summed along a route.
 
 Road attributes per directed edge (ETL, `network_edges.parquet`): $f_{\mathrm{lane}}(e) = 1.15$ when `lanes_per_direction == 1`, else 1; $f_{\mathrm{surface}}(e) = 1.3$ when `surface_class == "unpaved"`, else 1; $n_e$ is `calming_count` (OSM `traffic_calming` points on the edge) and $s_{\mathrm{normal}} = 3\text{ s}$ per feature. An unknown attribute has no effect. Values and evidence: `docs/adr/0005-road-attribute-time-factors.md`.
 
@@ -214,42 +213,80 @@ and no ITS dispatch is made, whatever `enable_cascade_mode` says.
 ### Phase 0: Incident Dispatch (Frontend → Backend)
 
 The operator picks a vehicle type (`AMBULANCE | FIRE_TRUCK | POLICE_CAR`) and
-the incident location (local address search or a map click). The backend
-ranks that type's stations and the run then goes from the fastest one to the
-incident (additive to contract v1, `docs/adr/0006-incident-dispatch-contract.md`).
+the incident location (address search or a map click). The backend ranks
+that type's stations and the run then goes from the chosen one to the
+incident (additive to contract v1, `docs/adr/0006-incident-dispatch-contract.md`;
+`schema_version` stays `"1.0"`).
 
 ```
+GET  /api/v1/health                      -> HealthResponse ({status: "ok"})
 GET  /api/v1/stations                    -> StationsResponse (all types, by station_id)
 GET  /api/v1/geocode?q=<2-100>&limit=<1-10, default 8>
-                                         -> GeocodeResponse ({label, position} results)
-POST /api/v1/dispatch/rank {incident, vehicle_type, traffic_density_multiplier = 1.0}
-                                         -> DispatchRankResponse (1-3 candidates, best first,
-                                            incident_snapped, station_at_incident = null)
+                                         -> GeocodeResponse (label, position, provenance)
+GET  /api/v1/resources?at=<local time>   -> ResourcesResponse (PRM roster, teams, on_shift at `at`)
+POST /api/v1/dispatch/rank {incident, vehicle_type, traffic_density_multiplier = 1.0,
+                            scenario_time?, time_mode = ENABLED, availability = {},
+                            resource_aware = true}
+                                         -> DispatchRankResponse (0-3 candidates, best first,
+                                            incident_snapped, scenario_time, outcome,
+                                            incident_area, excluded_teams, roster, area_rule)
+GET  /api/v1/dataset/quality             -> DatasetQualityResponse (the ETL quality summary)
 ```
 
-- **Data:** the ETL `places` step writes `stations.parquet` (ambulance bases,
-  hospital emergency departments, fire and police stations from OSM, with
-  exclusion and inclusion lists in `etl/config.py`) and `addresses.parquet`
-  (unique labels, locality added outside Kraków or on a repeat).
-- **Ranking:** a reversed Dijkstra from the incident over the routing weight
-  shortlists `dispatch_shortlist_size` (5) stations; each gets the real
-  `plan_route` + route model + `estimate_times`, ranked by
-  `(greenwave_seconds + on_foot.seconds, station_id)`. Each candidate also
-  carries `standard_seconds`, the exact standard-run estimate at the request's
-  density (1.0-3.0). The displayed times are therefore the
-  `estimated_greenwave_time_sec` / `estimated_standard_time_sec` the run
-  reports, plus the walk. The frontend shows, orders and badges by the page's
-  mode (green wave, standard; the comparison shows both in backend order) and
-  splits an off-road total into `{drive} drive + {walk} on foot · {distance}`.
-  A station on the incident's own node is an **on-site** candidate (ADR 0012):
-  `on_site = true`, `greenwave_seconds = standard_seconds = distance_m = 0`,
-  `on_foot = {access_point: station position, distance_m, seconds}` (straight
-  line × detour factor at walking speed). Off the network, a station whose own
-  node is an access node is on-site when that walk beats its driven option or
-  it has none (driving wins ties). It ranks by its walk; starting it shows an
-  on-site result card and never calls the simulation API.
-  `station_at_incident` stays in the schema, always `null` (deprecated).
-  Errors: `DESTINATION_OFF_NETWORK`, `NO_STATION_REACHABLE` (422).
+- **Data:** the ETL `places` step writes `stations.parquet`, `addresses.parquet`
+  and `resources.parquet`. Ambulances start only from the official PRM team
+  bases (`source_kind = prm_base`, curated in `data/curated/prm_bases.json`;
+  ADR 0014); fire and police stations come from OSM (`fire_state`,
+  `fire_volunteer`, `fire_other`, `police`), with exclusion and inclusion lists
+  in `etl/config.py`. The former `ambulance_base` and `hospital_ed` kinds are
+  gone from the contract. `resources.parquet` holds the PRM teams in scope
+  (type, operating-area TERYT codes, weekdays, readiness window, season).
+- **Geocoding:** addresses come from Kraków's official address points (EMUiA),
+  reconciled with OSM addresses (ADR 0013). Each result carries its
+  `provenance` (`matched`, `municipal`, `osm`) and, for a disagreement, the
+  OSM position. An address point is where to geocode, not a vehicle access
+  point.
+- **Ranking (fire, police, and ambulances with `resource_aware = false`):** a
+  reversed Dijkstra from the incident over the routing weight shortlists
+  `dispatch_shortlist_size` (5) stations; each gets the real `plan_route` +
+  route model + `estimate_times`, and candidates rank by the total of the
+  request's `time_mode` (`ENABLED`: `greenwave_seconds`, `DISABLED`:
+  `standard_seconds`, each plus `on_foot.seconds`), then `station_id`. Each
+  candidate carries both estimates at the request's density (1.0-3.0): they
+  are the `estimated_greenwave_time_sec` / `estimated_standard_time_sec` the
+  run reports. The frontend sends its page's mode (the comparison sends
+  `ENABLED`), shows and badges by that mode, and splits an off-road total into
+  `{drive} drive + {walk} on foot · {distance}`. On-site versus drive is also
+  decided on the request's mode.
+- **Team-aware ambulance ranking** (ADR 0014, `resource_aware = true`, the
+  dashboard's **Team-aware dispatch** switch, on by default): at
+  `scenario_time` (Kraków local time; default now), teams off shift or marked
+  busy in the scenario's `availability` overrides are excluded
+  (`excluded_teams`, reason `OFF_SHIFT` or `BUSY_OVERRIDE`); the others are
+  free or `assumed_free` (on shift, no override). Every base with an eligible
+  team is estimated (the shortlist is not cut by motion time), and each base
+  sends one team, in-area first. The area rule then picks the first candidate
+  on the `time_mode` totals: the fastest team serving the incident's operating
+  area (`incident_area`, the EMUiA district's delegatura) unless an
+  out-of-area team arrives more than `area_preference_margin_seconds` (60 s)
+  sooner. `area_rule` reports the `reason` (`NEAREST`,
+  `IN_AREA_WITHIN_MARGIN`, `NEAREST_OUTSIDE_MARGIN`), the teams compared,
+  `delta_seconds` and the `margin_seconds` used. Each candidate carries its
+  `team` assignment. No eligible team gives `outcome = NO_ELIGIBLE_RESOURCE`
+  and no candidates; otherwise `outcome = OK`. With the switch off, ambulances
+  rank PRM bases by time alone, like fire and police, and the team fields are
+  empty. Availability is simulated, never a live status, and the ranking is
+  not an official dispatch protocol.
+- **On site** (ADR 0012): a station on the incident's own node is an on-site
+  candidate: `on_site = true`, `greenwave_seconds = standard_seconds =
+  distance_m = 0`, `on_foot = {access_point: station position, distance_m,
+  seconds}` (straight line × detour factor at walking speed). Off the network,
+  a station whose own node is an access node is on-site when that walk beats
+  its driven option or it has none (driving wins ties). It ranks by its walk;
+  starting it shows an on-site result card and never calls the simulation API.
+  The former always-null `station_at_incident` field is removed.
+- **Errors:** `DESTINATION_OFF_NETWORK` (its message carries the on-foot
+  limit, shown by the dashboard), `NO_STATION_REACHABLE` (422).
 - **Off-road incidents** (ADR 0009, additive): when the incident is beyond the
   snap limit, the reversed Dijkstra is seeded at every access node within
   walking reach with its walking seconds, and each candidate carries
@@ -690,6 +727,9 @@ Here INT-0361 has TTI 40 s and its cascaded neighbour INT-0367 is 50 s
 of open road to its last stop line, with both unpassed: its release time
 is `50 + 2 x 3 = 56` s and the hold is `max(40, 56 + 5) = 61`.
 `hold_duration_sec` is never below 40.
+`expected_arrival_utc` is a wall-clock instant: the emission time plus the
+group's smallest TTI divided by `playback_speed` (the example runs at 1x).
+`hold_duration_sec` stays in simulated seconds.
 
 ---
 
@@ -709,12 +749,24 @@ physical traffic signal states.
 - **OpenStreetMap:** road network and traffic signal geometry ©
   OpenStreetMap contributors, licensed under the Open Database License
   (ODbL 1.0), extracted via BBBike.org.
-- **City of Kraków Open Data:** the municipal street registry
-  (`Ulice.geojson`) provided by Urząd Miasta Krakowa / Miejski System
-  Informacji Przestrzennej (MSIP, export timestamp 2026-10-13 00:47:34),
-  re-used under the Polish Act on Open Data and Re-use of Public Sector
-  Information (Dz.U. 2021 poz. 1641), with source attribution. The
-  per-file licence and attribution text is in `backend/data/raw/MANIFEST.json`.
+- **City of Kraków Open Data (MSIP):** the municipal street registry
+  (`Ulice.geojson`, Urząd Miasta Krakowa / Miejski System Informacji
+  Przestrzennej, export timestamp 2026-10-13 00:47:34) and the bus-lane
+  register (`Buspasy_*.csv`, Urząd Miasta Krakowa / Zarząd Dróg Miasta
+  Krakowa / MSIP, the same export; a cross-check only), re-used under the
+  Polish Act on Open Data and Re-use of Public Sector Information (Dz.U.
+  2021 poz. 1641), with source attribution.
+- **Kraków address points, *Punkty adresowe (EMUiA)*:** Urząd Miasta
+  Krakowa, Wydział Geodezji / MSIP (dataset 1492, export timestamp
+  2026-10-27 00:45:04), under the MSIP terms and the same Act: the
+  authoritative coordinate for incident addresses.
+- **Małopolska PRM plan:** Wojewoda Małopolski, *Wojewódzki plan działania
+  systemu PRM*, update no. 2 (Kraków, 24 June 2026), Tables 1a and 2a: the
+  team roster, operating areas, readiness hours and base addresses.
+  Simulation input only.
+
+The per-file licence and attribution text is in
+`backend/data/raw/MANIFEST.json`.
 
 ---
 
@@ -734,7 +786,7 @@ All previously open questions have been resolved and approved:
 9. **Cascade distance:** the threshold is `d <= 250 m` (inclusive) along the active route, measured between stop lines. The ETL's neighbour table uses the same inclusive threshold by shortest drive and is a candidate set only.
 10. **Snapping:** the origin and destination snap to the nearest graph node (EPSG:2178) from which a route exists. An origin farther than **150 m** (engine configuration `max_snap_distance_meters`, not a contract field) is rejected with `ORIGIN_OFF_NETWORK`. A destination farther than 150 m falls back to on-foot access (`docs/adr/0009-on-foot-incident-access.md`): the route ends at the main-component node within walking reach with the lowest drive + walk time from that origin, where walk = straight line × `on_foot_detour_factor` (1.3) at `on_foot_speed_meters_per_second` (1.4), and its on-foot distance is at most `max_on_foot_meters` (**800 m**, inclusive; all three are PoC placeholders). Without such a node the destination is rejected with `DESTINATION_OFF_NETWORK`. Origins never fall back. A station on the incident's snapped node is answered on site, without a route (ADR 0012). The run ends at the access node; the estimates and `time_saved` cover the drive only, and the walk (straight line, barriers not modelled) is reported separately as `destination_on_foot`.
 11. **Contract v1:** the stream event union, SSE framing, error codes, `playback_speed` and the remaining simulation semantics are recorded in `docs/adr/0003-simulation-contract-v1.md`. Its D9 (1 Hz wall-clock tick advancing `playback_speed` seconds) is superseded: every simulated second is streamed as its own tick and playback only shortens the wall-clock interval (section 4, Phase 1). The wire schema is unchanged.
-12. **ER Green Wave mode (additive to contract v1, `schema_version` stays `"1.0"`):** the start request and response carry `green_wave_mode: ENABLED | DISABLED` (closed enum, no boolean form; default `ENABLED`), and ticks carry `signal_phases` (default `[]`). Disabled runs use the standard-traffic crossing (section 3, model 3), stay `NORMAL`, never cascade or dispatch, and keep route choice and open-road motion identical to enabled runs. Signal phases are a simulated explanation drawn only at high zoom (section 4, Phase 2). The frontend has six destinations: home (`/`), enabled simulation (`/simulation/green-wave`), disabled simulation (`/simulation/standard`), live comparison (`/compare`), diagnostics (`/diagnostics`) and driver presentation (`/driver`). A root runtime owns one subscription and shared in-memory scenario across navigation. Comparison starts an enabled/disabled pair through the same exclusive operation slot and streams both on one simulated clock (ADR 0008 live comparison pair). Each member has its own simulated ITS controller; controller failures do not produce successful comparison results. The completed-run summary leads with total travel time and names the mode. Design: `docs/superpowers/specs/2026-10-20-er-green-wave-mode-design.md`, amended by `docs/superpowers/specs/2026-10-21-er-green-wave-corrections-design.md` (rolling disabled crossing, supported signal movements, phase-detail fallback).
+12. **ER Green Wave mode (additive to contract v1, `schema_version` stays `"1.0"`):** the start request and response carry `green_wave_mode: ENABLED | DISABLED` (closed enum, no boolean form; default `ENABLED`), and ticks carry `signal_phases` (default `[]`). Disabled runs use the standard-traffic crossing (section 3, model 3), stay `NORMAL`, never cascade or dispatch, and keep route choice and open-road motion identical to enabled runs. Signal phases are a simulated explanation drawn only at high zoom (section 4, Phase 2). The frontend has six destinations: home (`/`), enabled simulation (`/simulation/green-wave`), disabled simulation (`/simulation/standard`), live comparison (`/compare`), diagnostics (`/diagnostics`) and driver presentation (`/driver`). A root runtime owns one subscription and shared in-memory scenario across navigation. Comparison starts an enabled/disabled pair through the same exclusive operation slot and streams both on one simulated clock (ADR 0008 live comparison pair). Each member has its own simulated ITS controller; controller failures do not produce successful comparison results. The completed-run summary leads with total travel time and names the mode. Design: `docs/superpowers/specs/archive/2026-10-20-er-green-wave-mode-design.md`, amended by `docs/superpowers/specs/archive/2026-10-21-er-green-wave-corrections-design.md` (rolling disabled crossing, supported signal movements, phase-detail fallback).
 13. **Server-side run failure (additive to contract v1, `schema_version` stays `"1.0"`):** if the simulation loop fails, the server logs it and ends the run with `SIMULATION_CANCELLED` (`reason: SERVER_ERROR`, the last completed tick) like any other terminal, so clients learn at once instead of after their silence timeout. The dashboard shows "Simulation server error. Retry the green corridor initialization.", which is also shown when a start fails with HTTP 5xx. Retry is manual from dispatch setup; the mock never emits it. Decision: `docs/adr/0007-server-error-cancel-reason.md`.
 
 14. **Simulated ITS feedback:** The approved 2026-10-23 feature specification supersedes direct TTI-to-confirmed-green statements above and ADR 0003 D16/D18: selection is separate from acceptance and reported phase confirmation. Timing thresholds remain eligibility rules, not confirmation. See Phase 3 and `docs/adr/0008-simulated-its-feedback.md` (Proposed).

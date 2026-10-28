@@ -4,8 +4,6 @@ network. Addresses are reconciled (``address_reconcile``) so each carries its pr
 Ambulance stations are the PRM team bases (``prm_places``, ADR 0014), and ``resources.parquet``
 lists the teams in scope."""
 
-import hashlib
-import json
 import logging
 from collections.abc import Iterator
 from dataclasses import replace
@@ -19,6 +17,7 @@ import shapely.ops
 from pydantic import BaseModel
 
 from greenwave import artifacts
+from greenwave.artifacts import input_hashes
 from greenwave.etl.address_reconcile import (
     ReconciliationCounts,
     ReconciliationExamples,
@@ -43,19 +42,16 @@ from greenwave.etl.connectivity import main_component_nodes
 from greenwave.etl.geo import project_points, unproject_points
 from greenwave.etl.ingest_osm import OsmFeature, iter_osm_records
 from greenwave.etl.intersections_pipeline import (
-    IDS_FILENAME,
     NETWORK_EDGES_FILENAME,
     NETWORK_NODES_FILENAME,
     artifact_hashes,
 )
-from greenwave.etl.io import REPORT_FILENAME
-from greenwave.etl.manifest import MANIFEST_FILENAME
 from greenwave.etl.municipal_addresses import (
     EMUIA_RELATIVE_PATH,
     emuia_export_timestamp,
     load_municipal_addresses,
 )
-from greenwave.etl.neighbours_pipeline import StaleArtifactError, _recorded_t4_hashes
+from greenwave.etl.neighbours_pipeline import verify_t4_inputs
 from greenwave.etl.prm_bases import PRM_BASES_FILENAME, load_base_coordinates, resolve_bases
 from greenwave.etl.prm_places import ResourcesReport, prm_stations
 from greenwave.etl.prm_roster import PRM_TABLES_RELATIVE_PATH, load_roster
@@ -130,6 +126,7 @@ class PlacesSection(BaseModel):
     address_dedup_radius_m: float
     consumed_sha256: dict[str, str]
     artifact_sha256: dict[str, str]
+    curated_sha256: dict[str, str]  # curated inputs, keyed relative to backend/
     stations: StationsReport
     addresses: AddressesReport
     resources: ResourcesReport
@@ -192,22 +189,7 @@ def _relocate_to_access_points(
 def run_places(
     raw_dir: Path, processed_dir: Path, curated_dir: Path = CURATED_DIR
 ) -> PlacesSection:
-    manifest_sha256 = hashlib.sha256((raw_dir / MANIFEST_FILENAME).read_bytes()).hexdigest()
-    ids = json.loads((processed_dir / IDS_FILENAME).read_text(encoding="utf-8"))
-    built_from = ids["valid_for"]["manifest_sha256"]
-    if built_from != manifest_sha256:
-        raise StaleArtifactError(
-            f"processed intersections were built from manifest {built_from[:12]}..., but the "
-            f"current manifest is {manifest_sha256[:12]}...; re-run the intersections step"
-        )
-    recorded = _recorded_t4_hashes(processed_dir / REPORT_FILENAME)
-    consumed = artifact_hashes(processed_dir, _CONSUMED)
-    changed = [name for name in _CONSUMED if consumed[name] != recorded[name]]
-    if changed:
-        raise StaleArtifactError(
-            f"{', '.join(changed)} differ from the hashes the intersections step recorded in "
-            f"{REPORT_FILENAME}; re-run the intersections step"
-        )
+    manifest_sha256, consumed = verify_t4_inputs(raw_dir, processed_dir, _CONSUMED)
 
     # Snap like the runtime router: only to the main component, so no place sits on an island.
     edges = pl.read_parquet(processed_dir / NETWORK_EDGES_FILENAME, columns=["u", "v"])
@@ -307,6 +289,7 @@ def run_places(
         address_dedup_radius_m=ADDRESS_DEDUP_RADIUS_M,
         consumed_sha256=consumed,
         artifact_sha256=artifact_hashes(processed_dir, PLACES_ARTIFACT_FILENAMES),
+        curated_sha256=input_hashes([curated_dir / PRM_BASES_FILENAME]),
         stations=StationsReport(
             by_vehicle_type=counts("vehicle_type"),
             by_source_kind=counts("source_kind"),

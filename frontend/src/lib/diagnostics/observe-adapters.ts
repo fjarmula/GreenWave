@@ -26,7 +26,7 @@ function synthetic(
     ? { method, path, ...(body === undefined ? {} : { requestBody: serialize(body) }) }
     : undefined;
 }
-export function observeOperation<T>(
+function observeOperation<T>(
   operation: Operation,
   transport: Transport,
   fn: () => Promise<T>,

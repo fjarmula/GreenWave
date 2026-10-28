@@ -11,9 +11,9 @@ import { isTelemetryStale } from "@/lib/simulation-state";
 import type { DispatchSettings } from "@/lib/start-request";
 import { ResponsiveNavigation } from "@/components/workspace/ResponsiveNavigation";
 import { routeForMode, viewRunPolicy } from "@/lib/workspace-routes";
-import { Fragment, useCallback, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { simulationOperationSlot } from "@/lib/operation-slot";
-import { useSimulationStream } from "@/lib/useSimulationStream";
+import { useSimulationActions } from "@/components/simulation-runtime";
 import { useSimulationState } from "@/components/simulation-provider";
 
 import { getFrontendConfig } from "@/lib/config";
@@ -51,7 +51,7 @@ export function Dashboard({
   selectedMode = "ENABLED",
   driver = false,
 }: { selectedMode?: GreenWaveMode; driver?: boolean } = {}) {
-  const { startSimulation, stopSimulation, stopRun } = useSimulationStream();
+  const { startSimulation, stopSimulation, stopRun } = useSimulationActions();
   const simulation = useSimulationState();
   const operationOwner = useSyncExternalStore(
     simulationOperationSlot.subscribe,
@@ -208,124 +208,76 @@ export function Dashboard({
       )}
     </>
   );
-  const pending = simulationState === "STARTING" || operationOwner === "comparison";
+  const pending = simulationState === "STARTING";
+  const startBlockedReason = operationOwner === "comparison" ? "Comparison running" : undefined;
   const signal =
     driver && routeData && simulationState === "RUNNING"
       ? nextSignal(routeData, simulation.liveTelemetry, isTelemetryStale(simulation))
       : null;
-  const setupLabel =
-    selectedMode === "ENABLED" ? "Initialize green corridor" : "Start standard-traffic run";
+  // Setup is the same sheet on every page; the shell hides it while an on-site answer shows.
+  const setupSheet: WorkspaceSheet = {
+    snap,
+    onSnapChange: setSnap,
+    minimizable,
+    collapsed: (
+      <DriverSetupCard
+        dispatch={dispatch}
+        capabilities={dispatchAdapter.capabilities}
+        geocode={dispatchAdapter.geocode}
+        settings={settingsForMode(settings, selectedMode)}
+        detailsOpen={snap === "expanded"}
+        onToggleDetails={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
+        notices={notices}
+      />
+    ),
+    expanded: (
+      <DriverSetupDetails
+        dispatch={dispatch}
+        capabilities={dispatchAdapter.capabilities}
+        settings={settingsForMode(settings, selectedMode)}
+        onSettingsChange={setSettings}
+        stationsError={stationsError}
+        onFocusMap={() => setMapFocusRequest((request) => request + 1)}
+        previousRun={driver ? null : previousRun}
+      />
+    ),
+  };
   // Green Wave and Standard use the sheet on phones only; desktop keeps the full inspector.
-  const workspaceSheet: WorkspaceSheet | undefined = !driver
-    ? mode === "setup"
-      ? {
-          snap,
-          onSnapChange: setSnap,
-          minimizable,
-          collapsed: onSite ? (
-            <OnSiteResult
-              station={onSite.station}
-              walk={onSite.walk}
-              onBackToSetup={() => setOnSiteAnswer(null)}
-            />
-          ) : (
-            <DriverSetupCard
-              showStartAction={false}
-              dispatch={dispatch}
-              capabilities={dispatchAdapter.capabilities}
-              geocode={dispatchAdapter.geocode}
-              settings={settingsForMode(settings, selectedMode)}
-              detailsOpen={snap === "expanded"}
-              onToggleDetails={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
-              notices={notices}
-              pending={pending}
-              replacement={policy.requiresReplacement}
-              errorMessage={null}
-              onInitialize={() => initialize(settingsForMode(settings, selectedMode))}
-              startLabel={setupLabel}
-            />
-          ),
-          expanded: (
-            <DriverSetupDetails
-              dispatch={dispatch}
-              capabilities={dispatchAdapter.capabilities}
-              settings={settingsForMode(settings, selectedMode)}
-              onSettingsChange={setSettings}
-              stationsError={stationsError}
-              onFocusMap={() => setMapFocusRequest((request) => request + 1)}
-              previousRun={previousRun}
-            />
-          ),
-        }
-      : {
-          snap,
-          onSnapChange: setSnap,
-          // Running: telemetry and the one Stop. Ended: the outcome and the way back to setup.
-          collapsed:
-            simulationState === "RUNNING" ? (
-              <KpiHeader onStop={stopRun} />
-            ) : (
-              <RunSummary onBackToSetup={backToSetup} onStop={stopRun} showStop={false} />
+  const workspaceSheet: WorkspaceSheet =
+    mode === "setup"
+      ? setupSheet
+      : driver
+        ? {
+            snap,
+            onSnapChange: setSnap,
+            collapsed: (
+              <DriverStatus state={simulation} onStop={stopRun} onBackToSetup={backToSetup} />
             ),
-          expanded: (
-            <div className="space-y-4 pt-1">
-              {simulationState !== "RUNNING" && <KpiHeader />}
-              <IntersectionList />
-              <ItsConsole />
-            </div>
-          ),
-        }
-    : mode === "setup"
-      ? {
-          snap,
-          onSnapChange: setSnap,
-          minimizable,
-          collapsed: onSite ? (
-            <OnSiteResult
-              station={onSite.station}
-              walk={onSite.walk}
-              onBackToSetup={() => setOnSiteAnswer(null)}
-            />
-          ) : (
-            <DriverSetupCard
-              showStartAction={false}
-              dispatch={dispatch}
-              capabilities={dispatchAdapter.capabilities}
-              geocode={dispatchAdapter.geocode}
-              settings={settingsForMode(settings, selectedMode)}
-              detailsOpen={snap === "expanded"}
-              onToggleDetails={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
-              notices={notices}
-              pending={pending}
-              replacement={policy.requiresReplacement}
-              errorMessage={null}
-              onInitialize={() => initialize(settingsForMode(settings, selectedMode))}
-            />
-          ),
-          expanded: (
-            <DriverSetupDetails
-              dispatch={dispatch}
-              capabilities={dispatchAdapter.capabilities}
-              settings={settingsForMode(settings, selectedMode)}
-              onSettingsChange={setSettings}
-              stationsError={stationsError}
-              onFocusMap={() => setMapFocusRequest((request) => request + 1)}
-            />
-          ),
-        }
-      : {
-          snap,
-          onSnapChange: setSnap,
-          collapsed: (
-            <DriverStatus state={simulation} onStop={stopRun} onBackToSetup={backToSetup} />
-          ),
-          expanded: (
-            <div className="space-y-4 pt-2">
-              <IntersectionList />
-              <ItsConsole />
-            </div>
-          ),
-        };
+            expanded: (
+              <div className="space-y-4 pt-2">
+                <IntersectionList />
+                <ItsConsole />
+              </div>
+            ),
+          }
+        : {
+            snap,
+            onSnapChange: setSnap,
+            // Running: telemetry and the one Stop. Ended: the outcome and the way back to setup.
+            collapsed:
+              simulationState === "RUNNING" ? (
+                <KpiHeader onStop={stopRun} />
+              ) : (
+                <RunSummary onBackToSetup={backToSetup} onStop={stopRun} showStop={false} />
+              ),
+            expanded: (
+              <div className="space-y-4 pt-1">
+                {simulationState !== "RUNNING" && <KpiHeader />}
+                <IntersectionList />
+                <ItsConsole />
+              </div>
+            ),
+          };
 
   return (
     <WorkspaceShell
@@ -346,6 +298,7 @@ export function Dashboard({
             replacement={policy.requiresReplacement}
             onInitialize={initialize}
             errorMessage={startErrorMessage}
+            blockedReason={startBlockedReason}
           />
         ) : undefined
       }
@@ -390,19 +343,14 @@ export function Dashboard({
             {notices}
             {mode === "setup" ? (
               <DispatchForm
-                showStartAction={false}
                 settings={settingsForMode(settings, selectedMode)}
                 modeLocked
-                replacement={policy.requiresReplacement}
                 onSettingsChange={setSettings}
                 previousRun={previousRun}
                 stationsError={stationsError}
-                pending={pending}
-                errorMessage={null}
                 dispatch={dispatch}
                 capabilities={dispatchAdapter.capabilities}
                 geocode={dispatchAdapter.geocode}
-                onInitialize={initialize}
                 onFocusMap={() => setMapFocusRequest((request) => request + 1)}
               />
             ) : (
@@ -417,31 +365,5 @@ export function Dashboard({
         )
       }
     />
-  );
-}
-
-/**
- * Setup and live share one element path to the route preview, so React keeps the
- * MapLibre instance across mode switches. Live uses `contents`, so the preview stays a
- * flex child of `main` as before.
- */
-export function DashboardLayout({
-  mode,
-  form,
-  preview,
-}: {
-  mode: DashboardMode;
-  form: ReactNode;
-  preview: ReactNode;
-}) {
-  return (
-    <section
-      className={
-        mode === "setup" ? "grid min-h-0 flex-1 lg:grid-cols-[370px_minmax(0,1fr)]" : "contents"
-      }
-    >
-      {mode === "setup" && <div className="order-2 min-w-0 lg:order-1">{form}</div>}
-      <Fragment key="route-preview">{preview}</Fragment>
-    </section>
   );
 }

@@ -15,7 +15,8 @@ def best_incident_class(graph: nx.MultiDiGraph, nodes: str | list[str]) -> str:
         for node in node_list
         for _, _, data in [*graph.in_edges(node, data=True), *graph.out_edges(node, data=True)]
     }
-    return min(classes, key=lambda c: _ROAD_RANK.get(c, 9)) if classes else "none"
+    # Unranked classes tie at 9; the name breaks ties so the pick never depends on set order.
+    return min(classes, key=lambda c: (_ROAD_RANK.get(c, 9), c)) if classes else "none"
 
 
 def centroid(graph: nx.MultiDiGraph, nodes: list[str]) -> tuple[float, float, str]:

@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import type { DispatchAdapter } from "@/lib/dispatch-adapter";
+import { warsawMinute } from "@/lib/local-time";
 import { toSimulationErrorInfo } from "@/lib/transport/errors";
 import type {
   AddressProvenance,
@@ -8,7 +9,6 @@ import type {
   ErrorCode,
   GreenWaveMode,
   Position,
-  RankedCandidate,
   ResourcesResponse,
   VehicleType,
 } from "@/types/telemetry";
@@ -43,14 +43,9 @@ export type RankStatus = "idle" | "loading" | "ready" | "error";
 /** A team's simulated status in the scenario; "unknown" sends no override (assumed free). */
 export type TeamAvailability = "unknown" | "free" | "busy";
 
-/** Local wall-clock "YYYY-MM-DDTHH:MM" (a `datetime-local` value), rounded down to 5 minutes. */
-export function scenarioTimeAt(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const minutes = date.getMinutes() - (date.getMinutes() % 5);
-  return (
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-    `T${pad(date.getHours())}:${pad(minutes)}`
-  );
+/** Kraków wall-clock "YYYY-MM-DDTHH:MM" (a `datetime-local` value), rounded down to 5 minutes. */
+function scenarioTimeAt(date: Date): string {
+  return warsawMinute(date, 5);
 }
 
 /** A density slider drag re-ranks once, this long after its last step. */
@@ -70,26 +65,16 @@ export type IncidentDispatchState = {
   scenarioTime: string;
   /** Simulated team status by team code; a team left out is unknown (assumed free). */
   availability: Record<string, "free" | "busy">;
+  /** Off: ambulances go to the nearest PRM base, ignoring shifts, availability and areas. */
+  resourceAware: boolean;
   /** Which estimate the area rule compares: the page's run, green wave on the comparison. */
   rankTimeMode: GreenWaveMode;
   /** The roster and each team's shift at `scenarioTime`; `null` without the capability. */
   resources: ResourcesResponse | null;
 };
 
-/** The candidate the run starts from: the dispatcher's pick, else the fastest. */
-export function selectedCandidate(
-  state: Pick<IncidentDispatchState, "ranking" | "selectedStationId">,
-): RankedCandidate | null {
-  const candidates = state.ranking?.candidates ?? [];
-  return (
-    candidates.find((candidate) => candidate.station.station_id === state.selectedStationId) ??
-    candidates[0] ??
-    null
-  );
-}
-
+/** Friendlier copy for some ranking errors; others show the backend's message (its limits). */
 const RANK_ERROR_COPY: Partial<Record<ErrorCode, string>> = {
-  DESTINATION_OFF_NETWORK: "No vehicle access within 800 m of this location",
   NO_STATION_REACHABLE: "No station of this type can reach this location",
 };
 
@@ -106,17 +91,19 @@ export function describeRankError(error: unknown): string {
 export function createIncidentDispatch(
   adapter: DispatchAdapter,
   now: () => Date = () => new Date(),
+  initial: { trafficDensity: number } = { trafficDensity: 1 },
 ) {
   let state: IncidentDispatchState = {
     vehicleType: "AMBULANCE",
     incident: null,
-    trafficDensity: 1,
+    trafficDensity: initial.trafficDensity,
     ranking: null,
     rankStatus: "idle",
     rankError: null,
     selectedStationId: null,
     scenarioTime: scenarioTimeAt(now()),
     availability: {},
+    resourceAware: true,
     rankTimeMode: "ENABLED",
     resources: null,
   };
@@ -174,6 +161,7 @@ export function createIncidentDispatch(
           time_mode: next.rankTimeMode,
           // Overrides are PRM ambulance teams; other vehicle types have none.
           availability: next.vehicleType === "AMBULANCE" ? next.availability : {},
+          resource_aware: next.resourceAware,
         },
         controller.signal,
       )
@@ -235,8 +223,15 @@ export function createIncidentDispatch(
      */
     setTrafficDensity(trafficDensity: number) {
       if (trafficDensity === state.trafficDensity) return;
-      update({ trafficDensity });
-      if (state.incident === null) return;
+      if (state.incident === null) {
+        update({ trafficDensity });
+        return;
+      }
+      // The shown standard times are for the old density: never "ready" until the re-rank.
+      inFlight?.abort();
+      inFlight = null;
+      sequence += 1;
+      update({ trafficDensity, rankStatus: "loading", rankError: null });
       cancelDensityRerank();
       densityTimer = setTimeout(() => rank({}, true), DENSITY_RERANK_DELAY_MS);
     },
@@ -254,6 +249,11 @@ export function createIncidentDispatch(
       if (value === "unknown") delete availability[teamCode];
       else availability[teamCode] = value;
       rankIfAmbulance({ availability });
+    },
+    /** Turns team-aware ranking on or off (the candidates change, so the pick resets). */
+    setResourceAware(resourceAware: boolean) {
+      if (resourceAware === state.resourceAware) return;
+      rankIfAmbulance({ resourceAware });
     },
     /** The page's estimate for the area rule; the same stations, so the pick is kept. */
     setRankTimeMode(rankTimeMode: GreenWaveMode) {
@@ -285,11 +285,15 @@ export type IncidentDispatch = IncidentDispatchState & {
   selectStation: (stationId: string) => void;
   setScenarioTime: (scenarioTime: string) => void;
   setTeamAvailability: (teamCode: string, value: TeamAvailability) => void;
+  setResourceAware: (resourceAware: boolean) => void;
   setRankTimeMode: (mode: GreenWaveMode) => void;
 };
 
-export function useIncidentDispatch(adapter: DispatchAdapter): IncidentDispatch {
-  const [dispatch] = useState(() => createIncidentDispatch(adapter));
+export function useIncidentDispatch(
+  adapter: DispatchAdapter,
+  initial?: { trafficDensity: number },
+): IncidentDispatch {
+  const [dispatch] = useState(() => createIncidentDispatch(adapter, undefined, initial));
   const state = useSyncExternalStore(dispatch.subscribe, dispatch.getState, dispatch.getState);
   useEffect(() => {
     dispatch.refreshResources();
@@ -303,6 +307,7 @@ export function useIncidentDispatch(adapter: DispatchAdapter): IncidentDispatch 
     selectStation: dispatch.selectStation,
     setScenarioTime: dispatch.setScenarioTime,
     setTeamAvailability: dispatch.setTeamAvailability,
+    setResourceAware: dispatch.setResourceAware,
     setRankTimeMode: dispatch.setRankTimeMode,
   };
 }

@@ -11,7 +11,6 @@ no live availability, no official dispatch protocol.
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal
 
 from greenwave.places.incident_area import IncidentArea
 from greenwave.routing.access import access_nodes
@@ -31,9 +30,8 @@ from greenwave.routing.team_eligibility import (
     classify,
 )
 from greenwave.schemas import GreenWaveMode, Position, VehicleType
+from greenwave.schemas.dispatch import SelectionReason
 from greenwave.simulation_settings import SimulationSettings
-
-SelectionReason = Literal["NEAREST", "IN_AREA_WITHIN_MARGIN", "NEAREST_OUTSIDE_MARGIN"]
 
 
 @dataclass(frozen=True)
@@ -52,6 +50,7 @@ class AreaRule:
     nearest_team_code: str  # the fastest candidate's team
     in_area_team_code: str | None  # the fastest in-area candidate's team
     delta_seconds: float | None  # in-area total minus the fastest total
+    margin_seconds: float  # the area preference margin the choice was made with
 
 
 @dataclass(frozen=True)
@@ -90,6 +89,7 @@ def order_by_area_rule(
         nearest_team_code=fastest.team.team_code,
         in_area_team_code=in_area.team.team_code if in_area is not None else None,
         delta_seconds=delta,
+        margin_seconds=margin_s,
     )
     return (first, *(c for c in by_total if c is not first)), rule
 
@@ -152,8 +152,10 @@ def rank_teams(
         VehicleType.AMBULANCE,
         settings,
         traffic_density_multiplier,
+        time_mode=time_mode,
         include_fastest_of=in_area_bases,
         max_candidates=len(eligible_nodes),
+        shortlist_size=len(eligible_nodes),  # at most 8 bases: no motion-time cut
     )
     candidates = [
         RankedTeam(

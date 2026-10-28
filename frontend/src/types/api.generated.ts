@@ -37,7 +37,8 @@ export interface paths {
          * Rank
          * @description Sync on purpose: FastAPI runs it in the thread pool, keeping the CPU work off the loop.
          *
-         *     AMBULANCE ranks eligible PRM teams (ADR 0014); fire and police rank stations as before.
+         *     AMBULANCE ranks eligible PRM teams (ADR 0014) unless ``resource_aware`` is off; fire,
+         *     police and non-resource-aware ambulances rank stations as before.
          */
         post: operations["rank_api_v1_dispatch_rank_post"];
         delete?: never;
@@ -233,6 +234,8 @@ export interface components {
             delta_seconds: number | null;
             /** In Area Team Code */
             in_area_team_code: string | null;
+            /** Margin Seconds */
+            margin_seconds: number;
             /** Nearest Team Code */
             nearest_team_code: string;
             /**
@@ -320,6 +323,11 @@ export interface components {
                 [key: string]: "free" | "busy";
             };
             incident: components["schemas"]["Position"];
+            /**
+             * Resource Aware
+             * @default true
+             */
+            resource_aware: boolean;
             /** Scenario Time */
             scenario_time?: string | null;
             /** @default ENABLED */
@@ -356,7 +364,6 @@ export interface components {
              * @constant
              */
             schema_version: "1.0";
-            station_at_incident: components["schemas"]["Station"] | null;
         };
         /**
          * ErrorCode
@@ -975,10 +982,10 @@ export interface components {
         };
         /**
          * StationSourceKind
-         * @description Where a station comes from; the UI names it, so hospital EDs are not passed off as bases.
+         * @description Where a station comes from; the UI names it. Ambulances start only from PRM bases.
          * @enum {string}
          */
-        StationSourceKind: "prm_base" | "ambulance_base" | "hospital_ed" | "fire_state" | "fire_volunteer" | "fire_other" | "police";
+        StationSourceKind: "prm_base" | "fire_state" | "fire_volunteer" | "fire_other" | "police";
         /** StationsResponse */
         StationsResponse: {
             /**

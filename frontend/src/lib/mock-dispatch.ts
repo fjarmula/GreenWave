@@ -7,19 +7,9 @@ import snapshot from "@/data/stations.snapshot.json";
 import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import { SimulationAdapterError } from "@/lib/transport/errors";
 import { validateStations } from "@/lib/transport/validate";
+import { warsawMinute } from "@/lib/local-time";
 import { haversineMeters } from "@/lib/mock-route-metrics";
 import type { Station } from "@/types/telemetry";
-
-export { haversineMeters } from "@/lib/mock-route-metrics";
-
-/** Naive local "YYYY-MM-DDTHH:MM:00", the shape the backend echoes as scenario_time. */
-function localMinute(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return (
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-    `T${pad(date.getHours())}:${pad(date.getMinutes())}:00`
-  );
-}
 
 export function createMockDispatchAdapter(
   stations: Station[] = validateStations(snapshot).stations,
@@ -39,7 +29,8 @@ export function createMockDispatchAdapter(
       throw new Error("Address search needs the backend");
     },
 
-    async rank({ incident, vehicle_type }) {
+    async rank(request) {
+      const { incident, vehicle_type } = request;
       const ranked = stations
         .filter((station) => station.vehicle_type === vehicle_type)
         .map((station) => ({ station, distance: haversineMeters(incident, station.position) }))
@@ -81,9 +72,9 @@ export function createMockDispatchAdapter(
               ]
             : []),
         ].slice(0, 3),
-        station_at_incident: null,
         // No roster in mock mode (capability resources: false): plain nearest station.
-        scenario_time: localMinute(new Date()),
+        // Echoed like the backend: the request's time, else Kraków now.
+        scenario_time: `${request.scenario_time ?? warsawMinute(new Date())}:00`,
         outcome: "OK",
         incident_area: null,
         excluded_teams: [],

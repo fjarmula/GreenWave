@@ -5,7 +5,7 @@ export type Rect = { left: number; top: number; right: number; bottom: number };
 export type Padding = { top: number; bottom: number; left: number; right: number };
 
 /** Clear space kept between a fitted route and the nearest map edge or overlay. */
-export const ROUTE_FIT_MARGIN_PX = 32;
+const ROUTE_FIT_MARGIN_PX = 32;
 /** Largest share of an axis the combined padding may take, so the route always has room. */
 const MAX_AXIS_PADDING_SHARE = 0.6;
 const EDGES = ["top", "bottom", "left", "right"] as const;

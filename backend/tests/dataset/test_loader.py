@@ -1,5 +1,6 @@
 import json
 from collections.abc import Callable
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -789,7 +790,7 @@ def test_dataset_exposes_resources(layout: Layout) -> None:
 
     assert dataset.resources["team_code"].to_list() == ["K01 008", "K01 162", "K01 176"]
     assert dataset.counts.resources == 3
-    assert (dataset.roster.plan_update, dataset.roster.effective_from) == ("2", "2026-09-01")
+    assert (dataset.roster.plan_update, dataset.roster.effective_from) == ("2", date(2026, 9, 1))
     assert dataset.roster.teams_in_scope == 3
 
 
@@ -849,3 +850,46 @@ def test_prm_base_without_team_rejected(layout: Layout) -> None:
 
     with pytest.raises(MalformedArtifactError, match="no team"):
         load_dataset(layout.processed, layout.manifest)
+
+
+@pytest.mark.parametrize(
+    ("column", "value"),
+    [
+        ("team_code", pl.col("team_code").str.replace(" ", "")),  # still unique per team
+        ("weekdays", pl.lit("1238")),
+        ("season_from", pl.lit("1 Jan")),
+        ("season_to", pl.lit("13-01")),
+        ("area_teryt", pl.lit("")),
+        ("team_type", pl.lit("X9")),
+    ],
+)
+def test_resources_reject_bad_formats(layout: Layout, column: str, value: pl.Expr) -> None:
+    edit_parquet(
+        layout.processed / RESOURCES_FILENAME, lambda f: f.with_columns(value.alias(column))
+    )
+
+    with pytest.raises(MalformedArtifactError, match=column):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_addresses_reject_district_out_of_range(layout: Layout) -> None:
+    district = pl.col("district_number")
+    edit_parquet(
+        layout.processed / ADDRESSES_FILENAME,
+        lambda f: f.with_columns(
+            pl.when(district.is_not_null())
+            .then(19)
+            .otherwise(district)
+            .cast(pl.Int8)
+            .alias("district_number")
+        ),
+    )
+
+    with pytest.raises(MalformedArtifactError, match=r"district_number.*1-18"):
+        load_dataset(layout.processed, layout.manifest)
+
+
+def test_roster_effective_from_is_a_date(layout: Layout) -> None:
+    dataset = load_dataset(layout.processed, layout.manifest)
+
+    assert dataset.roster.effective_from == date(2026, 9, 1)

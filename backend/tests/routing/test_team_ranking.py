@@ -298,3 +298,16 @@ def test_team_of_an_unknown_station_is_ignored() -> None:
     ranking = rank((team("K01 004", "STN-A-0004"), team("K01 099", "STN-A-0099")))
 
     assert codes(ranking) == ["K01 004"]
+
+
+def test_team_ranking_estimates_every_eligible_base() -> None:
+    """No motion-time cut for teams: every eligible base gets the full estimate."""
+    teams = (
+        team("K01 001", "STN-A-0001"),
+        team("K01 002", "STN-A-0002"),
+        team("K01 004", "STN-A-0004"),
+    )
+
+    ranking = rank(teams, area=None, dispatch_shortlist_size=1)
+
+    assert sorted(codes(ranking)) == ["K01 001", "K01 002", "K01 004"]

@@ -6,7 +6,6 @@ reuse the analysis ranges in ``etl.config`` and add no thresholds. Output is det
 inputs, same bytes.
 """
 
-import hashlib
 import json
 import math
 import re
@@ -23,6 +22,7 @@ from greenwave.artifacts import (
     REPORT_FILENAME,
     RESOURCES_FILENAME,
     artifact_hashes,
+    verify_input_hashes,
 )
 from greenwave.etl.bus_lanes import (
     STATUS_OSM_HAS_BUS_LANE,
@@ -33,7 +33,7 @@ from greenwave.etl.bus_lanes import (
 from greenwave.etl.config import ROUTE_DETOUR_RATIO_RANGE, STREET_LENGTH_RATIO_RANGE
 from greenwave.etl.graph_pipeline import ROUTES_FILENAME, STREET_TABLE_FILENAME
 from greenwave.etl.intersections_pipeline import NEAR_MISSES_FILENAME
-from greenwave.etl.manifest import MANIFEST_FILENAME, Manifest, load_manifest
+from greenwave.etl.manifest import MANIFEST_FILENAME, Manifest, load_manifest, sha256_of_file
 from greenwave.etl.prepare import TERTIARY_PLUS_FILENAME
 from greenwave.schemas.dataset_quality import (
     DatasetQualityResponse,
@@ -403,7 +403,7 @@ def build_quality(processed_dir: Path, raw_dir: Path, manifest: Manifest) -> Dat
     return DatasetQualityResponse(
         schema_version="1.0",
         is_simulated=True,
-        manifest_sha256=hashlib.sha256((raw_dir / MANIFEST_FILENAME).read_bytes()).hexdigest(),
+        manifest_sha256=sha256_of_file(raw_dir / MANIFEST_FILENAME),
         msip_export_timestamp=msip_export_timestamp(raw_dir),
         checks=[
             _near_misses(processed_dir),
@@ -435,7 +435,11 @@ def write_quality(summary: DatasetQualityResponse, processed_dir: Path) -> str:
     text = json.dumps(summary.model_dump(mode="json"), ensure_ascii=False, sort_keys=True, indent=2)
     path = processed_dir / QUALITY_FILENAME
     path.write_text(text + "\n", encoding="utf-8")
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return sha256_of_file(path)
+
+
+def _rerun(step: str) -> str:
+    return f"`uv run python scripts/run_etl.py {step}` and the steps after it"
 
 
 def run_quality(raw_dir: Path, processed_dir: Path) -> QualitySection:
@@ -454,6 +458,9 @@ def run_quality(raw_dir: Path, processed_dir: Path) -> QualitySection:
         raise QualityInputError(
             f"{REPORT_FILENAME} has no places section; run the places step before `quality`"
         )
+    # A curated input edited after its step ran would leave the processed data stale.
+    for step in ("intersections", "places"):
+        verify_input_hashes(report.get(step, {}).get("curated_sha256", {}), _rerun(step))
     consumed = artifact_hashes(processed_dir, QUALITY_INPUT_FILENAMES)  # hashed before reading
     summary = build_quality(processed_dir, raw_dir, load_manifest(raw_dir / MANIFEST_FILENAME))
     return QualitySection(

@@ -172,3 +172,16 @@ def test_late_ack_cannot_activate_an_already_expired_hold() -> None:
     update = observe(controller, model, 55)
     assert [f.status for f in update.feedback] == ["ACCEPTED", "EXPIRED"]
     assert all(r.state == "NORMAL" for r in update.intersection_runtimes)
+
+
+def test_passed_requested_target_without_priority_goes_normal() -> None:
+    """A target passed before the controller granted it never held priority: no RECOVERY."""
+    controller, model = setup(ItsScenario.DELAYED)
+    controller.submit(request())
+    position = [i.id for i in model.intersections].index("INT-A")
+
+    runtime = observe(controller, model, 11, passed=("INT-A",)).intersection_runtimes[position]
+
+    assert runtime.passed
+    assert runtime.state == "NORMAL"
+    assert runtime.recovery_started_at_s is None

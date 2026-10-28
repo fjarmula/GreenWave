@@ -109,27 +109,14 @@ describe("KpiHeader baseline label", () => {
 
 describe("KpiHeader run outcome", () => {
   it.each([
-    ["FINISHED", null, "SIMULATION FINISHED", "Simulation finished"],
-    ["CANCELLED", "STOPPED", "SIMULATION STOPPED", "Simulation stopped"],
-    ["CANCELLED", "SERVER_ERROR", "SERVER ERROR", "Simulation server error"],
-    ["CANCELLED", "SUPERSEDED", "SIMULATION CANCELLED", "Simulation cancelled"],
-    ["ERROR", null, "TELEMETRY STOPPED", "Simulation error"],
-  ] as const)("%s (%s): badge %s, phone chip %s", (phase, reason, badge, chip) => {
+    ["FINISHED", null, "SIMULATION FINISHED"],
+    ["CANCELLED", "STOPPED", "SIMULATION STOPPED"],
+    ["CANCELLED", "SERVER_ERROR", "SERVER ERROR"],
+    ["CANCELLED", "SUPERSEDED", "SIMULATION CANCELLED"],
+    ["ERROR", null, "TELEMETRY STOPPED"],
+  ] as const)("%s (%s): badge %s", (phase, reason, badge) => {
     state = { ...initialSimulationState, simulationState: phase, cancelReason: reason };
-    const markup = renderToStaticMarkup(<KpiHeader onStop={() => undefined} />);
-
-    expect(markup).toContain(badge);
-    const phoneChip = markup.match(/<button[^>]*data-testid="run-outcome"[^>]*>(.*?)<\/button>/);
-    expect(phoneChip?.[0]).toContain("lg:hidden");
-    expect(phoneChip?.[1]).toContain(chip);
-    expect(phoneChip?.[1]).toContain("Summary");
-  });
-
-  it.each(["SETUP", "RUNNING"] as SimulationPhase[])("has no outcome chip while %s", (phase) => {
-    state = { ...initialSimulationState, simulationState: phase };
-    expect(renderToStaticMarkup(<KpiHeader onStop={() => undefined} />)).not.toContain(
-      "run-outcome",
-    );
+    expect(renderToStaticMarkup(<KpiHeader />)).toContain(badge);
   });
 });
 

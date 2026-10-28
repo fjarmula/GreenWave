@@ -307,6 +307,31 @@ describe("ER Green Wave mode and signal phases", () => {
   });
 });
 
+describe("ITS request snapshots", () => {
+  it("accepts a snapshot without last_feedback_sequence and defaults it to 0", () => {
+    const parsed = parseStreamEvent(
+      wire(tickEventExample, (copy) => {
+        copy.its_requests = [
+          {
+            message_id: "MSG-ITS-1",
+            intersections_group: ["INT-0360"],
+            status: "REQUESTED",
+            submitted_at_simulated_sec: 3,
+            last_updated_at_simulated_sec: 3,
+          },
+        ];
+      }),
+      SIMULATION_ID,
+    );
+    if (parsed?.event_type !== "SIMULATION_TICK") throw new Error("tick dropped");
+    expect(parsed.its_requests?.[0]).toMatchObject({
+      last_feedback_sequence: 0,
+      acknowledged_at_simulated_sec: null,
+      reason: null,
+    });
+  });
+});
+
 describe("parseComparisonStartResponse", () => {
   const pair = {
     schema_version: "1.0",
@@ -316,6 +341,18 @@ describe("parseComparisonStartResponse", () => {
   };
   it("accepts both runs of the pair", () => {
     expect(parseComparisonStartResponse(wire(pair))).toEqual(pair);
+  });
+  it("defaults its_scenario for both members", () => {
+    const parsed = parseComparisonStartResponse(
+      wire(pair, (copy) => {
+        delete record(copy.enabled).its_scenario;
+        delete record(copy.disabled).its_scenario;
+      }),
+    );
+    expect([parsed.enabled.its_scenario, parsed.disabled.its_scenario]).toEqual([
+      "NOMINAL",
+      "NOMINAL",
+    ]);
   });
   it("rejects a member in the wrong mode", () => {
     expect(() =>
@@ -365,7 +402,7 @@ describe("on-foot legs", () => {
         station: {
           station_id: "STN-A-0001",
           vehicle_type: "AMBULANCE",
-          source_kind: "ambulance_base",
+          source_kind: "prm_base",
           name: "A",
           position: { lat: 50.05, lng: 19.9 },
         },
@@ -375,7 +412,6 @@ describe("on-foot legs", () => {
         ...(onFoot === undefined ? {} : { on_foot: onFoot }),
       },
     ],
-    station_at_incident: null,
     scenario_time: "2026-10-27T12:00:00",
     outcome: "OK",
     incident_area: null,
@@ -391,6 +427,12 @@ describe("on-foot legs", () => {
     expect(validateRank(onSite).candidates[0].on_site).toBe(true);
     record((onSite.candidates as unknown[])[0]).on_site = "yes";
     expect(() => validateRank(onSite)).toThrow("candidates[0].on_site");
+  });
+
+  it("does not mutate the rank body it validates", () => {
+    const body = record(wire(rank()));
+    validateRank(body);
+    expect(record((body.candidates as unknown[])[0])).not.toHaveProperty("on_site");
   });
 
   it("accepts a PRM base station", () => {
@@ -531,6 +573,12 @@ describe("resource-aware ambulance ranking (ADR 0014)", () => {
       "area_rule.delta_seconds",
       (c: Record<string, unknown>) => {
         record(c.area_rule).delta_seconds = "40";
+      },
+    ],
+    [
+      "area_rule.margin_seconds",
+      (c: Record<string, unknown>) => {
+        delete record(c.area_rule).margin_seconds;
       },
     ],
     [

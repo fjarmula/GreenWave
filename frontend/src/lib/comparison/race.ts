@@ -76,7 +76,7 @@ export function raceReadout(standing: RaceStanding): string {
   return "Level";
 }
 
-export function comparisonResultLabel(delta: number) {
+function comparisonResultLabel(delta: number) {
   return delta === 0
     ? "same travel time"
     : delta > 0

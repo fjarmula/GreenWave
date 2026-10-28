@@ -42,3 +42,20 @@ class EngineState:
     signal_heads: tuple[SignalHead, ...] = ()
     # Enabled mode: the intersection whose D_min slowdown has started, so it starts only once.
     slowdown_intersection_id: str | None = None
+
+
+def initial_engine_state(intersection_count: int, v_avg_meters_per_second: float) -> EngineState:
+    """The state at t = 0: at the origin, every intersection NORMAL and not passed."""
+    return EngineState(
+        simulated_time_s=0,
+        distance_travelled_m=0.0,
+        current_edge_index=0,
+        dwell_remaining_s=0.0,
+        dwelling_intersection_id=None,
+        v_avg_meters_per_second=v_avg_meters_per_second,
+        intersection_runtimes=tuple(IntersectionRuntime() for _ in range(intersection_count)),
+        tick=0,
+        message_sequence=0,
+        arrived=False,
+        completed=False,
+    )

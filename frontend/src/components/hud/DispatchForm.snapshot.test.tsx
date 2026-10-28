@@ -7,6 +7,7 @@ import { GreenWaveToggle } from "@/components/hud/dispatch/GreenWaveToggle";
 import { PlaybackSpeedSelector } from "@/components/hud/dispatch/PlaybackSpeedSelector";
 import { PreflightEstimate } from "@/components/hud/dispatch/PreflightEstimate";
 import { TrafficDensityControl } from "@/components/hud/dispatch/TrafficDensityControl";
+import { DispatchSettingsFields } from "@/components/hud/dispatch/DispatchSettingsFields";
 import { DispatchStartButton } from "@/components/hud/dispatch/DispatchStartButton";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import type { SimulationTransport } from "@/lib/config";
@@ -46,7 +47,6 @@ const RANKING: DispatchRankResponse = {
       on_site: false,
     },
   ],
-  station_at_incident: null,
   scenario_time: "2026-10-27T12:00:00",
   outcome: "OK",
   incident_area: null,
@@ -70,6 +70,7 @@ function dispatchState(patch: Partial<IncidentDispatch> = {}): IncidentDispatch 
     selectedStationId: null,
     scenarioTime: "2026-10-27T12:00",
     availability: {},
+    resourceAware: true,
     rankTimeMode: "ENABLED",
     resources: null,
     setVehicleType: () => undefined,
@@ -78,6 +79,7 @@ function dispatchState(patch: Partial<IncidentDispatch> = {}): IncidentDispatch 
     selectStation: () => {},
     setScenarioTime: () => undefined,
     setTeamAvailability: () => undefined,
+    setResourceAware: () => undefined,
     setRankTimeMode: () => undefined,
     ...patch,
   };
@@ -93,9 +95,6 @@ function render(
     <DispatchForm
       settings={settings}
       onSettingsChange={() => undefined}
-      onInitialize={() => undefined}
-      pending={false}
-      errorMessage={null}
       dispatch={dispatch}
       capabilities={{ geocode: roadTimeRanking, roadTimeRanking, resources }}
       geocode={async () => []}
@@ -117,9 +116,6 @@ describe.each(["mock", "backend"] as const)("DispatchForm markup (%s transport)"
       <DispatchForm
         settings={DEFAULT_DISPATCH_SETTINGS}
         onSettingsChange={() => undefined}
-        onInitialize={() => undefined}
-        pending={false}
-        errorMessage="Simulation backend unreachable"
         dispatch={dispatchState()}
         capabilities={{
           geocode: name === "backend",
@@ -135,17 +131,27 @@ describe.each(["mock", "backend"] as const)("DispatchForm markup (%s transport)"
   });
 });
 
-describe("DispatchForm start button", () => {
+const renderStart = (dispatch: IncidentDispatch) =>
+  renderToStaticMarkup(
+    <DispatchStartButton
+      dispatch={dispatch}
+      settings={DEFAULT_DISPATCH_SETTINGS}
+      pending={false}
+      onInitialize={() => undefined}
+    />,
+  );
+
+describe("DispatchStartButton readiness", () => {
   it.each([
     ["idle", dispatchState({ incident: null, ranking: null, rankStatus: "idle" })],
     ["loading", dispatchState({ ranking: null, rankStatus: "loading" })],
     ["error", dispatchState({ ranking: null, rankStatus: "error", rankError: "x" })],
   ])("is disabled while the ranking is %s", (_name, dispatch) => {
-    expect(startButton(render(dispatch))).toMatch(/ disabled=""/);
+    expect(startButton(renderStart(dispatch))).toMatch(/ disabled=""/);
   });
 
   it("is enabled once a ranking is ready", () => {
-    expect(startButton(render(dispatchState()))).not.toMatch(/ disabled=""/);
+    expect(startButton(renderStart(dispatchState()))).not.toMatch(/ disabled=""/);
   });
 
   it('labels the start "Dispatch on foot" for an on-site selection', () => {
@@ -161,10 +167,10 @@ describe("DispatchForm start button", () => {
       },
       on_site: true,
     };
-    const markup = render(dispatchState({ ranking: { ...RANKING, candidates: [onSite] } }));
+    const markup = renderStart(dispatchState({ ranking: { ...RANKING, candidates: [onSite] } }));
     expect(fullStartButton(markup)).toContain("Dispatch on foot");
     expect(startButton(markup)).not.toMatch(/ disabled=""/);
-    expect(fullStartButton(render(dispatchState()))).not.toContain("Dispatch on foot");
+    expect(fullStartButton(renderStart(dispatchState()))).not.toContain("Dispatch on foot");
   });
 
   it("offers the three vehicle types", () => {
@@ -207,14 +213,10 @@ const CHOSEN: DispatchSettings = {
 function formProps(
   settings: DispatchSettings,
   onSettingsChange: (settings: DispatchSettings) => void = () => undefined,
-  onInitialize: (settings: DispatchSettings) => void = () => undefined,
 ): Parameters<typeof DispatchForm>[0] {
   return {
     settings,
     onSettingsChange,
-    onInitialize,
-    pending: false,
-    errorMessage: null,
     dispatch: dispatchState(),
     capabilities: { geocode: true, roadTimeRanking: true, resources: false },
     geocode: async () => [],
@@ -222,7 +224,9 @@ function formProps(
   };
 }
 
-const formTree = (...args: Parameters<typeof formProps>) => DispatchForm(formProps(...args));
+// The settings controls live in the shared fields; their element tree is hook-free.
+const formTree = (...args: Parameters<typeof formProps>) =>
+  DispatchSettingsFields({ ...formProps(...args), layout: "panel" });
 
 describe("DispatchForm station list failure", () => {
   it("says so in the ranking area", () => {
@@ -251,7 +255,15 @@ describe("DispatchForm settings", () => {
     expect(markup).toMatch(/role="radio" aria-checked="true"[^>]*>Disabled</);
     expect(markup).toMatch(/role="radio" aria-checked="true"[^>]*>10×</);
     expect(markup).toMatch(/role="switch" aria-checked="false"[^>]*disabled=""/);
-    expect(markup).toContain("Start standard-traffic run");
+    const start = renderToStaticMarkup(
+      <DispatchStartButton
+        dispatch={dispatchState()}
+        settings={CHOSEN}
+        pending={false}
+        onInitialize={() => {}}
+      />,
+    );
+    expect(start).toContain("Start standard-traffic run");
   });
 
   it("reports the full updated settings when a control changes", () => {
@@ -294,7 +306,6 @@ describe("DispatchForm settings", () => {
     const card = withRun.indexOf("Previous simulated run");
 
     expect(card).toBeGreaterThan(withRun.indexOf("Playback speed"));
-    expect(card).toBeLessThan(withRun.indexOf('data-testid="start-corridor"'));
     expect(render(dispatchState(), true, CHOSEN)).not.toContain("Previous simulated run");
   });
 
@@ -461,9 +472,19 @@ describe("mock preflight estimates", () => {
 
 it("uses the shared dispatch controls to configure both comparison modes", () => {
   const props = { ...formProps(CHOSEN), intent: "comparison" as const };
-  const tree = DispatchForm(props);
+  const tree = DispatchSettingsFields({ ...props, layout: "panel" });
   const html = renderToStaticMarkup(<DispatchForm {...props} />);
-  expect(html).toContain("Start comparison");
+  expect(
+    renderToStaticMarkup(
+      <DispatchStartButton
+        dispatch={dispatchState()}
+        settings={CHOSEN}
+        pending={false}
+        intent="comparison"
+        onInitialize={() => {}}
+      />,
+    ),
+  ).toContain("Start comparison");
   expect(html).toContain("Green Wave and standard traffic");
   expect(html).not.toContain('aria-label="ER Green Wave mode"');
   expect(propsOf(tree, CascadeToggle).disabled).toBe(false);
@@ -471,6 +492,22 @@ it("uses the shared dispatch controls to configure both comparison modes", () =>
   expect(propsOf(tree, PlaybackSpeedSelector).label).toBeUndefined();
   expect(html).toContain("one simulated clock");
   expect(html).not.toContain("Replay");
+});
+
+it("labels the start as blocked, not busy, while a comparison runs", () => {
+  const markup = renderToStaticMarkup(
+    <DispatchStartButton
+      dispatch={dispatchState()}
+      settings={DEFAULT_DISPATCH_SETTINGS}
+      pending={false}
+      blockedReason="Comparison running"
+      onInitialize={() => {}}
+    />,
+  );
+  expect(markup).toContain("Comparison running");
+  expect(markup).not.toContain("Computing route");
+  expect(markup).toMatch(/<button[^>]*disabled=""/);
+  expect(markup).toMatch(/aria-busy="false"/);
 });
 
 it("shows start failures beside the standalone action", () => {
@@ -493,12 +530,23 @@ describe("DispatchForm PRM team controls (ADR 0014)", () => {
     const markup = render(ambulance, true, DEFAULT_DISPATCH_SETTINGS, true);
     expect(markup).toContain('type="datetime-local"');
     expect(markup).toContain("Team availability");
+    expect(markup).toMatch(/role="switch" aria-checked="true" aria-label="Team-aware dispatch"/);
+  });
+
+  it("keeps only the switch when team-aware dispatch is off", () => {
+    const off = dispatchState({ ...ambulance, resourceAware: false });
+    const markup = render(off, true, DEFAULT_DISPATCH_SETTINGS, true);
+    expect(markup).toMatch(/role="switch" aria-checked="false" aria-label="Team-aware dispatch"/);
+    expect(markup).toContain("Nearest PRM base");
+    expect(markup).not.toContain('type="datetime-local"');
+    expect(markup).not.toContain("Team availability");
   });
 
   it("hides them without the resources capability (mock)", () => {
     const markup = render(ambulance, true, DEFAULT_DISPATCH_SETTINGS, false);
     expect(markup).not.toContain('type="datetime-local"');
     expect(markup).not.toContain("Team availability");
+    expect(markup).not.toContain("Team-aware dispatch");
   });
 
   it("hides them for other vehicle types", () => {

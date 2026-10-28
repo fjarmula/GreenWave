@@ -2,6 +2,7 @@
 ``ProcessedDataset`` it returns."""
 
 from dataclasses import dataclass
+from datetime import date
 
 import networkx as nx
 import polars as pl
@@ -78,7 +79,7 @@ class RosterSummary(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     plan_update: str
-    effective_from: str
+    effective_from: date
     teams_in_scope: int
 
 

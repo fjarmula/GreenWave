@@ -18,13 +18,14 @@ from greenwave.schemas import (
     SignalMovementKind,
     SignalPhaseColor,
 )
+from greenwave.simulation.corridor import ACTIVE_STATES
 from greenwave.simulation.phases import (
     advance_signal_phases,
     ordinary_seconds_until_green,
     route_movement_color_at,
 )
 from greenwave.simulation.route_model import RouteModel
-from greenwave.simulation.state import EngineState
+from greenwave.simulation.state import initial_engine_state
 from greenwave.simulation.state_machine import IntersectionRuntime
 from greenwave.simulation_settings import SimulationSettings
 
@@ -41,18 +42,9 @@ class SimulatedItsController:
         self._statuses: dict[tuple[str, str], ItsRequestStatus] = {}
         self._sequence = 0
         self._closed = False
-        self._state = EngineState(
-            0,
-            0,
-            0,
-            0,
-            None,
-            5,
-            tuple(IntersectionRuntime() for _ in route_model.intersections),
-            0,
-            0,
-            False,
-            False,
+        # Carries time, runtimes and heads for the phase queries; motion fields are unused.
+        self._state = initial_engine_state(
+            len(route_model.intersections), settings.speed_floor_meters_per_second
         )
 
     def submit(self, request: ItsRequest) -> None:
@@ -168,7 +160,9 @@ class SimulatedItsController:
             self.model.intersections, self._state.intersection_runtimes, strict=True
         ):
             obs = observations[item.id]
-            if obs.passed and item.id not in requested_targets:
+            # Passed without ever holding priority (still requested): nothing to recover from.
+            unprioritised = not runtime.passed and runtime.state not in ACTIVE_STATES
+            if obs.passed and (item.id not in requested_targets or unprioritised):
                 runtime = IntersectionRuntime(passed=True)
             elif obs.passed:
                 if not runtime.passed:

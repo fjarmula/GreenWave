@@ -17,7 +17,7 @@ a light turns green only once every light not also turning green is red. Shown l
 back into the programme.
 """
 
-from collections.abc import Collection, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from greenwave.routing.network_index import SignalApproachRef
@@ -113,41 +113,6 @@ def ordinary_seconds_until_green(
     if since_green < settings.signal_green_seconds:
         return 0.0
     return cycle - since_green
-
-
-def route_lights_shown_green(
-    route_model: RouteModel,
-    state: EngineState,
-    intersection_ids: Collection[str],
-    settings: SimulationSettings,
-) -> bool:
-    """Whether every route vehicle light of these intersections was last shown green.
-
-    Reads ``state.signal_heads`` (the lights the map showed at the end of the last tick); before
-    the first tick, the programme at ``state.simulated_time_s``. An intersection without a route
-    vehicle signal shows nothing to obey.
-    """
-    now = float(state.simulated_time_s)
-    offset = 0
-    for item, runtime in route_runtimes(route_model, state):
-        vehicles = [
-            decision
-            for decision in _intersection_decisions(item, runtime, settings, now)
-            if decision.kind is VEHICLE
-        ]
-        if item.id in intersection_ids:
-            for i, vehicle in enumerate(vehicles):
-                if vehicle.signal_key not in item.route_signal_keys:
-                    continue
-                shown = (
-                    state.signal_heads[offset + i].color
-                    if state.signal_heads
-                    else vehicle.movement_color
-                )
-                if shown is not GREEN:
-                    return False
-        offset += len(vehicles)
-    return True
 
 
 def project_signal_phases(

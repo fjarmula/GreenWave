@@ -11,7 +11,7 @@ Every OSM ambulance station and every hospital emergency department (SOR) was an
 always-available ambulance origin. The Małopolska PRM plan (update no. 2, 24 June 2026; Table 1a
 effective 1 Sep 2026) publishes each ambulance team's base address, type, readiness hours and
 operating area. Ranking buildings hides the published fact that a 07:00–19:00 team is not there at
-21:00. Design: `docs/superpowers/specs/2026-10-27-resource-aware-ambulance-dispatch-design.md`
+21:00. Design: `docs/superpowers/specs/archive/2026-10-27-resource-aware-ambulance-dispatch-design.md`
 (decisions D1–D4).
 
 ## Decision
@@ -34,11 +34,21 @@ Additive in shape to contract v1; `schema_version` stays `"1.0"`. Pydantic model
 - Contract:
   - `DispatchRankRequest` gains `scenario_time` (naive local time; default the server's local
     now), `time_mode` (default `ENABLED`) and `availability` (team code → `free` | `busy`).
+    Amendment (2026-10-28): `resource_aware` (default `true`); `false` ranks AMBULANCE PRM bases
+    like fire and police (no shifts, overrides, area rule or team), and the UI exposes it as a
+    "Team-aware dispatch" switch that hides the scenario time and team panel when off.
   - `DispatchRankResponse` gains `scenario_time`, `outcome` (`OK` | `NO_ELIGIBLE_RESOURCE`),
     `incident_area`, `excluded_teams`, `roster` and `area_rule`; `candidates` may hold 0–3 items.
     For AMBULANCE the first candidate is the recommended team, not necessarily the fastest.
   - `RankedCandidate` gains `team` (`TeamAssignment`) and `selection_reason` (first only).
   - New `GET /api/v1/resources?at=` returns the roster and each team's `on_shift` at `at`.
+  - Amendment (2026-10-28): `AreaRuleOutcome` gains `margin_seconds`, the margin the rule used.
+    Every ranking (fire, police, both ambulance paths) orders candidates by the request's
+    `time_mode` totals, and on site versus drive uses the same totals. Team ranking estimates
+    every base with an eligible team (the shortlist is not cut by motion time).
+    `DispatchRankResponse.station_at_incident` and the `ambulance_base` / `hospital_ed` station
+    kinds are removed (the ETL keeps them only as internal OSM classifications); the off-network
+    message carries the on-foot limit and the dashboard shows it.
 - No eligible team is a 200 with `outcome = NO_ELIGIBLE_RESOURCE` and the exclusions; eligible
   teams that cannot reach the incident stay a 422 `NO_STATION_REACHABLE`.
 - Non-goals: no live availability or positions, no severity model (type is shown only), no

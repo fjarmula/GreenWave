@@ -1,4 +1,4 @@
-import { applyItsFeedback } from "./its-feedback-state";
+import { applyItsFeedback, requestedSnapshot } from "./its-feedback-state";
 import type { ConnectionStatus } from "@/lib/simulation-adapter";
 import type { SimulationErrorInfo } from "@/lib/transport/errors";
 import type {
@@ -14,8 +14,7 @@ import type {
 } from "@/types/telemetry";
 
 export type SimulationPhase = "SETUP" | "STARTING" | "RUNNING" | "FINISHED" | "CANCELLED" | "ERROR";
-export type { ConnectionStatus };
-export type ItsLogEntry = { messageId: string; text: string };
+type ItsLogEntry = { messageId: string; text: string };
 
 const ITS_LOG_LIMIT = 20;
 
@@ -77,7 +76,7 @@ export const initialSimulationState: SimulationState = {
   stopError: null,
 };
 
-export function formatItsDispatch(event: ItsDispatchEvent): string {
+function formatItsDispatch(event: ItsDispatchEvent): string {
   const { action, intersections_group: group, hold_duration_sec: hold } = event.payload;
   return `Simulated ${action} → ${group.join(", ")} · hold ${hold} s · ETA ${formatUtcTime(event.payload.expected_arrival_utc)}`;
 }
@@ -199,8 +198,13 @@ export function simulationReducer(
       ) {
         return state;
       }
+      // Registered at once, so feedback arriving before the next tick's snapshot applies.
+      const registered = state.itsRequests.some((r) => r.message_id === event.message_id);
       return {
         ...state,
+        itsRequests: registered
+          ? state.itsRequests
+          : [...state.itsRequests, requestedSnapshot(event)],
         itsLog: [
           ...state.itsLog,
           { messageId: event.message_id, text: formatItsDispatch(event) },

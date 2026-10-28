@@ -20,8 +20,14 @@ import { getFrontendConfig } from "@/lib/config";
 import { dispatchAdapter } from "@/lib/dispatch-adapter";
 import { createSimulationId } from "@/lib/simulation-id";
 import type { DispatchSettings } from "@/lib/start-request";
-import { onSiteResult, runnerUpIds, shownOnSite, type OnSite } from "@/lib/station-choice";
-import { pinnedIncident, selectedCandidate } from "@/lib/useIncidentDispatch";
+import {
+  onSiteResult,
+  pageCandidate,
+  runnerUpIds,
+  shownOnSite,
+  type OnSite,
+} from "@/lib/station-choice";
+import { pinnedIncident } from "@/lib/useIncidentDispatch";
 import type { ComparisonStartRequest, Position } from "@/types/telemetry";
 
 export function ComparisonWorkspace() {
@@ -42,7 +48,7 @@ export function ComparisonWorkspace() {
   // An on-site answer never starts a pair (ADR 0012); it replaces setup until dismissed.
   const [onSiteAnswer, setOnSiteAnswer] = useState<OnSite | null>(null);
   const onSite = shownOnSite(onSiteAnswer, dispatch);
-  const chosenStation = selectedCandidate(dispatch)?.station ?? null;
+  const chosenStation = pageCandidate(dispatch, "BOTH")?.station ?? null;
   const { setIncident } = dispatch;
   const onMapClick = useCallback(
     (position: Position) => setIncident(pinnedIncident(position)),
@@ -51,6 +57,11 @@ export function ComparisonWorkspace() {
   const config = getFrontendConfig();
   const active =
     simulation.simulationState === "RUNNING" || simulation.simulationState === "STARTING";
+  const replacementNotice = (
+    <p role="status" className="hud-alert tone-caution block text-sm">
+      Starting this comparison explicitly replaces the active simulation after a successful Stop.
+    </p>
+  );
   const starting = state.status === "starting";
   const live = state.status !== "idle" && !starting && !!state.runs.ENABLED.routeData;
   // A start that failed before any route exists is reported on the setup form.
@@ -64,7 +75,7 @@ export function ComparisonWorkspace() {
   const start = async (runSettings: DispatchSettings) => {
     if (starting) return;
     const answer = onSiteResult(
-      selectedCandidate(dispatch),
+      pageCandidate(dispatch, "BOTH"),
       dispatch.incident,
       dispatch.vehicleType,
     );
@@ -137,7 +148,11 @@ export function ComparisonWorkspace() {
               }
               destination={
                 dispatch.incident
-                  ? { label: dispatch.incident.label, position: dispatch.incident.position }
+                  ? {
+                      label: dispatch.incident.label,
+                      position: dispatch.incident.position,
+                      osmPosition: dispatch.incident.address?.osmPosition ?? null,
+                    }
                   : null
               }
               focusRequest={mapFocusRequest}
@@ -158,7 +173,6 @@ export function ComparisonWorkspace() {
               minimizable: !onSite,
               collapsed: (
                 <DriverSetupCard
-                  showStartAction={false}
                   intent="comparison"
                   dispatch={dispatch}
                   capabilities={dispatchAdapter.capabilities}
@@ -166,11 +180,7 @@ export function ComparisonWorkspace() {
                   settings={settings}
                   detailsOpen={snap === "expanded"}
                   onToggleDetails={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
-                  pending={starting}
-                  replacement={active}
-                  errorMessage={null}
-                  onInitialize={() => void start(settings)}
-                  startLabel="Start live comparison"
+                  notices={active ? replacementNotice : undefined}
                 />
               ),
               expanded: (
@@ -190,25 +200,15 @@ export function ComparisonWorkspace() {
       inspector={
         live || onSite ? undefined : (
           <>
-            {active && (
-              <p role="status" className="hud-alert tone-caution m-4 block text-sm">
-                Starting this comparison explicitly replaces the active simulation after a
-                successful Stop.
-              </p>
-            )}
+            {active && <div className="m-4">{replacementNotice}</div>}
             <DispatchForm
-              showStartAction={false}
               intent="comparison"
               settings={settings}
               onSettingsChange={setSettings}
               stationsError={stationsError}
-              pending={simulation.simulationState === "STARTING" || starting}
-              replacement={active}
-              errorMessage={null}
               dispatch={dispatch}
               capabilities={dispatchAdapter.capabilities}
               geocode={dispatchAdapter.geocode}
-              onInitialize={(values) => void start(values)}
               onFocusMap={() => setMapFocusRequest((value) => value + 1)}
             />
           </>

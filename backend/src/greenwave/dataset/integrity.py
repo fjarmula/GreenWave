@@ -51,6 +51,8 @@ from greenwave.dataset.models import (
     PlacesSection,
 )
 from greenwave.etl.neighbours import approach_edges
+from greenwave.etl.prm_roster import TEAM_TYPES
+from greenwave.schemas.dispatch import MONTH_DAY_PATTERN, TEAM_CODE_PATTERN, TERYT_PATTERN
 
 
 def check_manifest_hashes(
@@ -327,6 +329,9 @@ def check_places(graph: nx.MultiDiGraph, stations: pl.DataFrame, addresses: pl.D
             f"has repeated label values, e.g. {', '.join(repeated[:EXAMPLES_IN_MESSAGE])}",
         )
     _check_coordinates(ADDRESSES_FILENAME, addresses, graph)
+    districts = addresses["district_number"].drop_nulls()
+    if districts.len() and (districts.min() < 1 or districts.max() > 18):  # type: ignore[operator]
+        raise _malformed(ADDRESSES_FILENAME, "has 'district_number' values outside 1-18")
 
 
 def check_resources(stations: pl.DataFrame, resources: pl.DataFrame) -> None:
@@ -363,6 +368,7 @@ def check_resources(stations: pl.DataFrame, resources: pl.DataFrame) -> None:
             "has teams whose ready window is not 0 <= ready_from_min < ready_to_min <= 1440, e.g. "
             f"{', '.join(bad_window['team_code'][:EXAMPLES_IN_MESSAGE])}",
         )
+    _check_team_formats(resources)
     teamless = sorted(
         set(stations.filter(pl.col("source_kind") == "prm_base")["station_id"].to_list())
         - set(resources["station_id"].to_list())
@@ -373,6 +379,28 @@ def check_resources(stations: pl.DataFrame, resources: pl.DataFrame) -> None:
             f"has prm_base stations with no team in {RESOURCES_FILENAME}, e.g. "
             f"{', '.join(teamless[:EXAMPLES_IN_MESSAGE])}",
         )
+
+
+def _check_team_formats(resources: pl.DataFrame) -> None:
+    """The text columns the dispatch responses carry match their contract patterns."""
+    weekday_digits = r"^[1-7]{1,7}$"
+    teryt_list = TERYT_PATTERN.removesuffix("$") + r"(;\d{7})*$"
+    for column, pattern in (
+        ("team_code", TEAM_CODE_PATTERN),
+        ("weekdays", weekday_digits),
+        ("season_from", MONTH_DAY_PATTERN),
+        ("season_to", MONTH_DAY_PATTERN),
+        ("area_teryt", teryt_list),
+    ):
+        values = resources[column]
+        bad = values.filter(values.is_null() | ~values.str.contains(pattern))
+        if bad.len():
+            raise _malformed(
+                RESOURCES_FILENAME,
+                f"has '{column}' values that do not match {pattern}, e.g. "
+                f"{', '.join(map(repr, bad[:EXAMPLES_IN_MESSAGE].to_list()))}",
+            )
+    _check_one_of(RESOURCES_FILENAME, "team_type", resources["team_type"], TEAM_TYPES)
 
 
 def check_ids_file(records: list[IntersectionIdRecord], intersections: pl.DataFrame) -> None:

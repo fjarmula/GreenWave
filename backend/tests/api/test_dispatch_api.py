@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from greenwave.api import dispatch as dispatch_api
 from greenwave.main import create_app
 from greenwave.routing.errors import NoStationReachable
+from greenwave.schemas import GreenWaveMode
 from tests.support.processed import Layout
 
 
@@ -91,7 +92,7 @@ def test_rank_returns_candidates(layout: Layout) -> None:
     assert body["candidates"][0]["greenwave_seconds"] > 0
     assert body["candidates"][0]["standard_seconds"] > 0
     assert body["incident_snapped"]["snap_distance_m"] >= 0
-    assert body["station_at_incident"] is None
+    assert "station_at_incident" not in body
 
 
 def test_rank_at_a_station_returns_it_on_site(layout: Layout) -> None:
@@ -114,7 +115,7 @@ def test_rank_at_a_station_returns_it_on_site(layout: Layout) -> None:
     assert first["on_foot"]["access_point"] == station["position"]
     assert first["on_foot"]["distance_m"] == 0
     assert first["greenwave_seconds"] == first["standard_seconds"] == first["distance_m"] == 0
-    assert body["station_at_incident"] is None
+    assert "station_at_incident" not in body
 
 
 def test_rank_off_network_is_422(layout: Layout) -> None:
@@ -298,6 +299,7 @@ def test_rank_ambulance_returns_team_and_reason(layout: Layout) -> None:
         "NEAREST_OUTSIDE_MARGIN",
     }
     assert first["team"]["team_code"] == body["area_rule"]["chosen_team_code"]
+    assert body["area_rule"]["margin_seconds"] == 60
     assert first["team"]["availability"] == "assumed_free"
     assert all(c["selection_reason"] is None for c in body["candidates"][1:])
     assert body["excluded_teams"] == []
@@ -354,6 +356,20 @@ def test_all_busy_returns_no_eligible_outcome(layout: Layout) -> None:
     assert body["incident_snapped"]["snap_distance_m"] >= 0
 
 
+def test_rank_without_resource_awareness_ignores_shifts_and_status(layout: Layout) -> None:
+    busy = {code: "busy" for code in ("K01 008", "K01 162", "K01 176")}
+    with client(layout) as c:
+        body = _rank_ambulance(c, scenario_time=EVENING, availability=busy, resource_aware=False)
+
+    assert body["outcome"] == "OK"
+    assert len(body["candidates"]) == 2  # both bases, the off-shift one included
+    assert all(c["team"] is None and c["selection_reason"] is None for c in body["candidates"])
+    assert (body["area_rule"], body["roster"], body["incident_area"]) == (None, None, None)
+    assert body["excluded_teams"] == []
+    totals = [c["greenwave_seconds"] for c in body["candidates"]]
+    assert totals == sorted(totals)
+
+
 def test_fire_rank_unchanged(layout: Layout) -> None:
     with client(layout) as c:
         incident = _poprzeczna(c)
@@ -398,6 +414,7 @@ def test_eligible_ambulance_without_routable_base_returns_422(layout: Layout) ->
 
     assert response.status_code == 422
     assert response.json()["error_code"] == "NO_STATION_REACHABLE"
+    assert response.json()["message"] == "No eligible ambulance base is on the routable network"
 
 
 def test_rank_rejects_unknown_availability_value(layout: Layout) -> None:
@@ -412,3 +429,28 @@ def test_rank_rejects_unknown_availability_value(layout: Layout) -> None:
         )
 
     assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [{"vehicle_type": "FIRE_TRUCK"}, {"vehicle_type": "AMBULANCE", "resource_aware": False}],
+)
+def test_station_ranking_honours_time_mode(
+    layout: Layout, monkeypatch: pytest.MonkeyPatch, extra: dict[str, object]
+) -> None:
+    seen: list[object] = []
+    original = dispatch_api.rank_stations
+
+    def spy(*args: Any, **kwargs: Any) -> Any:
+        seen.append(kwargs.get("time_mode"))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(dispatch_api, "rank_stations", spy)
+    with client(layout) as c:
+        response = c.post(
+            "/api/v1/dispatch/rank",
+            json={"incident": _poprzeczna(c), "time_mode": "DISABLED", **extra},
+        )
+
+    assert response.status_code == 200, response.text
+    assert seen == [GreenWaveMode.DISABLED]

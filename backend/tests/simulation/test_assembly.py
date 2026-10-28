@@ -125,3 +125,11 @@ def test_a_disabled_run_ignores_the_cascade_toggle() -> None:
         planned.engine.route_model.cascade_targets(item.id) == ()
         for item in planned.engine.route_model.intersections
     )
+
+
+def test_the_engine_dates_its_dispatches_for_the_requested_playback_speed() -> None:
+    settings, index, gateway = SimulationSettings(), corridor_index(), MockItsGateway()
+
+    planned = plan_simulation(index, _mode_request(playback_speed=5), settings, gateway)
+
+    assert planned.engine.playback_speed == 5

@@ -1,6 +1,7 @@
 """Thin HTTP adapter for incident dispatch: stations, local geocoding, ranking (ADR 0006), and
 the PRM team roster with resource-aware ambulance ranking (ADR 0014)."""
 
+from dataclasses import asdict
 from datetime import datetime
 from typing import Annotated, cast
 
@@ -100,19 +101,7 @@ async def list_resources(
         roster=_roster(request),
         at=moment,
         teams=[
-            Team(
-                team_code=t.team_code,
-                team_type=t.team_type,
-                station_id=t.station_id,
-                base_address=t.base_address,
-                area_teryt=list(t.area_teryt),
-                weekdays=t.weekdays,
-                ready_from_min=t.ready_from_min,
-                ready_to_min=t.ready_to_min,
-                season_from=t.season_from,
-                season_to=t.season_to,
-                on_shift=team_eligibility.on_shift(t, moment),
-            )
+            Team.model_validate({**asdict(t), "on_shift": team_eligibility.on_shift(t, moment)})
             for t in _teams(request)
         ],
     )
@@ -134,13 +123,14 @@ async def list_resources(
 def rank(body: DispatchRankRequest, request: Request) -> DispatchRankResponse | JSONResponse:
     """Sync on purpose: FastAPI runs it in the thread pool, keeping the CPU work off the loop.
 
-    AMBULANCE ranks eligible PRM teams (ADR 0014); fire and police rank stations as before.
+    AMBULANCE ranks eligible PRM teams (ADR 0014) unless ``resource_aware`` is off; fire,
+    police and non-resource-aware ambulances rank stations as before.
     """
     index = cast(RoutingIndex, request.app.state.routing_index)
     settings = cast(SimulationSettings, request.app.state.simulation_settings)
     scenario_time = body.scenario_time or _local_now()
     try:
-        if body.vehicle_type is VehicleType.AMBULANCE:
+        if body.vehicle_type is VehicleType.AMBULANCE and body.resource_aware:
             area = cast(IncidentAreaLocator, request.app.state.incident_area_locator).locate(
                 body.incident
             )
@@ -164,20 +154,16 @@ def rank(body: DispatchRankRequest, request: Request) -> DispatchRankResponse | 
             body.vehicle_type,
             settings,
             body.traffic_density_multiplier,
+            time_mode=body.time_mode,
         )
     except DestinationOffNetwork as error:
         return error_response(422, ErrorCode.DESTINATION_OFF_NETWORK, str(error))
-    except NoStationReachable:
-        return error_response(
-            422,
-            ErrorCode.NO_STATION_REACHABLE,
-            f"no {body.vehicle_type.value} station can reach the incident",
-        )
+    except NoStationReachable as error:
+        return error_response(422, ErrorCode.NO_STATION_REACHABLE, str(error))
     return DispatchRankResponse(
         schema_version="1.0",
         incident_snapped=_snapped(ranking.incident_snap),
         candidates=[_candidate(index, c) for c in ranking.candidates],
-        station_at_incident=None,  # deprecated: on-site stations are candidates (ADR 0012)
         scenario_time=scenario_time,
         outcome="OK",
         incident_area=None,
@@ -203,31 +189,15 @@ def _team_response(
             _team_candidate(index, c, rule.reason if i == 0 and rule else None)
             for i, c in enumerate(ranking.candidates)
         ],
-        station_at_incident=None,
         scenario_time=scenario_time,
         outcome="OK" if ranking.candidates else "NO_ELIGIBLE_RESOURCE",
-        incident_area=IncidentArea(
-            teryt=area.teryt,
-            delegatura_name=area.delegatura_name,
-            district_number=area.district_number,
-            district_name=area.district_name,
-        )
-        if area
-        else None,
+        incident_area=IncidentArea.model_validate(area, from_attributes=True) if area else None,
         excluded_teams=[
             ExcludedTeam(team_code=t.team_code, station_id=t.station_id, reason=reason)
             for t, reason in ranking.excluded
         ],
         roster=roster,
-        area_rule=AreaRuleOutcome(
-            reason=rule.reason,
-            chosen_team_code=rule.chosen_team_code,
-            nearest_team_code=rule.nearest_team_code,
-            in_area_team_code=rule.in_area_team_code,
-            delta_seconds=rule.delta_seconds,
-        )
-        if rule
-        else None,
+        area_rule=AreaRuleOutcome.model_validate(rule, from_attributes=True) if rule else None,
     )
 
 

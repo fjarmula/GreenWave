@@ -79,6 +79,11 @@
             ],
             "title": "In Area Team Code"
           },
+          "margin_seconds": {
+            "minimum": 0.0,
+            "title": "Margin Seconds",
+            "type": "number"
+          },
           "nearest_team_code": {
             "pattern": "^K\\d{2} \\d{3}( M)?$",
             "title": "Nearest Team Code",
@@ -99,7 +104,8 @@
           "chosen_team_code",
           "nearest_team_code",
           "in_area_team_code",
-          "delta_seconds"
+          "delta_seconds",
+          "margin_seconds"
         ],
         "title": "AreaRuleOutcome",
         "type": "object"
@@ -273,6 +279,11 @@
           "incident": {
             "$ref": "#/components/schemas/Position"
           },
+          "resource_aware": {
+            "default": true,
+            "title": "Resource Aware",
+            "type": "boolean"
+          },
           "scenario_time": {
             "anyOf": [
               {
@@ -374,23 +385,12 @@
             "const": "1.0",
             "title": "Schema Version",
             "type": "string"
-          },
-          "station_at_incident": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Station"
-              },
-              {
-                "type": "null"
-              }
-            ]
           }
         },
         "required": [
           "schema_version",
           "incident_snapped",
           "candidates",
-          "station_at_incident",
           "scenario_time",
           "outcome",
           "incident_area",
@@ -1853,11 +1853,9 @@
         "type": "object"
       },
       "StationSourceKind": {
-        "description": "Where a station comes from; the UI names it, so hospital EDs are not passed off as bases.",
+        "description": "Where a station comes from; the UI names it. Ambulances start only from PRM bases.",
         "enum": [
           "prm_base",
-          "ambulance_base",
-          "hospital_ed",
           "fire_state",
           "fire_volunteer",
           "fire_other",
@@ -2138,7 +2136,7 @@
     },
     "/api/v1/dispatch/rank": {
       "post": {
-        "description": "Sync on purpose: FastAPI runs it in the thread pool, keeping the CPU work off the loop.\n\nAMBULANCE ranks eligible PRM teams (ADR 0014); fire and police rank stations as before.",
+        "description": "Sync on purpose: FastAPI runs it in the thread pool, keeping the CPU work off the loop.\n\nAMBULANCE ranks eligible PRM teams (ADR 0014) unless ``resource_aware`` is off; fire,\npolice and non-resource-aware ambulances rank stations as before.",
         "operationId": "rank_api_v1_dispatch_rank_post",
         "requestBody": {
           "content": {

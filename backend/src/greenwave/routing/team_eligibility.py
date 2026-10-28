@@ -9,12 +9,14 @@ which the UI must badge. Nothing here reflects live availability.
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal
 
 import polars as pl
 
-ExclusionReason = Literal["OFF_SHIFT", "BUSY_OVERRIDE"]
-Availability = Literal["free", "busy"]
+# The contract's literals, re-exported for routing callers.
+from greenwave.schemas.dispatch import AvailabilityOverride
+from greenwave.schemas.dispatch import ExclusionReason as ExclusionReason
+
+Availability = AvailabilityOverride
 
 
 @dataclass(frozen=True)

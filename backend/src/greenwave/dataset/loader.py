@@ -14,7 +14,6 @@ which is itself not hashed, and nothing here
 claims reproducible builds.
 """
 
-import hashlib
 import logging
 import time
 from pathlib import Path
@@ -61,7 +60,7 @@ from greenwave.dataset.models import (
     Provenance,
 )
 from greenwave.dataset.quality import load_quality
-from greenwave.etl.manifest import load_manifest
+from greenwave.etl.manifest import load_manifest, sha256_of_file
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +70,7 @@ def load_dataset(processed_dir: Path, manifest_path: Path) -> ProcessedDataset:
     started = time.perf_counter()
 
     require_files(processed_dir, manifest_path)  # check 1
-    manifest_sha256 = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    manifest_sha256 = sha256_of_file(manifest_path)
     ids = parse(read_json(processed_dir / IDS_FILENAME), IdsDocument, IDS_FILENAME)
     report = read_json(processed_dir / REPORT_FILENAME)
     intersections_section = report_section(report, "intersections", IntersectionsSection)

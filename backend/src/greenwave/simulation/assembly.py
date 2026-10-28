@@ -74,6 +74,7 @@ def plan_simulation(
         mode,
         controller_factory(route_model, settings, scenario),
         scenario,
+        request.playback_speed,
     )
     response = to_start_response(
         request.simulation_id,

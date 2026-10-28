@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { SimulationAdapterError } from "@/lib/transport/errors";
-import { createMockDispatchAdapter, haversineMeters } from "@/lib/mock-dispatch";
+import { createMockDispatchAdapter } from "@/lib/mock-dispatch";
+import { haversineMeters } from "@/lib/mock-route-metrics";
 import type { Station } from "@/types/telemetry";
 
 const station = (
@@ -12,7 +13,7 @@ const station = (
 ): Station => ({
   station_id,
   vehicle_type,
-  source_kind: vehicle_type === "AMBULANCE" ? "ambulance_base" : "fire_state",
+  source_kind: vehicle_type === "AMBULANCE" ? "prm_base" : "fire_state",
   name: station_id,
   position: { lat, lng },
 });
@@ -48,6 +49,19 @@ describe("createMockDispatchAdapter", () => {
     await expect(adapter.listStations()).resolves.toEqual(STATIONS);
   });
 
+  it("echoes the request's scenario time like the backend", async () => {
+    const ranking = await adapter.rank({
+      incident,
+      vehicle_type: "AMBULANCE",
+      traffic_density_multiplier: 1,
+      scenario_time: "2026-10-27T21:00",
+      time_mode: "ENABLED",
+      availability: {},
+      resource_aware: true,
+    });
+    expect(ranking.scenario_time).toBe("2026-10-27T21:00:00");
+  });
+
   it("picks the straight-line nearest station of the requested type", async () => {
     const ambulance = await adapter.rank({
       incident,
@@ -55,6 +69,7 @@ describe("createMockDispatchAdapter", () => {
       traffic_density_multiplier: 1,
       time_mode: "ENABLED",
       availability: {},
+      resource_aware: true,
     });
     const fire = await adapter.rank({
       incident,
@@ -62,6 +77,7 @@ describe("createMockDispatchAdapter", () => {
       traffic_density_multiplier: 1,
       time_mode: "ENABLED",
       availability: {},
+      resource_aware: true,
     });
 
     expect(ambulance.candidates.map((c) => c.station.station_id)).toEqual(["STN-A-0002"]);
@@ -72,7 +88,7 @@ describe("createMockDispatchAdapter", () => {
       haversineMeters(incident, STATIONS[1].position),
     );
     expect(ambulance.incident_snapped).toEqual({ position: incident, snap_distance_m: 0 });
-    expect(ambulance.station_at_incident).toBeNull();
+    expect(ambulance).not.toHaveProperty("station_at_incident");
     expect(ambulance.schema_version).toBe("1.0");
   });
 
@@ -84,6 +100,7 @@ describe("createMockDispatchAdapter", () => {
         traffic_density_multiplier: 1,
         time_mode: "ENABLED",
         availability: {},
+        resource_aware: true,
       })
       .catch((e) => e);
     expect(error).toBeInstanceOf(SimulationAdapterError);
@@ -112,8 +129,8 @@ describe("coincident station dispatch", () => {
       traffic_density_multiplier: 1,
       time_mode: "ENABLED",
       availability: {},
+      resource_aware: true,
     });
-    expect(result.station_at_incident).toBeNull();
     expect(result.candidates.map((item) => [item.station.station_id, item.on_site])).toEqual([
       [STATIONS[1].station_id, true],
       ["STN-A-0001", false],
@@ -134,6 +151,7 @@ describe("coincident station dispatch", () => {
       traffic_density_multiplier: 1,
       time_mode: "ENABLED",
       availability: {},
+      resource_aware: true,
     });
     expect(result.candidates.map((item) => item.on_site)).toEqual([true]);
   });
@@ -149,6 +167,7 @@ describe("coincident station dispatch", () => {
       traffic_density_multiplier: 1,
       time_mode: "ENABLED",
       availability: {},
+      resource_aware: true,
     });
     expect(result.candidates[0].station.station_id).toBe("STN-A-0001");
   });

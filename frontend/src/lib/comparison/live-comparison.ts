@@ -23,7 +23,7 @@ export type LiveComparisonState = {
   stopping: boolean;
 };
 
-export const REPLACED_REASON = "Comparison replaced by another simulation";
+const REPLACED_REASON = "Comparison replaced by another simulation";
 
 const MODES: readonly ComparisonMode[] = ["ENABLED", "DISABLED"];
 
@@ -36,7 +36,7 @@ const idle: LiveComparisonState = {
 };
 
 /** The single-run request of one pair member; both share every scenario field. */
-export function comparisonMember(
+function comparisonMember(
   request: ComparisonStartRequest,
   mode: ComparisonMode,
 ): SimulationStartRequest {
