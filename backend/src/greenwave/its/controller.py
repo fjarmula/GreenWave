@@ -28,6 +28,8 @@ from greenwave.simulation.state import EngineState
 from greenwave.simulation.state_machine import IntersectionRuntime
 from greenwave.simulation_settings import SimulationSettings
 
+_PRIORITY_STATES = frozenset({IntersectionState.CLEARING, IntersectionState.PRIORITY_GREEN})
+
 
 class SimulatedItsController:
     def __init__(
@@ -168,7 +170,9 @@ class SimulatedItsController:
             self.model.intersections, self._state.intersection_runtimes, strict=True
         ):
             obs = observations[item.id]
-            if obs.passed and item.id not in requested_targets:
+            # Passed without ever holding priority (still requested): nothing to recover from.
+            unprioritised = not runtime.passed and runtime.state not in _PRIORITY_STATES
+            if obs.passed and (item.id not in requested_targets or unprioritised):
                 runtime = IntersectionRuntime(passed=True)
             elif obs.passed:
                 if not runtime.passed:
