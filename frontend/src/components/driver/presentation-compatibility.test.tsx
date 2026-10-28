@@ -140,10 +140,6 @@ it("shows the configured comparison feedback after visiting standard traffic", (
       settings={{ ...settings, greenWaveMode: "DISABLED" }}
       detailsOpen={false}
       onToggleDetails={() => {}}
-      pending={false}
-      replacement={false}
-      errorMessage={null}
-      onInitialize={() => {}}
     />,
   );
   expect(html).toContain("ITS Rejected");

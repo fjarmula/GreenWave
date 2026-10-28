@@ -2,7 +2,7 @@
 import { ArrowUpRight, Zap } from "lucide-react";
 import type { DispatchSettings } from "@/lib/start-request";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
-import { isOnSite, pageCandidate, timeModeFor } from "@/lib/station-choice";
+import { canStart, isOnSite, pageCandidate, timeModeFor } from "@/lib/station-choice";
 
 /** One start action, shared by the persistent workspace control and standalone setup forms. */
 export function DispatchStartButton({
@@ -25,8 +25,7 @@ export function DispatchStartButton({
   /** Why starting is not possible right now (another operation owns the run); the label. */
   blockedReason?: string;
 }) {
-  const canStart =
-    dispatch.rankStatus === "ready" && (dispatch.ranking?.candidates.length ?? 0) > 0;
+  const startable = canStart(dispatch);
   const timeMode = timeModeFor(settings.greenWaveMode, intent);
   const greenWaveMode = settings.greenWaveMode;
   return (
@@ -34,7 +33,7 @@ export function DispatchStartButton({
       <button
         type="button"
         data-testid="start-corridor"
-        disabled={pending || !canStart || blockedReason !== undefined}
+        disabled={pending || !startable || blockedReason !== undefined}
         aria-busy={pending}
         onClick={() => onInitialize(settings)}
         className={`hud-primary pressable ${pending ? "disabled:cursor-wait" : "disabled:cursor-not-allowed"}`}
@@ -44,7 +43,7 @@ export function DispatchStartButton({
           ? blockedReason
           : pending
             ? "Computing route…"
-            : canStart && isOnSite(pageCandidate(dispatch, timeMode))
+            : startable && isOnSite(pageCandidate(dispatch, timeMode))
               ? "Dispatch on foot"
               : intent === "comparison"
                 ? replacement

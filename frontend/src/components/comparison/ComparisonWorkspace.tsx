@@ -167,7 +167,6 @@ export function ComparisonWorkspace() {
               minimizable: !onSite,
               collapsed: (
                 <DriverSetupCard
-                  showStartAction={false}
                   intent="comparison"
                   dispatch={dispatch}
                   capabilities={dispatchAdapter.capabilities}
@@ -175,11 +174,6 @@ export function ComparisonWorkspace() {
                   settings={settings}
                   detailsOpen={snap === "expanded"}
                   onToggleDetails={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
-                  pending={starting}
-                  replacement={active}
-                  errorMessage={null}
-                  onInitialize={() => void start(settings)}
-                  startLabel="Start live comparison"
                   notices={active ? replacementNotice : undefined}
                 />
               ),
@@ -202,18 +196,13 @@ export function ComparisonWorkspace() {
           <>
             {active && <div className="m-4">{replacementNotice}</div>}
             <DispatchForm
-              showStartAction={false}
               intent="comparison"
               settings={settings}
               onSettingsChange={setSettings}
               stationsError={stationsError}
-              pending={simulation.simulationState === "STARTING" || starting}
-              replacement={active}
-              errorMessage={null}
               dispatch={dispatch}
               capabilities={dispatchAdapter.capabilities}
               geocode={dispatchAdapter.geocode}
-              onInitialize={(values) => void start(values)}
               onFocusMap={() => setMapFocusRequest((value) => value + 1)}
             />
           </>

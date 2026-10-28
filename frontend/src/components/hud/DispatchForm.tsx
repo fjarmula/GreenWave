@@ -3,7 +3,6 @@
 import { Gauge, Radio, ShieldCheck, Target, TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { DispatchStartButton } from "./dispatch/DispatchStartButton";
 import { ItsScenarioControl } from "./dispatch/ItsScenarioControl";
 import { CascadeToggle } from "@/components/hud/dispatch/CascadeToggle";
 import { GreenWaveToggle } from "@/components/hud/dispatch/GreenWaveToggle";
@@ -23,26 +22,18 @@ import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import type { PreviousRun } from "@/lib/previous-run";
 import type { DispatchSettings } from "@/lib/start-request";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
-import { pageCandidate, timeModeFor } from "@/lib/station-choice";
+import { canStart, pageCandidate, timeModeFor } from "@/lib/station-choice";
 
 type DispatchFormProps = {
   /** Owned by the dashboard so the chosen settings outlive each run. */
   settings: DispatchSettings;
   intent?: "simulation" | "comparison";
   modeLocked?: boolean;
-  showStartAction?: boolean;
-  replacement?: boolean;
   onSettingsChange: (settings: DispatchSettings) => void;
   /** The last finished run of this page session, shown for comparison. */
   previousRun?: PreviousRun | null;
   /** Why the station list could not be loaded, if it could not. */
   stationsError?: string | null;
-  /** Called only when a ranking exists; the dashboard starts from its best station. */
-  onInitialize: (settings: DispatchSettings) => void;
-  /** True while the start request is in flight (STARTING). */
-  pending: boolean;
-  /** Readable reason the last initialization failed, if any. */
-  errorMessage: string | null;
   dispatch: IncidentDispatch;
   capabilities: DispatchAdapter["capabilities"];
   geocode: DispatchAdapter["geocode"];
@@ -55,14 +46,9 @@ export function DispatchForm({
   settings,
   intent = "simulation",
   modeLocked = false,
-  showStartAction = true,
-  replacement = false,
   onSettingsChange,
   previousRun = null,
   stationsError = null,
-  onInitialize,
-  pending,
-  errorMessage,
   dispatch,
   capabilities,
   geocode,
@@ -76,7 +62,7 @@ export function DispatchForm({
   const { incident, ranking, rankStatus, setRankTimeMode } = dispatch;
   const teamControls = dispatch.vehicleType === "AMBULANCE" && capabilities.resources;
   const teamDetails = teamControls && dispatch.resourceAware;
-  const canStart = rankStatus === "ready" && (ranking?.candidates.length ?? 0) > 0;
+  const startable = canStart(dispatch);
   const incidentKey = incident
     ? `${incident.label}@${incident.position.lat},${incident.position.lng}`
     : "none";
@@ -210,32 +196,12 @@ export function DispatchForm({
       </p>
       {previousRun && <PreviousRunCard run={previousRun} />}
 
-      {showStartAction && (
-        <div className="mt-7">
-          <DispatchStartButton
-            dispatch={dispatch}
-            settings={settings}
-            pending={pending}
-            replacement={replacement}
-            intent={intent}
-            onInitialize={onInitialize}
-          />
-        </div>
-      )}
-
-      {errorMessage && (
-        <p role="alert" className="hud-alert tone-emergency mt-3">
-          <TriangleAlert aria-hidden />
-          {errorMessage}
-        </p>
-      )}
-
       <PreflightEstimate
         isMockTransport={isMockTransport}
         trafficDensity={trafficDensity}
-        origin={canStart ? (pageCandidate(dispatch, timeMode)?.station.position ?? null) : null}
+        origin={startable ? (pageCandidate(dispatch, timeMode)?.station.position ?? null) : null}
         incident={incident?.position ?? null}
-        candidate={canStart ? pageCandidate(dispatch, timeMode) : null}
+        candidate={startable ? pageCandidate(dispatch, timeMode) : null}
       />
 
       <p className="mt-5 flex items-center gap-2 text-2xs leading-relaxed text-muted-foreground">

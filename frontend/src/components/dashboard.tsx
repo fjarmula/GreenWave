@@ -11,7 +11,7 @@ import { isTelemetryStale } from "@/lib/simulation-state";
 import type { DispatchSettings } from "@/lib/start-request";
 import { ResponsiveNavigation } from "@/components/workspace/ResponsiveNavigation";
 import { routeForMode, viewRunPolicy } from "@/lib/workspace-routes";
-import { Fragment, useCallback, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { simulationOperationSlot } from "@/lib/operation-slot";
 import { useSimulationStream } from "@/lib/useSimulationStream";
 import { useSimulationState } from "@/components/simulation-provider";
@@ -214,8 +214,6 @@ export function Dashboard({
     driver && routeData && simulationState === "RUNNING"
       ? nextSignal(routeData, simulation.liveTelemetry, isTelemetryStale(simulation))
       : null;
-  const setupLabel =
-    selectedMode === "ENABLED" ? "Initialize green corridor" : "Start standard-traffic run";
   // Green Wave and Standard use the sheet on phones only; desktop keeps the full inspector.
   const workspaceSheet: WorkspaceSheet | undefined = !driver
     ? mode === "setup"
@@ -231,7 +229,6 @@ export function Dashboard({
             />
           ) : (
             <DriverSetupCard
-              showStartAction={false}
               dispatch={dispatch}
               capabilities={dispatchAdapter.capabilities}
               geocode={dispatchAdapter.geocode}
@@ -239,11 +236,6 @@ export function Dashboard({
               detailsOpen={snap === "expanded"}
               onToggleDetails={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
               notices={notices}
-              pending={pending}
-              replacement={policy.requiresReplacement}
-              errorMessage={null}
-              onInitialize={() => initialize(settingsForMode(settings, selectedMode))}
-              startLabel={setupLabel}
             />
           ),
           expanded: (
@@ -289,7 +281,6 @@ export function Dashboard({
             />
           ) : (
             <DriverSetupCard
-              showStartAction={false}
               dispatch={dispatch}
               capabilities={dispatchAdapter.capabilities}
               geocode={dispatchAdapter.geocode}
@@ -297,10 +288,6 @@ export function Dashboard({
               detailsOpen={snap === "expanded"}
               onToggleDetails={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
               notices={notices}
-              pending={pending}
-              replacement={policy.requiresReplacement}
-              errorMessage={null}
-              onInitialize={() => initialize(settingsForMode(settings, selectedMode))}
             />
           ),
           expanded: (
@@ -392,19 +379,14 @@ export function Dashboard({
             {notices}
             {mode === "setup" ? (
               <DispatchForm
-                showStartAction={false}
                 settings={settingsForMode(settings, selectedMode)}
                 modeLocked
-                replacement={policy.requiresReplacement}
                 onSettingsChange={setSettings}
                 previousRun={previousRun}
                 stationsError={stationsError}
-                pending={pending}
-                errorMessage={null}
                 dispatch={dispatch}
                 capabilities={dispatchAdapter.capabilities}
                 geocode={dispatchAdapter.geocode}
-                onInitialize={initialize}
                 onFocusMap={() => setMapFocusRequest((request) => request + 1)}
               />
             ) : (
@@ -419,31 +401,5 @@ export function Dashboard({
         )
       }
     />
-  );
-}
-
-/**
- * Setup and live share one element path to the route preview, so React keeps the
- * MapLibre instance across mode switches. Live uses `contents`, so the preview stays a
- * flex child of `main` as before.
- */
-export function DashboardLayout({
-  mode,
-  form,
-  preview,
-}: {
-  mode: DashboardMode;
-  form: ReactNode;
-  preview: ReactNode;
-}) {
-  return (
-    <section
-      className={
-        mode === "setup" ? "grid min-h-0 flex-1 lg:grid-cols-[370px_minmax(0,1fr)]" : "contents"
-      }
-    >
-      {mode === "setup" && <div className="order-2 min-w-0 lg:order-1">{form}</div>}
-      <Fragment key="route-preview">{preview}</Fragment>
-    </section>
   );
 }

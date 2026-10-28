@@ -94,9 +94,6 @@ function render(
     <DispatchForm
       settings={settings}
       onSettingsChange={() => undefined}
-      onInitialize={() => undefined}
-      pending={false}
-      errorMessage={null}
       dispatch={dispatch}
       capabilities={{ geocode: roadTimeRanking, roadTimeRanking, resources }}
       geocode={async () => []}
@@ -118,9 +115,6 @@ describe.each(["mock", "backend"] as const)("DispatchForm markup (%s transport)"
       <DispatchForm
         settings={DEFAULT_DISPATCH_SETTINGS}
         onSettingsChange={() => undefined}
-        onInitialize={() => undefined}
-        pending={false}
-        errorMessage="Simulation backend unreachable"
         dispatch={dispatchState()}
         capabilities={{
           geocode: name === "backend",
@@ -136,17 +130,27 @@ describe.each(["mock", "backend"] as const)("DispatchForm markup (%s transport)"
   });
 });
 
-describe("DispatchForm start button", () => {
+const renderStart = (dispatch: IncidentDispatch) =>
+  renderToStaticMarkup(
+    <DispatchStartButton
+      dispatch={dispatch}
+      settings={DEFAULT_DISPATCH_SETTINGS}
+      pending={false}
+      onInitialize={() => undefined}
+    />,
+  );
+
+describe("DispatchStartButton readiness", () => {
   it.each([
     ["idle", dispatchState({ incident: null, ranking: null, rankStatus: "idle" })],
     ["loading", dispatchState({ ranking: null, rankStatus: "loading" })],
     ["error", dispatchState({ ranking: null, rankStatus: "error", rankError: "x" })],
   ])("is disabled while the ranking is %s", (_name, dispatch) => {
-    expect(startButton(render(dispatch))).toMatch(/ disabled=""/);
+    expect(startButton(renderStart(dispatch))).toMatch(/ disabled=""/);
   });
 
   it("is enabled once a ranking is ready", () => {
-    expect(startButton(render(dispatchState()))).not.toMatch(/ disabled=""/);
+    expect(startButton(renderStart(dispatchState()))).not.toMatch(/ disabled=""/);
   });
 
   it('labels the start "Dispatch on foot" for an on-site selection', () => {
@@ -162,10 +166,10 @@ describe("DispatchForm start button", () => {
       },
       on_site: true,
     };
-    const markup = render(dispatchState({ ranking: { ...RANKING, candidates: [onSite] } }));
+    const markup = renderStart(dispatchState({ ranking: { ...RANKING, candidates: [onSite] } }));
     expect(fullStartButton(markup)).toContain("Dispatch on foot");
     expect(startButton(markup)).not.toMatch(/ disabled=""/);
-    expect(fullStartButton(render(dispatchState()))).not.toContain("Dispatch on foot");
+    expect(fullStartButton(renderStart(dispatchState()))).not.toContain("Dispatch on foot");
   });
 
   it("offers the three vehicle types", () => {
@@ -208,14 +212,10 @@ const CHOSEN: DispatchSettings = {
 function formProps(
   settings: DispatchSettings,
   onSettingsChange: (settings: DispatchSettings) => void = () => undefined,
-  onInitialize: (settings: DispatchSettings) => void = () => undefined,
 ): Parameters<typeof DispatchForm>[0] {
   return {
     settings,
     onSettingsChange,
-    onInitialize,
-    pending: false,
-    errorMessage: null,
     dispatch: dispatchState(),
     capabilities: { geocode: true, roadTimeRanking: true, resources: false },
     geocode: async () => [],
@@ -252,7 +252,15 @@ describe("DispatchForm settings", () => {
     expect(markup).toMatch(/role="radio" aria-checked="true"[^>]*>Disabled</);
     expect(markup).toMatch(/role="radio" aria-checked="true"[^>]*>10×</);
     expect(markup).toMatch(/role="switch" aria-checked="false"[^>]*disabled=""/);
-    expect(markup).toContain("Start standard-traffic run");
+    const start = renderToStaticMarkup(
+      <DispatchStartButton
+        dispatch={dispatchState()}
+        settings={CHOSEN}
+        pending={false}
+        onInitialize={() => {}}
+      />,
+    );
+    expect(start).toContain("Start standard-traffic run");
   });
 
   it("reports the full updated settings when a control changes", () => {
@@ -295,7 +303,6 @@ describe("DispatchForm settings", () => {
     const card = withRun.indexOf("Previous simulated run");
 
     expect(card).toBeGreaterThan(withRun.indexOf("Playback speed"));
-    expect(card).toBeLessThan(withRun.indexOf('data-testid="start-corridor"'));
     expect(render(dispatchState(), true, CHOSEN)).not.toContain("Previous simulated run");
   });
 
@@ -464,7 +471,17 @@ it("uses the shared dispatch controls to configure both comparison modes", () =>
   const props = { ...formProps(CHOSEN), intent: "comparison" as const };
   const tree = DispatchForm(props);
   const html = renderToStaticMarkup(<DispatchForm {...props} />);
-  expect(html).toContain("Start comparison");
+  expect(
+    renderToStaticMarkup(
+      <DispatchStartButton
+        dispatch={dispatchState()}
+        settings={CHOSEN}
+        pending={false}
+        intent="comparison"
+        onInitialize={() => {}}
+      />,
+    ),
+  ).toContain("Start comparison");
   expect(html).toContain("Green Wave and standard traffic");
   expect(html).not.toContain('aria-label="ER Green Wave mode"');
   expect(propsOf(tree, CascadeToggle).disabled).toBe(false);

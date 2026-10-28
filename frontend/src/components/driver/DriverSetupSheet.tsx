@@ -1,5 +1,5 @@
 "use client";
-import { ArrowUpRight, ChevronRight, ShieldCheck, Target, TriangleAlert, Zap } from "lucide-react";
+import { ChevronRight, ShieldCheck, Target, TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { CascadeToggle } from "@/components/hud/dispatch/CascadeToggle";
@@ -21,13 +21,10 @@ import { settingsSummary } from "@/lib/driver-presentation";
 import type { PreviousRun } from "@/lib/previous-run";
 import type { DispatchSettings } from "@/lib/start-request";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
-import { isOnSite, pageCandidate, timeModeFor } from "@/lib/station-choice";
+import { canStart, pageCandidate, timeModeFor } from "@/lib/station-choice";
 
-export function canStartDispatch(dispatch: IncidentDispatch) {
-  return dispatch.rankStatus === "ready" && (dispatch.ranking?.candidates.length ?? 0) > 0;
-}
-
-/** Driver setup, always visible: where, which vehicle, a settings summary and the start. */
+/** Driver setup, always visible: where, which vehicle and a settings summary (the start is the
+ * workspace's persistent action). */
 export function DriverSetupCard({
   dispatch,
   capabilities,
@@ -36,12 +33,6 @@ export function DriverSetupCard({
   detailsOpen,
   onToggleDetails,
   notices,
-  pending,
-  showStartAction = true,
-  replacement,
-  errorMessage,
-  onInitialize,
-  startLabel = "Initialize green corridor",
   intent = "simulation",
 }: {
   dispatch: IncidentDispatch;
@@ -50,14 +41,8 @@ export function DriverSetupCard({
   settings: DispatchSettings;
   detailsOpen: boolean;
   onToggleDetails: () => void;
-  /** Ownership and replacement notices, shown above the start. */
+  /** Ownership and replacement notices, shown under the summary. */
   notices?: ReactNode;
-  pending: boolean;
-  showStartAction?: boolean;
-  replacement: boolean;
-  errorMessage: string | null;
-  onInitialize: () => void;
-  startLabel?: string;
   intent?: "simulation" | "comparison";
 }) {
   const { incident } = dispatch;
@@ -97,33 +82,6 @@ export function DriverSetupCard({
         <ChevronRight aria-hidden data-open={detailsOpen} />
       </button>
       {notices}
-      {showStartAction && (
-        <button
-          type="button"
-          data-testid="start-corridor"
-          disabled={pending || !canStartDispatch(dispatch)}
-          aria-busy={pending}
-          onClick={onInitialize}
-          className={`hud-primary pressable mt-3 ${pending ? "disabled:cursor-wait" : "disabled:cursor-not-allowed"}`}
-        >
-          <Zap className="size-4" aria-hidden />
-          {pending
-            ? "Computing route…"
-            : canStartDispatch(dispatch) &&
-                isOnSite(pageCandidate(dispatch, timeModeFor(settings.greenWaveMode, intent)))
-              ? "Dispatch on foot"
-              : replacement
-                ? "Replace active simulation"
-                : startLabel}
-          <ArrowUpRight className="ml-auto size-4" aria-hidden />
-        </button>
-      )}
-      {errorMessage && (
-        <p role="alert" className="hud-alert tone-emergency mt-3">
-          <TriangleAlert aria-hidden />
-          {errorMessage}
-        </p>
-      )}
     </section>
   );
 }
@@ -229,12 +187,10 @@ export function DriverSetupDetails({
         isMockTransport={isMockTransport}
         trafficDensity={settings.trafficDensity}
         origin={
-          canStartDispatch(dispatch)
-            ? (pageCandidate(dispatch, timeMode)?.station.position ?? null)
-            : null
+          canStart(dispatch) ? (pageCandidate(dispatch, timeMode)?.station.position ?? null) : null
         }
         incident={incident?.position ?? null}
-        candidate={canStartDispatch(dispatch) ? pageCandidate(dispatch, timeMode) : null}
+        candidate={canStart(dispatch) ? pageCandidate(dispatch, timeMode) : null}
       />
       <p className="mt-5 flex items-center gap-2 text-2xs leading-relaxed text-muted-foreground">
         <ShieldCheck className="size-4 shrink-0 text-go" aria-hidden />

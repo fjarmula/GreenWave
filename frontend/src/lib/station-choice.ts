@@ -138,3 +138,8 @@ export function shownOnSite(
     ? onSite
     : null;
 }
+
+/** A run can start once the ranking is ready with at least one candidate. */
+export function canStart(dispatch: Pick<IncidentDispatchState, "rankStatus" | "ranking">): boolean {
+  return dispatch.rankStatus === "ready" && (dispatch.ranking?.candidates.length ?? 0) > 0;
+}
