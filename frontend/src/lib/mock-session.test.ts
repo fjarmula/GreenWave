@@ -99,6 +99,19 @@ describe("buildMockDispatch", () => {
   });
 });
 
+describe("buildMockDispatch arrival", () => {
+  it("dates the arrival in wall-clock time for the playback speed", () => {
+    const at = (playback_speed: number) => {
+      const session = createMockSession(modeRequest("ENABLED", { playback_speed }));
+      const event = buildMockDispatch(session, new Set([0]), "2026-10-20T12:00:00Z", 0)!;
+      return Date.parse(event.payload.expected_arrival_utc);
+    };
+
+    expect(at(10)).toBeCloseTo(at(1) / 10, -1);
+    expect(at(1)).toBeGreaterThan(0);
+  });
+});
+
 function modeRequest(
   greenWaveMode: GreenWaveMode,
   patch: Partial<SimulationStartRequest> = {},

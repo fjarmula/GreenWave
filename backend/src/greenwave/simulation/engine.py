@@ -76,10 +76,12 @@ class SimulationEngine:
         green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED,
         controller: ItsController | None = None,
         its_scenario: ItsScenario = ItsScenario.NOMINAL,
+        playback_speed: int = 1,
     ) -> None:
         self.simulation_id, self.route, self.route_model = simulation_id, route, route_model
         self.vehicle_type, self.green_wave_mode = vehicle_type, green_wave_mode
         self.traffic_density_multiplier = traffic_density_multiplier
+        self.playback_speed = playback_speed  # only dates ITS arrivals; the run is speed-free
         self.estimates, self.settings, self.gateway = estimates, settings, gateway
         self.controller = controller or SimulatedItsController(route_model, settings, its_scenario)
         self.ledger = PriorityRequestLedger(simulation_id)
@@ -252,7 +254,14 @@ class SimulationEngine:
         self, state: EngineState, ids: tuple[str, ...], now: datetime
     ) -> tuple[EngineState, ItsDispatchEvent]:
         payload = build_dispatch_payload(
-            self.route_model, self._track, state, ids, now, self.settings, self.vehicle_type
+            self.route_model,
+            self._track,
+            state,
+            ids,
+            now,
+            self.settings,
+            self.vehicle_type,
+            self.playback_speed,
         )
         state = replace(state, message_sequence=state.message_sequence + 1)
         dispatch = dispatch_event(self.simulation_id, state, payload, now)

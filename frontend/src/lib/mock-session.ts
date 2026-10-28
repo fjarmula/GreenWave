@@ -444,7 +444,10 @@ export function buildMockDispatch(
         MOCK_MIN_HOLD_SECONDS,
         Math.ceil(Math.max(...ttis)) + MOCK_HOLD_BUFFER_SECONDS,
       ),
-      expected_arrival_utc: new Date(nowMs + Math.min(...ttis) * 1000).toISOString(),
+      // Wall-clock arrival: `playback_speed` simulated seconds pass per real second.
+      expected_arrival_utc: new Date(
+        nowMs + (Math.min(...ttis) * 1000) / (request.playback_speed ?? 1),
+      ).toISOString(),
     },
   };
 }
