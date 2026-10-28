@@ -4,8 +4,8 @@
     uv run python scripts/build_manifest.py --check  # verify files on disk against the manifest
 
 Hashes and sizes are computed from the files. Provenance fields below are recorded facts from
-``docs/engineering/data-pipeline.md`` and the files themselves; anything not known is ``None``
-rather than guessed (the Kraków licence wording is decision 7, decided).
+the sources (see "Data Sources & Attribution" in ``backend/README.md``) and the files themselves;
+anything not known is ``None`` rather than guessed (the Kraków licence wording is decision 7).
 """
 
 import argparse

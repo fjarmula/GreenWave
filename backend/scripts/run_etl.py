@@ -2,7 +2,7 @@
 
     uv run python scripts/run_etl.py <step>
 
-Steps, in dependency order (each step re-reads the raw data, except ``neighbours``):
+Steps, in dependency order (``neighbours``, ``places`` and ``quality`` read processed outputs):
     profile          T1: profile the raw data -> etl_report.json (section ``profile``)
     signals          T2: signals.parquet + section ``signals``
     graph            T3: road_nodes/road_edges.parquet, street and route checks, section ``graph``

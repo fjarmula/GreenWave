@@ -1,11 +1,9 @@
 from collections.abc import Mapping
 
-from greenwave.schemas import IntersectionState
-from greenwave.simulation.corridor import advance_corridor, time_to_intersection
+from greenwave.simulation.corridor import time_to_intersection
 from greenwave.simulation.route_model import RouteIntersection, RouteModel
 from greenwave.simulation.state import EngineState
 from greenwave.simulation.state_machine import IntersectionRuntime
-from greenwave.simulation_settings import SimulationSettings
 
 
 def _model(cascade_targets: Mapping[str, tuple[str, ...]]) -> RouteModel:
@@ -32,22 +30,6 @@ def _state(speed_mps: float) -> EngineState:
         arrived=False,
         completed=False,
     )
-
-
-def test_cascade_target_enters_clearing_after_its_source() -> None:
-    # 3 m/s: A is 33 s away (inside the 40 s window), B is 67 s away (outside it).
-    advance = advance_corridor(_model({"A": ("B",)}), _state(3.0), SimulationSettings())
-
-    assert advance.entered_clearing == ("A", "B")
-    assert advance.runtimes[1].state is IntersectionState.CLEARING
-    assert advance.runtimes[1].is_cascade
-
-
-def test_no_cascade_without_targets() -> None:
-    advance = advance_corridor(_model({}), _state(3.0), SimulationSettings())
-
-    assert advance.entered_clearing == ("A",)
-    assert advance.runtimes[1].state is IntersectionState.NORMAL
 
 
 def test_passed_intersection_has_no_time_to_intersection() -> None:

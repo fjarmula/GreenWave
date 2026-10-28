@@ -6,15 +6,13 @@ if TYPE_CHECKING:
     from greenwave.simulation.engine import SimulationEngine
 from greenwave.simulation.events import SimulationEvent
 from greenwave.simulation.state import EngineState
-from greenwave.simulation.state_machine import IntersectionRuntime, Transition, advance_intersection
+from greenwave.simulation.state_machine import IntersectionRuntime
 
 __all__ = [
     "EngineState",
     "IntersectionRuntime",
     "SimulationEngine",
     "SimulationEvent",
-    "Transition",
-    "advance_intersection",
 ]
 
 

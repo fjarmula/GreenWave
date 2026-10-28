@@ -18,6 +18,7 @@ from greenwave.schemas import (
     SignalMovementKind,
     SignalPhaseColor,
 )
+from greenwave.simulation.corridor import ACTIVE_STATES
 from greenwave.simulation.phases import (
     advance_signal_phases,
     ordinary_seconds_until_green,
@@ -27,8 +28,6 @@ from greenwave.simulation.route_model import RouteModel
 from greenwave.simulation.state import EngineState
 from greenwave.simulation.state_machine import IntersectionRuntime
 from greenwave.simulation_settings import SimulationSettings
-
-_PRIORITY_STATES = frozenset({IntersectionState.CLEARING, IntersectionState.PRIORITY_GREEN})
 
 
 class SimulatedItsController:
@@ -171,7 +170,7 @@ class SimulatedItsController:
         ):
             obs = observations[item.id]
             # Passed without ever holding priority (still requested): nothing to recover from.
-            unprioritised = not runtime.passed and runtime.state not in _PRIORITY_STATES
+            unprioritised = not runtime.passed and runtime.state not in ACTIVE_STATES
             if obs.passed and (item.id not in requested_targets or unprioritised):
                 runtime = IntersectionRuntime(passed=True)
             elif obs.passed:

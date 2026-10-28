@@ -1,23 +1,15 @@
-"""Advance every route intersection one simulated second, including one-hop cascade (D16)."""
+"""Route-order views of the intersection runtimes: time to each stop line and the hold there."""
 
 from collections.abc import Iterator
-from dataclasses import dataclass
 
 from greenwave.schemas import IntersectionState
 from greenwave.simulation.route_model import RouteIntersection, RouteModel
 from greenwave.simulation.state import EngineState
-from greenwave.simulation.state_machine import IntersectionRuntime, Transition, advance_intersection
-from greenwave.simulation_settings import SimulationSettings
+from greenwave.simulation.state_machine import IntersectionRuntime
 
 ACTIVE_STATES: frozenset[IntersectionState] = frozenset(
     {IntersectionState.CLEARING, IntersectionState.PRIORITY_GREEN}
 )
-
-
-@dataclass(frozen=True, slots=True)
-class CorridorAdvance:
-    runtimes: tuple[IntersectionRuntime, ...]
-    entered_clearing: tuple[str, ...]
 
 
 def route_runtimes(
@@ -56,71 +48,3 @@ def holding_priority(
     if state.arrived and state.distance_travelled_m <= item.last_stop_line_m:
         return item.last_stop_line_m > released_before_m
     return item.last_stop_line_m >= released_before_m
-
-
-def advance_corridor(
-    route_model: RouteModel,
-    state: EngineState,
-    settings: SimulationSettings,
-    priority_enabled: bool = True,
-    released_before_m: float | None = None,
-) -> CorridorAdvance:
-    """Own-TTI pass in route order, then one cascade pass over each own entry's targets.
-
-    ``entered_clearing`` lists own entries in route order followed by cascade entries in
-    source/target order; that order is the ITS dispatch group order. Without priority (ER Green
-    Wave disabled) intersections stay ``NORMAL`` and are only marked passed, so nothing clears,
-    cascades or dispatches.
-    """
-    if not priority_enabled:
-        return CorridorAdvance(
-            tuple(
-                IntersectionRuntime(passed=True)
-                if not runtime.passed
-                and item.last_stop_line_m <= state.distance_travelled_m
-                and not holding_priority(item, state, released_before_m)
-                else runtime
-                for item, runtime in route_runtimes(route_model, state)
-            ),
-            (),
-        )
-    intersections = route_model.intersections
-    advanced: list[IntersectionRuntime] = []
-    own: list[str] = []
-    for item, runtime in route_runtimes(route_model, state):
-        updated, transition = _advance_one(item, runtime, state, False, settings, released_before_m)
-        advanced.append(updated)
-        if transition is Transition.CLEARING:
-            own.append(item.id)
-
-    entered = list(own)
-    positions = {item.id: index for index, item in enumerate(intersections)}
-    for source in own:
-        for target_id in route_model.cascade_targets(source):
-            index = positions[target_id]
-            updated, transition = _advance_one(
-                intersections[index], advanced[index], state, True, settings, released_before_m
-            )
-            advanced[index] = updated
-            if transition is Transition.CLEARING:
-                entered.append(target_id)
-    return CorridorAdvance(tuple(advanced), tuple(entered))
-
-
-def _advance_one(
-    item: RouteIntersection,
-    runtime: IntersectionRuntime,
-    state: EngineState,
-    cascade_trigger: bool,
-    settings: SimulationSettings,
-    released_before_m: float | None,
-) -> tuple[IntersectionRuntime, Transition | None]:
-    return advance_intersection(
-        runtime,
-        time_to_intersection(item.first_stop_line_m, runtime, state),
-        item.last_stop_line_m - state.distance_travelled_m,
-        float(state.simulated_time_s),
-        cascade_trigger,
-        settings,
-        priority_held=holding_priority(item, state, released_before_m),
-    )

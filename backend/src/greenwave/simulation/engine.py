@@ -120,7 +120,6 @@ class SimulationEngine:
         """Move under the previous report, observe, apply feedback, submit, then publish."""
         if state.completed or self._closed:
             return state, []
-        before = state
         released_before_m = state.distance_travelled_m
         state, actual_speed = move_one_second(
             state,
@@ -130,7 +129,7 @@ class SimulationEngine:
             self.green_wave_mode,
             self.traffic_density_multiplier,
             self.controller.ordinary_route_color_at,
-            lambda distance_m: self._confirmed_green(before, distance_m),
+            self._confirmed_green,
             self.controller.ordinary_route_seconds_until_green,
         )
         observation = ItsObservation(
@@ -278,7 +277,8 @@ class SimulationEngine:
             self.gateway.dispatch(payload)  # optional legacy diagnostic sink, never authoritative
         return state, dispatch
 
-    def _confirmed_green(self, state: EngineState, distance_m: float) -> bool:
+    def _confirmed_green(self, distance_m: float) -> bool:
+        """Whether the route lights at this stop line were last shown green (previous tick)."""
         ids = self._stop_line_ids.get(distance_m, set())
         for item in self.route_model.intersections:
             if item.id not in ids:
