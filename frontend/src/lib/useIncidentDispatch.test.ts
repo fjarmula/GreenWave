@@ -57,7 +57,7 @@ const ranking = (stationId: string): DispatchRankResponse => ({
       station: {
         station_id: stationId,
         vehicle_type: "AMBULANCE",
-        source_kind: "ambulance_base",
+        source_kind: "prm_base",
         name: stationId,
         position: { lat: 50, lng: 19.9 },
       },
@@ -67,7 +67,6 @@ const ranking = (stationId: string): DispatchRankResponse => ({
       on_site: false,
     },
   ],
-  station_at_incident: null,
   scenario_time: "2026-10-27T12:00:00",
   outcome: "OK",
   incident_area: null,
@@ -80,7 +79,7 @@ const candidate = (stationId: string, seconds: number) => ({
   station: {
     station_id: stationId,
     vehicle_type: "AMBULANCE" as const,
-    source_kind: "ambulance_base" as const,
+    source_kind: "prm_base" as const,
     name: stationId,
     position: { lat: 50, lng: 19.9 },
   },
@@ -290,23 +289,25 @@ describe("createIncidentDispatch", () => {
     expect(dispatch.getState()).toMatchObject({ vehicleType: "POLICE_CAR", rankStatus: "idle" });
   });
 
-  it.each([
-    ["DESTINATION_OFF_NETWORK", "No vehicle access within 800 m of this location"],
-    ["NO_STATION_REACHABLE", "No station of this type can reach this location"],
-  ] as const)("test_error_copy: %s", async (code, copy) => {
-    const { adapter, calls } = deferredAdapter();
-    const dispatch = createIncidentDispatch(adapter);
+  it.each([["NO_STATION_REACHABLE", "No station of this type can reach this location"]] as const)(
+    "test_error_copy: %s",
+    async (code, copy) => {
+      const { adapter, calls } = deferredAdapter();
+      const dispatch = createIncidentDispatch(adapter);
 
-    dispatch.setIncident(incident(50.01));
-    calls[0].reject(new SimulationAdapterError({ kind: "http", status: 422, code, message: "x" }));
-    await flush();
+      dispatch.setIncident(incident(50.01));
+      calls[0].reject(
+        new SimulationAdapterError({ kind: "http", status: 422, code, message: "x" }),
+      );
+      await flush();
 
-    expect(dispatch.getState()).toMatchObject({
-      rankStatus: "error",
-      rankError: copy,
-      ranking: null,
-    });
-  });
+      expect(dispatch.getState()).toMatchObject({
+        rankStatus: "error",
+        rankError: copy,
+        ranking: null,
+      });
+    },
+  );
 
   it("shows the transport message for other failures", async () => {
     const { adapter, calls } = deferredAdapter();
@@ -426,14 +427,16 @@ describe("pinnedIncident", () => {
 });
 
 describe("describeRankError", () => {
-  it("explains an incident beyond walking reach of any vehicle access", () => {
+  it("shows the backend's walking limit for an incident beyond reach of any vehicle access", () => {
     const error = new SimulationAdapterError({
       kind: "http",
       status: 422,
       code: "DESTINATION_OFF_NETWORK",
-      message: "Incident is farther than 800 m on foot from any vehicle access point",
+      message: "Incident is farther than 650 m on foot from any vehicle access point",
     });
-    expect(describeRankError(error)).toBe("No vehicle access within 800 m of this location");
+    expect(describeRankError(error)).toBe(
+      "Incident is farther than 650 m on foot from any vehicle access point",
+    );
   });
 });
 

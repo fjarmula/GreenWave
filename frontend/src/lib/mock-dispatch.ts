@@ -81,7 +81,6 @@ export function createMockDispatchAdapter(
               ]
             : []),
         ].slice(0, 3),
-        station_at_incident: null,
         // No roster in mock mode (capability resources: false): plain nearest station.
         scenario_time: localMinute(new Date()),
         outcome: "OK",

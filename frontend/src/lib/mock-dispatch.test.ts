@@ -12,7 +12,7 @@ const station = (
 ): Station => ({
   station_id,
   vehicle_type,
-  source_kind: vehicle_type === "AMBULANCE" ? "ambulance_base" : "fire_state",
+  source_kind: vehicle_type === "AMBULANCE" ? "prm_base" : "fire_state",
   name: station_id,
   position: { lat, lng },
 });
@@ -74,7 +74,7 @@ describe("createMockDispatchAdapter", () => {
       haversineMeters(incident, STATIONS[1].position),
     );
     expect(ambulance.incident_snapped).toEqual({ position: incident, snap_distance_m: 0 });
-    expect(ambulance.station_at_incident).toBeNull();
+    expect(ambulance).not.toHaveProperty("station_at_incident");
     expect(ambulance.schema_version).toBe("1.0");
   });
 
@@ -117,7 +117,6 @@ describe("coincident station dispatch", () => {
       availability: {},
       resource_aware: true,
     });
-    expect(result.station_at_incident).toBeNull();
     expect(result.candidates.map((item) => [item.station.station_id, item.on_site])).toEqual([
       [STATIONS[1].station_id, true],
       ["STN-A-0001", false],

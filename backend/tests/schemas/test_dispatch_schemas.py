@@ -12,6 +12,7 @@ from greenwave.schemas import (
     RankedCandidate,
     ResourcesResponse,
     SimulationStartRequest,
+    StationSourceKind,
     VehicleType,
 )
 
@@ -31,8 +32,8 @@ def _station(station_id: str = "STN-A-0001") -> dict[str, Any]:
     return {
         "station_id": station_id,
         "vehicle_type": "AMBULANCE",
-        "source_kind": "hospital_ed",
-        "name": "Szpital",
+        "source_kind": "prm_base",
+        "name": "ul. Wybickiego Józefa 3a, 31-261 Kraków",
         "position": {"lat": 50.06, "lng": 19.93},
     }
 
@@ -50,7 +51,6 @@ def _rank(candidates: int) -> dict[str, Any]:
             }
             for i in range(candidates)
         ],
-        "station_at_incident": None,
         "scenario_time": "2026-10-27T21:00:00",
         "outcome": "OK" if candidates else "NO_ELIGIBLE_RESOURCE",
         "incident_area": None,
@@ -79,7 +79,10 @@ def test_rank_response_accepts_zero_to_three(count: int) -> None:
 def test_station_id_pattern() -> None:
     with pytest.raises(ValidationError):
         DispatchRankResponse.model_validate(
-            {**_rank(1), "station_at_incident": _station("STN-X-1")}
+            {
+                **_rank(1),
+                "candidates": [{**_rank(1)["candidates"][0], "station": _station("STN-X-1")}],
+            }
         )
 
 
@@ -93,7 +96,7 @@ def test_ranked_candidate_on_foot_defaults_to_none_and_rejects_negative() -> Non
     station = {
         "station_id": "STN-A-0001",
         "vehicle_type": "AMBULANCE",
-        "source_kind": "ambulance_base",
+        "source_kind": "prm_base",
         "name": "A",
         "position": {"lat": 50.0, "lng": 19.9},
     }
@@ -234,3 +237,9 @@ def test_resources_response_round_trips() -> None:
     parsed = ResourcesResponse.model_validate(body)
 
     assert parsed.model_dump(mode="json") == body
+
+
+@pytest.mark.parametrize("kind", ["ambulance_base", "hospital_ed"])
+def test_retired_station_source_kinds_are_rejected(kind: str) -> None:
+    with pytest.raises(ValueError):
+        StationSourceKind(kind)

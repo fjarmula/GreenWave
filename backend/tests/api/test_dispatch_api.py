@@ -92,7 +92,7 @@ def test_rank_returns_candidates(layout: Layout) -> None:
     assert body["candidates"][0]["greenwave_seconds"] > 0
     assert body["candidates"][0]["standard_seconds"] > 0
     assert body["incident_snapped"]["snap_distance_m"] >= 0
-    assert body["station_at_incident"] is None
+    assert "station_at_incident" not in body
 
 
 def test_rank_at_a_station_returns_it_on_site(layout: Layout) -> None:
@@ -115,7 +115,7 @@ def test_rank_at_a_station_returns_it_on_site(layout: Layout) -> None:
     assert first["on_foot"]["access_point"] == station["position"]
     assert first["on_foot"]["distance_m"] == 0
     assert first["greenwave_seconds"] == first["standard_seconds"] == first["distance_m"] == 0
-    assert body["station_at_incident"] is None
+    assert "station_at_incident" not in body
 
 
 def test_rank_off_network_is_422(layout: Layout) -> None:
@@ -299,6 +299,7 @@ def test_rank_ambulance_returns_team_and_reason(layout: Layout) -> None:
         "NEAREST_OUTSIDE_MARGIN",
     }
     assert first["team"]["team_code"] == body["area_rule"]["chosen_team_code"]
+    assert body["area_rule"]["margin_seconds"] == 60
     assert first["team"]["availability"] == "assumed_free"
     assert all(c["selection_reason"] is None for c in body["candidates"][1:])
     assert body["excluded_teams"] == []

@@ -306,15 +306,15 @@ def test_shortlist_size_limits_full_estimates() -> None:
 def test_unsnappable_station_skipped_with_warning(caplog: pytest.LogCaptureFixture) -> None:
     index = corridor_index()
     stations = stations_frame(
-        ("STN-A-0001", "AMBULANCE", _X + 1_000, _Y),
-        ("STN-A-0002", "AMBULANCE", _X + 1_000, _Y + 5_000),
+        ("STN-F-0001", "FIRE_TRUCK", _X + 1_000, _Y),
+        ("STN-F-0002", "FIRE_TRUCK", _X + 1_000, _Y + 5_000),
     )
 
     with caplog.at_level(logging.WARNING):
         nodes = build_station_nodes(stations, index)
 
-    assert [n.station.station_id for n in nodes] == ["STN-A-0001"]
-    assert "STN-A-0002" in caplog.text
+    assert [n.station.station_id for n in nodes] == ["STN-F-0001"]
+    assert "STN-F-0002" in caplog.text
 
 
 # --- Off-road incidents: drive + walk ---------------------------------------------------------

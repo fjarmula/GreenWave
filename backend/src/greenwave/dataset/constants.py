@@ -34,8 +34,6 @@ VEHICLE_TYPES = frozenset({"AMBULANCE", "FIRE_TRUCK", "POLICE_CAR"})
 SOURCE_KINDS = frozenset(
     {
         "prm_base",
-        "ambulance_base",
-        "hospital_ed",
         "fire_state",
         "fire_volunteer",
         "fire_other",

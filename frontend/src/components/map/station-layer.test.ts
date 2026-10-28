@@ -6,7 +6,7 @@ import type { Station } from "@/types/telemetry";
 const station = (station_id: string, vehicle_type: Station["vehicle_type"]): Station => ({
   station_id,
   vehicle_type,
-  source_kind: vehicle_type === "AMBULANCE" ? "hospital_ed" : "fire_state",
+  source_kind: vehicle_type === "AMBULANCE" ? "prm_base" : "fire_state",
   name: `Name ${station_id}`,
   position: { lat: 50.06, lng: 19.94 },
 });
@@ -29,7 +29,7 @@ describe("stationFeatures", () => {
       station_id: "STN-A-0001",
       name: "Name STN-A-0001",
       vehicle_type: "AMBULANCE",
-      source_kind: "hospital_ed",
+      source_kind: "prm_base",
     });
   });
 

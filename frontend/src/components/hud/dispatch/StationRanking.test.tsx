@@ -23,28 +23,27 @@ const RANKING: DispatchRankResponse = {
   incident_snapped: { position: { lat: 50.0617, lng: 19.9373 }, snap_distance_m: 3 },
   candidates: [
     {
-      station: station("STN-A-0006", "SP ZOZ MSW", "hospital_ed"),
+      station: station("STN-A-0006", "SP ZOZ MSW", "prm_base"),
       greenwave_seconds: 248.4,
       standard_seconds: 301.2,
       distance_m: 2810,
       on_site: false,
     },
     {
-      station: station("STN-A-0007", "5. Wojskowy", "hospital_ed"),
+      station: station("STN-A-0007", "5. Wojskowy", "prm_base"),
       greenwave_seconds: 289,
       standard_seconds: 342,
       distance_m: 3403,
       on_site: false,
     },
     {
-      station: station("STN-A-0004", "KPR", "ambulance_base"),
+      station: station("STN-A-0004", "KPR", "prm_base"),
       greenwave_seconds: 349,
       standard_seconds: 401,
       distance_m: 4592,
       on_site: false,
     },
   ],
-  station_at_incident: null,
   scenario_time: "2026-10-27T12:00:00",
   outcome: "OK",
   incident_area: null,
@@ -87,16 +86,8 @@ describe("StationRanking", () => {
     }
   });
 
-  it("names hospital emergency departments as such", () => {
-    expect(render()).toContain("Hospital emergency dept.");
-    expect(render()).toContain("Ambulance base");
-  });
-
-  it("no longer shows the station-at-incident notice", () => {
-    const markup = render({
-      ranking: { ...RANKING, station_at_incident: station("STN-A-0001", "Here", "ambulance_base") },
-    });
-    expect(markup).not.toContain("A station of this type is at this location");
+  it("names PRM team bases as such", () => {
+    expect(render()).toContain("PRM team base");
   });
 
   it('shows "On site" and the walk for an on-site candidate', () => {

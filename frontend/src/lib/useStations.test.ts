@@ -8,7 +8,7 @@ import type { Station } from "@/types/telemetry";
 const STATION: Station = {
   station_id: "STN-A-0001",
   vehicle_type: "AMBULANCE",
-  source_kind: "ambulance_base",
+  source_kind: "prm_base",
   name: "KPR",
   position: { lat: 50.06, lng: 19.94 },
 };

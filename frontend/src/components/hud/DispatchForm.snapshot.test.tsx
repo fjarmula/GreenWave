@@ -46,7 +46,6 @@ const RANKING: DispatchRankResponse = {
       on_site: false,
     },
   ],
-  station_at_incident: null,
   scenario_time: "2026-10-27T12:00:00",
   outcome: "OK",
   incident_area: null,

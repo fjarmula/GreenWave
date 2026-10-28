@@ -82,8 +82,6 @@ const VEHICLE_TYPES: Record<VehicleType, true> = {
 };
 const STATION_SOURCE_KINDS: Record<StationSourceKind, true> = {
   prm_base: true,
-  ambulance_base: true,
-  hospital_ed: true,
   fire_state: true,
   fire_volunteer: true,
   fire_other: true,
@@ -606,6 +604,7 @@ function resourceFields(response: UnknownRecord, candidateCount: number): void {
     text(rule.nearest_team_code, "area_rule.nearest_team_code");
     nullableText(rule.in_area_team_code, "area_rule.in_area_team_code");
     if (rule.delta_seconds !== null) finite(rule.delta_seconds, "area_rule.delta_seconds");
+    nonNegative(rule.margin_seconds, "area_rule.margin_seconds");
   }
 }
 
@@ -663,8 +662,5 @@ export function validateRank(body: unknown): DispatchRankResponse {
     }
   });
   resourceFields(response, candidates.length);
-  if (response.station_at_incident !== null) {
-    station(response.station_at_incident, "station_at_incident");
-  }
   return response as DispatchRankResponse;
 }

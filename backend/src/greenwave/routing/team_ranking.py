@@ -52,6 +52,7 @@ class AreaRule:
     nearest_team_code: str  # the fastest candidate's team
     in_area_team_code: str | None  # the fastest in-area candidate's team
     delta_seconds: float | None  # in-area total minus the fastest total
+    margin_seconds: float  # the area preference margin the choice was made with
 
 
 @dataclass(frozen=True)
@@ -90,6 +91,7 @@ def order_by_area_rule(
         nearest_team_code=fastest.team.team_code,
         in_area_team_code=in_area.team.team_code if in_area is not None else None,
         delta_seconds=delta,
+        margin_seconds=margin_s,
     )
     return (first, *(c for c in by_total if c is not first)), rule
 

@@ -288,7 +288,7 @@ def park_stations() -> pl.DataFrame:
 
 def stations_frame(*rows: tuple[str, str, float, float]) -> pl.DataFrame:
     """``stations.parquet``-shaped rows ``(station_id, vehicle_type, x_m, y_m)`` on a fixture."""
-    kinds = {"AMBULANCE": "ambulance_base", "FIRE_TRUCK": "fire_state", "POLICE_CAR": "police"}
+    kinds = {"AMBULANCE": "prm_base", "FIRE_TRUCK": "fire_state", "POLICE_CAR": "police"}
     positions = [position_at(x, y) for _, _, x, y in rows]
     return pl.DataFrame(
         {

@@ -4,8 +4,6 @@
  */
 import type { AreaRuleOutcome, ExcludedTeam, PrmTeam, RosterInfo } from "@/types/telemetry";
 
-/** Approved D4 margin; the backend applies it, the copy only names it. */
-export const AREA_PREFERENCE_MARGIN_S = 60;
 export const ASSUMED_FREE_BADGE = "status unknown — assumed free in scenario";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -26,7 +24,7 @@ export function selectionReasonText(rule: AreaRuleOutcome): string {
   const seconds = Math.round(Math.abs(rule.delta_seconds ?? 0));
   switch (rule.reason) {
     case "IN_AREA_WITHIN_MARGIN":
-      return `In-area team chosen — ${seconds} s slower than the nearest (within ${AREA_PREFERENCE_MARGIN_S} s)`;
+      return `In-area team chosen — ${seconds} s slower than the nearest (within ${Math.round(rule.margin_seconds)} s)`;
     case "NEAREST_OUTSIDE_MARGIN":
       return `Nearest team is outside the incident area — ${seconds} s faster than the in-area team`;
     case "NEAREST":

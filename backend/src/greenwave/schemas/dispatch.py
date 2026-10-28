@@ -43,11 +43,9 @@ DispatchOutcome = Literal["OK", "NO_ELIGIBLE_RESOURCE"]
 
 
 class StationSourceKind(StrEnum):
-    """Where a station comes from; the UI names it, so hospital EDs are not passed off as bases."""
+    """Where a station comes from; the UI names it. Ambulances start only from PRM bases."""
 
     PRM_BASE = "prm_base"  # an official PRM team base (ambulance origins since ADR 0014)
-    AMBULANCE_BASE = "ambulance_base"
-    HOSPITAL_ED = "hospital_ed"
     FIRE_STATE = "fire_state"
     FIRE_VOLUNTEER = "fire_volunteer"
     FIRE_OTHER = "fire_other"
@@ -146,6 +144,8 @@ class AreaRuleOutcome(BaseModel):
     nearest_team_code: TeamCode
     in_area_team_code: TeamCode | None
     delta_seconds: float | None  # in-area total minus the nearest total, in the request's mode
+    # An out-of-area team is sent only when it arrives more than this much sooner (D4).
+    margin_seconds: Annotated[float, Field(ge=0.0)]
 
 
 class Team(BaseModel):
@@ -216,8 +216,6 @@ class DispatchRankResponse(BaseModel):
     # Best first; for AMBULANCE the first is the recommended team (area rule), not necessarily
     # the fastest. Empty exactly when outcome is NO_ELIGIBLE_RESOURCE.
     candidates: Annotated[list[RankedCandidate], Field(max_length=3)]
-    # Deprecated: on-site stations are candidates (ADR 0012).
-    station_at_incident: Station | None
     scenario_time: datetime  # naive local time the ranking is for
     outcome: DispatchOutcome
     incident_area: IncidentArea | None  # AMBULANCE only; None also when unknown

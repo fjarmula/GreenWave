@@ -175,7 +175,6 @@ def rank(body: DispatchRankRequest, request: Request) -> DispatchRankResponse | 
         schema_version="1.0",
         incident_snapped=_snapped(ranking.incident_snap),
         candidates=[_candidate(index, c) for c in ranking.candidates],
-        station_at_incident=None,  # deprecated: on-site stations are candidates (ADR 0012)
         scenario_time=scenario_time,
         outcome="OK",
         incident_area=None,
@@ -201,7 +200,6 @@ def _team_response(
             _team_candidate(index, c, rule.reason if i == 0 and rule else None)
             for i, c in enumerate(ranking.candidates)
         ],
-        station_at_incident=None,
         scenario_time=scenario_time,
         outcome="OK" if ranking.candidates else "NO_ELIGIBLE_RESOURCE",
         incident_area=IncidentArea(
@@ -223,6 +221,7 @@ def _team_response(
             nearest_team_code=rule.nearest_team_code,
             in_area_team_code=rule.in_area_team_code,
             delta_seconds=rule.delta_seconds,
+            margin_seconds=rule.margin_seconds,
         )
         if rule
         else None,

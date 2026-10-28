@@ -79,6 +79,11 @@
             ],
             "title": "In Area Team Code"
           },
+          "margin_seconds": {
+            "minimum": 0.0,
+            "title": "Margin Seconds",
+            "type": "number"
+          },
           "nearest_team_code": {
             "pattern": "^K\\d{2} \\d{3}( M)?$",
             "title": "Nearest Team Code",
@@ -99,7 +104,8 @@
           "chosen_team_code",
           "nearest_team_code",
           "in_area_team_code",
-          "delta_seconds"
+          "delta_seconds",
+          "margin_seconds"
         ],
         "title": "AreaRuleOutcome",
         "type": "object"
@@ -379,23 +385,12 @@
             "const": "1.0",
             "title": "Schema Version",
             "type": "string"
-          },
-          "station_at_incident": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Station"
-              },
-              {
-                "type": "null"
-              }
-            ]
           }
         },
         "required": [
           "schema_version",
           "incident_snapped",
           "candidates",
-          "station_at_incident",
           "scenario_time",
           "outcome",
           "incident_area",
@@ -1858,11 +1853,9 @@
         "type": "object"
       },
       "StationSourceKind": {
-        "description": "Where a station comes from; the UI names it, so hospital EDs are not passed off as bases.",
+        "description": "Where a station comes from; the UI names it. Ambulances start only from PRM bases.",
         "enum": [
           "prm_base",
-          "ambulance_base",
-          "hospital_ed",
           "fire_state",
           "fire_volunteer",
           "fire_other",

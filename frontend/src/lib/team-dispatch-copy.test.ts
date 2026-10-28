@@ -27,6 +27,12 @@ describe("selectionReasonText", () => {
     );
   });
 
+  it("names the margin the backend applied", () => {
+    expect(selectionReasonText({ ...RULE, delta_seconds: 20, margin_seconds: 45 })).toBe(
+      "In-area team chosen — 20 s slower than the nearest (within 45 s)",
+    );
+  });
+
   it("explains a faster team outside the incident area", () => {
     expect(
       selectionReasonText({ ...RULE, reason: "NEAREST_OUTSIDE_MARGIN", delta_seconds: 74.6 }),

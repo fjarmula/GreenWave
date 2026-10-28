@@ -68,7 +68,6 @@ export const TEAM_RANK: DispatchRankResponse = {
       other_eligible_team_codes: [],
     }),
   ],
-  station_at_incident: null,
   scenario_time: "2026-10-27T21:00:00",
   outcome: "OK",
   incident_area: {
@@ -88,6 +87,7 @@ export const TEAM_RANK: DispatchRankResponse = {
     nearest_team_code: "K01 001",
     in_area_team_code: "K01 008",
     delta_seconds: 40,
+    margin_seconds: 60,
   },
 };
 

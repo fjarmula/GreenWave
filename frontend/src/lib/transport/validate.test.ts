@@ -365,7 +365,7 @@ describe("on-foot legs", () => {
         station: {
           station_id: "STN-A-0001",
           vehicle_type: "AMBULANCE",
-          source_kind: "ambulance_base",
+          source_kind: "prm_base",
           name: "A",
           position: { lat: 50.05, lng: 19.9 },
         },
@@ -375,7 +375,6 @@ describe("on-foot legs", () => {
         ...(onFoot === undefined ? {} : { on_foot: onFoot }),
       },
     ],
-    station_at_incident: null,
     scenario_time: "2026-10-27T12:00:00",
     outcome: "OK",
     incident_area: null,
@@ -531,6 +530,12 @@ describe("resource-aware ambulance ranking (ADR 0014)", () => {
       "area_rule.delta_seconds",
       (c: Record<string, unknown>) => {
         record(c.area_rule).delta_seconds = "40";
+      },
+    ],
+    [
+      "area_rule.margin_seconds",
+      (c: Record<string, unknown>) => {
+        delete record(c.area_rule).margin_seconds;
       },
     ],
     [

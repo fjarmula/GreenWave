@@ -27,7 +27,6 @@ const RANK: DispatchRankResponse = {
       on_site: false,
     },
   ],
-  station_at_incident: null,
   scenario_time: "2026-10-27T12:00:00",
   outcome: "OK",
   incident_area: null,
@@ -113,7 +112,10 @@ describe("createBackendDispatchAdapter", () => {
     ["four candidates", { ...RANK, candidates: Array(4).fill(RANK.candidates[0]) }],
     [
       "an unknown vehicle type",
-      { ...RANK, station_at_incident: { ...STATION, vehicle_type: "TANK" } },
+      {
+        ...RANK,
+        candidates: [{ ...RANK.candidates[0], station: { ...STATION, vehicle_type: "TANK" } }],
+      },
     ],
     ["a missing time", { ...RANK, candidates: [{ station: STATION, distance_m: 1 }] }],
   ])("rejects a ranking with %s", async (_name, body) => {

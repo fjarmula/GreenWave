@@ -234,6 +234,8 @@ export interface components {
             delta_seconds: number | null;
             /** In Area Team Code */
             in_area_team_code: string | null;
+            /** Margin Seconds */
+            margin_seconds: number;
             /** Nearest Team Code */
             nearest_team_code: string;
             /**
@@ -362,7 +364,6 @@ export interface components {
              * @constant
              */
             schema_version: "1.0";
-            station_at_incident: components["schemas"]["Station"] | null;
         };
         /**
          * ErrorCode
@@ -981,10 +982,10 @@ export interface components {
         };
         /**
          * StationSourceKind
-         * @description Where a station comes from; the UI names it, so hospital EDs are not passed off as bases.
+         * @description Where a station comes from; the UI names it. Ambulances start only from PRM bases.
          * @enum {string}
          */
-        StationSourceKind: "prm_base" | "ambulance_base" | "hospital_ed" | "fire_state" | "fire_volunteer" | "fire_other" | "police";
+        StationSourceKind: "prm_base" | "fire_state" | "fire_volunteer" | "fire_other" | "police";
         /** StationsResponse */
         StationsResponse: {
             /**

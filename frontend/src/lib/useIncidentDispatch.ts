@@ -90,8 +90,8 @@ export function selectedCandidate(
   );
 }
 
+/** Friendlier copy for some ranking errors; others show the backend's message (its limits). */
 const RANK_ERROR_COPY: Partial<Record<ErrorCode, string>> = {
-  DESTINATION_OFF_NETWORK: "No vehicle access within 800 m of this location",
   NO_STATION_REACHABLE: "No station of this type can reach this location",
 };
 
