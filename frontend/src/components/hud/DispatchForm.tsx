@@ -13,6 +13,7 @@ import { PreflightEstimate } from "@/components/hud/dispatch/PreflightEstimate";
 import { PreviousRunCard } from "@/components/hud/dispatch/PreviousRunCard";
 import { ScenarioTimeInput } from "@/components/hud/dispatch/ScenarioTimeInput";
 import { RankTimeModeSync } from "@/components/hud/dispatch/RankTimeModeSync";
+import { ResourceAwareToggle } from "@/components/hud/dispatch/ResourceAwareToggle";
 import { StationRanking } from "@/components/hud/dispatch/StationRanking";
 import { TeamAvailabilityPanel } from "@/components/hud/dispatch/TeamAvailabilityPanel";
 import { TrafficDensityControl } from "@/components/hud/dispatch/TrafficDensityControl";
@@ -74,6 +75,7 @@ export function DispatchForm({
   const timeMode = timeModeFor(greenWaveMode, intent);
   const { incident, ranking, rankStatus, setRankTimeMode } = dispatch;
   const teamControls = dispatch.vehicleType === "AMBULANCE" && capabilities.resources;
+  const teamDetails = teamControls && dispatch.resourceAware;
   const canStart = rankStatus === "ready" && (ranking?.candidates.length ?? 0) > 0;
   const incidentKey = incident
     ? `${incident.label}@${incident.position.lat},${incident.position.lng}`
@@ -106,6 +108,12 @@ export function DispatchForm({
           onIncidentChange={dispatch.setIncident}
         />
         {teamControls && (
+          <ResourceAwareToggle
+            enabled={dispatch.resourceAware}
+            onChange={dispatch.setResourceAware}
+          />
+        )}
+        {teamDetails && (
           <ScenarioTimeInput value={dispatch.scenarioTime} onChange={dispatch.setScenarioTime} />
         )}
       </div>
@@ -120,7 +128,7 @@ export function DispatchForm({
         onSelect={dispatch.selectStation}
         teams={dispatch.resources?.teams}
       />
-      {teamControls && (
+      {teamDetails && (
         <TeamAvailabilityPanel
           resources={dispatch.resources}
           availability={dispatch.availability}

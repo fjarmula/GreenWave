@@ -70,6 +70,7 @@ function dispatchState(patch: Partial<IncidentDispatch> = {}): IncidentDispatch 
     selectedStationId: null,
     scenarioTime: "2026-10-27T12:00",
     availability: {},
+    resourceAware: true,
     rankTimeMode: "ENABLED",
     resources: null,
     setVehicleType: () => undefined,
@@ -78,6 +79,7 @@ function dispatchState(patch: Partial<IncidentDispatch> = {}): IncidentDispatch 
     selectStation: () => {},
     setScenarioTime: () => undefined,
     setTeamAvailability: () => undefined,
+    setResourceAware: () => undefined,
     setRankTimeMode: () => undefined,
     ...patch,
   };
@@ -493,12 +495,23 @@ describe("DispatchForm PRM team controls (ADR 0014)", () => {
     const markup = render(ambulance, true, DEFAULT_DISPATCH_SETTINGS, true);
     expect(markup).toContain('type="datetime-local"');
     expect(markup).toContain("Team availability");
+    expect(markup).toMatch(/role="switch" aria-checked="true" aria-label="Team-aware dispatch"/);
+  });
+
+  it("keeps only the switch when team-aware dispatch is off", () => {
+    const off = dispatchState({ ...ambulance, resourceAware: false });
+    const markup = render(off, true, DEFAULT_DISPATCH_SETTINGS, true);
+    expect(markup).toMatch(/role="switch" aria-checked="false" aria-label="Team-aware dispatch"/);
+    expect(markup).toContain("Nearest PRM base");
+    expect(markup).not.toContain('type="datetime-local"');
+    expect(markup).not.toContain("Team availability");
   });
 
   it("hides them without the resources capability (mock)", () => {
     const markup = render(ambulance, true, DEFAULT_DISPATCH_SETTINGS, false);
     expect(markup).not.toContain('type="datetime-local"');
     expect(markup).not.toContain("Team availability");
+    expect(markup).not.toContain("Team-aware dispatch");
   });
 
   it("hides them for other vehicle types", () => {

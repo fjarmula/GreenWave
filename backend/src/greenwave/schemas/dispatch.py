@@ -181,6 +181,9 @@ class DispatchRankRequest(BaseModel):
     availability: Annotated[
         dict[TeamCode, AvailabilityOverride], Field(max_length=MAX_AVAILABILITY_OVERRIDES)
     ] = {}
+    # False: AMBULANCE ranks PRM bases by time alone, like fire and police; scenario_time
+    # (echoed only), availability and the area rule are ignored.
+    resource_aware: bool = True
 
     @field_validator("scenario_time")
     @classmethod

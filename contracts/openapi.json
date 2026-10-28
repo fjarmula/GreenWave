@@ -273,6 +273,11 @@
           "incident": {
             "$ref": "#/components/schemas/Position"
           },
+          "resource_aware": {
+            "default": true,
+            "title": "Resource Aware",
+            "type": "boolean"
+          },
           "scenario_time": {
             "anyOf": [
               {
@@ -2138,7 +2143,7 @@
     },
     "/api/v1/dispatch/rank": {
       "post": {
-        "description": "Sync on purpose: FastAPI runs it in the thread pool, keeping the CPU work off the loop.\n\nAMBULANCE ranks eligible PRM teams (ADR 0014); fire and police rank stations as before.",
+        "description": "Sync on purpose: FastAPI runs it in the thread pool, keeping the CPU work off the loop.\n\nAMBULANCE ranks eligible PRM teams (ADR 0014) unless ``resource_aware`` is off; fire,\npolice and non-resource-aware ambulances rank stations as before.",
         "operationId": "rank_api_v1_dispatch_rank_post",
         "requestBody": {
           "content": {

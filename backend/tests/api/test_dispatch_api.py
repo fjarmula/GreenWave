@@ -354,6 +354,20 @@ def test_all_busy_returns_no_eligible_outcome(layout: Layout) -> None:
     assert body["incident_snapped"]["snap_distance_m"] >= 0
 
 
+def test_rank_without_resource_awareness_ignores_shifts_and_status(layout: Layout) -> None:
+    busy = {code: "busy" for code in ("K01 008", "K01 162", "K01 176")}
+    with client(layout) as c:
+        body = _rank_ambulance(c, scenario_time=EVENING, availability=busy, resource_aware=False)
+
+    assert body["outcome"] == "OK"
+    assert len(body["candidates"]) == 2  # both bases, the off-shift one included
+    assert all(c["team"] is None and c["selection_reason"] is None for c in body["candidates"])
+    assert (body["area_rule"], body["roster"], body["incident_area"]) == (None, None, None)
+    assert body["excluded_teams"] == []
+    totals = [c["greenwave_seconds"] for c in body["candidates"]]
+    assert totals == sorted(totals)
+
+
 def test_fire_rank_unchanged(layout: Layout) -> None:
     with client(layout) as c:
         incident = _poprzeczna(c)

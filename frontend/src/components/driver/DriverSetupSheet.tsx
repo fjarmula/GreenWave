@@ -10,6 +10,7 @@ import { PreviousRunCard } from "@/components/hud/dispatch/PreviousRunCard";
 import { PreflightEstimate } from "@/components/hud/dispatch/PreflightEstimate";
 import { ScenarioTimeInput } from "@/components/hud/dispatch/ScenarioTimeInput";
 import { RankTimeModeSync } from "@/components/hud/dispatch/RankTimeModeSync";
+import { ResourceAwareToggle } from "@/components/hud/dispatch/ResourceAwareToggle";
 import { StationRanking } from "@/components/hud/dispatch/StationRanking";
 import { TeamAvailabilityPanel } from "@/components/hud/dispatch/TeamAvailabilityPanel";
 import { TrafficDensityControl } from "@/components/hud/dispatch/TrafficDensityControl";
@@ -152,6 +153,7 @@ export function DriverSetupDetails({
   const timeMode = timeModeFor(settings.greenWaveMode, intent);
   const { incident, ranking, setRankTimeMode } = dispatch;
   const teamControls = dispatch.vehicleType === "AMBULANCE" && capabilities.resources;
+  const teamDetails = teamControls && dispatch.resourceAware;
   return (
     <section aria-label="Dispatch settings" className="driver-setup-details">
       <RankTimeModeSync
@@ -160,6 +162,12 @@ export function DriverSetupDetails({
         setRankTimeMode={setRankTimeMode}
       />
       {teamControls && (
+        <ResourceAwareToggle
+          enabled={dispatch.resourceAware}
+          onChange={dispatch.setResourceAware}
+        />
+      )}
+      {teamDetails && (
         <ScenarioTimeInput value={dispatch.scenarioTime} onChange={dispatch.setScenarioTime} />
       )}
       <StationRanking
@@ -172,7 +180,7 @@ export function DriverSetupDetails({
         onSelect={dispatch.selectStation}
         teams={dispatch.resources?.teams}
       />
-      {teamControls && (
+      {teamDetails && (
         <TeamAvailabilityPanel
           resources={dispatch.resources}
           availability={dispatch.availability}

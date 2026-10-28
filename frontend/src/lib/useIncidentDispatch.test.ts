@@ -126,6 +126,7 @@ describe("createIncidentDispatch", () => {
       scenario_time: "2026-10-27T21:00",
       time_mode: "ENABLED",
       availability: {},
+      resource_aware: true,
     });
     expect(dispatch.getState().rankStatus).toBe("ready");
     expect(dispatch.getState().ranking?.candidates[0].station.station_id).toBe("STN-A-0001");
@@ -537,6 +538,35 @@ describe("scenario time and team availability (ADR 0014)", () => {
     expect(calls[0].request.availability).toEqual({});
     dispatch.setTeamAvailability("K01 008", "busy");
     expect(calls).toHaveLength(1);
+  });
+
+  it("re-ranks without resource awareness, resetting the pick and keeping overrides", async () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter, NOW);
+    expect(dispatch.getState().resourceAware).toBe(true);
+    dispatch.setTeamAvailability("K01 176", "busy");
+    dispatch.setIncident(incident(50.01));
+    calls[0].resolve(threeStations);
+    await flush();
+    dispatch.selectStation("B");
+
+    dispatch.setResourceAware(false);
+    dispatch.setResourceAware(false);
+
+    expect(calls).toHaveLength(2);
+    expect(calls[1].request.resource_aware).toBe(false);
+    expect(dispatch.getState().selectedStationId).toBeNull();
+    expect(dispatch.getState().availability).toEqual({ "K01 176": "busy" });
+  });
+
+  it("remembers resource awareness without an incident", () => {
+    const { adapter, calls } = deferredAdapter();
+    const dispatch = createIncidentDispatch(adapter, NOW);
+
+    dispatch.setResourceAware(false);
+    expect(calls).toHaveLength(0);
+    dispatch.setIncident(incident(50.01));
+    expect(calls[0].request.resource_aware).toBe(false);
   });
 
   it("re-ranks on a time-mode change, keeping the pick", async () => {

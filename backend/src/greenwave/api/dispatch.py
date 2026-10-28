@@ -134,13 +134,14 @@ async def list_resources(
 def rank(body: DispatchRankRequest, request: Request) -> DispatchRankResponse | JSONResponse:
     """Sync on purpose: FastAPI runs it in the thread pool, keeping the CPU work off the loop.
 
-    AMBULANCE ranks eligible PRM teams (ADR 0014); fire and police rank stations as before.
+    AMBULANCE ranks eligible PRM teams (ADR 0014) unless ``resource_aware`` is off; fire,
+    police and non-resource-aware ambulances rank stations as before.
     """
     index = cast(RoutingIndex, request.app.state.routing_index)
     settings = cast(SimulationSettings, request.app.state.simulation_settings)
     scenario_time = body.scenario_time or _local_now()
     try:
-        if body.vehicle_type is VehicleType.AMBULANCE:
+        if body.vehicle_type is VehicleType.AMBULANCE and body.resource_aware:
             area = cast(IncidentAreaLocator, request.app.state.incident_area_locator).locate(
                 body.incident
             )

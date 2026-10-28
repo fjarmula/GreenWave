@@ -34,6 +34,9 @@ Additive in shape to contract v1; `schema_version` stays `"1.0"`. Pydantic model
 - Contract:
   - `DispatchRankRequest` gains `scenario_time` (naive local time; default the server's local
     now), `time_mode` (default `ENABLED`) and `availability` (team code → `free` | `busy`).
+    Amendment (2026-10-28): `resource_aware` (default `true`); `false` ranks AMBULANCE PRM bases
+    like fire and police (no shifts, overrides, area rule or team), and the UI exposes it as a
+    "Team-aware dispatch" switch that hides the scenario time and team panel when off.
   - `DispatchRankResponse` gains `scenario_time`, `outcome` (`OK` | `NO_ELIGIBLE_RESOURCE`),
     `incident_area`, `excluded_teams`, `roster` and `area_rule`; `candidates` may hold 0–3 items.
     For AMBULANCE the first candidate is the recommended team, not necessarily the fastest.

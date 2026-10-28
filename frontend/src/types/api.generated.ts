@@ -37,7 +37,8 @@ export interface paths {
          * Rank
          * @description Sync on purpose: FastAPI runs it in the thread pool, keeping the CPU work off the loop.
          *
-         *     AMBULANCE ranks eligible PRM teams (ADR 0014); fire and police rank stations as before.
+         *     AMBULANCE ranks eligible PRM teams (ADR 0014) unless ``resource_aware`` is off; fire,
+         *     police and non-resource-aware ambulances rank stations as before.
          */
         post: operations["rank_api_v1_dispatch_rank_post"];
         delete?: never;
@@ -320,6 +321,11 @@ export interface components {
                 [key: string]: "free" | "busy";
             };
             incident: components["schemas"]["Position"];
+            /**
+             * Resource Aware
+             * @default true
+             */
+            resource_aware: boolean;
             /** Scenario Time */
             scenario_time?: string | null;
             /** @default ENABLED */

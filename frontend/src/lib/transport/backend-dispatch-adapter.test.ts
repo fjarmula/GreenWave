@@ -98,6 +98,7 @@ describe("createBackendDispatchAdapter", () => {
       traffic_density_multiplier: 1,
       time_mode: "ENABLED" as const,
       availability: {},
+      resource_aware: true,
     };
 
     await expect(adapter.rank(request)).resolves.toEqual(RANK);
@@ -124,6 +125,7 @@ describe("createBackendDispatchAdapter", () => {
         traffic_density_multiplier: 1,
         time_mode: "ENABLED",
         availability: {},
+        resource_aware: true,
       })
       .catch((e) => e);
     expect(error).toBeInstanceOf(SimulationAdapterError);
@@ -141,6 +143,7 @@ describe("createBackendDispatchAdapter", () => {
           traffic_density_multiplier: 1,
           time_mode: "ENABLED",
           availability: {},
+          resource_aware: true,
         })
         .catch((e) => e);
       expect(error).toBeInstanceOf(SimulationAdapterError);
@@ -203,6 +206,7 @@ it("captures the full wire envelope and error JSON without changing validation",
     traffic_density_multiplier: 1,
     time_mode: "ENABLED" as const,
     availability: {},
+    resource_aware: true,
   };
   await expect(adapter.rank(request)).rejects.toBeInstanceOf(SimulationAdapterError);
   expect(diagnosticStore.getSnapshot().at(-1)).toMatchObject({

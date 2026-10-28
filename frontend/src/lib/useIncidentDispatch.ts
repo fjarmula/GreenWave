@@ -70,6 +70,8 @@ export type IncidentDispatchState = {
   scenarioTime: string;
   /** Simulated team status by team code; a team left out is unknown (assumed free). */
   availability: Record<string, "free" | "busy">;
+  /** Off: ambulances go to the nearest PRM base, ignoring shifts, availability and areas. */
+  resourceAware: boolean;
   /** Which estimate the area rule compares: the page's run, green wave on the comparison. */
   rankTimeMode: GreenWaveMode;
   /** The roster and each team's shift at `scenarioTime`; `null` without the capability. */
@@ -117,6 +119,7 @@ export function createIncidentDispatch(
     selectedStationId: null,
     scenarioTime: scenarioTimeAt(now()),
     availability: {},
+    resourceAware: true,
     rankTimeMode: "ENABLED",
     resources: null,
   };
@@ -174,6 +177,7 @@ export function createIncidentDispatch(
           time_mode: next.rankTimeMode,
           // Overrides are PRM ambulance teams; other vehicle types have none.
           availability: next.vehicleType === "AMBULANCE" ? next.availability : {},
+          resource_aware: next.resourceAware,
         },
         controller.signal,
       )
@@ -255,6 +259,11 @@ export function createIncidentDispatch(
       else availability[teamCode] = value;
       rankIfAmbulance({ availability });
     },
+    /** Turns team-aware ranking on or off (the candidates change, so the pick resets). */
+    setResourceAware(resourceAware: boolean) {
+      if (resourceAware === state.resourceAware) return;
+      rankIfAmbulance({ resourceAware });
+    },
     /** The page's estimate for the area rule; the same stations, so the pick is kept. */
     setRankTimeMode(rankTimeMode: GreenWaveMode) {
       if (rankTimeMode === state.rankTimeMode) return;
@@ -285,6 +294,7 @@ export type IncidentDispatch = IncidentDispatchState & {
   selectStation: (stationId: string) => void;
   setScenarioTime: (scenarioTime: string) => void;
   setTeamAvailability: (teamCode: string, value: TeamAvailability) => void;
+  setResourceAware: (resourceAware: boolean) => void;
   setRankTimeMode: (mode: GreenWaveMode) => void;
 };
 
@@ -303,6 +313,7 @@ export function useIncidentDispatch(adapter: DispatchAdapter): IncidentDispatch 
     selectStation: dispatch.selectStation,
     setScenarioTime: dispatch.setScenarioTime,
     setTeamAvailability: dispatch.setTeamAvailability,
+    setResourceAware: dispatch.setResourceAware,
     setRankTimeMode: dispatch.setRankTimeMode,
   };
 }

@@ -55,6 +55,7 @@ describe("createMockDispatchAdapter", () => {
       traffic_density_multiplier: 1,
       time_mode: "ENABLED",
       availability: {},
+      resource_aware: true,
     });
     const fire = await adapter.rank({
       incident,
@@ -62,6 +63,7 @@ describe("createMockDispatchAdapter", () => {
       traffic_density_multiplier: 1,
       time_mode: "ENABLED",
       availability: {},
+      resource_aware: true,
     });
 
     expect(ambulance.candidates.map((c) => c.station.station_id)).toEqual(["STN-A-0002"]);
@@ -84,6 +86,7 @@ describe("createMockDispatchAdapter", () => {
         traffic_density_multiplier: 1,
         time_mode: "ENABLED",
         availability: {},
+        resource_aware: true,
       })
       .catch((e) => e);
     expect(error).toBeInstanceOf(SimulationAdapterError);
@@ -112,6 +115,7 @@ describe("coincident station dispatch", () => {
       traffic_density_multiplier: 1,
       time_mode: "ENABLED",
       availability: {},
+      resource_aware: true,
     });
     expect(result.station_at_incident).toBeNull();
     expect(result.candidates.map((item) => [item.station.station_id, item.on_site])).toEqual([
@@ -134,6 +138,7 @@ describe("coincident station dispatch", () => {
       traffic_density_multiplier: 1,
       time_mode: "ENABLED",
       availability: {},
+      resource_aware: true,
     });
     expect(result.candidates.map((item) => item.on_site)).toEqual([true]);
   });
@@ -149,6 +154,7 @@ describe("coincident station dispatch", () => {
       traffic_density_multiplier: 1,
       time_mode: "ENABLED",
       availability: {},
+      resource_aware: true,
     });
     expect(result.candidates[0].station.station_id).toBe("STN-A-0001");
   });
