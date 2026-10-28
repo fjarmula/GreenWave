@@ -107,6 +107,9 @@ and set `GREENWAVE_CORS_ORIGINS=http://<your-ip>:3000`.
 
 `npm run smoke:mock [base-url]` drives a mock-transport dashboard (default `http://localhost:3000`)
 with `@playwright/cli`; outputs go to `../.tmp/playwright/`.
+Known gap: only the first phase (`home-return.js`, home navigation at desktop and phone widths in
+both themes) passes today. `mock-run.js` predates the incident picker and waits for a start button
+that stays disabled until an incident is placed, so the run stops there until it is rewritten.
 
 ## Simulated ITS feedback
 
