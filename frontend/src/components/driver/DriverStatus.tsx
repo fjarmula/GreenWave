@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 import { Settings2, Square } from "lucide-react";
 import { etaSeconds, formatSignalDistance, savedPill } from "@/lib/driver-presentation";
 import type { SimulationState } from "@/lib/simulation-state";
@@ -25,8 +27,9 @@ export function DriverStatus({
   onStop: () => void;
   onBackToSetup?: () => void;
 }) {
+  const { t } = useTranslation();
   if (state.startRequest?.green_wave_mode !== "ENABLED")
-    return <p className="hud-alert tone-caution">Enabled simulation required</p>;
+    return <p className="hud-alert tone-caution">{t("Enabled simulation required")}</p>;
   const running = state.simulationState === "RUNNING";
   const stale = isTelemetryStale(state);
   const speed = vehicleSpeedPresentation(state.simulationState, state.liveTelemetry);
@@ -47,21 +50,25 @@ export function DriverStatus({
             ? `Cancelled · ${cancelReasonLabel(state.cancelReason)}`
             : "Telemetry stopped";
     return (
-      <section aria-label="Driver simulation result" className="driver-card" role="status">
+      <section aria-label={t("Driver simulation result")} className="driver-card" role="status">
         <p className="driver-card-eyebrow">
-          Simulated · {VEHICLE_NAMES[state.startRequest.vehicle_type]}
+          {t("Simulated · ")}
+          {t(VEHICLE_NAMES[state.startRequest.vehicle_type])}
         </p>
-        <p className="driver-card-result">{detail}</p>
+        <p className="driver-card-result">{t(detail)}</p>
         <p className="mt-2 text-xs text-muted-foreground">
-          Last simulated controller report ·{" "}
-          {state.cancelReason ? cancelReasonLabel(state.cancelReason) : "Run ended"}
+          {t("Last simulated controller report ·")}
+          {t(" ")}
+          {t(state.cancelReason ? cancelReasonLabel(state.cancelReason) : "Run ended")}
         </p>
         {state.simulationState === "FINISHED" && (
-          <p className={`hud-chip mt-2 ${PILL_TONES[timeSavedTone(saved)]}`}>{savedPill(saved)}</p>
+          <p className={`hud-chip mt-2 ${PILL_TONES[timeSavedTone(saved)]}`}>
+            {t(savedPill(saved))}
+          </p>
         )}
         <button type="button" className="hud-secondary pressable mt-3" onClick={onBackToSetup}>
           <Settings2 aria-hidden />
-          Back to setup
+          {t("Back to setup")}
         </button>
       </section>
     );
@@ -74,22 +81,22 @@ export function DriverStatus({
       ? "Retry Stop"
       : "Stop simulation";
   return (
-    <section aria-label="Driver simulation status" className="driver-card">
+    <section aria-label={t("Driver simulation status")} className="driver-card">
       <div className="driver-card-row">
         <dl className="driver-card-stats">
           <div>
-            <dt className="hud-stat-label">{stale ? "Last received speed" : "Speed"}</dt>
+            <dt className="hud-stat-label">{t(stale ? "Last received speed" : "Speed")}</dt>
             <dd className="hud-value driver-card-speed">
-              {speed.value}
-              <span className="driver-card-unit"> km/h</span>
+              {t(speed.value)}
+              <span className="driver-card-unit">{t(" km/h")}</span>
             </dd>
           </div>
           {eta !== null && (
             <div>
               <dt className="hud-stat-label">
-                {state.routeData?.destination_on_foot ? "ETA to access point" : "ETA"}
+                {t(state.routeData?.destination_on_foot ? "ETA to access point" : "ETA")}
               </dt>
-              <dd className="hud-value driver-card-eta">{formatDuration(eta)}</dd>
+              <dd className="hud-value driver-card-eta">{t(formatDuration(eta))}</dd>
             </div>
           )}
         </dl>
@@ -99,28 +106,34 @@ export function DriverStatus({
           className="driver-stop pressable"
           disabled={state.stopRequested}
           aria-busy={state.stopRequested}
-          aria-label={stopLabel}
-          title={stopLabel}
+          aria-label={t(stopLabel)}
+          title={t(stopLabel)}
           onClick={onStop}
         >
           <Square aria-hidden className="size-4 fill-current" />
         </button>
       </div>
-      <p className={`hud-chip mt-2 ${PILL_TONES[timeSavedTone(saved)]}`}>{savedPill(saved)}</p>
+      <p className={`hud-chip mt-2 ${PILL_TONES[timeSavedTone(saved)]}`}>{t(savedPill(saved))}</p>
       <p
         role="status"
         className={`mt-2 text-xs ${stale ? "text-caution" : "text-muted-foreground"}`}
       >
-        Simulated · {VEHICLE_NAMES[state.startRequest.vehicle_type]} ·{" "}
-        {stale
-          ? "Last received position · telemetry paused"
-          : state.connection
-            ? connectionLabel(state.connection)
-            : status}
+        {t("Simulated · ")}
+        {t(VEHICLE_NAMES[state.startRequest.vehicle_type])}
+        {t(" ·")}
+        {t(" ")}
+        {t(
+          stale
+            ? "Last received position · telemetry paused"
+            : state.connection
+              ? connectionLabel(state.connection)
+              : status,
+        )}
       </p>
       {state.stopError && (
         <p role="alert" className="hud-alert tone-emergency mt-2">
-          Could not stop: {state.stopError}
+          {t("Could not stop: ")}
+          {t(state.stopError)}
         </p>
       )}
     </section>

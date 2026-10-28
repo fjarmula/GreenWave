@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import Link from "next/link";
 import { DriverStatus } from "@/components/driver/DriverStatus";
@@ -51,6 +52,7 @@ export function Dashboard({
   selectedMode = "ENABLED",
   driver = false,
 }: { selectedMode?: GreenWaveMode; driver?: boolean } = {}) {
+  const { t } = useTranslation();
   const { startSimulation, stopSimulation, stopRun } = useSimulationActions();
   const simulation = useSimulationState();
   const operationOwner = useSyncExternalStore(
@@ -148,7 +150,7 @@ export function Dashboard({
     );
     if (
       policy.requiresReplacement &&
-      !window.confirm("Stop the active simulation and replace it with this scenario?")
+      !window.confirm(t("Stop the active simulation and replace it with this scenario?"))
     )
       return;
     retainResult(simulation);
@@ -186,24 +188,32 @@ export function Dashboard({
     <>
       {operationOwner === "comparison" && (
         <p role="status" className="hud-alert tone-beacon m-4 block text-sm">
-          A comparison owns the simulation.{" "}
+          {t("A comparison owns the simulation.")}
+          {t(" ")}
           <Link className="underline" href="/compare">
-            Return to the comparison
+            {t("Return to the comparison")}
           </Link>
-          .
+          {t(".")}
         </p>
       )}
       {policy.requiresReplacement && (
         <p role="status" className="hud-alert tone-caution m-4 block text-sm">
-          A{" "}
-          {simulation.startRequest?.green_wave_mode === "ENABLED"
-            ? "Green Wave"
-            : "standard traffic"}{" "}
-          simulation is {simulationState.toLowerCase()}.{" "}
+          {t("A")}
+          {t(" ")}
+          {t(
+            simulation.startRequest?.green_wave_mode === "ENABLED"
+              ? "Green Wave"
+              : "standard traffic",
+          )}
+          {t(" ")}
+          {t("simulation is ")}
+          {t(simulationState.toLowerCase())}
+          {t(".")}
+          {t(" ")}
           <Link className="underline" href={routeForMode(simulation.startRequest!.green_wave_mode)}>
-            Return to that run
+            {t("Return to that run")}
           </Link>
-          . Starting here requires explicit replacement.
+          {t(". Starting here requires explicit replacement.")}
         </p>
       )}
     </>
@@ -318,13 +328,13 @@ export function Dashboard({
       header={
         <ResponsiveNavigation
           current={driver ? "/driver" : routeForMode(selectedMode)}
-          title={
+          title={t(
             driver
               ? "Driver simulation"
               : selectedMode === "ENABLED"
                 ? "Green Wave"
-                : "Standard traffic"
-          }
+                : "Standard traffic",
+          )}
         />
       }
       map={
@@ -340,7 +350,7 @@ export function Dashboard({
       inspector={
         onSite ? undefined : (
           <>
-            {notices}
+            {t(notices)}
             {mode === "setup" ? (
               <DispatchForm
                 settings={settingsForMode(settings, selectedMode)}

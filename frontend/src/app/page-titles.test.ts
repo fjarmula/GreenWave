@@ -1,21 +1,23 @@
 import { expect, it, vi } from "vitest";
 import { metadata as layout } from "./layout";
-import { metadata as compare } from "./compare/page";
-import { metadata as diagnostics } from "./diagnostics/page";
-import { metadata as driver } from "./driver/page";
-import { metadata as greenWave } from "./simulation/green-wave/page";
-import { metadata as standard } from "./simulation/standard/page";
+import { generateMetadata as compare } from "./compare/page";
+import { generateMetadata as diagnostics } from "./diagnostics/page";
+import { generateMetadata as driver } from "./driver/page";
+import { generateMetadata as greenWave } from "./simulation/green-wave/page";
+import { generateMetadata as standard } from "./simulation/standard/page";
 
 vi.mock("next/font/google", () => ({
   Geist: () => ({ variable: "" }),
   Geist_Mono: () => ({ variable: "" }),
 }));
 
-it("names each workspace in the browser title", () => {
+it("names each workspace in the browser title", async () => {
   expect(layout.title).toEqual({ default: "ER-GreenWave", template: "%s · ER-GreenWave" });
-  expect(compare.title).toBe("Comparison");
-  expect(diagnostics.title).toBe("Diagnostics");
-  expect(driver.title).toBe("Driver");
-  expect(greenWave.title).toBe("Green Wave");
-  expect(standard.title).toBe("Standard traffic");
+  expect((await compare()).title).toBe("Porównanie");
+  expect((await diagnostics()).title).toBe("Diagnostyka");
+  expect((await driver()).title).toBe("Kierowca");
+  expect((await greenWave()).title).toBe("GreenWave");
+  expect((await standard()).title).toBe("Ruch standardowy");
 });
+
+vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }) }));

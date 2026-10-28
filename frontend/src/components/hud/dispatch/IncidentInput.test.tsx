@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { IncidentInput, SearchFeedback } from "@/components/hud/dispatch/IncidentInput";

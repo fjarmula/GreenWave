@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { expect, it } from "vitest";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 it("keeps navigation and map visible while focus mode hides the inspector", () => {

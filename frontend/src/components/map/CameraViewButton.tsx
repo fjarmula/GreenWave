@@ -1,4 +1,6 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
+
 import { LocateFixed, Route } from "lucide-react";
 
 /** The action names the next view, rather than repeating the current camera state. */
@@ -13,6 +15,7 @@ export function CameraViewButton({
   onFollow: () => void;
   onShowRoute: () => void;
 }) {
+  const { t } = useTranslation();
   const route = following || !canFollow;
   const Icon = route ? Route : LocateFixed;
   return (
@@ -22,7 +25,7 @@ export function CameraViewButton({
       onClick={route ? onShowRoute : onFollow}
     >
       <Icon aria-hidden />
-      {route ? "Show route" : "Follow vehicle"}
+      {t(route ? "Show route" : "Follow vehicle")}
     </button>
   );
 }

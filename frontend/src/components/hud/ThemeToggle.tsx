@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -30,6 +31,7 @@ const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
 export function ThemeToggle() {
+  const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const mounted = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
 
@@ -40,7 +42,7 @@ export function ThemeToggle() {
   const activeIndex = themeOptions.findIndex((option) => option.value === theme);
 
   return (
-    <div className="theme-toggle" role="group" aria-label="Color theme">
+    <div className="theme-toggle" role="group" aria-label={t("Color theme")}>
       {activeIndex >= 0 && (
         <span aria-hidden className="theme-toggle-thumb" style={themeThumbStyle(activeIndex)} />
       )}
@@ -51,9 +53,9 @@ export function ThemeToggle() {
           <button
             key={value}
             type="button"
-            aria-label={label}
+            aria-label={t(label)}
             aria-pressed={isActive}
-            title={label}
+            title={t(label)}
             onClick={() => {
               const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
               void transitionTheme(

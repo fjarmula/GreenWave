@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { useCallback, useEffect, useMemo } from "react";
 import { useTheme } from "next-themes";
@@ -76,6 +77,7 @@ function MapCanvas({
   onUserMove,
   signalLabels = "full",
 }: MapContainerProps) {
+  const { t } = useTranslation();
   const liveState = useSimulationState();
   const { routeData, liveTelemetry, startRequest, simulationState, connection } = selectMapState(
     snapshot ?? liveState,
@@ -152,12 +154,12 @@ function MapCanvas({
         ref={mapElement}
         className="dashboard-map !absolute inset-0 h-full w-full overflow-hidden"
         role="region"
-        aria-label="Map"
+        aria-label={t("Map")}
       >
         {!map && (
           <div className="absolute inset-0 grid place-items-center bg-[var(--map-surface)]">
             <span className="surface-glass rounded-full! px-3 py-1.5 font-mono text-[10px] text-muted-foreground">
-              Loading map tiles…
+              {t("Loading map tiles…")}
             </span>
           </div>
         )}

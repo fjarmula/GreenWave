@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { expect, it } from "vitest";
 import { EndpointActivity } from "./EndpointActivity";
 import { JsonViewer } from "./JsonDetails";

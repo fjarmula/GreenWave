@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { useCallback, useState } from "react";
 import { useComparison } from "./ComparisonProvider";
@@ -31,6 +32,7 @@ import { pinnedIncident } from "@/lib/useIncidentDispatch";
 import type { ComparisonStartRequest, Position } from "@/types/telemetry";
 
 export function ComparisonWorkspace() {
+  const { t } = useTranslation();
   const { controller, state } = useComparison();
   const {
     dispatch,
@@ -59,7 +61,9 @@ export function ComparisonWorkspace() {
     simulation.simulationState === "RUNNING" || simulation.simulationState === "STARTING";
   const replacementNotice = (
     <p role="status" className="hud-alert tone-caution block text-sm">
-      Starting this comparison explicitly replaces the active simulation after a successful Stop.
+      {t(
+        "Starting this comparison explicitly replaces the active simulation after a successful Stop.",
+      )}
     </p>
   );
   const starting = state.status === "starting";
@@ -82,7 +86,8 @@ export function ComparisonWorkspace() {
     setOnSiteAnswer(answer);
     if (answer) return;
     if (!chosenStation || !dispatch.incident) return;
-    if (active && !window.confirm("Stop the active simulation and start this comparison?")) return;
+    if (active && !window.confirm(t("Stop the active simulation and start this comparison?")))
+      return;
     retainResult(simulation);
     if (!(await prepareComparison())) return;
     setPane("ENABLED");
@@ -127,7 +132,7 @@ export function ComparisonWorkspace() {
       defaultDetails={!live}
       provenance={`${config.transport === "mock" ? "Synthetic mock" : "Backend simulation"} · ${live ? "Both runs live on one simulated clock" : "Comparison scenario"}`}
       controls={running && runRequest ? <DispatchSettingsChip request={runRequest} /> : undefined}
-      header={<ResponsiveNavigation current="/compare" title="Comparison" />}
+      header={<ResponsiveNavigation current="/compare" title={t("Comparison")} />}
       map={
         live ? (
           <ComparisonStage
@@ -200,7 +205,7 @@ export function ComparisonWorkspace() {
       inspector={
         live || onSite ? undefined : (
           <>
-            {active && <div className="m-4">{replacementNotice}</div>}
+            {active && <div className="m-4">{t(replacementNotice)}</div>}
             <DispatchForm
               intent="comparison"
               settings={settings}

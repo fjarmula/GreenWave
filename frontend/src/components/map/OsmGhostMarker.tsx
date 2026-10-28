@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { addToStyle } from "@/components/map/style-guard";
 import { useEffect } from "react";
@@ -24,6 +25,7 @@ const LAYER_ID = "greenwave-osm-ghost-line";
  * line to the incident, so the spatial difference is visible. Routing uses the EMUiA point.
  */
 export function OsmGhostMarker({ map, incident, styleRevision, theme }: OsmGhostMarkerProps) {
+  const { t } = useTranslation();
   const lat = incident?.position.lat ?? null;
   const lng = incident?.position.lng ?? null;
   const osmLat = incident?.osmPosition?.lat ?? null;
@@ -31,7 +33,7 @@ export function OsmGhostMarker({ map, incident, styleRevision, theme }: OsmGhost
 
   useEffect(() => {
     if (!map || lat === null || lng === null || osmLat === null || osmLng === null) return;
-    const marker = new Marker({ element: createGhostPin(), anchor: "center" })
+    const marker = new Marker({ element: createGhostPin(t), anchor: "center" })
       .setLngLat([osmLng, osmLat])
       .addTo(map);
     // Mid theme swap the style is still loading: skip, the next styleRevision re-adds.
@@ -58,21 +60,21 @@ export function OsmGhostMarker({ map, incident, styleRevision, theme }: OsmGhost
       if (map.getLayer(LAYER_ID)) map.removeLayer(LAYER_ID);
       if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
     };
-  }, [map, lat, lng, osmLat, osmLng, styleRevision, theme]);
+  }, [map, lat, lng, osmLat, osmLng, styleRevision, theme, t]);
 
   return null;
 }
 
-function createGhostPin() {
+function createGhostPin(t: (text: string) => string) {
   const element = document.createElement("div");
   element.className = "relative size-4 text-[11px] font-medium text-muted-foreground";
   element.setAttribute("role", "img");
-  element.setAttribute("aria-label", "OSM position");
+  element.setAttribute("aria-label", t("OSM position"));
 
   const labelElement = document.createElement("span");
   labelElement.className =
     "absolute top-1/2 left-full ml-2 -translate-y-1/2 whitespace-nowrap surface-glass rounded-full! px-2 py-0.5";
-  labelElement.textContent = "OSM position";
+  labelElement.textContent = t("OSM position");
 
   const pin = document.createElement("span");
   pin.className = "map-dot map-dot--ghost";

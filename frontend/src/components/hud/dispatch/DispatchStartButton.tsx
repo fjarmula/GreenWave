@@ -1,4 +1,6 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
+
 import { ArrowUpRight, Zap } from "lucide-react";
 import type { DispatchSettings } from "@/lib/start-request";
 import type { IncidentDispatch } from "@/lib/useIncidentDispatch";
@@ -25,6 +27,7 @@ export function DispatchStartButton({
   /** Why starting is not possible right now (another operation owns the run); the label. */
   blockedReason?: string;
 }) {
+  const { t } = useTranslation();
   const startable = canStart(dispatch);
   const timeMode = timeModeFor(settings.greenWaveMode, intent);
   const greenWaveMode = settings.greenWaveMode;
@@ -39,26 +42,28 @@ export function DispatchStartButton({
         className={`hud-primary pressable ${pending ? "disabled:cursor-wait" : "disabled:cursor-not-allowed"}`}
       >
         <Zap className="size-4" aria-hidden />
-        {blockedReason !== undefined
-          ? blockedReason
-          : pending
-            ? "Computing route…"
-            : startable && isOnSite(pageCandidate(dispatch, timeMode))
-              ? "Dispatch on foot"
-              : intent === "comparison"
-                ? replacement
-                  ? "Replace run & compare"
-                  : "Start comparison"
-                : replacement
-                  ? "Replace active simulation"
-                  : greenWaveMode === "ENABLED"
-                    ? "Initialize green corridor"
-                    : "Start standard-traffic run"}
+        {t(
+          blockedReason !== undefined
+            ? blockedReason
+            : pending
+              ? "Computing route…"
+              : startable && isOnSite(pageCandidate(dispatch, timeMode))
+                ? "Dispatch on foot"
+                : intent === "comparison"
+                  ? replacement
+                    ? "Replace run & compare"
+                    : "Start comparison"
+                  : replacement
+                    ? "Replace active simulation"
+                    : greenWaveMode === "ENABLED"
+                      ? "Initialize green corridor"
+                      : "Start standard-traffic run",
+        )}
         <ArrowUpRight className="ml-auto size-4" aria-hidden />
       </button>
       {errorMessage && (
         <p role="alert" className="hud-alert tone-emergency surface-glass mt-2 p-3">
-          {errorMessage}
+          {t(errorMessage)}
         </p>
       )}
     </>

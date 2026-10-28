@@ -1,5 +1,5 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { describe, expect, it, vi } from "vitest";
 
 import { ScenarioTimeInput } from "@/components/hud/dispatch/ScenarioTimeInput";
@@ -34,4 +34,10 @@ describe("ScenarioTimeInput", () => {
 
     expect(onChange.mock.calls).toEqual([["2026-10-27T10:00"]]);
   });
+});
+
+// These tests inspect callback props by calling controls directly, outside React rendering.
+vi.mock("@/components/language-provider", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/components/language-provider")>();
+  return { ...actual, useTranslation: () => ({ language: "en", t: <T,>(value: T) => value }) };
 });

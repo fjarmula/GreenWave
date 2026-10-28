@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 import { useRef } from "react";
 import { itsScenarioCaption, itsScenarioLabel, itsScenarioTone } from "@/lib/driver-presentation";
 import type { ItsScenario } from "@/types/telemetry";
@@ -22,21 +24,22 @@ export function ItsScenarioControl({
   disabled: boolean;
   onChange: (value: ItsScenario) => void;
 }) {
+  const { t } = useTranslation();
   const group = useRef<HTMLDivElement>(null);
   const shown = disabled ? "NOMINAL" : value;
   return (
     <div className="mt-6">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-sm font-semibold">Simulated ITS feedback</p>
-        {disabled && <span className="text-xs text-muted-foreground">Green Wave off</span>}
+        <p className="text-sm font-semibold">{t("Simulated ITS feedback")}</p>
+        {disabled && <span className="text-xs text-muted-foreground">{t("Green Wave off")}</span>}
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        How the simulated signal controller answers each priority request.
+        {t("How the simulated signal controller answers each priority request.")}
       </p>
       <div
         ref={group}
         role="radiogroup"
-        aria-label="Simulated ITS feedback"
+        aria-label={t("Simulated ITS feedback")}
         className="its-grid mt-2"
         onKeyDown={(event) => {
           const next = nextItsScenario(shown, event.key);
@@ -61,9 +64,9 @@ export function ItsScenarioControl({
           >
             <span className="its-option-title">
               <span className="hud-dot" aria-hidden />
-              {itsScenarioLabel(scenario)}
+              {t(itsScenarioLabel(scenario))}
             </span>
-            <span className="its-option-caption hud-value">{itsScenarioCaption(scenario)}</span>
+            <span className="its-option-caption hud-value">{t(itsScenarioCaption(scenario))}</span>
           </button>
         ))}
       </div>

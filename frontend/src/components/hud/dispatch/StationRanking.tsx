@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 import { LoaderCircle, TriangleAlert } from "lucide-react";
 import { useId } from "react";
 
@@ -48,12 +50,13 @@ export function StationRanking({
   onSelect,
   teams,
 }: StationRankingProps) {
+  const { t } = useTranslation();
   const name = useId();
   if (rankStatus === "loading") {
     return (
       <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
         <LoaderCircle className="size-4 animate-spin text-beacon" aria-hidden />
-        Ranking stations…
+        {t("Ranking stations…")}
       </p>
     );
   }
@@ -61,20 +64,20 @@ export function StationRanking({
     return (
       <p role="alert" className="hud-alert tone-emergency mt-4">
         <TriangleAlert aria-hidden />
-        {rankError}
+        {t(rankError)}
       </p>
     );
   }
   if (!ranking) {
     return (
       <p className="mt-4 text-xs text-muted-foreground">
-        Pick an incident location to choose the fastest station.
+        {t("Pick an incident location to choose the fastest station.")}
       </p>
     );
   }
 
   const roster = ranking.roster && (
-    <p className="text-2xs text-muted-foreground">{rosterBadgeText(ranking.roster)}</p>
+    <p className="text-2xs text-muted-foreground">{t(rosterBadgeText(ranking.roster))}</p>
   );
   if (ranking.outcome === "NO_ELIGIBLE_RESOURCE") {
     const count = (reason: string) =>
@@ -83,14 +86,16 @@ export function StationRanking({
       <div className="mt-4 space-y-2" aria-live="polite">
         <p role="alert" className="hud-alert tone-caution">
           <TriangleAlert aria-hidden />
-          {noEligibleText(
-            scenarioClock(ranking.scenario_time),
-            count("OFF_SHIFT"),
-            count("BUSY_OVERRIDE"),
+          {t(
+            noEligibleText(
+              scenarioClock(ranking.scenario_time),
+              count("OFF_SHIFT"),
+              count("BUSY_OVERRIDE"),
+            ),
           )}
         </p>
         <ExcludedTeams excluded={ranking.excluded_teams} teams={teams} />
-        {roster}
+        {t(roster)}
       </div>
     );
   }
@@ -107,9 +112,9 @@ export function StationRanking({
     <div className="mt-4 space-y-2" aria-live="polite">
       <fieldset className="station-choice">
         <legend className="flex w-full items-center justify-between gap-2 pb-1.5">
-          <span className="dashboard-eyebrow">Dispatch from</span>
+          <span className="dashboard-eyebrow">{t("Dispatch from")}</span>
           {!roadTimeRanking && (
-            <span className="hud-chip tone-caution text-2xs">Approximate (mock)</span>
+            <span className="hud-chip tone-caution text-2xs">{t("Approximate (mock)")}</span>
           )}
         </legend>
         {ordered.map((candidate) => (
@@ -132,7 +137,7 @@ export function StationRanking({
         ))}
       </fieldset>
       <ExcludedTeams excluded={ranking.excluded_teams} teams={teams} />
-      {roster}
+      {t(roster)}
     </div>
   );
 }
@@ -158,6 +163,7 @@ function CandidateRow({
   timeMode: TimeMode;
   onSelect: (stationId: string) => void;
 }) {
+  const { t } = useTranslation();
   const { station, on_foot: onFoot, team } = candidate;
   const isFastest = candidate === fastest;
   // The comparison keeps the green-wave order, so its deltas are green-wave deltas.
@@ -176,9 +182,9 @@ function CandidateRow({
       />
       <span
         className={`station-choice-name text-sm ${checked ? "font-semibold" : "font-medium"}`}
-        title={station.name}
+        title={t(station.name)}
       >
-        {station.name}
+        {t(station.name)}
       </span>
       <span className="station-choice-time text-right">
         <span
@@ -193,11 +199,13 @@ function CandidateRow({
             total("GREENWAVE")
           ) : timeMode === "BOTH" ? (
             <>
-              <span className="block" title="ER Green Wave">
-                GW {total("GREENWAVE")}
+              <span className="block" title={t("ER Green Wave")}>
+                {t("GW ")}
+                {t(total("GREENWAVE"))}
               </span>
-              <span className="block" title="Standard traffic">
-                Std {total("STANDARD")}
+              <span className="block" title={t("Standard traffic")}>
+                {t("Std ")}
+                {t(total("STANDARD"))}
               </span>
             </>
           ) : (
@@ -206,41 +214,43 @@ function CandidateRow({
         </span>
         {!isFastest && (
           <span className="block font-mono text-2xs text-muted-foreground">
-            {roadTimeRanking
-              ? `+${Math.round(candidateTotalSeconds(candidate, deltaMode) - candidateTotalSeconds(fastest, deltaMode))} s`
-              : `+${((candidate.distance_m - fastest.distance_m) / 1000).toFixed(1)} km`}
+            {t(
+              roadTimeRanking
+                ? `+${Math.round(candidateTotalSeconds(candidate, deltaMode) - candidateTotalSeconds(fastest, deltaMode))} s`
+                : `+${((candidate.distance_m - fastest.distance_m) / 1000).toFixed(1)} km`,
+            )}
           </span>
         )}
       </span>
       <span className="station-choice-meta text-2xs text-muted-foreground">
-        {recommended && <span className="hud-chip tone-beacon text-2xs">Recommended</span>}
+        {recommended && <span className="hud-chip tone-beacon text-2xs">{t("Recommended")}</span>}
         {candidate.on_site ? (
-          <span className="hud-chip tone-beacon text-2xs">On site</span>
+          <span className="hud-chip tone-beacon text-2xs">{t("On site")}</span>
         ) : (
-          isFastest && <span className="hud-chip tone-go text-2xs">Fastest</span>
+          isFastest && <span className="hud-chip tone-go text-2xs">{t("Fastest")}</span>
         )}
         {team ? (
           <>
-            <span className="font-mono font-medium text-foreground">{team.team_code}</span>
-            <span>{team.team_type}</span>
-            {team.in_area !== null && <span>{team.in_area ? "In area" : "Outside area"}</span>}
+            <span className="font-mono font-medium text-foreground">{t(team.team_code)}</span>
+            <span>{t(team.team_type)}</span>
+            {team.in_area !== null && <span>{t(team.in_area ? "In area" : "Outside area")}</span>}
           </>
         ) : (
-          <span>{SOURCE_KIND_LABELS[station.source_kind]}</span>
+          <span>{t(SOURCE_KIND_LABELS[station.source_kind])}</span>
         )}
       </span>
       {team?.availability === "assumed_free" && (
         <span className="station-choice-note station-choice-assumption text-2xs">
-          {ASSUMED_FREE_BADGE}
+          {t(ASSUMED_FREE_BADGE)}
         </span>
       )}
       {onFoot && (
         <span className="station-choice-note text-2xs text-muted-foreground">
-          {onFootLine(candidate, onFoot, roadTimeRanking, timeMode)}
+          {t(onFootLine(candidate, onFoot, roadTimeRanking, timeMode))}
         </span>
       )}
       {reason && (
-        <span className="station-choice-note text-2xs text-muted-foreground">{reason}</span>
+        <span className="station-choice-note text-2xs text-muted-foreground">{t(reason)}</span>
       )}
     </label>
   );

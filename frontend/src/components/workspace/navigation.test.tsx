@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { expect, it } from "vitest";
 import { WorkspaceNavigation } from "@/components/workspace/WorkspaceNavigation";
 it("names every destination and marks the current page", () => {

@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { useEffect, useState } from "react";
 import { ChevronDown, CircleCheck, Info, ShieldAlert, TriangleAlert } from "lucide-react";
@@ -78,6 +79,7 @@ type DataQualityPanelProps = {
 
 /** Collapsed-by-default summary of the source-data checks the ETL ran. */
 export function DataQualityPanel({ mode, apiBaseUrl }: DataQualityPanelProps) {
+  const { t } = useTranslation();
   const [state, setState] = useState(() => initialDataQualityState(mode));
   const [loader] = useState(() =>
     createDataQualityLoader({ mode, apiBaseUrl, onChange: setState }),
@@ -93,8 +95,8 @@ export function DataQualityPanel({ mode, apiBaseUrl }: DataQualityPanelProps) {
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 [&::-webkit-details-marker]:hidden">
         <span>
-          <span className="dashboard-eyebrow block">Source data checks</span>
-          <span className="hud-title block">Data quality</span>
+          <span className="dashboard-eyebrow block">{t("Source data checks")}</span>
+          <span className="hud-title block">{t("Data quality")}</span>
         </span>
         <ChevronDown
           className="size-4 text-muted-foreground transition-transform duration-200 ease-out group-open:rotate-180 motion-reduce:transition-none"
@@ -131,30 +133,32 @@ function metricLabel(name: string): string {
   return name.replaceAll("_", " ");
 }
 
-function metricValue(name: string, value: number): string {
+function metricValue(name: string, value: number, language: "pl" | "en"): string {
   if (name.includes("share")) return `${Math.round(value * 100)}%`;
   return Number.isInteger(value)
-    ? value.toLocaleString("en-US")
-    : value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+    ? value.toLocaleString(language === "pl" ? "pl-PL" : "en-GB")
+    : value.toLocaleString(language === "pl" ? "pl-PL" : "en-GB", { maximumFractionDigits: 2 });
 }
 
 /** The panel body for each loading state (pure, rendered inside the disclosure). */
 export function DataQualityView({ state }: { state: DataQualityState }) {
+  const { t } = useTranslation();
   switch (state.status) {
     case "mock":
-      return <p className="text-xs text-muted-foreground">{DATA_QUALITY_MOCK_NOTICE}</p>;
+      return <p className="text-xs text-muted-foreground">{t(DATA_QUALITY_MOCK_NOTICE)}</p>;
     case "idle":
     case "loading":
       return (
         <p className="text-xs text-muted-foreground" aria-live="polite">
-          Loading data quality summary…
+          {t("Loading data quality summary…")}
         </p>
       );
     case "error":
       return (
         <p role="alert" className="flex items-start gap-2 text-xs font-medium text-emergency">
           <ShieldAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          Data quality summary unavailable: {state.message}
+          {t("Data quality summary unavailable: ")}
+          {t(state.message)}
         </p>
       );
     case "loaded":
@@ -163,6 +167,7 @@ export function DataQualityView({ state }: { state: DataQualityState }) {
 }
 
 function QualitySummary({ data }: { data: DatasetQualityResponse }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <ul className="space-y-3">
@@ -171,51 +176,57 @@ function QualitySummary({ data }: { data: DatasetQualityResponse }) {
         ))}
       </ul>
 
-      <section aria-label="Data sources" className="space-y-2">
-        <p className="dashboard-eyebrow">Sources</p>
+      <section aria-label={t("Data sources")} className="space-y-2">
+        <p className="dashboard-eyebrow">{t("Sources")}</p>
         <ul className="space-y-2 text-2xs leading-relaxed text-muted-foreground">
           {data.sources.map((source) => (
             <li key={source.path}>
-              <span className="hud-value block break-all text-foreground">{source.path}</span>
-              {source.attribution && <span className="block">{source.attribution}</span>}
+              <span className="hud-value block break-all text-foreground">{t(source.path)}</span>
+              {source.attribution && <span className="block">{t(source.attribution)}</span>}
               <span className="block">
-                {[source.licence, `retrieved ${source.retrieved_on}`].filter(Boolean).join(" · ")}
+                {t(
+                  [source.licence, `retrieved ${source.retrieved_on}`].filter(Boolean).join(" · "),
+                )}
               </span>
             </li>
           ))}
         </ul>
         {data.msip_export_timestamp && (
           <p className="text-2xs text-muted-foreground">
-            MSIP export timestamp:{" "}
-            <span className="hud-value text-foreground">{data.msip_export_timestamp}</span>
+            {t("MSIP export timestamp:")}
+            {t(" ")}
+            <span className="hud-value text-foreground">{t(data.msip_export_timestamp)}</span>
           </p>
         )}
       </section>
 
-      <p className="text-2xs leading-relaxed text-muted-foreground">{DATA_QUALITY_FOOTER}</p>
+      <p className="text-2xs leading-relaxed text-muted-foreground">{t(DATA_QUALITY_FOOTER)}</p>
     </div>
   );
 }
 
 function QualityCheckItem({ check }: { check: QualityCheck }) {
+  const { t, language } = useTranslation();
   const { label, icon: Icon, className } = STATUS_STYLE[check.status];
   const metrics = Object.entries(check.metrics).slice(0, MAX_METRICS);
   return (
     <li className="rounded-lg border border-border bg-muted/40 p-3">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-xs font-semibold">{check.title}</h3>
+        <h3 className="text-xs font-semibold">{t(check.title)}</h3>
         <span className={`hud-chip shrink-0 text-2xs uppercase ${className}`}>
           <Icon aria-hidden />
-          {label}
+          {t(label)}
         </span>
       </div>
-      <p className="mt-1 text-2xs leading-relaxed text-muted-foreground">{check.headline}</p>
+      <p className="mt-1 text-2xs leading-relaxed text-muted-foreground">{t(check.headline)}</p>
       {metrics.length > 0 && (
         <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
           {metrics.map(([name, value]) => (
             <div key={name}>
-              <dt className="text-2xs text-muted-foreground">{metricLabel(name)}</dt>
-              <dd className="hud-value text-xs font-semibold">{metricValue(name, value)}</dd>
+              <dt className="text-2xs text-muted-foreground">{t(metricLabel(name))}</dt>
+              <dd className="hud-value text-xs font-semibold">
+                {t(metricValue(name, value, language))}
+              </dd>
             </div>
           ))}
         </dl>
@@ -223,11 +234,13 @@ function QualityCheckItem({ check }: { check: QualityCheck }) {
       {check.samples.length > 0 && (
         <details className="mt-2">
           <summary className="cursor-pointer text-2xs font-semibold text-muted-foreground">
-            Examples ({check.samples.length})
+            {t("Examples (")}
+            {t(check.samples.length)}
+            {t(")")}
           </summary>
           <ul className="mt-1 list-disc space-y-0.5 pl-4 text-2xs text-muted-foreground">
             {check.samples.map((sample, index) => (
-              <li key={index}>{sample}</li>
+              <li key={index}>{t(sample)}</li>
             ))}
           </ul>
         </details>

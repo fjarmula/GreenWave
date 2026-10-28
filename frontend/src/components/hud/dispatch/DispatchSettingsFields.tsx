@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { Gauge, ShieldCheck, Target, TriangleAlert } from "lucide-react";
 
@@ -50,6 +51,7 @@ export function DispatchSettingsFields({
   /** The desktop panel titles the traffic model; the phone sheet stays compact. */
   layout: "panel" | "sheet";
 }) {
+  const { t } = useTranslation();
   const { trafficDensity, cascadeEnabled, greenWaveMode, playbackSpeed } = settings;
   const update = (patch: Partial<DispatchSettings>) => onSettingsChange({ ...settings, ...patch });
   const isMockTransport = getFrontendConfig().transport === "mock";
@@ -100,7 +102,7 @@ export function DispatchSettingsFields({
       {stationsError && (
         <p role="alert" className="hud-alert tone-emergency mt-3">
           <TriangleAlert aria-hidden />
-          {stationsError}
+          {t(stationsError)}
         </p>
       )}
 
@@ -111,7 +113,7 @@ export function DispatchSettingsFields({
         className="hud-secondary tone-beacon pressable mt-4"
       >
         <Target aria-hidden />
-        View station and incident
+        {t("View station and incident")}
       </button>
 
       <div className="hud-divider" />
@@ -119,8 +121,8 @@ export function DispatchSettingsFields({
       {layout === "panel" && (
         <div className="hud-head">
           <div>
-            <p className="dashboard-eyebrow">Simulation parameters</p>
-            <h3 className="hud-title">Traffic model</h3>
+            <p className="dashboard-eyebrow">{t("Simulation parameters")}</p>
+            <h3 className="hud-title">{t("Traffic model")}</h3>
           </div>
           <span className="hud-icon tone-beacon">
             <Gauge aria-hidden />
@@ -133,13 +135,17 @@ export function DispatchSettingsFields({
         onChange={(value) => update({ trafficDensity: value })}
       />
       {intent === "comparison" ? (
-        <p className="mt-5 text-sm font-medium">Green Wave and standard traffic · same scenario</p>
+        <p className="mt-5 text-sm font-medium">
+          {t("Green Wave and standard traffic · same scenario")}
+        </p>
       ) : modeLocked ? (
         <p className={`hud-chip mt-5 ${greenWaveMode === "ENABLED" ? "tone-go" : "tone-caution"}`}>
           <span className="hud-dot" aria-hidden />
-          {greenWaveMode === "ENABLED"
-            ? "Green Wave enabled"
-            : "Standard traffic · Green Wave disabled"}
+          {t(
+            greenWaveMode === "ENABLED"
+              ? "Green Wave enabled"
+              : "Standard traffic · Green Wave disabled",
+          )}
         </p>
       ) : (
         <GreenWaveToggle
@@ -164,12 +170,13 @@ export function DispatchSettingsFields({
 
       {intent === "comparison" && (
         <p className="mt-4 text-sm text-muted-foreground">
-          Both modes run at once on one simulated clock, side by side. Every displayed signal state
-          is simulated.
+          {t(
+            "Both modes run at once on one simulated clock, side by side. Every displayed signal state is simulated.",
+          )}
         </p>
       )}
       <p className="mt-3 text-xs text-muted-foreground">
-        Times are model estimates. Simulated controller feedback may delay or end a run.
+        {t("Times are model estimates. Simulated controller feedback may delay or end a run.")}
       </p>
       {previousRun && <PreviousRunCard run={previousRun} />}
 
@@ -183,9 +190,11 @@ export function DispatchSettingsFields({
 
       <p className="mt-5 flex items-center gap-2 text-2xs leading-relaxed text-muted-foreground">
         <ShieldCheck className="size-4 shrink-0 text-go" aria-hidden />
-        {isMockTransport
-          ? "Demo uses synthetic route estimates and sample signal telemetry."
-          : "Route estimates come from the simulation backend. All signal states are simulated."}
+        {t(
+          isMockTransport
+            ? "Demo uses synthetic route estimates and sample signal telemetry."
+            : "Route estimates come from the simulation backend. All signal states are simulated.",
+        )}
       </p>
     </>
   );

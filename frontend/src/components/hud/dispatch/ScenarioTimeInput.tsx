@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 type ScenarioTimeInputProps = {
   /** Local "YYYY-MM-DDTHH:MM". */
   value: string;
@@ -6,10 +8,11 @@ type ScenarioTimeInputProps = {
 
 /** The scenario's local time: which PRM teams the published schedule has on shift. */
 export function ScenarioTimeInput({ value, onChange }: ScenarioTimeInputProps) {
+  const { t } = useTranslation();
   return (
     <div>
       <label htmlFor="scenario-time" className="dashboard-label">
-        Scenario time
+        {t("Scenario time")}
       </label>
       <input
         id="scenario-time"
@@ -22,7 +25,7 @@ export function ScenarioTimeInput({ value, onChange }: ScenarioTimeInputProps) {
         className="hud-input mt-2"
       />
       <p className="mt-1 text-2xs text-muted-foreground">
-        Shifts follow the published PRM schedule; team status is simulated.
+        {t("Shifts follow the published PRM schedule; team status is simulated.")}
       </p>
     </div>
   );

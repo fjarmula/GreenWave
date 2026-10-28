@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { ItsFeedbackStatus } from "./ItsFeedbackStatus";
 import { Activity } from "lucide-react";
@@ -15,6 +16,7 @@ const PHASE_CHIPS: Partial<Record<SimulationPhase, string>> = {
 };
 
 export function ItsConsole() {
+  const { t } = useTranslation();
   const { itsLog, simulationState, itsRequests, liveTelemetry } = useSimulationState();
   const logEntries = itsLog.slice(-5);
   return (
@@ -22,13 +24,14 @@ export function ItsConsole() {
       <div className="flex items-center justify-between gap-4 border-b border-border px-3.5 py-2.5 text-2xs font-medium text-muted-foreground">
         <span className="flex items-center gap-2">
           <Activity className="size-3.5 text-beacon" aria-hidden />
-          {getFrontendConfig().transport === "mock" ? "Mock" : "Simulated"} ITS gateway audit log
+          {t(getFrontendConfig().transport === "mock" ? "Mock" : "Simulated")}
+          {t(" ITS gateway audit log")}
         </span>
         <span
           className={`hud-chip hud-value text-2xs ${simulationState === "RUNNING" ? "tone-emergency" : ""}`}
         >
           <i className={`hud-dot ${simulationState === "RUNNING" ? "status-breathe" : ""}`} />
-          {PHASE_CHIPS[simulationState] ?? "IDLE"}
+          {t(PHASE_CHIPS[simulationState] ?? "IDLE")}
         </span>
       </div>
       <div className="space-y-1.5 bg-muted/50 px-3.5 py-3 dark:bg-black/25">
@@ -45,13 +48,15 @@ export function ItsConsole() {
           />
         ))}
         {liveTelemetry?.its_observed_at_simulated_sec == null && (
-          <p className="text-xs text-muted-foreground">ITS feedback unavailable</p>
+          <p className="text-xs text-muted-foreground">{t("ITS feedback unavailable")}</p>
         )}
         {!logEntries.length && (
           <p className="text-xs text-muted-foreground">
-            {simulationState === "SETUP"
-              ? "Initialize a simulation to start the audit log."
-              : "No simulated ITS dispatches yet."}
+            {t(
+              simulationState === "SETUP"
+                ? "Initialize a simulation to start the audit log."
+                : "No simulated ITS dispatches yet.",
+            )}
           </p>
         )}
         {logEntries.map((entry, index) => {
@@ -65,9 +70,9 @@ export function ItsConsole() {
               }`}
             >
               <span className="shrink-0 text-muted-foreground opacity-60">
-                {messageSequence(entry.messageId)}
+                {t(messageSequence(entry.messageId))}
               </span>
-              <span>{entry.text}</span>
+              <span>{t(entry.text)}</span>
             </p>
           );
         })}

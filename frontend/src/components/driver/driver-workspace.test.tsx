@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { describe, expect, it, vi } from "vitest";
 
 import { DriverWorkspace } from "@/components/driver/DriverWorkspace";

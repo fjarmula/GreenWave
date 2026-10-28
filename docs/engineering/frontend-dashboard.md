@@ -1,6 +1,8 @@
 # Frontend dashboard constraints
 
-Scope: maintain the official `frontend/` Next.js dashboard and simulated MapLibre workflow according to `GreenWave_ARCHITECTURE.md`. All UI text remains English.
+Scope: maintain the official `frontend/` Next.js dashboard and simulated MapLibre workflow according to `GreenWave_ARCHITECTURE.md`. The dashboard defaults to Polish for Kraków. The shared header exposes PL/ENG; the selected language persists in a cookie. Translate presentation copy and accessible labels, while preserving API values, identifiers, original JSON, and geographic names. Scenario time stays in Europe/Warsaw in either language.
+
+Treat GreenWave as a proper noun in both languages. Polish copy should read naturally as UI text; use nominative or impersonal status labels (for example, „Anulowana” or „Anulowano”). Translate complete labels instead of assembling sentences from declined status fragments.
 
 The static v0 design source is no longer in the repository; `frontend/` is the only dashboard.
 

@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 import { RotateCcw } from "lucide-react";
 import { formatMinutesSeconds } from "@/lib/format-duration";
 import type { LiveComparisonState } from "@/lib/comparison/live-comparison";
@@ -22,6 +24,7 @@ export function ComparisonResultCard({
   state: LiveComparisonState;
   onReset: () => void;
 }) {
+  const { t } = useTranslation();
   const route = state.runs.ENABLED.routeData;
   const result = route ? comparisonResult(state.runs, state.priorityIds, route) : null;
   const title =
@@ -37,21 +40,23 @@ export function ComparisonResultCard({
     <section
       className="comparison-result surface-glass"
       role={state.status === "error" ? "alert" : "status"}
-      aria-label={title}
+      aria-label={t(title)}
     >
-      <h2 className="comparison-result-title">{title}</h2>
-      {state.reason && <p className="mt-1 text-sm text-muted-foreground">{state.reason}</p>}
+      <h2 className="comparison-result-title">{t(title)}</h2>
+      {state.reason && <p className="mt-1 text-sm text-muted-foreground">{t(state.reason)}</p>}
       {result && (
         <p className={`comparison-delta mt-4 ${tone}`}>
           <span className="hud-stat-label">
-            {route?.destination_on_foot
-              ? "Actual drive-time difference"
-              : "Actual travel-time difference"}
+            {t(
+              route?.destination_on_foot
+                ? "Actual drive-time difference"
+                : "Actual travel-time difference",
+            )}
           </span>
           <span className="hud-value block text-4xl font-semibold">
-            {formatMinutesSeconds(Math.abs(result.delta))}
+            {t(formatMinutesSeconds(Math.abs(result.delta)))}
           </span>
-          <span className="hud-chip mt-2">{result.label}</span>
+          <span className="hud-chip mt-2">{t(result.label)}</span>
         </p>
       )}
       <dl className="comparison-result-runs">
@@ -62,16 +67,19 @@ export function ComparisonResultCard({
             <div key={mode} className={MODE_TONES[mode]}>
               <dt>
                 <span aria-hidden className="comparison-chip-dot" />
-                {MODE_LABELS[mode]}
+                {t(MODE_LABELS[mode])}
               </dt>
-              <dd className="hud-value">{outcome(run)}</dd>
+              <dd className="hud-value">{t(outcome(run))}</dd>
               {walk && (
                 <dd>
                   <span className="block text-xs font-normal text-muted-foreground">
-                    Drive to access point
+                    {t("Drive to access point")}
                     <span className="block">
-                      On foot to incident (estimate): {formatSignalDistance(walk.distance_m)} ·{" "}
-                      {formatDuration(walk.seconds)}
+                      {t("On foot to incident (estimate): ")}
+                      {t(formatSignalDistance(walk.distance_m))}
+                      {t(" ·")}
+                      {t(" ")}
+                      {t(formatDuration(walk.seconds))}
                     </span>
                   </span>
                 </dd>
@@ -82,15 +90,18 @@ export function ComparisonResultCard({
       </dl>
       {result && (
         <p className="mt-3 text-sm">
-          Signals given priority {result.prioritised} of {result.total}
+          {t("Signals given priority ")}
+          {t(result.prioritised)}
+          {t(" of ")}
+          {t(result.total)}
         </p>
       )}
       <p className="mt-2 text-xs text-muted-foreground">
-        Simulated travel times of two runs of the same scenario on one clock.
+        {t("Simulated travel times of two runs of the same scenario on one clock.")}
       </p>
       <button type="button" className="hud-primary pressable mt-4" onClick={onReset}>
         <RotateCcw className="size-4" aria-hidden />
-        New comparison
+        {t("New comparison")}
       </button>
     </section>
   );

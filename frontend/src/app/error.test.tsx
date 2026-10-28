@@ -1,5 +1,5 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { expect, it, vi } from "vitest";
 
 import RouteError from "./error";
@@ -18,4 +18,10 @@ it("shows a recoverable error page instead of a blank screen", () => {
   expect(renderToStaticMarkup(page)).toContain("Something went wrong");
   button(page)?.props.onClick();
   expect(reset).toHaveBeenCalledOnce();
+});
+
+// These tests inspect callback props by calling controls directly, outside React rendering.
+vi.mock("@/components/language-provider", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/components/language-provider")>();
+  return { ...actual, useTranslation: () => ({ language: "en", t: <T,>(value: T) => value }) };
 });

@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
@@ -71,6 +72,7 @@ export function StationLayer({
 }
 
 function StationPin({ feature }: { feature: StationFeature }) {
+  const { t } = useTranslation();
   const { name, vehicle_type, source_kind, dimmed, role } = feature.properties;
   const label = `${name} (${SOURCE_KIND_LABELS[source_kind]})`;
   const size = role === "chosen" ? "size-8" : "size-6";
@@ -80,8 +82,8 @@ function StationPin({ feature }: { feature: StationFeature }) {
   return (
     <div
       className={`relative text-[11px] font-semibold text-foreground ${dimmed ? "opacity-35 grayscale" : ""}`}
-      title={label}
-      aria-label={`Station: ${label}`}
+      title={t(label)}
+      aria-label={t(`Station: ${label}`)}
       role="img"
     >
       <span className={`map-dot map-dot--station grid place-items-center ${size} ${ring}`}>
@@ -89,7 +91,7 @@ function StationPin({ feature }: { feature: StationFeature }) {
       </span>
       {role === "chosen" && (
         <span className="absolute top-1/2 left-full ml-2 -translate-y-1/2 surface-glass rounded-full! px-2.5 py-1 whitespace-nowrap">
-          {name}
+          {t(name)}
         </span>
       )}
     </div>

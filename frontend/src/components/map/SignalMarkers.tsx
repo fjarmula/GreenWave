@@ -1,4 +1,5 @@
 "use client";
+import { useTranslation } from "@/components/language-provider";
 
 import { mapPalette, type MapPalette } from "@/components/map/map-palette";
 import type { ResolvedTheme } from "@/lib/theme-transition";
@@ -29,7 +30,11 @@ function signalColor(intersection: IntersectionTelemetry, palette: MapPalette): 
 }
 
 /** A DOM marker for one simulated phase, offset by the grouped layout so neighbours never overlap. */
-function createPhaseMarker(map: Map, item: PhaseMarkerLayout): PhaseMarkerHandle {
+function createPhaseMarker(
+  map: Map,
+  item: PhaseMarkerLayout,
+  t: (text: string) => string,
+): PhaseMarkerHandle {
   const element = document.createElement("div");
   element.setAttribute("role", "img");
   element.className =
@@ -47,10 +52,10 @@ function createPhaseMarker(map: Map, item: PhaseMarkerLayout): PhaseMarkerHandle
     update({ phase, offset }) {
       const view = phaseMarkerView(phase);
       marker.setLngLat([phase.position.lng, phase.position.lat]).setOffset(offset);
-      element.setAttribute("aria-label", view.ariaLabel);
-      element.title = view.title;
+      element.setAttribute("aria-label", t(view.ariaLabel));
+      element.title = t(view.title);
       light.style.backgroundColor = view.swatch;
-      text.textContent = view.text;
+      text.textContent = t(view.text);
     },
     remove: () => marker.remove(),
   };
@@ -89,6 +94,7 @@ export function SignalMarkers({
   theme,
   labels = "full",
 }: SignalMarkersProps) {
+  const { t } = useTranslation();
   const markers = useRef(new globalThis.Map<string, Marker>());
   const phaseLayer = useRef<SignalPhaseLayer | null>(null);
   const [detailed, setDetailed] = useState(false);
@@ -109,17 +115,21 @@ export function SignalMarkers({
 
   useEffect(() => {
     if (!map) return;
-    const layer = createSignalPhaseLayer(map, (item) => createPhaseMarker(map, item), setDetailed);
+    const layer = createSignalPhaseLayer(
+      map,
+      (item) => createPhaseMarker(map, item, t),
+      setDetailed,
+    );
     phaseLayer.current = layer;
     return () => {
       layer.destroy();
       phaseLayer.current = null;
     };
-  }, [map]);
+  }, [map, t]);
 
   useEffect(() => {
     phaseLayer.current?.setPhases(shownPhases);
-  }, [map, shownPhases]);
+  }, [map, shownPhases, t]);
 
   useEffect(() => {
     const currentMarkers = markers.current;
@@ -165,7 +175,7 @@ export function SignalMarkers({
         detailed,
       );
       const element = marker.getElement();
-      element.setAttribute("aria-label", markerLabels.ariaLabel);
+      element.setAttribute("aria-label", t(markerLabels.ariaLabel));
       const dot = element.firstElementChild as HTMLElement;
       dot.style.backgroundColor = signalColor(intersection, mapPalette(theme));
       dot.toggleAttribute("data-halo", signalVisual(intersection).halo);
@@ -176,10 +186,10 @@ export function SignalMarkers({
           : ""
         : markerLabels.text;
       label.className = upcoming ? DRIVER_LABEL_CLASS : FULL_LABEL_CLASS;
-      label.textContent = text;
+      label.textContent = t(text);
       label.hidden = !text;
     });
-  }, [map, visible, dotIds, detailed, routeIntersections, intersections, theme, upcoming]);
+  }, [map, visible, dotIds, detailed, routeIntersections, intersections, theme, upcoming, t]);
 
   return null;
 }

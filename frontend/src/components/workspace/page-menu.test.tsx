@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "@/test-utils/render";
 import { expect, it } from "vitest";
 import { PageMenu } from "@/components/workspace/PageMenu";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";

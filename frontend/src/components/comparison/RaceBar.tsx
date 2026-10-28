@@ -1,3 +1,5 @@
+"use client";
+import { useTranslation } from "@/components/language-provider";
 import { Square } from "lucide-react";
 import type { CSSProperties } from "react";
 import { raceReadout, type RaceStanding } from "@/lib/comparison/race";
@@ -20,11 +22,16 @@ export function RaceBar({
   /** The dots glide between ticks, so a move lasts exactly one tick. */
   tickMilliseconds: number;
 }) {
+  const { t } = useTranslation();
   return (
-    <section className="race-bar surface-glass" aria-label="Race along the route" data-map-occluder>
+    <section
+      className="race-bar surface-glass"
+      aria-label={t("Race along the route")}
+      data-map-occluder
+    >
       <div className="race-bar-head">
         <p className="race-bar-readout" role="status">
-          {readout ?? raceReadout(standing)}
+          {t(readout ?? raceReadout(standing))}
         </p>
         {running && (
           <button
@@ -36,7 +43,7 @@ export function RaceBar({
             onClick={onStop}
           >
             <Square aria-hidden className="size-3 fill-current" />
-            {stopping ? "Stopping…" : "Stop"}
+            {t(stopping ? "Stopping…" : "Stop")}
           </button>
         )}
       </div>
@@ -50,18 +57,18 @@ export function RaceBar({
             key={mode}
             className="race-dot"
             data-mode={mode}
-            title={MODE_LABELS[mode]}
+            title={t(MODE_LABELS[mode])}
             style={{ "--progress": standing.positions[mode] } as CSSProperties}
           />
         ))}
       </div>
       <div className="race-ends">
-        <span>Station</span>
+        <span>{t("Station")}</span>
         <span className="race-legend">
-          <span data-mode="ENABLED">Green Wave</span>
-          <span data-mode="DISABLED">Standard traffic</span>
+          <span data-mode="ENABLED">{t("Green Wave")}</span>
+          <span data-mode="DISABLED">{t("Standard traffic")}</span>
         </span>
-        <span>Incident</span>
+        <span>{t("Incident")}</span>
       </div>
     </section>
   );

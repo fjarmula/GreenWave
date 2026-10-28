@@ -1,6 +1,8 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/localized-metadata";
 import { DriverWorkspace } from "@/components/driver/DriverWorkspace";
-export const metadata: Metadata = { title: "Driver" };
+export async function generateMetadata() {
+  return pageMetadata("Driver");
+}
 export default function Page() {
   return <DriverWorkspace />;
 }
