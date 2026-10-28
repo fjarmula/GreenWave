@@ -28,6 +28,7 @@ import type {
   Station,
   VehicleType,
 } from "@/types/telemetry";
+import { MapBoundary } from "@/components/map/MapBoundary";
 
 // Stable empty lists so marker effects do not re-run on every render without a route.
 const NO_ROUTE_INTERSECTIONS: RouteIntersection[] = [];
@@ -52,7 +53,16 @@ type MapContainerProps = {
   signalLabels?: "full" | "driver";
 };
 
-export function MapContainer({
+/** The map, inside a boundary: a WebGL failure shows a fallback where the map would be. */
+export function MapContainer(props: MapContainerProps) {
+  return (
+    <MapBoundary>
+      <MapCanvas {...props} />
+    </MapBoundary>
+  );
+}
+
+function MapCanvas({
   live,
   snapshot,
   origin,
