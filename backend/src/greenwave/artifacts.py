@@ -4,9 +4,13 @@ Neutral module: the ETL writers and the dataset loader both import from here, so
 dataset does not import the ETL pipelines. The ETL modules re-export these names.
 """
 
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 
 from greenwave.etl.manifest import sha256_of_file
+
+# Curated inputs (PRM base coordinates, roundabout overrides) are keyed relative to this.
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
 
 NETWORK_NODES_FILENAME = "network_nodes.parquet"
 NETWORK_EDGES_FILENAME = "network_edges.parquet"
@@ -40,3 +44,32 @@ T4_ARTIFACT_FILENAMES = (
 def artifact_hashes(processed_dir: Path, filenames: tuple[str, ...]) -> dict[str, str]:
     """sha256 of each file as it is on disk now."""
     return {name: sha256_of_file(processed_dir / name) for name in filenames}
+
+
+class StaleArtifactError(RuntimeError):
+    """The processed artifacts come from different raw inputs or from different runs."""
+
+
+def input_key(path: Path) -> str:
+    """``path`` relative to ``backend/`` when it is inside it, else absolute (test fixtures)."""
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(BACKEND_ROOT).as_posix()
+    except ValueError:
+        return str(resolved)
+
+
+def input_hashes(paths: Iterable[Path]) -> dict[str, str]:
+    """sha256 of each curated input file that exists, keyed by :func:`input_key`."""
+    return {input_key(path): sha256_of_file(path) for path in paths if path.is_file()}
+
+
+def verify_input_hashes(recorded: Mapping[str, str], rerun: str) -> None:
+    """Raise ``StaleArtifactError`` when a recorded curated input changed or vanished since its
+    step ran; ``rerun`` names the command that rebuilds from it."""
+    for key, sha in recorded.items():
+        path = BACKEND_ROOT / key  # an absolute key stays absolute
+        if not path.is_file() or sha256_of_file(path) != sha:
+            raise StaleArtifactError(
+                f"{key} changed since the processed data was built from it; re-run {rerun}"
+            )

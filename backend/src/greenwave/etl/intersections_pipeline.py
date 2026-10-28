@@ -118,6 +118,7 @@ class IntersectionsSection(BaseModel):
     inputs_sha256: dict[str, str]
     manifest_sha256: str
     artifact_sha256: dict[str, str]
+    curated_sha256: dict[str, str]  # the roundabout overrides, keyed relative to backend/
     delay_seconds_by_kind: dict[str, float]
     snapping: SnapReport
     assignment_distance: AssignmentDistribution
@@ -350,6 +351,7 @@ def intersections_section(
         inputs_sha256=prepared.inputs_sha256,
         manifest_sha256=manifest_sha256,
         artifact_sha256=artifact_hashes(processed_dir, T4_ARTIFACT_FILENAMES),
+        curated_sha256=artifacts.input_hashes([overrides_dir / OVERRIDE_FILENAME]),
         delay_seconds_by_kind=build.delay_by_kind,
         snapping=_snap_report(build.attached, build.snap_tolerance_meters, build.largest_scc),
         assignment_distance=distance_distribution(
@@ -502,7 +504,7 @@ def _ring_report(
             approaches_per_ring[intersection.ring_id] += len(intersection.approach_indices)
     overrides = [r for r in rings if r.source == "override"]
     return RingReport(
-        override_file=str(path),
+        override_file=artifacts.input_key(path),
         override_entries=len(entries),
         override_rings_applied=len(overrides),
         override_rings_verified=sum(bool(r.verified) for r in overrides),

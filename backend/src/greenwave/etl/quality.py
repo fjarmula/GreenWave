@@ -23,6 +23,7 @@ from greenwave.artifacts import (
     REPORT_FILENAME,
     RESOURCES_FILENAME,
     artifact_hashes,
+    verify_input_hashes,
 )
 from greenwave.etl.bus_lanes import (
     STATUS_OSM_HAS_BUS_LANE,
@@ -438,6 +439,10 @@ def write_quality(summary: DatasetQualityResponse, processed_dir: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _rerun(step: str) -> str:
+    return f"`uv run python scripts/run_etl.py {step}` and the steps after it"
+
+
 def run_quality(raw_dir: Path, processed_dir: Path) -> QualitySection:
     missing = [
         name
@@ -454,6 +459,9 @@ def run_quality(raw_dir: Path, processed_dir: Path) -> QualitySection:
         raise QualityInputError(
             f"{REPORT_FILENAME} has no places section; run the places step before `quality`"
         )
+    # A curated input edited after its step ran would leave the processed data stale.
+    for step in ("intersections", "places"):
+        verify_input_hashes(report.get(step, {}).get("curated_sha256", {}), _rerun(step))
     consumed = artifact_hashes(processed_dir, QUALITY_INPUT_FILENAMES)  # hashed before reading
     summary = build_quality(processed_dir, raw_dir, load_manifest(raw_dir / MANIFEST_FILENAME))
     return QualitySection(

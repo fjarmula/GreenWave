@@ -7,11 +7,13 @@ import pytest
 from greenwave.artifacts import (
     BUS_LANE_CROSSCHECK_FILENAME,
     INTERSECTIONS_FILENAME,
+    REPORT_FILENAME,
     RESOURCES_FILENAME,
 )
 from greenwave.etl.config import ROUTE_DETOUR_RATIO_RANGE, STREET_LENGTH_RATIO_RANGE
 from greenwave.etl.intersections_pipeline import NEAR_MISSES_FILENAME
 from greenwave.etl.manifest import load_manifest
+from greenwave.etl.neighbours_pipeline import StaleArtifactError
 from greenwave.etl.prepare import TERTIARY_PLUS_FILENAME
 from greenwave.etl.quality import (
     QUALITY_INPUT_FILENAMES,
@@ -470,3 +472,14 @@ def test_prm_roster_samples_capped_at_five(layout: Layout) -> None:
     many.write_parquet(path)
 
     assert len(check(layout, "prm_roster").samples) == 5
+
+
+def test_quality_rejects_an_edited_curated_file(layout: Layout) -> None:
+    report_path = layout.processed / REPORT_FILENAME
+    report = json.loads(report_path.read_text())
+    [key] = report["places"]["curated_sha256"]
+    report["places"]["curated_sha256"][key] = "0" * 64
+    report_path.write_text(json.dumps(report))
+
+    with pytest.raises(StaleArtifactError, match=r"prm_bases\.json.*run_etl\.py places"):
+        run_quality(raw_dir(layout), layout.processed)

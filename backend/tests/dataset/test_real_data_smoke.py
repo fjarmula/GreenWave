@@ -1,10 +1,13 @@
+import json
 from datetime import datetime
 
 import polars as pl
 import pytest
 
+from greenwave.artifacts import BACKEND_ROOT
 from greenwave.dataset import DatasetSettings, ProcessedDataset, load_dataset
 from greenwave.etl.connectivity import main_component_nodes
+from greenwave.etl.manifest import sha256_of_file
 from greenwave.etl.prm_roster import PRM_TABLES_RELATIVE_PATH, load_roster
 from greenwave.routing.network_index import RoutingIndex, build_routing_index
 from greenwave.routing.planner import plan_route
@@ -87,3 +90,18 @@ def test_daytime_teams_are_off_shift_at_21(real_dataset: ProcessedDataset) -> No
         "K01 134", "K01 158", "K01 176", "K01 178"
     ]  # fmt: skip
     assert len(result.eligible) == 19
+
+
+def test_committed_curated_files_match_the_processed_report(
+    real_dataset: ProcessedDataset,
+) -> None:
+    """Editing a curated or override file without re-running its ETL step is caught here."""
+    report = json.loads((DatasetSettings().processed_dir / "etl_report.json").read_text())
+    recorded = {
+        **report["intersections"].get("curated_sha256", {}),
+        **report["places"].get("curated_sha256", {}),
+    }
+
+    assert set(recorded) == {"data/curated/prm_bases.json", "data/overrides/roundabouts.json"}
+    for relative, sha in recorded.items():
+        assert sha256_of_file(BACKEND_ROOT / relative) == sha, relative

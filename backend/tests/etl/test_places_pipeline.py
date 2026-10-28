@@ -446,3 +446,21 @@ def test_curated_base_off_network_raises(tmp_path: Path) -> None:
 
     with pytest.raises(PrmRosterError, match="Poprzeczna 5"):
         run_places(raw, processed, curated)
+
+
+def test_places_records_curated_hash(tmp_path: Path) -> None:
+    raw, processed = _prepare(tmp_path, _station(1, 0.2, "PSP 1"))
+
+    section = run_places(raw, processed, CURATED_DIR)
+
+    bases = CURATED_DIR / "prm_bases.json"
+    assert section.curated_sha256 == {"tests/support/curated/prm_bases.json": sha256_of_file(bases)}
+
+
+def test_missing_valid_for_is_stale_artifact(tmp_path: Path) -> None:
+    raw, processed = _prepare(tmp_path, _station(1, 0.2, "PSP 1"))
+    ids = processed / "intersection_ids.json"
+    ids.write_text(json.dumps({**json.loads(ids.read_text()), "valid_for": {}}))
+
+    with pytest.raises(StaleArtifactError, match="intersections"):
+        run_places(raw, processed, CURATED_DIR)

@@ -35,10 +35,7 @@ logger = logging.getLogger(__name__)
 
 # Moved to greenwave.artifacts (shared with the dataset loader); still importable from here.
 NEIGHBOURS_FILENAME = artifacts.NEIGHBOURS_FILENAME
-
-
-class StaleArtifactError(RuntimeError):
-    """The processed artifacts come from different raw inputs or from different runs."""
+StaleArtifactError = artifacts.StaleArtifactError
 
 
 class NeighboursSection(BaseModel):
@@ -86,11 +83,11 @@ def run_neighbours(
 ) -> NeighboursSection:
     manifest_sha256 = hashlib.sha256((raw_dir / MANIFEST_FILENAME).read_bytes()).hexdigest()
     ids = json.loads((processed_dir / IDS_FILENAME).read_text(encoding="utf-8"))
-    built_from = ids["valid_for"]["manifest_sha256"]
+    built_from = ids.get("valid_for", {}).get("manifest_sha256")
     if built_from != manifest_sha256:
         raise StaleArtifactError(
-            f"processed intersections were built from manifest {built_from[:12]}..., but the "
-            f"current manifest is {manifest_sha256[:12]}...; re-run the intersections step"
+            f"processed intersections were built from manifest {(built_from or 'none')[:12]}..., "
+            f"but the current manifest is {manifest_sha256[:12]}...; re-run the intersections step"
         )
 
     recorded = _recorded_t4_hashes(processed_dir / REPORT_FILENAME)
