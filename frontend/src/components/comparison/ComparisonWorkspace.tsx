@@ -173,6 +173,7 @@ export function ComparisonWorkspace() {
       sheet={
         !live && !onSite
           ? {
+              scrollContent: "all",
               snap,
               onSnapChange: setSnap,
               minimizable: !onSite,

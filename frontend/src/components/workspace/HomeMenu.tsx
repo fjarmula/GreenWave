@@ -58,9 +58,14 @@ export function HomeMenu() {
       </p>
 
       <WorkspaceHeader compact actions={<ThemeToggle />}>
-        <p className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-          {t("ER–GreenWave")}
-          <span className="font-normal text-muted-foreground">{t("/ Kraków")}</span>
+        <p className="home-brand-copy text-sm font-semibold tracking-tight">
+          <span className="home-brand-name">{t("ER–GreenWave")}</span>
+          <span className="home-brand-city font-normal text-muted-foreground">
+            <span className="home-brand-divider" aria-hidden>
+              /{" "}
+            </span>
+            {t("Kraków")}
+          </span>
         </p>
       </WorkspaceHeader>
 
