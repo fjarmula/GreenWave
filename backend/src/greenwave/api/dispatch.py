@@ -1,6 +1,7 @@
 """Thin HTTP adapter for incident dispatch: stations, local geocoding, ranking (ADR 0006), and
 the PRM team roster with resource-aware ambulance ranking (ADR 0014)."""
 
+from dataclasses import asdict
 from datetime import datetime
 from typing import Annotated, cast
 
@@ -100,19 +101,7 @@ async def list_resources(
         roster=_roster(request),
         at=moment,
         teams=[
-            Team(
-                team_code=t.team_code,
-                team_type=t.team_type,
-                station_id=t.station_id,
-                base_address=t.base_address,
-                area_teryt=list(t.area_teryt),
-                weekdays=t.weekdays,
-                ready_from_min=t.ready_from_min,
-                ready_to_min=t.ready_to_min,
-                season_from=t.season_from,
-                season_to=t.season_to,
-                on_shift=team_eligibility.on_shift(t, moment),
-            )
+            Team.model_validate({**asdict(t), "on_shift": team_eligibility.on_shift(t, moment)})
             for t in _teams(request)
         ],
     )
@@ -202,29 +191,13 @@ def _team_response(
         ],
         scenario_time=scenario_time,
         outcome="OK" if ranking.candidates else "NO_ELIGIBLE_RESOURCE",
-        incident_area=IncidentArea(
-            teryt=area.teryt,
-            delegatura_name=area.delegatura_name,
-            district_number=area.district_number,
-            district_name=area.district_name,
-        )
-        if area
-        else None,
+        incident_area=IncidentArea.model_validate(area, from_attributes=True) if area else None,
         excluded_teams=[
             ExcludedTeam(team_code=t.team_code, station_id=t.station_id, reason=reason)
             for t, reason in ranking.excluded
         ],
         roster=roster,
-        area_rule=AreaRuleOutcome(
-            reason=rule.reason,
-            chosen_team_code=rule.chosen_team_code,
-            nearest_team_code=rule.nearest_team_code,
-            in_area_team_code=rule.in_area_team_code,
-            delta_seconds=rule.delta_seconds,
-            margin_seconds=rule.margin_seconds,
-        )
-        if rule
-        else None,
+        area_rule=AreaRuleOutcome.model_validate(rule, from_attributes=True) if rule else None,
     )
 
 

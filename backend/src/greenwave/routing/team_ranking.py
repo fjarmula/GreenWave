@@ -11,7 +11,6 @@ no live availability, no official dispatch protocol.
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal
 
 from greenwave.places.incident_area import IncidentArea
 from greenwave.routing.access import access_nodes
@@ -31,9 +30,8 @@ from greenwave.routing.team_eligibility import (
     classify,
 )
 from greenwave.schemas import GreenWaveMode, Position, VehicleType
+from greenwave.schemas.dispatch import SelectionReason
 from greenwave.simulation_settings import SimulationSettings
-
-SelectionReason = Literal["NEAREST", "IN_AREA_WITHIN_MARGIN", "NEAREST_OUTSIDE_MARGIN"]
 
 
 @dataclass(frozen=True)
