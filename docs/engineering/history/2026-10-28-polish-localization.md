@@ -13,3 +13,7 @@ The language cookie is validated on the server and initializes the provider and 
 Run the frontend checks from `frontend/`: `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm test`, `npm run build`.
 
 Browser acceptance uses `@playwright/cli` and `frontend/scripts/smoke/localization.js` against a running mock frontend. Run the CLI from `.tmp/playwright/`; all results and screenshots stay there. Coverage includes first-visit Polish, PL/ENG on all six routes at 1440 px and 390 px, cookie persistence, invalid-cookie fallback, translated titles and switching during an active run. Existing English markup assertions now select English explicitly; new locale tests cover Polish rendering and interpolation edge cases.
+
+## Polish copy review
+
+Preserve GreenWave as a proper noun in Polish navigation, browser titles, estimates and comparison results. Use natural action labels and complete messages. The Home return link now separates its action from a complete simulation status, so statuses never depend on a grammatical case inherited from an English sentence. Regression tests cover the brand across the catalog and standalone status labels.

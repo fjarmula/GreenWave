@@ -72,7 +72,7 @@ async (page) => {
     .locator(".maplibregl-canvas")
     .first()
     .click({ position: { x: 1000, y: 450 } });
-  await page.getByRole("button", { name: "Uruchom zielony korytarz" }).click();
+  await page.getByRole("button", { name: "Uruchom przejazd z priorytetem" }).click();
   await page.getByRole("button", { name: "Zatrzymaj symulację", exact: true }).first().waitFor();
   await page.getByRole("button", { name: "Powiększ", exact: true }).waitFor();
   const before = await page.locator("[data-testid='stop-simulation']").count();
@@ -86,6 +86,10 @@ async (page) => {
   await page.getByRole("button", { name: "Polski", exact: true }).click();
   await page.getByRole("button", { name: "Zatrzymaj symulację", exact: true }).first().click();
   await page.screenshot({ path: "localization-desktop.png" });
+  await page.getByRole("link", { name: "ER–GreenWave — strona główna", exact: true }).click();
+  await page.locator(".home-return").filter({ hasText: "Symulacja zatrzymana" }).waitFor();
+  check((await page.locator(".home-return").textContent()).includes("Wróć do symulacji"), "Return action must be a complete Polish label");
+  await page.getByRole("heading", { name: "GreenWave", exact: true }).waitFor();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(base);
   await page.screenshot({ path: "localization-phone.png" });

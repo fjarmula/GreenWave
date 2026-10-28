@@ -16,7 +16,7 @@ it("names each workspace in the browser title", async () => {
   expect((await compare()).title).toBe("Porównanie");
   expect((await diagnostics()).title).toBe("Diagnostyka");
   expect((await driver()).title).toBe("Kierowca");
-  expect((await greenWave()).title).toBe("Zielona fala");
+  expect((await greenWave()).title).toBe("GreenWave");
   expect((await standard()).title).toBe("Ruch standardowy");
 });
 

@@ -12,6 +12,7 @@ import {
   GreenWaveGlyph,
   StandardTrafficGlyph,
 } from "@/components/workspace/ModeGlyphs";
+import { RUN_STATUS_LABELS, runStatusKey } from "@/lib/simulation-copy";
 import { corridor } from "@/lib/home-corridor";
 import { destinations, routeForMode } from "@/lib/workspace-routes";
 
@@ -32,7 +33,7 @@ const TOOL_ICONS = [Activity, Smartphone];
 
 export function HomeMenu() {
   const { t } = useTranslation();
-  const { startRequest, simulationState } = useSimulationState();
+  const { startRequest, simulationState, cancelReason } = useSimulationState();
   return (
     <main className="home-main">
       <HomeBackdrop />
@@ -86,9 +87,9 @@ export function HomeMenu() {
                   className="home-return-dot"
                   data-live={simulationState === "RUNNING" || undefined}
                 />
-                {t("Return to ")}
-                {t(simulationState.toLowerCase())}
-                {t(" simulation")}
+                {t("Return to simulation")}
+                {" · "}
+                {t(RUN_STATUS_LABELS[runStatusKey(simulationState, cancelReason)])}
                 <ArrowRight className="size-3.5" aria-hidden />
               </Link>
             )}

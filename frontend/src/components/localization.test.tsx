@@ -42,3 +42,32 @@ describe("localized interactions", () => {
     expect(html).toContain("Spróbuj ponownie");
   });
 });
+
+it.each([
+  [null, "Symulacja anulowana"],
+  ["STOPPED", "Symulacja zatrzymana"],
+] as const)(
+  "renders the return action and status as complete Polish labels (%s)",
+  async (cancelReason, status) => {
+    const { initialSimulationState } = await import("@/lib/simulation-state");
+    const { request } = await import("@/lib/comparison/fixtures.test-support");
+    const html = renderToStaticMarkup(
+      <LanguageProvider>
+        <SimulationProvider
+          initialState={{
+            ...initialSimulationState,
+            simulationState: "CANCELLED",
+            cancelReason,
+            startRequest: request,
+          }}
+        >
+          <HomeMenu />
+        </SimulationProvider>
+      </LanguageProvider>,
+    );
+    expect(html).toContain("Wróć do symulacji");
+    expect(html).toContain(status);
+    expect(html).not.toContain("anulowanej");
+    expect(html).toContain(">GreenWave<");
+  },
+);

@@ -43,7 +43,7 @@ describe("localization", () => {
 
 it("preserves adjacent text spacing and localizes compound labels and decimals", () => {
   expect(translate(" Vehicle ", "pl")).toBe(" Pojazd ");
-  expect(translate("Green Wave · Simulation running", "pl")).toBe("Zielona fala · Symulacja trwa");
+  expect(translate("Green Wave · Simulation running", "pl")).toBe("GreenWave · Symulacja trwa");
   expect(translate("1.5 km", "pl")).toBe("1,5 km");
   expect(translate("1 Sep 2026", "pl")).toBe("1 wrz 2026");
 });
@@ -58,4 +58,22 @@ it("translates empty optional suffixes and complete signal states", () => {
   expect(
     translate("Simulated signal INT-0360: NORMAL; simulated phase detail unavailable", "pl"),
   ).toContain("NORMALNY; szczegóły");
+});
+
+it("preserves GreenWave as a proper noun throughout the Polish catalog", async () => {
+  const { polish } = await import("./polish");
+  for (const [english, translated] of Object.entries(polish)) {
+    if (/green\s?wave/i.test(english)) expect(translated, english).toContain("GreenWave");
+  }
+  expect(Object.values(polish).join(" ")).not.toMatch(/zielon\w* fal/iu);
+});
+
+it.each([
+  ["finished", "Zakończona"],
+  ["cancelled", "Anulowana"],
+  ["running", "W trakcie"],
+  ["starting", "Uruchamianie"],
+  ["setup", "Konfiguracja"],
+])("uses a standalone Polish label for %s", (status, label) => {
+  expect(translate(status, "pl")).toBe(label);
 });
