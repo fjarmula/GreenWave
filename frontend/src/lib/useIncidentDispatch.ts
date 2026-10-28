@@ -9,7 +9,6 @@ import type {
   ErrorCode,
   GreenWaveMode,
   Position,
-  RankedCandidate,
   ResourcesResponse,
   VehicleType,
 } from "@/types/telemetry";
@@ -73,18 +72,6 @@ export type IncidentDispatchState = {
   /** The roster and each team's shift at `scenarioTime`; `null` without the capability. */
   resources: ResourcesResponse | null;
 };
-
-/** The candidate the run starts from: the dispatcher's pick, else the fastest. */
-export function selectedCandidate(
-  state: Pick<IncidentDispatchState, "ranking" | "selectedStationId">,
-): RankedCandidate | null {
-  const candidates = state.ranking?.candidates ?? [];
-  return (
-    candidates.find((candidate) => candidate.station.station_id === state.selectedStationId) ??
-    candidates[0] ??
-    null
-  );
-}
 
 /** Friendlier copy for some ranking errors; others show the backend's message (its limits). */
 const RANK_ERROR_COPY: Partial<Record<ErrorCode, string>> = {

@@ -214,106 +214,70 @@ export function Dashboard({
     driver && routeData && simulationState === "RUNNING"
       ? nextSignal(routeData, simulation.liveTelemetry, isTelemetryStale(simulation))
       : null;
+  // Setup is the same sheet on every page; the shell hides it while an on-site answer shows.
+  const setupSheet: WorkspaceSheet = {
+    snap,
+    onSnapChange: setSnap,
+    minimizable,
+    collapsed: (
+      <DriverSetupCard
+        dispatch={dispatch}
+        capabilities={dispatchAdapter.capabilities}
+        geocode={dispatchAdapter.geocode}
+        settings={settingsForMode(settings, selectedMode)}
+        detailsOpen={snap === "expanded"}
+        onToggleDetails={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
+        notices={notices}
+      />
+    ),
+    expanded: (
+      <DriverSetupDetails
+        dispatch={dispatch}
+        capabilities={dispatchAdapter.capabilities}
+        settings={settingsForMode(settings, selectedMode)}
+        onSettingsChange={setSettings}
+        stationsError={stationsError}
+        onFocusMap={() => setMapFocusRequest((request) => request + 1)}
+        previousRun={driver ? null : previousRun}
+      />
+    ),
+  };
   // Green Wave and Standard use the sheet on phones only; desktop keeps the full inspector.
-  const workspaceSheet: WorkspaceSheet | undefined = !driver
-    ? mode === "setup"
-      ? {
-          snap,
-          onSnapChange: setSnap,
-          minimizable,
-          collapsed: onSite ? (
-            <OnSiteResult
-              station={onSite.station}
-              walk={onSite.walk}
-              onBackToSetup={() => setOnSiteAnswer(null)}
-            />
-          ) : (
-            <DriverSetupCard
-              dispatch={dispatch}
-              capabilities={dispatchAdapter.capabilities}
-              geocode={dispatchAdapter.geocode}
-              settings={settingsForMode(settings, selectedMode)}
-              detailsOpen={snap === "expanded"}
-              onToggleDetails={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
-              notices={notices}
-            />
-          ),
-          expanded: (
-            <DriverSetupDetails
-              dispatch={dispatch}
-              capabilities={dispatchAdapter.capabilities}
-              settings={settingsForMode(settings, selectedMode)}
-              onSettingsChange={setSettings}
-              stationsError={stationsError}
-              onFocusMap={() => setMapFocusRequest((request) => request + 1)}
-              previousRun={previousRun}
-            />
-          ),
-        }
-      : {
-          snap,
-          onSnapChange: setSnap,
-          // Running: telemetry and the one Stop. Ended: the outcome and the way back to setup.
-          collapsed:
-            simulationState === "RUNNING" ? (
-              <KpiHeader onStop={stopRun} />
-            ) : (
-              <RunSummary onBackToSetup={backToSetup} onStop={stopRun} showStop={false} />
+  const workspaceSheet: WorkspaceSheet =
+    mode === "setup"
+      ? setupSheet
+      : driver
+        ? {
+            snap,
+            onSnapChange: setSnap,
+            collapsed: (
+              <DriverStatus state={simulation} onStop={stopRun} onBackToSetup={backToSetup} />
             ),
-          expanded: (
-            <div className="space-y-4 pt-1">
-              {simulationState !== "RUNNING" && <KpiHeader />}
-              <IntersectionList />
-              <ItsConsole />
-            </div>
-          ),
-        }
-    : mode === "setup"
-      ? {
-          snap,
-          onSnapChange: setSnap,
-          minimizable,
-          collapsed: onSite ? (
-            <OnSiteResult
-              station={onSite.station}
-              walk={onSite.walk}
-              onBackToSetup={() => setOnSiteAnswer(null)}
-            />
-          ) : (
-            <DriverSetupCard
-              dispatch={dispatch}
-              capabilities={dispatchAdapter.capabilities}
-              geocode={dispatchAdapter.geocode}
-              settings={settingsForMode(settings, selectedMode)}
-              detailsOpen={snap === "expanded"}
-              onToggleDetails={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
-              notices={notices}
-            />
-          ),
-          expanded: (
-            <DriverSetupDetails
-              dispatch={dispatch}
-              capabilities={dispatchAdapter.capabilities}
-              settings={settingsForMode(settings, selectedMode)}
-              onSettingsChange={setSettings}
-              stationsError={stationsError}
-              onFocusMap={() => setMapFocusRequest((request) => request + 1)}
-            />
-          ),
-        }
-      : {
-          snap,
-          onSnapChange: setSnap,
-          collapsed: (
-            <DriverStatus state={simulation} onStop={stopRun} onBackToSetup={backToSetup} />
-          ),
-          expanded: (
-            <div className="space-y-4 pt-2">
-              <IntersectionList />
-              <ItsConsole />
-            </div>
-          ),
-        };
+            expanded: (
+              <div className="space-y-4 pt-2">
+                <IntersectionList />
+                <ItsConsole />
+              </div>
+            ),
+          }
+        : {
+            snap,
+            onSnapChange: setSnap,
+            // Running: telemetry and the one Stop. Ended: the outcome and the way back to setup.
+            collapsed:
+              simulationState === "RUNNING" ? (
+                <KpiHeader onStop={stopRun} />
+              ) : (
+                <RunSummary onBackToSetup={backToSetup} onStop={stopRun} showStop={false} />
+              ),
+            expanded: (
+              <div className="space-y-4 pt-1">
+                {simulationState !== "RUNNING" && <KpiHeader />}
+                <IntersectionList />
+                <ItsConsole />
+              </div>
+            ),
+          };
 
   return (
     <WorkspaceShell

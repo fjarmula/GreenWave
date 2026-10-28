@@ -20,8 +20,14 @@ import { getFrontendConfig } from "@/lib/config";
 import { dispatchAdapter } from "@/lib/dispatch-adapter";
 import { createSimulationId } from "@/lib/simulation-id";
 import type { DispatchSettings } from "@/lib/start-request";
-import { onSiteResult, runnerUpIds, shownOnSite, type OnSite } from "@/lib/station-choice";
-import { pinnedIncident, selectedCandidate } from "@/lib/useIncidentDispatch";
+import {
+  onSiteResult,
+  pageCandidate,
+  runnerUpIds,
+  shownOnSite,
+  type OnSite,
+} from "@/lib/station-choice";
+import { pinnedIncident } from "@/lib/useIncidentDispatch";
 import type { ComparisonStartRequest, Position } from "@/types/telemetry";
 
 export function ComparisonWorkspace() {
@@ -42,7 +48,7 @@ export function ComparisonWorkspace() {
   // An on-site answer never starts a pair (ADR 0012); it replaces setup until dismissed.
   const [onSiteAnswer, setOnSiteAnswer] = useState<OnSite | null>(null);
   const onSite = shownOnSite(onSiteAnswer, dispatch);
-  const chosenStation = selectedCandidate(dispatch)?.station ?? null;
+  const chosenStation = pageCandidate(dispatch, "BOTH")?.station ?? null;
   const { setIncident } = dispatch;
   const onMapClick = useCallback(
     (position: Position) => setIncident(pinnedIncident(position)),
@@ -69,7 +75,7 @@ export function ComparisonWorkspace() {
   const start = async (runSettings: DispatchSettings) => {
     if (starting) return;
     const answer = onSiteResult(
-      selectedCandidate(dispatch),
+      pageCandidate(dispatch, "BOTH"),
       dispatch.incident,
       dispatch.vehicleType,
     );

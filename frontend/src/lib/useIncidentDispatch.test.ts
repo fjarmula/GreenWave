@@ -7,9 +7,9 @@ import {
   DENSITY_RERANK_DELAY_MS,
   describeRankError,
   pinnedIncident,
-  selectedCandidate,
   type Incident,
 } from "@/lib/useIncidentDispatch";
+import { pageCandidate } from "@/lib/station-choice";
 import { RESOURCES } from "@/lib/transport/__fixtures__/team-dispatch";
 import type { DispatchRankRequest, DispatchRankResponse } from "@/types/telemetry";
 
@@ -380,7 +380,7 @@ describe("createIncidentDispatch", () => {
     await flush();
 
     expect(dispatch.getState().selectedStationId).toBeNull();
-    expect(selectedCandidate(dispatch.getState())?.station.station_id).toBe("A");
+    expect(pageCandidate(dispatch.getState(), "BOTH")?.station.station_id).toBe("A");
   });
 
   it("selects another candidate", async () => {
@@ -393,7 +393,7 @@ describe("createIncidentDispatch", () => {
     dispatch.selectStation("B");
 
     expect(dispatch.getState().selectedStationId).toBe("B");
-    expect(selectedCandidate(dispatch.getState())?.station.station_id).toBe("B");
+    expect(pageCandidate(dispatch.getState(), "BOTH")?.station.station_id).toBe("B");
   });
 
   it("ignores unknown station ids", async () => {
@@ -436,9 +436,10 @@ describe("createIncidentDispatch", () => {
 
   it("falls back to the fastest", () => {
     expect(
-      selectedCandidate({ ranking: threeStations, selectedStationId: "gone" })?.station.station_id,
+      pageCandidate({ ranking: threeStations, selectedStationId: "gone" }, "BOTH")?.station
+        .station_id,
     ).toBe("A");
-    expect(selectedCandidate({ ranking: null, selectedStationId: null })).toBeNull();
+    expect(pageCandidate({ ranking: null, selectedStationId: null }, "BOTH")).toBeNull();
   });
 
   it("dispose aborts the request in flight", () => {

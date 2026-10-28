@@ -7,6 +7,7 @@ import { GreenWaveToggle } from "@/components/hud/dispatch/GreenWaveToggle";
 import { PlaybackSpeedSelector } from "@/components/hud/dispatch/PlaybackSpeedSelector";
 import { PreflightEstimate } from "@/components/hud/dispatch/PreflightEstimate";
 import { TrafficDensityControl } from "@/components/hud/dispatch/TrafficDensityControl";
+import { DispatchSettingsFields } from "@/components/hud/dispatch/DispatchSettingsFields";
 import { DispatchStartButton } from "@/components/hud/dispatch/DispatchStartButton";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import type { SimulationTransport } from "@/lib/config";
@@ -223,7 +224,9 @@ function formProps(
   };
 }
 
-const formTree = (...args: Parameters<typeof formProps>) => DispatchForm(formProps(...args));
+// The settings controls live in the shared fields; their element tree is hook-free.
+const formTree = (...args: Parameters<typeof formProps>) =>
+  DispatchSettingsFields({ ...formProps(...args), layout: "panel" });
 
 describe("DispatchForm station list failure", () => {
   it("says so in the ranking area", () => {
@@ -469,7 +472,7 @@ describe("mock preflight estimates", () => {
 
 it("uses the shared dispatch controls to configure both comparison modes", () => {
   const props = { ...formProps(CHOSEN), intent: "comparison" as const };
-  const tree = DispatchForm(props);
+  const tree = DispatchSettingsFields({ ...props, layout: "panel" });
   const html = renderToStaticMarkup(<DispatchForm {...props} />);
   expect(
     renderToStaticMarkup(

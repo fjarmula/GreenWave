@@ -15,7 +15,6 @@ import {
   timeModeFor,
 } from "@/lib/station-choice";
 import { TEAM_RANK } from "@/lib/transport/__fixtures__/team-dispatch";
-import { selectedCandidate } from "@/lib/useIncidentDispatch";
 import type { DispatchRankResponse, RankedCandidate } from "@/types/telemetry";
 
 const candidate = (stationId: string, lat: number): RankedCandidate => ({
@@ -54,7 +53,7 @@ describe("runnerUpIds", () => {
 });
 
 it("starts the run from the selected station", () => {
-  const selected = selectedCandidate({ ranking, selectedStationId: "B" });
+  const selected = pageCandidate({ ranking, selectedStationId: "B" }, "BOTH");
   const request = buildStartRequest(
     selected!.station,
     { position: { lat: 50.06, lng: 19.94 }, label: "Pinned", source: "map" },
