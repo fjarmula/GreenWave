@@ -66,3 +66,19 @@ it("keeps the two-snap labels without minimizable", () => {
   expect(render("collapsed")).toContain('aria-label="Show more"');
   expect(render("expanded")).toContain('aria-label="Show less"');
 });
+
+it("can scroll the whole expanded setup without changing live-sheet defaults", () => {
+  const html = renderToStaticMarkup(
+    <BottomSheet
+      snap="expanded"
+      onSnapChange={() => {}}
+      label="Driver setup"
+      scrollContent="all"
+      collapsed={<h2>Incident setup</h2>}
+      expanded={<p>Station choices</p>}
+    />,
+  );
+  expect(html).toContain('data-scroll="all"');
+  expect(html).not.toContain('inert=""');
+  expect(render("expanded")).not.toContain('data-scroll="all"');
+});

@@ -18,6 +18,8 @@ export type WorkspaceSheet = {
   expanded: ReactNode;
   /** Adds the phone-only minimized peek snap. */
   minimizable?: boolean;
+  /** Scroll the full setup form instead of pinning its upper slot. */
+  scrollContent?: "details" | "all";
 };
 
 export function WorkspaceShell({
@@ -139,6 +141,7 @@ export function WorkspaceShell({
               collapsed={sheet.collapsed}
               expanded={sheet.expanded}
               minimizable={sheet.minimizable}
+              scrollContent={sheet.scrollContent}
             />
           </div>
         ) : !hasPanel ? null : (

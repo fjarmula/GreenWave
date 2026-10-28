@@ -51,8 +51,9 @@ function currentTranslate(element: HTMLElement): number {
 }
 
 /**
- * Phone bottom sheet with two snaps, or three when `minimizable`. The collapsed slot is always
- * visible; the expanded slot sits below it and is inert while collapsed. Minimized shows only
+ * Phone bottom sheet with two snaps, or three when `minimizable`. The collapsed slot forms the
+ * summary snap; `scrollContent="all"` lets it scroll with the expanded details. The expanded
+ * slot sits below it and is inert while collapsed. Minimized shows only
  * the collapsed slot's `[data-sheet-peek]` row and makes the rest inert. Dragging writes
  * `transform` directly (no React state per frame); releases settle with the drawer curve.
  */
@@ -63,6 +64,7 @@ export function BottomSheet({
   expanded,
   label,
   minimizable = false,
+  scrollContent = "details",
 }: {
   snap: SheetSnap;
   onSnapChange: (snap: SheetSnap) => void;
@@ -71,6 +73,8 @@ export function BottomSheet({
   label: string;
   /** Adds the minimized snap: only the `[data-sheet-peek]` row of the collapsed slot shows. */
   minimizable?: boolean;
+  /** Setup forms scroll together; live telemetry can remain pinned above its details. */
+  scrollContent?: "details" | "all";
 }) {
   const { t } = useTranslation();
   const detailsId = useId();
@@ -95,7 +99,8 @@ export function BottomSheet({
     if (peekRow) {
       // Rects share the sheet's current transform, so their difference is layout-only.
       const top = element.getBoundingClientRect().top;
-      const peekVisible = peekRow.getBoundingClientRect().bottom - top + PEEK_GAP_PX + inset;
+      const peekVisible =
+        peekRow.getBoundingClientRect().bottom - top + element.scrollTop + PEEK_GAP_PX + inset;
       setPeek({ translate: sheetTravel(element.offsetHeight, peekVisible), visible: peekVisible });
     } else setPeek(null);
     element.dataset.collapsedVisible = `${visible}`;
@@ -125,6 +130,12 @@ export function BottomSheet({
   const translateFor = (target: SheetSnap) =>
     stops.find((stop) => stop.snap === target)?.translate ?? travel ?? 0;
   const lowest = Math.max(...stops.map((stop) => stop.translate));
+
+  // Restoring a smaller snap must reveal the setup heading again, even after a long scroll.
+  useLayoutEffect(() => {
+    if (scrollContent === "all" && snap !== "expanded" && sheet.current)
+      sheet.current.scrollTop = 0;
+  }, [snap, scrollContent]);
 
   // Minimized without a peek row to show would hide the card behind an inert slot: restore it.
   useLayoutEffect(() => {
@@ -225,6 +236,7 @@ export function BottomSheet({
       className="bottom-sheet surface-glass"
       data-map-occluder
       data-snap={snap}
+      data-scroll={scrollContent === "all" ? "all" : undefined}
       data-measured={travel !== null}
       style={{ transform: `translate3d(0, ${translateFor(snap)}px, 0)` }}
       onClickCapture={(event) => {

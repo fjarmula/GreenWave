@@ -226,6 +226,7 @@ export function Dashboard({
       : null;
   // Setup is the same sheet on every page; the shell hides it while an on-site answer shows.
   const setupSheet: WorkspaceSheet = {
+    scrollContent: "all",
     snap,
     onSnapChange: setSnap,
     minimizable,

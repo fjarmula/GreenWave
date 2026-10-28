@@ -26,7 +26,7 @@ export function WorkspaceHeader({
   const element = useRef<HTMLElement>(null);
   useEffect(() => {
     const header = element.current;
-    const shell = header?.closest<HTMLElement>(".workspace-shell");
+    const shell = header?.closest<HTMLElement>(".workspace-shell, .home-main");
     if (!header || !shell) return;
     const actions = header.querySelector<HTMLElement>(".workspace-actions");
     const measure = () => {

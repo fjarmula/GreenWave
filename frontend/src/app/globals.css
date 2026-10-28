@@ -947,6 +947,22 @@
   overscroll-behavior: contain;
   touch-action: pan-y;
 }
+/* Setup has one scroll surface from the incident heading through the station choices. */
+.bottom-sheet[data-scroll="all"][data-snap="expanded"] {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.bottom-sheet[data-scroll="all"][data-snap="expanded"] .bottom-sheet-expanded {
+  flex: none;
+  overflow-y: visible;
+}
+.bottom-sheet[data-scroll="all"][data-snap="expanded"] .bottom-sheet-grabber {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--background);
+}
 @media (pointer: coarse) {
   .bottom-sheet-grabber {
     height: 44px;
@@ -1574,6 +1590,34 @@ button,
   margin: 0 auto;
   padding: 6rem 2.5rem 1.5rem;
 }
+.home-brand-copy {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.home-brand-name,
+.home-brand-city {
+  white-space: nowrap;
+}
+@media (max-width: 767px) {
+  /* Keep the name intact; stack the city before squeezing either text or controls. */
+  .home-brand-copy {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+  .home-brand-divider {
+    display: none;
+  }
+  .home-main .workspace-header[data-compact] > .workspace-heading {
+    flex: 0 0 auto;
+  }
+  .home-main .workspace-actions {
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
 .home-hero {
   align-self: center;
   max-width: 36rem;
@@ -1662,7 +1706,8 @@ button,
       );
   }
   .home-content {
-    padding: 5rem 1rem 1rem;
+    /* Wrapped header controls still leave the first content row fully visible. */
+    padding: max(5rem, calc(var(--workspace-header-bottom, 4rem) + 1rem)) 1rem 1rem;
   }
   .home-hero {
     align-self: end;
