@@ -5,6 +5,8 @@ from typing import Annotated, Literal, Self
 
 from pydantic import AwareDatetime, BaseModel, Field, model_validator
 
+from greenwave.schemas.ids import MessageId, SimulationId
+
 
 class ItsScenario(StrEnum):
     NOMINAL = "NOMINAL"
@@ -34,7 +36,6 @@ _EXPECTED_REASON = {
     ItsRequestStatus.EXPIRED: ItsFeedbackReason.HOLD_EXPIRED,
 }
 Seconds = Annotated[float, Field(ge=0, allow_inf_nan=False)]
-MessageId = Annotated[str, Field(pattern=r"^MSG-ITS-[0-9]+$")]
 
 
 class ItsRequestSnapshot(BaseModel):
@@ -73,7 +74,7 @@ class ItsFeedbackEvent(BaseModel):
     schema_version: Literal["1.0"]
     is_simulated: Literal[True]
     event_type: Literal["ITS_FEEDBACK"]
-    simulation_id: Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")]
+    simulation_id: SimulationId
     tick: Annotated[int, Field(ge=0)]
     timestamp: AwareDatetime
     request_message_id: MessageId

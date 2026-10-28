@@ -8,8 +8,7 @@ from greenwave.schemas import GreenWaveMode, ItsScenario
 from greenwave.simulation.motion import move_one_second
 from greenwave.simulation.route_model import RouteModel
 from greenwave.simulation.route_track import RouteTrack
-from greenwave.simulation.state import EngineState
-from greenwave.simulation.state_machine import IntersectionRuntime
+from greenwave.simulation.state import initial_engine_state
 from greenwave.simulation_settings import SimulationSettings
 
 
@@ -28,18 +27,9 @@ def standard_run_seconds(
     """
     track = RouteTrack.from_route(route, settings)
     controller = SimulatedItsController(route_model, settings, ItsScenario.NOMINAL)
-    state = EngineState(
-        simulated_time_s=0,
-        distance_travelled_m=0.0,
-        current_edge_index=0,
-        dwell_remaining_s=0.0,
-        dwelling_intersection_id=None,
-        v_avg_meters_per_second=max(track.speed_mps(0), settings.speed_floor_meters_per_second),
-        intersection_runtimes=tuple(IntersectionRuntime() for _ in route_model.intersections),
-        tick=0,
-        message_sequence=0,
-        arrived=False,
-        completed=False,
+    state = initial_engine_state(
+        len(route_model.intersections),
+        max(track.speed_mps(0), settings.speed_floor_meters_per_second),
     )
     stop_lines = sum(len(item.route_stop_lines_m) for item in route_model.intersections)
     bound_s = _slowest_arrival_s(track, stop_lines, settings)
