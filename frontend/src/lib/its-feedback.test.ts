@@ -112,3 +112,46 @@ it("unknown high sequence cannot starve genuine feedback", () => {
     simulationReducer(state, { type: "ITS_FEEDBACK", event: valid }).itsRequests[0].status,
   ).toBe("ACCEPTED");
 });
+
+it("a dispatch registers its request so feedback before the next tick still applies", () => {
+  let state = simulationReducer(initialSimulationState, {
+    type: "START_REQUESTED",
+    request: { ...request, simulation_id: "s" },
+  });
+  state = simulationReducer(state, {
+    type: "START_SUCCEEDED",
+    simulationId: "s",
+    response: { ...route("s"), intersections_on_route: ["I"] },
+  });
+  state = simulationReducer(state, {
+    type: "ITS_DISPATCH",
+    event: {
+      schema_version: "1.0",
+      is_simulated: true,
+      event_type: "ITS_DISPATCH",
+      message_id: "MSG-ITS-1",
+      simulation_id: "s",
+      tick: 3,
+      timestamp: "2026-10-23T00:00:00Z",
+      system_source: "ER_GREENWAVE_ENGINE",
+      target_system: "STeR_KRAKOW_ITS",
+      payload: {
+        priority_level: 1,
+        vehicle_type: "AMBULANCE",
+        intersections_group: ["I"],
+        action: "FORCE_GREEN_PHASE",
+        hold_duration_sec: 20,
+        expected_arrival_utc: "2026-10-23T00:00:10Z",
+      },
+    },
+  });
+  expect(state.itsRequests.map((r) => [r.message_id, r.status])).toEqual([
+    ["MSG-ITS-1", "REQUESTED"],
+  ]);
+
+  const accepted = parseStreamEvent(feedback, "s");
+  if (!accepted || accepted.event_type !== "ITS_FEEDBACK") throw new Error("fixture");
+  state = simulationReducer(state, { type: "ITS_FEEDBACK", event: accepted });
+
+  expect(state.itsRequests[0].status).toBe("ACCEPTED");
+});

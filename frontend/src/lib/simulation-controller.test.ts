@@ -334,6 +334,36 @@ describe("connectSimulationStream", () => {
     expect(store.actions).toHaveLength(before);
   });
 
+  it("ignores ITS feedback after cleanup", async () => {
+    const adapter = createFakeAdapter();
+    const store = createStore();
+    await startRunning(adapter, store, "run-1");
+    const cleanup = connectSimulationStream(
+      adapter,
+      "run-1",
+      store.dispatch,
+      STALE_AFTER_MILLISECONDS,
+      LOST_AFTER_MILLISECONDS,
+    );
+    cleanup();
+    const before = store.actions.length;
+    adapter.subscriptions[0].subscriber.onItsFeedback({
+      schema_version: "1.0",
+      is_simulated: true,
+      event_type: "ITS_FEEDBACK",
+      simulation_id: "run-1",
+      tick: 4,
+      timestamp: "2026-10-23T00:00:00Z",
+      request_message_id: "MSG-ITS-1",
+      feedback_sequence: 1,
+      status: "ACCEPTED",
+      intersections_group: ["I"],
+      observed_at_simulated_sec: 4,
+      reason: null,
+    });
+    expect(store.actions).toHaveLength(before);
+  });
+
   it("is idempotent under Strict Mode double effects (connect → cleanup → connect)", async () => {
     const adapter = createFakeAdapter();
     const store = createStore();

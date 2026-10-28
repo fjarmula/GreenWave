@@ -169,6 +169,7 @@ export function connectSimulationStream(
       onActivity();
     },
     onItsFeedback: (event) => {
+      if (!active) return;
       dispatch({ type: "ITS_FEEDBACK", event });
     },
     onItsDispatch: (event) => {

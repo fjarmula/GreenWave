@@ -12,7 +12,11 @@ import {
 } from "@/lib/transport/__fixtures__/architecture-examples";
 import { createBackendSimulationAdapter } from "@/lib/transport/backend-simulation-adapter";
 import { SimulationAdapterError, type SimulationErrorInfo } from "@/lib/transport/errors";
-import type { SimulationStartRequest, SimulationStreamEvent } from "@/types/telemetry";
+import type {
+  SimulationStartRequest,
+  SimulationStreamEvent,
+  SimulationTickEvent,
+} from "@/types/telemetry";
 
 const BASE_URL = "http://127.0.0.1:8000";
 
@@ -312,6 +316,21 @@ describe("subscribe", () => {
     source.emit({ ...tickEventExample, tick: 41 });
     source.emit({ ...itsDispatchEventExample, tick: 42 });
     expect(events.calls).toEqual(["its:MSG-ITS-88392", "tick:42"]);
+  });
+
+  it("does not mutate a delivered tick's its_requests on a later ITS dispatch", () => {
+    const ticks: SimulationTickEvent[] = [];
+    adapter().subscribe(SIMULATION_ID, { ...recorder().subscriber, onTick: (e) => ticks.push(e) });
+    const source = latestSource();
+    source.open();
+    source.emit(tickEventExample);
+    const delivered = ticks[0].its_requests ?? [];
+    Object.freeze(delivered); // reducer state must never change in place
+
+    expect(() =>
+      source.emit({ ...itsDispatchEventExample, tick: tickEventExample.tick + 1 }),
+    ).not.toThrow();
+    expect(delivered).toHaveLength(0);
   });
 
   it("drops an event of a foreign simulation_id, malformed JSON and unknown event types", () => {

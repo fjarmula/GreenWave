@@ -1,4 +1,4 @@
-import type { ItsFeedbackEvent, ItsRequestSnapshot } from "@/types/telemetry";
+import type { ItsDispatchEvent, ItsFeedbackEvent, ItsRequestSnapshot } from "@/types/telemetry";
 
 /** Invalid identities or transitions must not consume the run's feedback sequence. */
 export function applyItsFeedback(
@@ -37,4 +37,18 @@ export function applyItsFeedback(
         }
       : r,
   );
+}
+
+/** The REQUESTED snapshot a dispatch implies until a tick or feedback reports more. */
+export function requestedSnapshot(event: ItsDispatchEvent): ItsRequestSnapshot {
+  return {
+    message_id: event.message_id,
+    intersections_group: event.payload.intersections_group,
+    status: "REQUESTED",
+    submitted_at_simulated_sec: event.tick,
+    last_updated_at_simulated_sec: event.tick,
+    last_feedback_sequence: 0,
+    acknowledged_at_simulated_sec: null,
+    reason: null,
+  };
 }

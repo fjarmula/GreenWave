@@ -1,4 +1,4 @@
-import { applyItsFeedback } from "../its-feedback-state";
+import { applyItsFeedback, requestedSnapshot } from "../its-feedback-state";
 import type { ItsRequestSnapshot } from "@/types/telemetry";
 import { beginHttpCapture } from "@/lib/diagnostics/wire-capture";
 import { diagnosticStore } from "@/lib/diagnostics/store";
@@ -346,17 +346,9 @@ function openStream(
       case "ITS_DISPATCH":
         if (event.tick <= lastTick || seenMessageIds.has(event.message_id)) return;
         seenMessageIds.add(event.message_id);
+        // A new array: the previous one is the reducer's state (from the last tick).
         if (!feedbackRequests.some((r) => r.message_id === event.message_id))
-          feedbackRequests.push({
-            message_id: event.message_id,
-            intersections_group: event.payload.intersections_group,
-            status: "REQUESTED",
-            submitted_at_simulated_sec: event.tick,
-            last_updated_at_simulated_sec: event.tick,
-            last_feedback_sequence: 0,
-            acknowledged_at_simulated_sec: null,
-            reason: null,
-          });
+          feedbackRequests = [...feedbackRequests, requestedSnapshot(event)];
         subscriber.onItsDispatch(event);
         return;
       case "SIMULATION_COMPLETED":

@@ -1,4 +1,4 @@
-import { applyItsFeedback } from "./its-feedback-state";
+import { applyItsFeedback, requestedSnapshot } from "./its-feedback-state";
 import type { ConnectionStatus } from "@/lib/simulation-adapter";
 import type { SimulationErrorInfo } from "@/lib/transport/errors";
 import type {
@@ -199,8 +199,13 @@ export function simulationReducer(
       ) {
         return state;
       }
+      // Registered at once, so feedback arriving before the next tick's snapshot applies.
+      const registered = state.itsRequests.some((r) => r.message_id === event.message_id);
       return {
         ...state,
+        itsRequests: registered
+          ? state.itsRequests
+          : [...state.itsRequests, requestedSnapshot(event)],
         itsLog: [
           ...state.itsLog,
           { messageId: event.message_id, text: formatItsDispatch(event) },
