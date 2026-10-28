@@ -38,8 +38,8 @@ function deferredAdapter(resources = true) {
   return { adapter, calls, resourceCalls };
 }
 
-/** Tuesday 27 October 2026, 21:03 local time. */
-const NOW = () => new Date(2026, 9, 27, 21, 3, 30);
+/** Tuesday 27 October 2026, 21:03 Kraków time. */
+const NOW = () => new Date("2026-10-27T20:03:30Z");
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 

@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import type { DispatchAdapter } from "@/lib/dispatch-adapter";
+import { warsawMinute } from "@/lib/local-time";
 import { toSimulationErrorInfo } from "@/lib/transport/errors";
 import type {
   AddressProvenance,
@@ -43,14 +44,9 @@ export type RankStatus = "idle" | "loading" | "ready" | "error";
 /** A team's simulated status in the scenario; "unknown" sends no override (assumed free). */
 export type TeamAvailability = "unknown" | "free" | "busy";
 
-/** Local wall-clock "YYYY-MM-DDTHH:MM" (a `datetime-local` value), rounded down to 5 minutes. */
+/** Kraków wall-clock "YYYY-MM-DDTHH:MM" (a `datetime-local` value), rounded down to 5 minutes. */
 export function scenarioTimeAt(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const minutes = date.getMinutes() - (date.getMinutes() % 5);
-  return (
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-    `T${pad(date.getHours())}:${pad(minutes)}`
-  );
+  return warsawMinute(date, 5);
 }
 
 /** A density slider drag re-ranks once, this long after its last step. */

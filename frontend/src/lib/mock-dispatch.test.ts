@@ -48,6 +48,19 @@ describe("createMockDispatchAdapter", () => {
     await expect(adapter.listStations()).resolves.toEqual(STATIONS);
   });
 
+  it("echoes the request's scenario time like the backend", async () => {
+    const ranking = await adapter.rank({
+      incident,
+      vehicle_type: "AMBULANCE",
+      traffic_density_multiplier: 1,
+      scenario_time: "2026-10-27T21:00",
+      time_mode: "ENABLED",
+      availability: {},
+      resource_aware: true,
+    });
+    expect(ranking.scenario_time).toBe("2026-10-27T21:00:00");
+  });
+
   it("picks the straight-line nearest station of the requested type", async () => {
     const ambulance = await adapter.rank({
       incident,
