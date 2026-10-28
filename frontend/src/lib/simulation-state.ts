@@ -14,8 +14,7 @@ import type {
 } from "@/types/telemetry";
 
 export type SimulationPhase = "SETUP" | "STARTING" | "RUNNING" | "FINISHED" | "CANCELLED" | "ERROR";
-export type { ConnectionStatus };
-export type ItsLogEntry = { messageId: string; text: string };
+type ItsLogEntry = { messageId: string; text: string };
 
 const ITS_LOG_LIMIT = 20;
 
@@ -77,7 +76,7 @@ export const initialSimulationState: SimulationState = {
   stopError: null,
 };
 
-export function formatItsDispatch(event: ItsDispatchEvent): string {
+function formatItsDispatch(event: ItsDispatchEvent): string {
   const { action, intersections_group: group, hold_duration_sec: hold } = event.payload;
   return `Simulated ${action} → ${group.join(", ")} · hold ${hold} s · ETA ${formatUtcTime(event.payload.expected_arrival_utc)}`;
 }

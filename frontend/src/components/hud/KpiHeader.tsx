@@ -1,9 +1,8 @@
 "use client";
 
-import { ArrowDown, CircleCheck, Navigation, Square, TriangleAlert } from "lucide-react";
+import { CircleCheck, Navigation, Square, TriangleAlert } from "lucide-react";
 import { VehicleIcon } from "@/components/map/VehicleIcon";
 import { VEHICLE_ICON_COLORS } from "@/components/map/vehicle-icons";
-import { RUN_OUTCOME_TEXT } from "@/components/hud/run-status-tone";
 import { useSimulationState } from "@/components/simulation-provider";
 import type { ConnectionStatus } from "@/lib/simulation-adapter";
 import { isTelemetryStale } from "@/lib/simulation-state";
@@ -12,7 +11,6 @@ import {
   connectionLabel,
   formatSignedSeconds,
   greenWaveModeLabel,
-  RUN_STATUS_LABELS,
   runStatusKey,
   timeSavedTone,
   vehicleSpeedPresentation,
@@ -27,16 +25,6 @@ const OUTCOME_BADGES: Partial<Record<RunStatusKey, string>> = {
   SERVER_ERROR: "SERVER ERROR",
   ERROR: "TELEMETRY STOPPED",
 };
-
-/** The phone run summary sits below the map; the strip's outcome chip jumps to it. */
-export const PHONE_RUN_SUMMARY_ID = "run-summary-phone";
-
-function showPhoneRunSummary() {
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  document
-    .getElementById(PHONE_RUN_SUMMARY_ID)
-    ?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-}
 
 const CONNECTION_STYLES: Record<ConnectionStatus, string> = {
   open: "tone-go",
@@ -78,10 +66,6 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
   } = useSimulationState();
   const vehicleType = startRequest?.vehicle_type ?? "AMBULANCE";
   const status = runStatusKey(simulationState, cancelReason);
-  const ended =
-    simulationState === "FINISHED" ||
-    simulationState === "CANCELLED" ||
-    simulationState === "ERROR";
   const elapsed = liveTelemetry?.kpi_metrics.total_time_elapsed_sec ?? 0;
   const failedIts = simulationState === "CANCELLED" && cancelReason?.startsWith("ITS_");
   const saved = liveTelemetry?.kpi_metrics.current_time_saved_sec ?? 0;
@@ -182,18 +166,6 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
           >
             <Square className="size-3 fill-current" aria-hidden />
             {stopRequested ? "Stopping…" : "Stop"}
-          </button>
-        )}
-        {onStop && ended && (
-          <button
-            type="button"
-            data-testid="run-outcome"
-            onClick={showPhoneRunSummary}
-            className={`hud-secondary pressable mt-1.5 ml-auto min-h-9 w-auto px-3 text-xs lg:hidden ${RUN_OUTCOME_TEXT[status]}`}
-          >
-            {RUN_STATUS_LABELS[status]}
-            <span className="font-medium text-muted-foreground">· Summary</span>
-            <ArrowDown className="size-3" aria-hidden />
           </button>
         )}
       </div>

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { SimulationAdapterError } from "@/lib/transport/errors";
-import { createMockDispatchAdapter, haversineMeters } from "@/lib/mock-dispatch";
+import { createMockDispatchAdapter } from "@/lib/mock-dispatch";
+import { haversineMeters } from "@/lib/mock-route-metrics";
 import type { Station } from "@/types/telemetry";
 
 const station = (

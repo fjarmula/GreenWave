@@ -1,6 +1,6 @@
 import type { Station, StationSourceKind, VehicleType } from "@/types/telemetry";
 
-export type StationRole = "chosen" | "runner_up" | "other";
+type StationRole = "chosen" | "runner_up" | "other";
 
 export type StationFeature = {
   type: "Feature";

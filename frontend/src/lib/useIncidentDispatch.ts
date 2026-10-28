@@ -45,7 +45,7 @@ export type RankStatus = "idle" | "loading" | "ready" | "error";
 export type TeamAvailability = "unknown" | "free" | "busy";
 
 /** Kraków wall-clock "YYYY-MM-DDTHH:MM" (a `datetime-local` value), rounded down to 5 minutes. */
-export function scenarioTimeAt(date: Date): string {
+function scenarioTimeAt(date: Date): string {
   return warsawMinute(date, 5);
 }
 

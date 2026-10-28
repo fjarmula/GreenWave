@@ -27,7 +27,7 @@ export type DispatchAdapter = {
   rank(request: DispatchRankRequest, signal?: AbortSignal): Promise<DispatchRankResponse>;
 };
 
-export function selectDispatchAdapter(config: FrontendConfig): DispatchAdapter {
+function selectDispatchAdapter(config: FrontendConfig): DispatchAdapter {
   if (config.transport === "backend") {
     return createBackendDispatchAdapter(config.apiBaseUrl, {
       timeoutMilliseconds: config.startTimeoutMilliseconds,

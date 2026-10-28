@@ -1,7 +1,7 @@
 import type { IntersectionTelemetry, RouteIntersection } from "@/types/telemetry";
 
 /** Driver mode labels only this many upcoming junctions; the rest are unlabelled dots. */
-export const DRIVER_LABELLED_SIGNALS = 2;
+const DRIVER_LABELLED_SIGNALS = 2;
 
 const COORDINATE_NAME = /^-?\d+(\.\d+)?, -?\d+(\.\d+)?$/;
 const NAME_SEPARATOR = " / ";

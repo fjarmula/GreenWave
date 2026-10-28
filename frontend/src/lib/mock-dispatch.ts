@@ -11,8 +11,6 @@ import { warsawMinute } from "@/lib/local-time";
 import { haversineMeters } from "@/lib/mock-route-metrics";
 import type { Station } from "@/types/telemetry";
 
-export { haversineMeters } from "@/lib/mock-route-metrics";
-
 export function createMockDispatchAdapter(
   stations: Station[] = validateStations(snapshot).stations,
 ): DispatchAdapter {

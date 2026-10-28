@@ -13,7 +13,7 @@ import { ResponsiveNavigation } from "@/components/workspace/ResponsiveNavigatio
 import { routeForMode, viewRunPolicy } from "@/lib/workspace-routes";
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { simulationOperationSlot } from "@/lib/operation-slot";
-import { useSimulationStream } from "@/lib/useSimulationStream";
+import { useSimulationActions } from "@/components/simulation-runtime";
 import { useSimulationState } from "@/components/simulation-provider";
 
 import { getFrontendConfig } from "@/lib/config";
@@ -51,7 +51,7 @@ export function Dashboard({
   selectedMode = "ENABLED",
   driver = false,
 }: { selectedMode?: GreenWaveMode; driver?: boolean } = {}) {
-  const { startSimulation, stopSimulation, stopRun } = useSimulationStream();
+  const { startSimulation, stopSimulation, stopRun } = useSimulationActions();
   const simulation = useSimulationState();
   const operationOwner = useSyncExternalStore(
     simulationOperationSlot.subscribe,

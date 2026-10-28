@@ -4,7 +4,7 @@ import { occluderPadding, type Padding } from "@/lib/workspace-layout";
 export const OCCLUDER_SELECTOR = "[data-map-occluder], .maplibregl-ctrl-bottom-right";
 
 /** Shell attributes and element states that show, hide or move an overlay. */
-const OCCLUDER_ATTRIBUTES = ["data-details", "data-sheet", "data-focus", "data-snap", "hidden"];
+const OCCLUDER_ATTRIBUTES = ["data-details", "data-sheet", "data-snap", "hidden"];
 
 function occluderRoot(container: HTMLElement): ParentNode | null {
   return container.closest(".workspace-shell") ?? container.ownerDocument ?? null;

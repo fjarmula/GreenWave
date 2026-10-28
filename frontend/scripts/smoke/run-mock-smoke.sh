@@ -19,6 +19,8 @@ cli() { playwright-cli -s="$SESSION" "$@"; }
 trap 'cli close >/dev/null 2>&1 || true' EXIT
 
 cli open --browser="${PLAYWRIGHT_BROWSER:-chromium}" "$BASE_URL" >/dev/null
+cli --raw run-code --filename="$SCRIPT_DIR/home-return.js" >"$OUT_DIR/mock-smoke-home-return.json"
+cli goto "$BASE_URL/simulation/green-wave" >/dev/null
 cli --raw run-code --filename="$SCRIPT_DIR/mock-run.js" >"$OUT_DIR/mock-smoke-run.json"
 cli screenshot --filename="$OUT_DIR/mock-smoke-live.png" >/dev/null
 cli --raw run-code --filename="$SCRIPT_DIR/mock-finish-and-restart.js" \

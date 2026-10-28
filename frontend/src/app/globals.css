@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -10,19 +9,6 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -116,7 +102,7 @@
   --primary-foreground: oklch(0.99 0.01 160);
   --ring: oklch(0.6 0.14 160);
   --destructive: var(--emergency);
-  /* shadcn names alias the scale. */
+  /* Semantic aliases of the scale (bg-background, text-muted-foreground…). */
   --background: var(--bg);
   --foreground: var(--fg);
   --card: var(--surface-1);
@@ -130,11 +116,6 @@
   --accent: var(--surface-3);
   --accent-foreground: var(--fg);
   --input: var(--border-strong);
-  --chart-1: var(--go);
-  --chart-2: var(--beacon);
-  --chart-3: var(--cascade);
-  --chart-4: var(--caution);
-  --chart-5: var(--emergency);
   --radius: 0.75rem;
   --radius-control: 12px;
   /* A thumb inside a control's 3px track padding. */
@@ -143,14 +124,6 @@
   --radius-sheet: 22px;
   --shadow-float: 0 1px 2px oklch(0 0 0 / 6%), 0 8px 24px -8px oklch(0 0 0 / 12%);
   --shadow-marker: 0 0 0 1px oklch(0 0 0 / 12%), 0 1px 2px oklch(0 0 0 / 20%);
-  --sidebar: var(--bg);
-  --sidebar-foreground: var(--fg);
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: var(--surface-3);
-  --sidebar-accent-foreground: var(--fg);
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--ring);
 }
 
 .dark {
@@ -270,10 +243,6 @@
 
   .dashboard-map {
     background-color: var(--map-surface);
-  }
-
-  .dashboard-signal-pulse {
-    animation: signal-pulse 1.4s ease-in-out infinite;
   }
 }
 
@@ -447,19 +416,6 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .status-breathe {
-    animation: none;
-  }
-}
-
-@keyframes signal-pulse {
-  50% {
-    transform: scale(1.45);
-    opacity: 0.55;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dashboard-signal-pulse {
     animation: none;
   }
 }
@@ -699,7 +655,7 @@
   overscroll-behavior: contain;
 }
 /* Keep MapLibre's zoom buttons and attribution clear of the open inspector. */
-.workspace-shell[data-details="true"]:not([data-focus="true"]) .maplibregl-ctrl-bottom-right {
+.workspace-shell[data-details="true"] .maplibregl-ctrl-bottom-right {
   right: calc(var(--inspector-width) + 2 * var(--shell-gap));
 }
 .workspace-button {
@@ -796,12 +752,6 @@
 }
 .workspace-button:active {
   transform: scale(0.97);
-}
-.workspace-exit {
-  position: absolute;
-  z-index: 30;
-  right: calc(1rem + env(safe-area-inset-right));
-  top: calc(1rem + env(safe-area-inset-top));
 }
 /* Sits above the MapLibre attribution line, never on it. */
 .workspace-provenance {
@@ -919,13 +869,11 @@
     padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
     border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   }
-  .workspace-shell[data-details="true"]:not([data-sheet]):not([data-focus="true"])
-    .maplibregl-ctrl-bottom-right {
+  .workspace-shell[data-details="true"]:not([data-sheet]) .maplibregl-ctrl-bottom-right {
     right: 0;
     bottom: 45%;
   }
-  .workspace-shell[data-details="true"]:not([data-sheet]):not([data-focus="true"])
-    .workspace-provenance {
+  .workspace-shell[data-details="true"]:not([data-sheet]) .workspace-provenance {
     bottom: calc(45% + 0.5rem);
   }
 }
@@ -1310,105 +1258,21 @@ button,
   max-height: calc(100% - 4.5rem - var(--shell-gap) - env(safe-area-inset-top));
   padding-top: 1.25rem;
 }
-/* Driver setup on desktop: a corner button folds the card into a pill that restores it. */
-.sheet-minimize {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  place-items: center;
-  border-radius: 999px;
-  color: var(--muted-foreground);
-}
-.sheet-minimize svg,
-.sheet-pill svg {
-  width: 1rem;
-  height: 1rem;
-}
-.workspace-inspector[data-minimized] {
-  left: auto;
-  width: auto;
-  padding: 0;
-  overflow: visible;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  backdrop-filter: none;
-}
-.sheet-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 2.5rem;
-  padding: 0 0.875rem 0 1rem;
-  border-radius: 999px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transform-origin: top right;
-  transition:
-    opacity var(--dur-enter) var(--ease-out),
-    transform var(--dur-enter) var(--ease-out);
-  @starting-style {
-    opacity: 0;
-    transform: scale(0.97);
-  }
-}
-@media (hover: hover) and (pointer: fine) {
-  .sheet-minimize:hover {
-    color: var(--foreground);
-    background: var(--tile);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .sheet-pill {
-    @starting-style {
-      transform: none;
-    }
-  }
-}
-.sheet-disclosure {
-  display: flex;
-  width: 100%;
-  min-height: 2.75rem;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 0.75rem;
-  padding: 0 0.875rem;
-  border-radius: var(--radius-control);
-  background: var(--tile);
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-.sheet-disclosure svg {
-  width: 1rem;
-  height: 1rem;
-  color: var(--muted-foreground);
-  transition: transform 200ms var(--ease-out);
-}
-.sheet-disclosure[aria-expanded="true"] svg {
-  transform: rotate(180deg);
-}
 @media (prefers-reduced-motion: reduce) {
   .settings-popover,
-  .settings-summary svg,
-  .sheet-disclosure svg {
+  .settings-summary svg {
     transition: none;
   }
 }
 /* Map controls and provenance sit above a collapsed phone sheet. */
 @media (max-width: 767px) {
-  .workspace-shell[data-sheet]:not([data-focus="true"]) .maplibregl-ctrl-bottom-right {
+  .workspace-shell[data-sheet] .maplibregl-ctrl-bottom-right {
     right: 0;
     bottom: var(--sheet-visible, 40%);
   }
-  .workspace-shell[data-sheet]:not([data-focus="true"]) .workspace-provenance {
+  .workspace-shell[data-sheet] .workspace-provenance {
     bottom: calc(var(--sheet-visible, 40%) + 0.5rem);
   }
-}
-.workspace-shell[data-focus="true"] .maplibregl-ctrl-group {
-  display: none;
 }
 
 /* These fields live in a 360px inspector even on a wide desktop viewport. */
@@ -2535,28 +2399,6 @@ button,
   }
 }
 
-/* Primary and quiet variants of the shared workspace button. */
-.workspace-button--primary {
-  border-color: transparent;
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-.workspace-button--primary svg {
-  color: currentColor;
-}
-.workspace-button--quiet {
-  min-height: 2rem;
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-  color: var(--muted-foreground);
-}
-@media (hover: hover) and (pointer: fine) {
-  .workspace-button--primary:hover {
-    background: color-mix(in oklch, var(--primary), white 10%);
-  }
-}
-
 /* Live comparison: two equal map panes, a floating race bar, then the result card. */
 .comparison-stage {
   position: relative;
@@ -2769,9 +2611,6 @@ button,
   font-size: 1.25rem;
   font-weight: 600;
 }
-.workspace-shell[data-focus="true"] .comparison-dock {
-  display: none;
-}
 @media (pointer: coarse) {
   .race-bar-stop {
     min-height: 44px;
@@ -2951,10 +2790,6 @@ button,
 .workspace-status {
   top: calc(var(--workspace-header-bottom, 6rem) + 4rem);
 }
-.workspace-shell[data-focus="true"] .comparison-pane-chips,
-.workspace-shell[data-focus="true"] .comparison-result-layer {
-  display: none;
-}
 .workspace-button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
@@ -3020,9 +2855,6 @@ button,
 .workspace-run-controls .settings-chip {
   min-height: 44px;
 }
-.workspace-shell[data-focus="true"] .workspace-run-controls {
-  top: calc(4rem + env(safe-area-inset-top));
-}
 @media (max-width: 767px) {
   .workspace-header[data-compact] > .workspace-heading {
     display: flex;
@@ -3037,13 +2869,6 @@ button,
   }
 }
 
-.workspace-focus-brand {
-  position: absolute;
-  z-index: 30;
-  top: calc(var(--shell-gap) + env(safe-area-inset-top));
-  left: calc(var(--shell-gap) + env(safe-area-inset-left));
-}
-
 @media (max-width: 767px) {
   .workspace-shell[data-primary-action] > #workspace-inspector:not(aside) {
     position: absolute;
@@ -3054,11 +2879,10 @@ button,
   .workspace-shell[data-primary-action] .bottom-sheet {
     pointer-events: auto;
   }
-  .workspace-shell[data-primary-action][data-sheet]:not([data-focus="true"])
-    .maplibregl-ctrl-bottom-right {
+  .workspace-shell[data-primary-action][data-sheet] .maplibregl-ctrl-bottom-right {
     bottom: calc(var(--sheet-visible, 40%) + var(--primary-action-space));
   }
-  .workspace-shell[data-primary-action][data-sheet]:not([data-focus="true"]) .workspace-provenance {
+  .workspace-shell[data-primary-action][data-sheet] .workspace-provenance {
     bottom: calc(var(--sheet-visible, 40%) + var(--primary-action-space) + 0.5rem);
   }
 }
