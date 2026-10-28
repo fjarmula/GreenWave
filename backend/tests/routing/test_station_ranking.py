@@ -1,5 +1,6 @@
 import logging
 
+import polars as pl
 import pytest
 from tests.support.route_fixtures import (
     PARK_CENTRE,
@@ -12,6 +13,7 @@ from tests.support.route_fixtures import (
     stations_frame,
 )
 
+from greenwave.dataset.errors import MalformedArtifactError
 from greenwave.its import MockItsGateway
 from greenwave.routing.access import walk_between
 from greenwave.routing.errors import DestinationOffNetwork, NoRoute, NoStationReachable
@@ -391,3 +393,12 @@ def test_max_candidates_lifts_the_cap() -> None:
     assert [c.station.station_id for c in ranking.candidates] == [
         "STN-A-0004", "STN-A-0003", "STN-A-0002", "STN-A-0001"
     ]  # fmt: skip
+
+
+def test_off_network_prm_base_fails_startup() -> None:
+    stations = stations_frame(("STN-A-0001", "AMBULANCE", _X + 1_000, _Y + 50_000)).with_columns(
+        pl.lit("prm_base").alias("source_kind")
+    )
+
+    with pytest.raises(MalformedArtifactError, match="STN-A-0001"):
+        build_station_nodes(stations, corridor_index())

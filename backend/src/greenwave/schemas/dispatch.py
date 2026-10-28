@@ -29,9 +29,12 @@ TEAM_CODE_PATTERN = r"^K\d{2} \d{3}( M)?$"
 LOCAL_ZONE = ZoneInfo("Europe/Warsaw")
 MAX_AVAILABILITY_OVERRIDES = 200
 
+TERYT_PATTERN = r"^\d{7}$"
+MONTH_DAY_PATTERN = r"^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$"
+
 TeamCode = Annotated[str, StringConstraints(pattern=TEAM_CODE_PATTERN)]
-Teryt = Annotated[str, StringConstraints(pattern=r"^\d{7}$")]
-MonthDay = Annotated[str, StringConstraints(pattern=r"^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$")]
+Teryt = Annotated[str, StringConstraints(pattern=TERYT_PATTERN)]
+MonthDay = Annotated[str, StringConstraints(pattern=MONTH_DAY_PATTERN)]
 # Simulated availability set by the dispatcher in the scenario; never a live status.
 AvailabilityOverride = Literal["free", "busy"]
 ExclusionReason = Literal["OFF_SHIFT", "BUSY_OVERRIDE"]

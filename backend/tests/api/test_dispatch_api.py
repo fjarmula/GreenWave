@@ -412,6 +412,7 @@ def test_eligible_ambulance_without_routable_base_returns_422(layout: Layout) ->
 
     assert response.status_code == 422
     assert response.json()["error_code"] == "NO_STATION_REACHABLE"
+    assert response.json()["message"] == "No eligible ambulance base is on the routable network"
 
 
 def test_rank_rejects_unknown_availability_value(layout: Layout) -> None:

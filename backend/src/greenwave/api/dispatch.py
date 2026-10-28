@@ -168,12 +168,8 @@ def rank(body: DispatchRankRequest, request: Request) -> DispatchRankResponse | 
         )
     except DestinationOffNetwork as error:
         return error_response(422, ErrorCode.DESTINATION_OFF_NETWORK, str(error))
-    except NoStationReachable:
-        return error_response(
-            422,
-            ErrorCode.NO_STATION_REACHABLE,
-            f"no {body.vehicle_type.value} station can reach the incident",
-        )
+    except NoStationReachable as error:
+        return error_response(422, ErrorCode.NO_STATION_REACHABLE, str(error))
     return DispatchRankResponse(
         schema_version="1.0",
         incident_snapped=_snapped(ranking.incident_snap),

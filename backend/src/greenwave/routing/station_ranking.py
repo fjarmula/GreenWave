@@ -21,6 +21,9 @@ from typing import Any
 
 import polars as pl
 
+from greenwave.artifacts import STATIONS_FILENAME
+from greenwave.dataset.constants import PLACES_COMMAND
+from greenwave.dataset.errors import MalformedArtifactError
 from greenwave.routing.access import AccessNode, access_nodes, seeded_lengths, walk_between
 from greenwave.routing.errors import (
     DestinationOffNetwork,
@@ -38,7 +41,7 @@ from greenwave.routing.planner import (
     plan_route,
     snap_endpoint,
 )
-from greenwave.schemas import GreenWaveMode, Position, Station, VehicleType
+from greenwave.schemas import GreenWaveMode, Position, Station, StationSourceKind, VehicleType
 from greenwave.simulation.route_model import build_route_model
 from greenwave.simulation.standard_estimate import standard_run_seconds
 from greenwave.simulation_settings import SimulationSettings
@@ -97,13 +100,22 @@ def station_from_row(row: Mapping[str, Any]) -> Station:
 
 
 def build_station_nodes(stations: pl.DataFrame, index: RoutingIndex) -> tuple[StationNode, ...]:
-    """Snap each station once (origin semantics); unsnappable ones are skipped with a warning."""
+    """Snap each station once (origin semantics); unsnappable ones are skipped with a warning.
+
+    A ``prm_base`` that does not snap raises ``MalformedArtifactError``: its teams would vanish
+    from every ranking without a trace (ADR 0014).
+    """
     nodes: list[StationNode] = []
     for row in stations.sort("station_id").iter_rows(named=True):
         station = station_from_row(row)
         try:
             snap = snap_endpoint(index, station.position, origin=True)
-        except OriginOffNetwork:
+        except OriginOffNetwork as error:
+            if row["source_kind"] == StationSourceKind.PRM_BASE:
+                raise MalformedArtifactError(
+                    f"{STATIONS_FILENAME}: PRM base {station.station_id} is off the routable "
+                    f"network, so its teams could never be dispatched; re-run {PLACES_COMMAND}"
+                ) from error
             logger.warning("station %s is off the routable network; skipped", station.station_id)
             continue
         nodes.append(StationNode(station, snap.node_key))
