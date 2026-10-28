@@ -1,6 +1,5 @@
 """Step T4 orchestration: weld, attach signals, build intersections, write the network artifacts."""
 
-import hashlib
 import json
 import logging
 from collections import Counter
@@ -50,7 +49,7 @@ from greenwave.etl.intersections import (
     prepare_rings,
 )
 from greenwave.etl.junctions import Ring, find_junction_nodes, undirected_adjacency
-from greenwave.etl.manifest import MANIFEST_FILENAME
+from greenwave.etl.manifest import MANIFEST_FILENAME, sha256_of_file
 from greenwave.etl.near_misses import NearMissReport, find_near_misses
 from greenwave.etl.network import (
     DIRECTION_UNRESOLVED,
@@ -148,10 +147,6 @@ def _signal_points(frame: pl.DataFrame) -> list[SignalPoint]:
         )
         for row in counted.iter_rows(named=True)
     ]
-
-
-def _file_sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
@@ -331,7 +326,7 @@ def write_intersection_artifacts(
     build.bus_lane_crosscheck.write_csv(processed_dir / BUS_LANE_CROSSCHECK_FILENAME)
     build.tertiary.write_csv(processed_dir / TERTIARY_PLUS_FILENAME)
     welds_frame(build.prepared.weld_report).write_csv(processed_dir / WELDS_FILENAME)
-    manifest_sha256 = _file_sha256(raw_dir / MANIFEST_FILENAME)
+    manifest_sha256 = sha256_of_file(raw_dir / MANIFEST_FILENAME)
     _write_ids(
         processed_dir / IDS_FILENAME,
         build.intersections_frame,
