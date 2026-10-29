@@ -250,10 +250,13 @@ export class MockItsController {
       if (passed[i]) {
         if (!signal.passed) {
           signal.passed = true;
-          signal.recoveryStartedAtSeconds = now;
+          // A pending request never changed traffic: passage needs no priority recovery.
+          signal.recoveryStartedAtSeconds =
+            signal.state === "CLEARING" || signal.state === "PRIORITY_GREEN" ? now : null;
         }
         signal.state =
-          request && now - (signal.recoveryStartedAtSeconds ?? now) < MOCK_RECOVERY_SECONDS
+          signal.recoveryStartedAtSeconds !== null &&
+          now - signal.recoveryStartedAtSeconds < MOCK_RECOVERY_SECONDS
             ? "RECOVERY"
             : "NORMAL";
       } else if (request?.status === "ACCEPTED")

@@ -81,7 +81,7 @@ export function itsScenarioCaption(scenario: ItsScenario): string {
   return {
     NOMINAL: "accept · 1 s",
     DELAYED: "accept · 5 s",
-    REJECTED: "decline",
+    REJECTED: "reject · 1 s",
     NO_FEEDBACK: "timeout · 8 s",
   }[scenario];
 }

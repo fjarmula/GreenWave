@@ -70,6 +70,18 @@ export function ItsScenarioControl({
           </button>
         ))}
       </div>
+      <p className="mt-2 text-xs text-muted-foreground">
+        {disabled ? (
+          t("Standard mode sends no priority requests.")
+        ) : (
+          <>
+            {t("Times count from each priority request in simulated seconds.")}{" "}
+            {t(
+              "Acceptance starts signal clearing; rejection or an 8 s acknowledgement timeout ends the run.",
+            )}
+          </>
+        )}
+      </p>
     </div>
   );
 }

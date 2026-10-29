@@ -76,3 +76,15 @@ it.each([
     expect(html).toContain(">GreenWave<");
   },
 );
+
+it("shows a localized rejection delay and explains simulated ITS timing", async () => {
+  const { ItsScenarioControl } = await import("./hud/dispatch/ItsScenarioControl");
+  const html = renderToStaticMarkup(
+    <LanguageProvider initialLanguage="pl">
+      <ItsScenarioControl value="REJECTED" disabled={false} onChange={() => {}} />
+    </LanguageProvider>,
+  );
+  expect(html).toContain("odrzucenie · 1 s");
+  expect(html).not.toContain("decline");
+  expect(html).toContain("Czasy liczone są od wysłania żądania priorytetu w sekundach symulacji.");
+});
