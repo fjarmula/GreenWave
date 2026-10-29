@@ -58,3 +58,13 @@ transitions; ordinary cycles remain unchanged outside priority.
 Camera view changes share the existing 600 ms station/incident focus timing. Show route uses an eased
 pan/zoom rather than a flight arc; reduced-motion preferences keep view changes immediate. Both
 camera actions stop an old gesture before applying the new view so rapid toggles remain interruptible.
+
+## Documentation page
+
+`/docs` holds the contest documentation (Open Data App rules §5.2) as six tabs: About, Running it,
+Technologies, Data, Architecture, Future development. The copy lives in
+`src/lib/docs/content.ts` as typed blocks per language and does not go through the `polish.ts`
+dictionary. PL and EN must stay structurally identical, every command must appear in `README.md`,
+and English sentences must not copy the repository docs (`content.test.ts`,
+`content-facts.test.ts`). The active tab is the URL hash (`/docs#data`), with unknown hashes
+opening About, and the tabs follow the WAI-ARIA tabs keyboard model.
