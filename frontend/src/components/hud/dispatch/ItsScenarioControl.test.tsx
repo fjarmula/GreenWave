@@ -59,7 +59,7 @@ describe("ITS scenario presentation", () => {
   it("captions and tones each scenario", () => {
     expect(itsScenarioCaption("NOMINAL")).toBe("accept · 1 s");
     expect(itsScenarioCaption("DELAYED")).toBe("accept · 5 s");
-    expect(itsScenarioCaption("REJECTED")).toBe("decline");
+    expect(itsScenarioCaption("REJECTED")).toBe("reject · 1 s");
     expect(itsScenarioCaption("NO_FEEDBACK")).toBe("timeout · 8 s");
     expect(itsScenarioTone("NOMINAL")).toBe("tone-go");
     expect(itsScenarioTone("DELAYED")).toBe("tone-caution");

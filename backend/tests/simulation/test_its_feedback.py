@@ -144,3 +144,50 @@ def test_closed_engine_cannot_emit_or_submit_more_work() -> None:
     engine.close()
     engine.close()
     assert engine.step(state, NOW) == (state, [])
+
+
+@pytest.mark.parametrize(
+    ("scenario", "delay", "status", "reason"),
+    [
+        (ItsScenario.NOMINAL, 1, "ACCEPTED", None),
+        (ItsScenario.DELAYED, 5, "ACCEPTED", None),
+        (ItsScenario.REJECTED, 1, "REJECTED", "ITS_REJECTED"),
+        (ItsScenario.NO_FEEDBACK, 8, "TIMED_OUT", "ITS_TIMEOUT"),
+    ],
+)
+@pytest.mark.parametrize("playback_speed", [1, 10])
+def test_scenario_decision_time_starts_at_request_submission(
+    scenario: ItsScenario, delay: int, status: str, reason: str | None, playback_speed: int
+) -> None:
+    engine = engine_for_single_stop()
+    engine.route_model = replace(
+        engine.route_model,
+        intersections=(
+            replace(
+                engine.route_model.intersections[0], first_stop_line_m=100, last_stop_line_m=100
+            ),
+        ),
+    )
+    engine.controller = SimulatedItsController(engine.route_model, engine.settings, scenario)
+    engine.playback_speed = playback_speed
+    state, events = engine.step(engine.initial_state(), NOW)
+    dispatch = next(event for event in events if event.event_type == "ITS_DISPATCH")
+    tick = next(event for event in events if isinstance(event, SimulationTickEvent))
+    assert tick.its_requests[0].status == "REQUESTED"
+    for elapsed in range(1, delay + 1):
+        state, events = engine.step(state, NOW)
+        feedback = [
+            event
+            for event in events
+            if event.event_type == "ITS_FEEDBACK"
+            and event.request_message_id == dispatch.message_id
+        ]
+        if elapsed < delay:
+            assert not feedback
+        else:
+            assert [event.status for event in feedback] == [status]
+            assert feedback[0].observed_at_simulated_sec == dispatch.tick + delay
+            terminals = [event for event in events if event.event_type == "SIMULATION_CANCELLED"]
+            assert [event.reason for event in terminals] == ([] if reason is None else [reason])
+            assert not any(event.event_type == "SIMULATION_COMPLETED" for event in events)
+    engine.close()

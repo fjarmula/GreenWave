@@ -371,6 +371,13 @@ export const polish: Record<string, string> = {
   "No feedback": "Brak odpowiedzi",
   "accept · 1 s": "akceptacja · 1 s",
   "accept · 5 s": "akceptacja · 5 s",
+  "reject · 1 s": "odrzucenie · 1 s",
+  "Times count from each priority request in simulated seconds.":
+    "Czasy liczone są od wysłania żądania priorytetu w sekundach symulacji.",
+  "Acceptance starts signal clearing; rejection or an 8 s acknowledgement timeout ends the run.":
+    "Akceptacja rozpoczyna przygotowanie sygnalizacji do priorytetu. Odrzucenie lub brak potwierdzenia przez 8 s kończy przejazd.",
+  "Standard mode sends no priority requests.":
+    "W trybie standardowym żądania priorytetu nie są wysyłane.",
   "timeout · 8 s": "limit · 8 s",
   "Simulated controller reports": "Raporty symulowanego sterownika",
   "Last simulated controller report": "Ostatni raport symulowanego sterownika",
