@@ -241,7 +241,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
             dashboard: "Panel Next.js",
           },
           caption:
-            "Dane źródłowe są przetwarzane przed uruchomieniem serwera. W czasie przejazdu panel otrzymuje kolejne stany symulacji przez SSE. Zielona linia oznacza przepływ danych podczas symulacji.",
+            "Szare linie ciągłe pokazują przygotowanie i wczytanie danych. Zielone strzałki oznaczają przesyłanie stanów symulacji do panelu przez SSE. Przerywana strzałka w obu kierunkach oznacza żądania priorytetu i odpowiedzi symulowanego sterownika ITS. Ta wymiana odbywa się wewnątrz procesu symulacji.",
         },
         { kind: "heading", text: "Przygotowanie danych" },
         {
@@ -506,7 +506,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
             dashboard: "Next.js dashboard",
           },
           caption:
-            "Source data is processed once, offline. The simulation server sends the run state to the dashboard every simulated second. The green line is the live data path.",
+            "Solid grey arrows show data preparation and loading. Green arrows carry simulation states to the dashboard over SSE. The dashed two-way arrow shows priority requests and responses exchanged with the simulated ITS controller, entirely within the simulation.",
         },
         { kind: "heading", text: "Data preparation" },
         {

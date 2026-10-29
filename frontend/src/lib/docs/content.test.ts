@@ -86,3 +86,16 @@ describe("docs content", () => {
     }
   });
 });
+
+it("explains the dashed ITS exchange in both diagram captions", () => {
+  const caption = (language: "pl" | "en") => {
+    const diagram = docsContent[language]
+      .find((section) => section.id === "architecture")
+      ?.blocks.find((block) => block.kind === "diagram");
+    return diagram?.kind === "diagram" ? diagram.caption : "";
+  };
+  expect(caption("pl")).toContain("Przerywana strzałka");
+  expect(caption("pl")).toContain("żądania priorytetu i odpowiedzi");
+  expect(caption("en")).toContain("dashed two-way arrow");
+  expect(caption("en")).toContain("within the simulation");
+});
