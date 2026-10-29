@@ -2,13 +2,7 @@ import type { Language } from "@/lib/localization";
 import type { DocsSectionId } from "./tabs";
 
 export type ArchitectureNodeId =
-  | "sources"
-  | "etl"
-  | "dataset"
-  | "api"
-  | "its"
-  | "stream"
-  | "dashboard";
+  "sources" | "etl" | "dataset" | "api" | "its" | "stream" | "dashboard";
 
 export type DocsBlock =
   | { kind: "paragraph"; text: string }

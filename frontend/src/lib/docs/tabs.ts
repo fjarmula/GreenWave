@@ -1,4 +1,11 @@
-export const DOCS_SECTION_IDS = ["about", "run", "tech", "data", "architecture", "roadmap"] as const;
+export const DOCS_SECTION_IDS = [
+  "about",
+  "run",
+  "tech",
+  "data",
+  "architecture",
+  "roadmap",
+] as const;
 export type DocsSectionId = (typeof DOCS_SECTION_IDS)[number];
 
 /** The active docs tab lives in the URL hash; anything unrecognised opens the first tab. */
