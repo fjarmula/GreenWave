@@ -125,6 +125,8 @@ Public HTTPS hosting on a free Oracle VM: [deployment guide](deploy/README.md).
   [docs/engineering/frontend-dashboard.md](docs/engineering/frontend-dashboard.md): the dashboard and
   its workspace controls.
 - [CONTRIBUTING.md](CONTRIBUTING.md): checks, branches, commits and contract changes.
+- The in-app **Documentation** page (`/docs`): the Open Data App contest write-up in Polish and
+  English (project, running it, technologies, data, architecture, future development).
 
 ## Data sources and attribution
 

@@ -7,6 +7,7 @@ export const destinations = [
   { href: "/compare", label: "Comparison" },
   { href: "/diagnostics", label: "Diagnostics" },
   { href: "/driver", label: "Driver" },
+  { href: "/docs", label: "Documentation" },
 ] as const;
 export function routeForMode(mode: GreenWaveMode) {
   return mode === "ENABLED" ? "/simulation/green-wave" : "/simulation/standard";

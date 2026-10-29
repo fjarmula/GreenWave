@@ -2016,6 +2016,7 @@ button,
   }
   /* A selected segment takes its tone when it has one (e.g. Green Wave "Enabled"). */
   .hud-segment[aria-pressed="true"],
+  .hud-segment[aria-selected="true"],
   .hud-segment[aria-checked="true"] {
     color: var(--tone, var(--foreground));
     background: var(--thumb);
@@ -2996,4 +2997,412 @@ button,
 .language-switch button:focus-visible {
   outline: 2px solid var(--beacon);
   outline-offset: 2px;
+}
+
+/* Documentation page: the full content width as a grid of panels over a road-ink corridor. Panels
+   use the home-card material; prose inside a panel keeps its own readable measure. */
+.docs-page {
+  --docs-tabs-top: calc(var(--shell-gap) + env(safe-area-inset-top) + 4.75rem);
+}
+.docs-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.docs-backdrop svg {
+  position: absolute;
+  top: -6vh;
+  right: -4vw;
+  width: auto;
+  height: 120vh;
+  mask-image: linear-gradient(to left, #000 20%, transparent 85%);
+}
+.docs-backdrop path,
+.docs-backdrop circle {
+  fill: none;
+  stroke: var(--home-road-ink);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.docs-backdrop-route {
+  stroke-width: 2.4;
+}
+.docs-backdrop-street {
+  stroke-width: 1;
+  opacity: 0.7;
+}
+.docs-backdrop circle {
+  fill: var(--bg);
+  stroke-width: 1.4;
+}
+.docs-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  margin-bottom: 1.5rem;
+}
+.docs-head-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.docs-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.3125rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--surface-1) 72%, transparent);
+  backdrop-filter: blur(14px) saturate(1.3);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+a.docs-chip {
+  color: var(--beacon);
+  transition: border-color var(--dur-hover) ease;
+}
+.docs-chip-sim {
+  border-color: color-mix(in oklch, var(--caution) 35%, transparent);
+  color: var(--caution);
+}
+.docs-chip-sim::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.docs-section-title {
+  margin-bottom: 1.25rem;
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+.docs-lead {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr));
+  gap: 1rem 3rem;
+  margin-bottom: 1.75rem;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+.docs-lead > * {
+  max-width: 75ch;
+}
+.docs-lead a {
+  color: var(--beacon);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr));
+  gap: 1rem;
+}
+.docs-wide {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.docs-grid > .docs-note {
+  align-self: start;
+}
+.docs-group,
+.docs-card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: color-mix(in oklch, var(--surface-1) 72%, transparent);
+  box-shadow: var(--highlight);
+  backdrop-filter: blur(14px) saturate(1.3);
+}
+.docs-group {
+  display: grid;
+  align-content: start;
+  gap: 0.875rem;
+  padding: 1.25rem 1.375rem;
+}
+.docs-group h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.docs-step {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.docs-group .docs-code {
+  background: var(--tile);
+}
+.docs-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: 1rem;
+}
+.docs-card {
+  display: grid;
+  align-content: start;
+  gap: 0.375rem;
+  padding: 1.125rem 1.25rem;
+}
+.docs-card-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.docs-card strong {
+  font-weight: 600;
+}
+.docs-card p {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--muted-foreground);
+}
+.docs-panel-enter {
+  transition:
+    opacity 260ms var(--ease-out),
+    transform 260ms var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .docs-panel-enter {
+    transition: opacity 200ms ease;
+    @starting-style {
+      transform: none;
+    }
+  }
+}
+.docs-prose {
+  display: grid;
+  gap: 0.875rem;
+  line-height: 1.65;
+}
+.docs-prose > p,
+.docs-prose > ul {
+  max-width: 75ch;
+}
+.docs-prose h3 {
+  margin-top: 0.75rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.docs-prose ul {
+  display: grid;
+  gap: 0.375rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+.docs-prose a {
+  color: var(--beacon);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.docs-table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: var(--radius-card);
+}
+.docs-table-scroll table {
+  width: 100%;
+  min-width: 44rem;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.docs-table-scroll th,
+.docs-table-scroll td {
+  padding: 0.625rem 0.875rem;
+  text-align: left;
+  vertical-align: top;
+}
+.docs-table-scroll th {
+  font-weight: 600;
+  background: var(--muted);
+}
+.docs-table-scroll tr + tr td,
+.docs-table-scroll tbody tr:first-child td {
+  border-top: 1px solid var(--border);
+}
+.docs-code {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.docs-code-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem 0.375rem 0.25rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: var(--muted);
+}
+.docs-code-status {
+  margin-left: auto;
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+.docs-code pre {
+  overflow-x: auto;
+  padding: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.docs-note {
+  display: flex;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid color-mix(in oklch, var(--caution) 45%, transparent);
+  border-radius: var(--radius-card);
+  background: color-mix(in oklch, var(--caution) 10%, transparent);
+  font-size: 0.875rem;
+}
+.docs-note svg {
+  margin-top: 0.2rem;
+  color: var(--caution);
+}
+.docs-diagram {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 54rem;
+}
+.docs-diagram svg {
+  width: 100%;
+  height: auto;
+}
+.docs-diagram figcaption {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+.docs-diagram-box {
+  fill: var(--card);
+  stroke: var(--muted-foreground);
+  stroke-opacity: 0.5;
+}
+.docs-diagram-label {
+  fill: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.docs-diagram-line {
+  fill: none;
+  stroke: var(--muted-foreground);
+  stroke-width: 1.5;
+}
+.docs-diagram-go {
+  stroke: var(--signal-green);
+  stroke-width: 2;
+}
+.docs-diagram-simulated {
+  stroke-dasharray: 5 4;
+}
+.docs-diagram-narrow {
+  display: none;
+}
+@media (max-width: 639px) {
+  .docs-diagram-wide {
+    display: none;
+  }
+  .docs-diagram-narrow {
+    display: block;
+  }
+}
+
+/* Docs tabs: the segmented track as one row that scrolls inside itself on narrow screens. It sticks
+   under the header and takes the glass material only while stuck. One thumb slides between tabs. */
+.docs-tabs-bar {
+  position: sticky;
+  top: var(--docs-tabs-top);
+  z-index: 20;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 2rem;
+}
+.docs-tabs {
+  position: relative;
+  display: flex;
+  max-width: 100%;
+  width: fit-content;
+  overflow-x: auto;
+  scrollbar-width: none;
+  transition:
+    background-color var(--dur-enter) ease,
+    box-shadow var(--dur-enter) ease;
+}
+.docs-tabs-bar[data-stuck] .docs-tabs {
+  background: var(--glass-bg);
+  box-shadow: var(--glass-highlight), var(--glass-ring), var(--glass-shadow);
+  backdrop-filter: blur(20px) saturate(1.6);
+}
+.docs-tab-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  border-radius: var(--radius-thumb);
+  background: var(--thumb);
+  box-shadow: var(--thumb-shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 220ms var(--ease-out),
+    width 220ms var(--ease-out);
+}
+.docs-tabs[data-thumb] .docs-tab-thumb {
+  opacity: 1;
+}
+.docs-tabs .hud-segment {
+  position: relative;
+}
+.docs-tabs[data-thumb] .hud-segment[aria-selected="true"] {
+  background: transparent;
+  box-shadow: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .docs-tab-thumb {
+    transition: none;
+  }
+}
+.docs-tabs::-webkit-scrollbar {
+  display: none;
+}
+.docs-tabs .hud-segment {
+  flex: none;
+  padding-inline: 0.875rem;
+  white-space: nowrap;
+}
+.docs-panel:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 6px;
+  border-radius: var(--radius-control);
 }
