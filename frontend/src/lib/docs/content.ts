@@ -89,7 +89,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         {
           kind: "list",
           items: [
-            "Mieszkańcom: szybsza pomoc medyczna, gaszenie pożarów i interwencje policji.",
+            "Mieszkańcom: szybsza pomoc medyczna, a w przyszłości także szybsze interwencje straży pożarnej i policji.",
             "Dyspozytorom: wybór jednostki według realnego czasu dojazdu, a nie odległości w linii prostej.",
             "Miastu i zarządcy dróg: narzędzie do oceny, na których ciągach priorytet daje największy zysk, zanim zapadnie decyzja o inwestycji.",
           ],
@@ -201,7 +201,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "Projekt łączy otwarte dane Miasta Krakowa z OpenStreetMap i wojewódzkim planem ratownictwa medycznego. Każdy plik ma w repozytorium zapisane źródło i sumę kontrolną, a serwer nie wystartuje na danych, które się z nimi nie zgadzają.",
+          text: "Projekt łączy otwarte dane Miasta Krakowa z OpenStreetMap i wojewódzkim planem ratownictwa medycznego. Każdy plik źródłowy ma w repozytorium zapisane pochodzenie i sumę kontrolną. Przetworzony zbiór jest powiązany z tym spisem, a serwer nie wystartuje na zbiorze zbudowanym z innych danych.",
         },
         {
           kind: "table",
@@ -294,7 +294,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         { kind: "heading", text: "Wybór jednostki i trasa" },
         {
           kind: "paragraph",
-          text: "Po wskazaniu miejsca zdarzenia serwer szacuje czas dojazdu z każdej pasującej bazy i wybiera najszybszą. Czas przejazdu uwzględnia prędkość na danej drodze, natężenie ruchu oraz cechy odcinka, takie jak pojedynczy pas, nawierzchnia czy progi zwalniające.",
+          text: "Po wskazaniu miejsca zdarzenia serwer szacuje czas dojazdu z każdej pasującej bazy i wybiera najszybszą. Prędkość pojazdu uprzywilejowanego wynika z ograniczenia prędkości na odcinku. Buspas lub torowisko pozwalają jechać szybciej, a każdy próg zwalniający kosztuje kilka sekund.",
         },
         { kind: "heading", text: "Zielony korytarz" },
         {
@@ -329,7 +329,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         {
           kind: "list",
           items: [
-            "Pilotaż z Zarządem Dróg Miasta Krakowa na jednym ciągu, na przykład Alejach Trzech Wieszczów, z połączeniem do centrum sterowania ruchem przez standardowy interfejs priorytetu.",
+            "Pilotaż z Zarządem Dróg Miasta Krakowa na jednym ciągu, na przykład na Alejach Trzech Wieszczów, z połączeniem do centrum sterowania ruchem przez standardowy interfejs priorytetu.",
             "Rzeczywiste pozycje pojazdów z systemu dyspozytorskiego zamiast ruchu symulowanego.",
             "Kalibracja parametrów modelu na zmierzonych danych o ruchu w Krakowie.",
             "Objęcie korytarzem straży pożarnej, policji i priorytetu dla komunikacji miejskiej tym samym mechanizmem.",
@@ -367,7 +367,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         {
           kind: "list",
           items: [
-            "GreenWave: a priority run in which the signals ahead turn green before the vehicle reaches them.",
+            "Green Wave: a priority run in which the signals ahead turn green before the vehicle reaches them.",
             "Standard traffic: the same route under the ordinary signal programme, where a red light costs time.",
             "Comparison: both modes start together on one clock, side by side on two maps, with a result card showing the difference.",
             "Driver: a phone view with the map and the next signal ahead of the vehicle.",
@@ -378,7 +378,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         {
           kind: "list",
           items: [
-            "Residents: faster medical help, firefighting and police response.",
+            "Residents: faster medical help and, in future, faster fire and police response.",
             "Dispatchers: a unit chosen by real driving time, not straight-line distance.",
             "The city and the road authority: a way to judge which corridors gain most from priority before committing to an investment.",
           ],
@@ -494,7 +494,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "The project combines City of Kraków open data with OpenStreetMap and the regional emergency medical services plan. Every file has its source and checksum recorded in the repository, and the server refuses to start on data that does not match them.",
+          text: "The project combines City of Kraków open data with OpenStreetMap and the regional emergency medical services plan. Every source file has its origin and checksum recorded in the repository. The processed dataset is tied to that record, and the server refuses to start on a dataset built from different data.",
         },
         {
           kind: "table",
@@ -587,7 +587,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         { kind: "heading", text: "Choosing the unit and the route" },
         {
           kind: "paragraph",
-          text: "Once the incident is placed, the server estimates the driving time from every suitable base and picks the fastest. Travel time accounts for the speed on each road, traffic density and road features such as a single lane, the surface or speed bumps.",
+          text: "Once the incident is placed, the server estimates the driving time from every suitable base and picks the fastest. The emergency vehicle's speed follows the limit on each road. A bus lane or tram track lets it go faster, and each speed bump costs a few seconds.",
         },
         { kind: "heading", text: "The green corridor" },
         {

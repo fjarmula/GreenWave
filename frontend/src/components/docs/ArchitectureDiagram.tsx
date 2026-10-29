@@ -46,22 +46,26 @@ const narrow: Layout = {
   its: "M196 262 H214",
 };
 
+/** The box labels are hidden inside role="img", so the accessible name spells out the flow. */
+function flowLabel(nodes: Record<ArchitectureNodeId, string>) {
+  const path = [nodes.sources, nodes.etl, nodes.dataset, nodes.api, nodes.stream, nodes.dashboard];
+  return `${path.join(" → ")}; ${nodes.api} ↔ ${nodes.its}`;
+}
+
 function Diagram({
   layout,
   nodes,
-  caption,
   className,
 }: {
   layout: Layout;
   nodes: Record<ArchitectureNodeId, string>;
-  caption: string;
   className: string;
 }) {
   const id = useId();
   const arrow = `${id}-arrow`;
   const go = `${id}-go`;
   return (
-    <svg className={className} viewBox={layout.viewBox} role="img" aria-label={caption}>
+    <svg className={className} viewBox={layout.viewBox} role="img" aria-label={flowLabel(nodes)}>
       <defs>
         {[
           [arrow, "var(--muted-foreground)"],
@@ -132,8 +136,8 @@ export function ArchitectureDiagram({
 }) {
   return (
     <figure className="docs-diagram">
-      <Diagram layout={wide} nodes={nodes} caption={caption} className="docs-diagram-wide" />
-      <Diagram layout={narrow} nodes={nodes} caption={caption} className="docs-diagram-narrow" />
+      <Diagram layout={wide} nodes={nodes} className="docs-diagram-wide" />
+      <Diagram layout={narrow} nodes={nodes} className="docs-diagram-narrow" />
       <figcaption>{caption}</figcaption>
     </figure>
   );
