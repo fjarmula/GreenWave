@@ -18,7 +18,7 @@ function render(mode: GreenWaveMode) {
   return renderToStaticMarkup(
     <FinishedRunSummary
       route={{
-        estimated_normal_time_sec: 780,
+        estimated_standard_time_sec: 520,
         estimated_greenwave_time_sec: 380,
         green_wave_mode: mode,
       }}
@@ -49,9 +49,9 @@ describe("FinishedRunSummary saved tone", () => {
     const markup = renderToStaticMarkup(
       <FinishedRunSummary
         route={{
-          estimated_normal_time_sec: 780,
+          estimated_standard_time_sec: 520,
           estimated_greenwave_time_sec: 380,
-          green_wave_mode: "DISABLED",
+          green_wave_mode: "ENABLED",
         }}
         completion={{
           ...COMPLETION,
@@ -60,9 +60,7 @@ describe("FinishedRunSummary saved tone", () => {
         onBackToSetup={() => undefined}
       />,
     );
-    const saved = markup.match(
-      /Saved vs normal-traffic estimate<\/dt><dd class="([^"]*)">([^<]*)</,
-    )!;
+    const saved = markup.match(/Saved vs standard run<\/dt><dd class="([^"]*)">([^<]*)</)!;
 
     expect(saved[2]).toBe("−00m 32s");
     expect(saved[1].split(" ")).toContain("text-caution");

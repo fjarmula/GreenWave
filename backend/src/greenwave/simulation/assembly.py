@@ -18,7 +18,6 @@ from greenwave.schemas import (
 from greenwave.simulation.cascade_check import find_cascade_mismatches
 from greenwave.simulation.engine import SimulationEngine
 from greenwave.simulation.route_model import build_route_model, to_start_response
-from greenwave.simulation.standard_estimate import standard_run_seconds
 from greenwave.simulation_settings import SimulationSettings
 
 logger = logging.getLogger("greenwave.simulation.cascade_check")
@@ -83,7 +82,7 @@ def plan_simulation(
         estimates,
         index,
         green_wave_mode=mode,
-        standard_seconds=standard_run_seconds(route, route_model, density, settings),
+        standard_seconds=engine.standard_profile.total_seconds,
     )
     response.its_scenario = scenario
     return PlannedSimulation(engine, response)

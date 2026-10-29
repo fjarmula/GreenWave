@@ -122,7 +122,7 @@ export const completedEventExample: SimulationCompletedEvent = {
   simulation_id: SIMULATION_ID,
   tick: 383,
   timestamp: "2026-10-25T14:37:51Z",
-  kpi_metrics: { current_time_saved_sec: 396, total_time_elapsed_sec: 383 },
+  kpi_metrics: { current_time_saved_sec: 72, total_time_elapsed_sec: 383 },
 };
 
 export const cancelledEventExample: SimulationCancelledEvent = {

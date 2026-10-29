@@ -8,7 +8,7 @@ const RUN: PreviousRun = {
   greenWaveMode: "DISABLED",
   totalSeconds: 812,
   savedSeconds: -32,
-  normalEstimateSeconds: 780,
+  standardEstimateSeconds: 780,
   stationName: "5. Wojskowy Szpital Kliniczny",
   incidentLabel: "Rynek Główny 1",
   trafficDensity: 2,
@@ -24,15 +24,14 @@ describe("PreviousRunCard", () => {
     expect(markup).toMatch(/<h3 id="previous-run-heading"[^>]*>Previous simulated run<\/h3>/);
   });
 
-  it("leads with the mode, then total travel time and saved vs normal", () => {
+  it("shows a standard result without a savings claim", () => {
     const content = text(renderToStaticMarkup(<PreviousRunCard run={RUN} />));
 
     const mode = content.indexOf("ER Green Wave disabled");
     const total = content.indexOf("Total travel time 13m 32s");
-    const saved = content.indexOf("Saved vs normal-traffic estimate −00m 32s");
+    expect(content).not.toContain("Saved vs");
     expect(mode).toBeGreaterThan(-1);
     expect(total).toBeGreaterThan(mode);
-    expect(saved).toBeGreaterThan(total);
   });
 
   it("names the route and traffic density it ran with", () => {
@@ -50,7 +49,7 @@ describe("PreviousRunCard", () => {
     );
 
     expect(content).toContain("ER Green Wave enabled");
-    expect(content).toContain("Saved vs normal-traffic estimate 06m 20s");
+    expect(content).toContain("Saved vs standard run 06m 20s");
   });
 });
 
@@ -59,8 +58,10 @@ describe("PreviousRunCard saved tone", () => {
     [-32, "text-caution"],
     [380, "text-go"],
   ])("colours %i s saved by its sign", (savedSeconds, colour) => {
-    const markup = renderToStaticMarkup(<PreviousRunCard run={{ ...RUN, savedSeconds }} />);
-    const saved = markup.match(/Saved vs normal-traffic estimate<\/dt><dd class="([^"]*)"/)!;
+    const markup = renderToStaticMarkup(
+      <PreviousRunCard run={{ ...RUN, greenWaveMode: "ENABLED", savedSeconds }} />,
+    );
+    const saved = markup.match(/Saved vs standard run<\/dt><dd class="([^"]*)"/)!;
 
     expect(saved[1].split(" ")).toContain(colour);
   });

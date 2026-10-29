@@ -38,6 +38,7 @@ from greenwave.simulation.motion import move_one_second
 from greenwave.simulation.priority_requests import PriorityRequestLedger
 from greenwave.simulation.route_model import RouteModel
 from greenwave.simulation.route_track import RouteTrack
+from greenwave.simulation.standard_estimate import standard_run_profile
 from greenwave.simulation.state import EngineState, initial_engine_state
 from greenwave.simulation.telemetry import (
     ambulance_telemetry,
@@ -87,6 +88,9 @@ class SimulationEngine:
         self._last_phases: tuple[SignalPhaseIndicator, ...] = ()
         self._closed = False
         self._track = RouteTrack.from_route(route, settings)
+        self.standard_profile = standard_run_profile(
+            route, route_model, traffic_density_multiplier, settings
+        )
         # Intersections controlling each stop-line position, for the hold at the line.
         self._stop_line_ids: dict[float, set[str]] = {}
         for stop in route.stop_lines:
@@ -195,9 +199,7 @@ class SimulationEngine:
             if selected:
                 state, dispatch = self._dispatch(state, selected, wall_clock_utc)
                 events.append(dispatch)
-        kpi = kpi_metrics(
-            self.route, self.route_model, state, self.traffic_density_multiplier, self.settings
-        )
+        kpi = kpi_metrics(state, self.standard_profile, self.green_wave_mode)
         ambulance = ambulance_telemetry(self.vehicle_type, state, actual_speed, self._track)
         intersections = intersection_telemetry(self.route_model, state)
         tick = tick_event(

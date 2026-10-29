@@ -1,7 +1,7 @@
 import type { TimeSavedTone } from "@/lib/simulation-copy";
 
 /**
- * Text colour for a "saved vs normal-traffic" value. The sign stays in the text, so colour
+ * Text colour for a "saved vs standard-run" value. The sign stays in the text, so colour
  * is never the only signal; a non-positive saving is not shown as a success.
  */
 export const SAVED_VALUE_TONES: Record<TimeSavedTone, string> = {

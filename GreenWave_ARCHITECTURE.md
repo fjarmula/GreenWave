@@ -146,7 +146,12 @@ With `green_wave_mode: "DISABLED"` the route and the open-road motion are exactl
    $$\frac{d}{v} + C_{\mathrm{remaining}} \cdot \frac{d}{L_{\mathrm{remaining}}},$$
    so the speed is at least $v_f$ (on edges whose limit is above it), never above $v$, and carries across edge ends.
 
-A later stop line replaces an active crossing with its own decision (a fresh crossing if it is not green). Each intersection's route signals share one cycle phase, so the lines of one through movement show the same colour. The crossing is a modelling boundary (the ETL has no junction exit geometry), and $c$, $L_c$, $C_{\max}$, $v_f$ are PoC assumptions, not measured Kraków values; $L_c$ and $v_f$ are strictly positive and all are finite (ADR 0010). The pre-run standard estimate is a dry run of this motion: `standard_run_seconds` drives `move_one_second` in disabled mode against the pure ordinary programme (deterministic from $t = 0$, no ITS) until arrival, so `estimated_standard_time_sec` (start response) and `standard_seconds` (each ranked candidate) equal the disabled run's arrival exactly before rounding (ADR 0011; at most about 12 ms per route on the Kraków sample). $T_{\mathrm{normal}}$ stays the product's normal-traffic baseline: `current_time_saved_sec` compares the run's elapsed time with it in either mode, and the dashboard labels that number "vs normal traffic" in a disabled run. Implementation: `backend/src/greenwave/simulation/motion.py`.
+A later stop line replaces an active crossing with its own decision (a fresh crossing if it is not green). Each intersection's route signals share one cycle phase, so the lines of one through movement show the same colour. The crossing is a modelling boundary (the ETL has no junction exit geometry), and $c$, $L_c$, $C_{\max}$, $v_f$ are PoC assumptions, not measured Kraków values; $L_c$ and $v_f$ are strictly positive and all are finite (ADR 0010). The pre-run standard estimate is a dry run of this motion: `standard_run_seconds` drives `move_one_second` in disabled mode against the pure ordinary programme (deterministic from $t = 0$, no ITS) until arrival, so `estimated_standard_time_sec` (start response) and `standard_seconds` (each ranked candidate) equal the disabled run's arrival exactly before rounding (ADR 0011; at most about 12 ms per route on the Kraków sample). `current_time_saved_sec` compares Green Wave elapsed time with this same standard run at the
+same route position, interpolated between its one-second dry-run samples. At arrival it is
+`round(T_standard) - round(T_actual)` so it agrees with the displayed whole-second totals;
+post-arrival recovery never changes it. Disabled runs report zero and the UI hides savings.
+`T_normal` and `estimated_normal_time_sec` remain legacy analytical estimates, not the savings
+baseline (2026-10-29 correction: `docs/engineering/standard-mode-fix.md`). Implementation: `backend/src/greenwave/simulation/motion.py`.
 
 ---
 
@@ -624,7 +629,7 @@ technology), instead of disappearing.
   "tick": 383,
   "timestamp": "2026-10-25T14:37:51Z",
   "kpi_metrics": {
-    "current_time_saved_sec": 396,
+    "current_time_saved_sec": 72,
     "total_time_elapsed_sec": 383
   }
 }

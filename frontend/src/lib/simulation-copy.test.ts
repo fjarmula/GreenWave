@@ -99,25 +99,25 @@ describe("summarizeFinishedRun", () => {
     expect(
       summarizeFinishedRun(
         {
-          estimated_normal_time_sec: 780,
+          estimated_standard_time_sec: 455,
           estimated_greenwave_time_sec: 380,
           green_wave_mode: "ENABLED",
         },
-        { current_time_saved_sec: 396, total_time_elapsed_sec: 383 },
+        { current_time_saved_sec: 72, total_time_elapsed_sec: 383 },
       ),
     ).toEqual([
       { label: "Total travel time", value: "06m 23s" },
       { label: "ER Green Wave", value: "Enabled" },
-      { label: "Normal-traffic estimate", value: "13m 00s" },
+      { label: "Standard time", value: "07m 35s" },
       { label: "GreenWave estimate", value: "06m 20s" },
-      { label: "Saved vs normal-traffic estimate", value: "06m 36s" },
+      { label: "Saved vs standard run", value: "01m 12s" },
     ]);
   });
 
   it("does not present a GreenWave estimate for a disabled run", () => {
     const summary = summarizeFinishedRun(
       {
-        estimated_normal_time_sec: 780,
+        estimated_standard_time_sec: 455,
         estimated_greenwave_time_sec: 380,
         green_wave_mode: "DISABLED",
       },
@@ -127,8 +127,7 @@ describe("summarizeFinishedRun", () => {
     expect(summary).toEqual([
       { label: "Total travel time", value: "08m 40s" },
       { label: "ER Green Wave", value: "Disabled" },
-      { label: "Normal-traffic estimate", value: "13m 00s" },
-      { label: "Saved vs normal-traffic estimate", value: "04m 20s" },
+      { label: "Standard time", value: "07m 35s" },
     ]);
     expect(summary.some(({ label }) => /greenwave/i.test(label))).toBe(false);
   });

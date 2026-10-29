@@ -2,11 +2,10 @@
 
 from datetime import datetime
 
-from greenwave.routing.edge_times import normal_edge_seconds
-from greenwave.routing.planner import PlannedRoute
 from greenwave.schemas import (
     AmbulanceStatus,
     AmbulanceTelemetry,
+    GreenWaveMode,
     IntersectionTelemetry,
     KpiMetrics,
     SignalPhaseIndicator,
@@ -17,8 +16,8 @@ from greenwave.schemas import (
 from greenwave.simulation.corridor import ACTIVE_STATES, route_runtimes, time_to_intersection
 from greenwave.simulation.route_model import RouteModel
 from greenwave.simulation.route_track import RouteTrack
+from greenwave.simulation.standard_estimate import StandardRunProfile
 from greenwave.simulation.state import EngineState
-from greenwave.simulation_settings import SimulationSettings
 
 # Simulated vehicle ids shown by the dashboard; the mock transport uses the same ones.
 VEHICLE_IDS: dict[VehicleType, str] = {
@@ -75,30 +74,17 @@ def intersection_telemetry(
 
 
 def kpi_metrics(
-    route: PlannedRoute,
-    route_model: RouteModel,
     state: EngineState,
-    traffic_density_multiplier: float,
-    settings: SimulationSettings,
+    standard_profile: StandardRunProfile,
+    mode: GreenWaveMode,
 ) -> KpiMetrics:
-    normal = sum(
-        # Same normal-mode edge times as estimate_times, for the share of each edge covered.
-        normal_edge_seconds(edge, traffic_density_multiplier, settings)
-        * min(edge.length_m, max(0.0, state.distance_travelled_m - start))
-        / edge.length_m
-        for edge, start in zip(route.edges, route.cumulative_m, strict=True)
-    )
-    # Credited once the vehicle reaches the last stop line, whenever its priority is released.
-    normal += sum(
-        item.delay_seconds
-        for item in route_model.intersections
-        if item.last_stop_line_m <= state.distance_travelled_m
-    )
-    # Saved time compares with this simulated normal-traffic baseline in either mode.
-    # The trip ends on arrival (D15); post-arrival recovery ticks (D19) do not add trip time.
+    # Recovery after arrival cannot add trip time or erode the saving.
     elapsed = state.arrived_at_s if state.arrived_at_s is not None else state.simulated_time_s
+    standard = standard_profile.seconds_at(state.distance_travelled_m)
     return KpiMetrics(
-        current_time_saved_sec=round(normal - elapsed),
+        current_time_saved_sec=0
+        if mode is GreenWaveMode.DISABLED
+        else round(standard) - round(elapsed),
         total_time_elapsed_sec=round(elapsed),
     )
 
