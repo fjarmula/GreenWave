@@ -142,6 +142,13 @@
             "title": "Enabled Simulation Id",
             "type": "string"
           },
+          "its_outcome_seed": {
+            "default": 0,
+            "maximum": 4294967295.0,
+            "minimum": 0.0,
+            "title": "Its Outcome Seed",
+            "type": "integer"
+          },
           "its_scenario": {
             "$ref": "#/components/schemas/ItsScenario",
             "default": "NOMINAL"
@@ -205,6 +212,15 @@
         ],
         "title": "ComparisonStartResponse",
         "type": "object"
+      },
+      "CrossingStrategy": {
+        "description": "How an enabled run crosses one intersection; a failed priority request falls back.",
+        "enum": [
+          "PRIORITY",
+          "STANDARD_FALLBACK"
+        ],
+        "title": "CrossingStrategy",
+        "type": "string"
       },
       "DatasetQualityResponse": {
         "properties": {
@@ -639,6 +655,16 @@
       },
       "IntersectionTelemetry": {
         "properties": {
+          "crossing_strategy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CrossingStrategy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -973,11 +999,13 @@
         "type": "string"
       },
       "ItsScenario": {
+        "description": "Simulated controller behaviour. ``MIXED`` draws each request's outcome from a seed.",
         "enum": [
           "NOMINAL",
           "DELAYED",
           "REJECTED",
-          "NO_FEEDBACK"
+          "NO_FEEDBACK",
+          "MIXED"
         ],
         "title": "ItsScenario",
         "type": "string"
@@ -1488,6 +1516,14 @@
             "title": "Event Type",
             "type": "string"
           },
+          "fallback_intersection_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Fallback Intersection Ids",
+            "type": "array"
+          },
           "is_simulated": {
             "const": true,
             "title": "Is Simulated",
@@ -1541,6 +1577,13 @@
           "green_wave_mode": {
             "$ref": "#/components/schemas/GreenWaveMode",
             "default": "ENABLED"
+          },
+          "its_outcome_seed": {
+            "default": 0,
+            "maximum": 4294967295.0,
+            "minimum": 0.0,
+            "title": "Its Outcome Seed",
+            "type": "integer"
           },
           "its_scenario": {
             "$ref": "#/components/schemas/ItsScenario",
@@ -1627,6 +1670,13 @@
             "const": true,
             "title": "Is Simulated",
             "type": "boolean"
+          },
+          "its_outcome_seed": {
+            "default": 0,
+            "maximum": 4294967295.0,
+            "minimum": 0.0,
+            "title": "Its Outcome Seed",
+            "type": "integer"
           },
           "its_scenario": {
             "$ref": "#/components/schemas/ItsScenario",

@@ -2059,6 +2059,9 @@ button,
     padding-left: 0.8125rem;
     font-size: 0.6875rem;
   }
+  .its-option-wide {
+    grid-column: 1 / -1;
+  }
   .its-option[aria-checked="true"] {
     color: var(--foreground);
     background: var(--thumb);

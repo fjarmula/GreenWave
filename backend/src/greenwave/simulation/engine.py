@@ -1,7 +1,9 @@
 """One-second motion and request engine consuming separate simulated ITS reports.
 
 The per-run controller owns decisions and signal phases. Submitting a request never
-changes confirmed traffic state; the legacy gateway is an optional diagnostic sink.
+changes confirmed traffic state; the legacy gateway is an optional diagnostic sink. A failed
+request (rejected, timed out, expired) never ends the run: its targets fall back to standard
+crossing and every other junction keeps requesting priority.
 """
 
 from dataclasses import replace
@@ -18,7 +20,6 @@ from greenwave.its.models import (
 from greenwave.routing.estimates import Estimates
 from greenwave.routing.planner import PlannedRoute
 from greenwave.schemas import (
-    CancelReason,
     GreenWaveMode,
     IntersectionState,
     ItsDispatchEvent,
@@ -50,6 +51,11 @@ from greenwave.simulation.telemetry import (
 from greenwave.simulation_settings import SimulationSettings
 
 __all__ = ["EngineEvent", "EngineState", "SimulationEngine"]
+
+# Request outcomes after which the targets fall back to standard crossing.
+_FAILED = frozenset(
+    {ItsRequestStatus.REJECTED, ItsRequestStatus.TIMED_OUT, ItsRequestStatus.EXPIRED}
+)
 
 EngineEvent = (
     SimulationTickEvent
@@ -119,7 +125,7 @@ class SimulationEngine:
             self.green_wave_mode,
             self.traffic_density_multiplier,
             self.controller.ordinary_route_color_at,
-            self._confirmed_green,
+            lambda distance_m: self._confirmed_green(distance_m, state.fallback_intersection_ids),
             self.controller.ordinary_route_seconds_until_green,
         )
         observation = ItsObservation(
@@ -170,6 +176,8 @@ class SimulationEngine:
                 and state.simulated_time_s
                 >= snapshot.submitted_at_simulated_sec + self.settings.its_ack_timeout_seconds
             ):
+                # The controller owns the run's feedback sequence; withdrawing reserves a number.
+                sequence = self.controller.withdraw(self.simulation_id, snapshot.message_id)
                 timeout = ItsFeedbackEvent(
                     schema_version="1.0",
                     is_simulated=True,
@@ -178,30 +186,23 @@ class SimulationEngine:
                     tick=state.tick,
                     timestamp=wall_clock_utc,
                     request_message_id=snapshot.message_id,
-                    feedback_sequence=self.ledger.last_sequence + 1,
+                    feedback_sequence=sequence,
                     status=ItsRequestStatus.TIMED_OUT,
                     intersections_group=snapshot.intersections_group,
                     observed_at_simulated_sec=state.simulated_time_s,
                     reason=ItsFeedbackReason.ACK_TIMEOUT,
                 )
-                self.ledger.apply(timeout)
-                events.append(timeout)
-        failures = {
-            ItsRequestStatus.REJECTED: CancelReason.ITS_REJECTED,
-            ItsRequestStatus.TIMED_OUT: CancelReason.ITS_TIMEOUT,
-            ItsRequestStatus.EXPIRED: CancelReason.ITS_HOLD_EXPIRED,
-        }
-        failure = next(
-            (failures[r.status] for r in self.ledger.snapshots() if r.status in failures), None
-        )
-        if failure is None and self.green_wave_mode is GreenWaveMode.ENABLED:
+                if self.ledger.apply(timeout):
+                    events.append(timeout)
+        state = self._fall_back(state)
+        if self.green_wave_mode is GreenWaveMode.ENABLED:
             selected = self.ledger.select(self.route_model, state, self.settings)
             if selected:
                 state, dispatch = self._dispatch(state, selected, wall_clock_utc)
                 events.append(dispatch)
         kpi = kpi_metrics(state, self.standard_profile, self.green_wave_mode)
         ambulance = ambulance_telemetry(self.vehicle_type, state, actual_speed, self._track)
-        intersections = intersection_telemetry(self.route_model, state)
+        intersections = intersection_telemetry(self.route_model, state, self.green_wave_mode)
         tick = tick_event(
             self.simulation_id,
             state,
@@ -214,28 +215,40 @@ class SimulationEngine:
         tick.its_requests = list(self.ledger.snapshots())
         tick.its_observed_at_simulated_sec = update.observed_at_simulated_sec
         events.append(tick)
-        if failure is not None:
-            state = replace(state, completed=True)
-            events.append(
-                SimulationCancelledEvent(
-                    schema_version="1.0",
-                    is_simulated=True,
-                    event_type="SIMULATION_CANCELLED",
-                    simulation_id=self.simulation_id,
-                    tick=state.tick,
-                    timestamp=wall_clock_utc,
-                    reason=failure,
-                )
-            )
-            self.close()
-            return state, events
         if state.arrived and all(
             item.state is IntersectionState.NORMAL for item in state.intersection_runtimes
         ):
             state = replace(state, completed=True)
-            events.append(completed_event(self.simulation_id, state, wall_clock_utc, kpi))
+            fallback = [
+                item.id
+                for item in self.route_model.intersections
+                if item.id in state.fallback_intersection_ids
+            ]
+            events.append(completed_event(self.simulation_id, state, wall_clock_utc, kpi, fallback))
             self.close()
         return state, events
+
+    def _fall_back(self, state: EngineState) -> EngineState:
+        """Targets of failed requests still ahead cross by standard rules from now on.
+
+        A failure affects only its own targets: no other junction, request or the run mode.
+        """
+        failed = {
+            target
+            for snapshot in self.ledger.snapshots()
+            if snapshot.status in _FAILED
+            for target in snapshot.intersections_group
+        }
+        ahead = {
+            item.id
+            for item, runtime in zip(
+                self.route_model.intersections, state.intersection_runtimes, strict=True
+            )
+            if not runtime.passed and item.id in failed
+        }
+        if ahead <= state.fallback_intersection_ids:
+            return state
+        return replace(state, fallback_intersection_ids=state.fallback_intersection_ids | ahead)
 
     def _dispatch(
         self, state: EngineState, ids: tuple[str, ...], now: datetime
@@ -265,9 +278,12 @@ class SimulationEngine:
             self.gateway.dispatch(payload)  # optional legacy diagnostic sink, never authoritative
         return state, dispatch
 
-    def _confirmed_green(self, distance_m: float) -> bool:
-        """Whether the route lights at this stop line were last shown green (previous tick)."""
-        ids = self._stop_line_ids.get(distance_m, set())
+    def _confirmed_green(self, distance_m: float, fallback: frozenset[str]) -> bool:
+        """Whether the route lights at this stop line were last shown green (previous tick).
+
+        Fallback intersections never hold the vehicle: they are crossed by standard rules.
+        """
+        ids = self._stop_line_ids.get(distance_m, set()) - fallback
         for item in self.route_model.intersections:
             if item.id not in ids:
                 continue

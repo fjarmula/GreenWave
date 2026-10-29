@@ -8,6 +8,7 @@ export const request: SimulationStartRequest = {
   simulation_id: "pair",
   green_wave_mode: "ENABLED",
   its_scenario: "NOMINAL" as const,
+  its_outcome_seed: 0,
   origin: { lat: 50.0612, lng: 19.9571 },
   destination: { lat: 50.0621, lng: 19.9248 },
   traffic_density_multiplier: 1.5,
@@ -20,6 +21,7 @@ export const route = (id = "pair", mode: "ENABLED" | "DISABLED" = "ENABLED") => 
   simulation_id: id,
   green_wave_mode: mode,
   its_scenario: "NOMINAL" as const,
+  its_outcome_seed: 0,
 });
 export const tick = (n: number, id = "pair") => ({
   ...tickEventExample,

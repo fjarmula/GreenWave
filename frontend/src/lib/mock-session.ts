@@ -1,4 +1,9 @@
-import { MockItsController, routeMovementColor, type MockSignal } from "./mock-its-controller";
+import {
+  FAILED_STATUSES,
+  MockItsController,
+  routeMovementColor,
+  type MockSignal,
+} from "./mock-its-controller";
 import {
   MOCK_CLEARING_TTI_SECONDS,
   MOCK_GREENWAVE_APPROACH_DISTANCE_M,
@@ -45,18 +50,52 @@ export type MockSession = {
   standardTimeline: MockTimeline;
   /** Elapsed seconds when the current tick began; the map animates the vehicle across the tick. */
   intervalStartSeconds: number;
+  greenwaveSeconds: number;
+  /** Junction indexes whose priority request failed; crossed by standard rules from then on. */
+  fallback: Set<number>;
+  /** Simulated minus timeline seconds when the timeline was last rebuilt (time held so far). */
+  colorOffsetSeconds: number;
 };
 
-/** One stretch driven at constant speed; `crossing` marks a controlled crossing or D_min slowdown. */
+/**
+ * One stretch driven at constant speed; `crossing` marks a controlled crossing or D_min slowdown.
+ * The crossing state at its start lets a rebuilt timeline resume mid-leg.
+ */
 type MockLeg = {
   startSeconds: number;
   startMeters: number;
   endSeconds: number;
   speedMps: number;
   crossing: boolean;
+  crossingMeters: number;
+  cautiousSeconds: number;
+  standard: boolean;
+  slowed: number;
+  slowdownOwner: number | null;
 };
 
 type MockTimeline = { legs: MockLeg[]; reachSeconds: number[]; tripSeconds: number };
+
+/** Where a rebuilt timeline resumes: the driven prefix and the crossing state at that moment. */
+type MockCursor = Omit<
+  MockLeg,
+  "startSeconds" | "startMeters" | "endSeconds" | "speedMps" | "crossing"
+> & {
+  seconds: number;
+  meters: number;
+  legs: MockLeg[];
+  reachSeconds: number[];
+};
+
+/** Which junctions fall back, and the ordinary-programme time of the timeline's clock. */
+type MockTimelinePlan = {
+  fallback: ReadonlySet<number>;
+  colorOffsetSeconds: number;
+  /** Junctions reached exactly at the cursor that just fell back: they decide at release. */
+  decideAtStart?: readonly number[];
+};
+
+const PRIORITY_PLAN: MockTimelinePlan = { fallback: new Set(), colorOffsetSeconds: 0 };
 
 type MockSignalHead = { color: SignalPhaseColor; sinceSeconds: number };
 
@@ -79,8 +118,11 @@ export function createMockSession(request: SimulationStartRequest): MockSession 
       request.green_wave_mode === "DISABLED" ? "NOMINAL" : (request.its_scenario ?? "NOMINAL"),
   };
   const route = createMockRoute(request, metrics);
-  const controller = new MockItsController(route, request.its_scenario);
+  const controller = new MockItsController(route, request.its_scenario, request.its_outcome_seed);
   return {
+    greenwaveSeconds: metrics.greenwaveSeconds,
+    fallback: new Set(),
+    colorOffsetSeconds: 0,
     timeline: mockTimeline(route, request, metrics.greenwaveSeconds),
     standardTimeline: mockTimeline(
       route,
@@ -163,6 +205,7 @@ function createMockRoute(
     destination_snapped: { position: request.destination, snap_distance_m: 0 },
     green_wave_mode: request.green_wave_mode,
     its_scenario: request.its_scenario,
+    its_outcome_seed: request.its_outcome_seed ?? 0,
   };
   // The backend's dry run of disabled motion: the mock's exact disabled timeline.
   const standard = mockTimeline(
@@ -199,12 +242,17 @@ function standardCrossing(limitMps: number, density: number): [number, number] {
  * backend's rolling formula at contract level; a later stop line replaces an active crossing.
  * Enabled spends each junction's D_min as the backend does: a rolling slowdown over the approach
  * (never before the previous junction), extended past the line to respect the floor, so the trip
- * still takes `greenwaveSeconds` and the vehicle never stops.
+ * still takes `greenwaveSeconds` and the vehicle never stops. Junctions in `plan.fallback` (their
+ * priority request failed) are crossed by the disabled rules instead, deciding on the ordinary
+ * programme at simulated time (timeline seconds + `plan.colorOffsetSeconds`). A rebuilt timeline
+ * resumes from `cursor`, so the driven past never changes.
  */
 function mockTimeline(
   route: SimulationStartResponse,
   request: SimulationStartRequest,
   greenwaveSeconds: number,
+  plan: MockTimelinePlan = PRIORITY_PLAN,
+  cursor?: MockCursor,
 ): MockTimeline {
   const total = route.total_distance_m;
   const stops = route.route_intersections.map((item) => item.distance_along_route_m);
@@ -216,32 +264,53 @@ function mockTimeline(
     : 0;
   // Keep subsecond precision internally; the public estimate contract uses whole seconds.
   const ambulanceMps = total / (greenwaveSeconds - stops.length * delay);
-  const legs: MockLeg[] = [];
-  const reachSeconds: number[] = [];
-  let [seconds, meters, crossing, cautious, slowed] = [0, 0, 0, 0, 0];
+  const ordinaryMps = Math.min(ambulanceMps, MOCK_ORDINARY_SPEED_LIMIT_MPS);
+  const legs: MockLeg[] = cursor ? [...cursor.legs] : [];
+  const reachSeconds: number[] = cursor ? [...cursor.reachSeconds] : [];
+  let [seconds, meters, crossing, cautious, slowed] = cursor
+    ? [cursor.seconds, cursor.meters, cursor.crossingMeters, cursor.cautiousSeconds, cursor.slowed]
+    : [0, 0, 0, 0, 0];
+  let standard = cursor?.standard ?? false;
+  let slowdownOwner = cursor?.slowdownOwner ?? null;
+  // The backend's _standard_decision: replaces a standard crossing or the junction's own slowdown;
+  // merges with an earlier junction's slowdown remainder so that junction keeps its own delay.
+  const decide = (index: number) => {
+    const replaceable = standard || crossing <= 0 || slowdownOwner === index;
+    if (routeMovementColor(seconds + plan.colorOffsetSeconds) === "GREEN") {
+      if (replaceable) [crossing, cautious, standard] = [0, 0, false];
+      return;
+    }
+    const [length, extra] = standardCrossing(ordinaryMps, request.traffic_density_multiplier);
+    [crossing, cautious] = replaceable
+      ? [length, extra]
+      : [Math.max(crossing, length), cautious + extra];
+    standard = true;
+  };
+  plan.decideAtStart?.forEach(decide);
   while (meters < total) {
     const next = stops[reachSeconds.length];
     let windowStart = Infinity;
     if (enabled && next !== undefined && slowed === reachSeconds.length) {
-      windowStart = Math.max(stops[slowed - 1] ?? 0, next - MOCK_GREENWAVE_APPROACH_DISTANCE_M);
-      if (meters >= windowStart) {
-        windowStart = Infinity;
-        slowed += 1;
-        const needed =
-          ambulanceMps > MOCK_MIN_ROLLING_SPEED_MPS
-            ? delay / (1 / MOCK_MIN_ROLLING_SPEED_MPS - 1 / ambulanceMps)
-            : 0;
-        crossing += Math.max(next - meters, needed);
-        cautious += delay;
+      if (plan.fallback.has(slowed)) {
+        slowed += 1; // a fallback junction gets no D_min slowdown
+      } else {
+        windowStart = Math.max(stops[slowed - 1] ?? 0, next - MOCK_GREENWAVE_APPROACH_DISTANCE_M);
+        if (meters >= windowStart) {
+          windowStart = Infinity;
+          slowdownOwner = slowed;
+          slowed += 1;
+          const needed =
+            ambulanceMps > MOCK_MIN_ROLLING_SPEED_MPS
+              ? delay / (1 / MOCK_MIN_ROLLING_SPEED_MPS - 1 / ambulanceMps)
+              : 0;
+          crossing += Math.max(next - meters, needed);
+          cautious += delay;
+        }
       }
     }
     const speedMps =
       crossing > 0
-        ? cautiousSpeedMps(
-            enabled ? ambulanceMps : Math.min(ambulanceMps, MOCK_ORDINARY_SPEED_LIMIT_MPS),
-            crossing,
-            cautious,
-          )
+        ? cautiousSpeedMps(standard ? ordinaryMps : ambulanceMps, crossing, cautious)
         : ambulanceMps;
     const end = Math.min(
       total,
@@ -256,27 +325,83 @@ function mockTimeline(
       endSeconds,
       speedMps,
       crossing: crossing > 0,
+      crossingMeters: crossing,
+      cautiousSeconds: cautious,
+      standard,
+      slowed,
+      slowdownOwner,
     });
     if (crossing > 0) {
       cautious -= (cautious * (end - meters)) / crossing;
       crossing -= end - meters;
-      if (crossing <= 1e-9) [crossing, cautious] = [0, 0];
+      if (crossing <= 1e-9) [crossing, cautious, standard] = [0, 0, false];
     }
     [seconds, meters] = [endSeconds, end];
     if (meters === next) {
       reachSeconds.push(seconds);
-      if (!enabled) {
-        const red = routeMovementColor(seconds) !== "GREEN";
-        [crossing, cautious] = red
-          ? standardCrossing(
-              Math.min(ambulanceMps, MOCK_ORDINARY_SPEED_LIMIT_MPS),
-              request.traffic_density_multiplier,
-            )
-          : [0, 0];
-      }
+      if (!enabled || plan.fallback.has(reachSeconds.length - 1)) decide(reachSeconds.length - 1);
     }
   }
   return { legs, reachSeconds, tripSeconds: seconds };
+}
+
+/** The timeline driven up to `seconds`, with the crossing state there; null once arrived. */
+function cursorAt(timeline: MockTimeline, seconds: number): MockCursor | null {
+  const index = timeline.legs.findIndex(
+    (leg) => seconds >= leg.startSeconds && seconds < leg.endSeconds,
+  );
+  if (index < 0) return null;
+  const leg = timeline.legs[index];
+  const step = (seconds - leg.startSeconds) * leg.speedMps;
+  const crossing = leg.crossingMeters > 0 ? Math.max(0, leg.crossingMeters - step) : 0;
+  return {
+    seconds,
+    meters: leg.startMeters + step,
+    crossingMeters: crossing,
+    cautiousSeconds: crossing > 0 ? (leg.cautiousSeconds * crossing) / leg.crossingMeters : 0,
+    standard: crossing > 0 && leg.standard,
+    slowed: leg.slowed,
+    slowdownOwner: leg.slowdownOwner,
+    legs: [
+      ...timeline.legs.slice(0, index),
+      ...(seconds > leg.startSeconds ? [{ ...leg, endSeconds: seconds }] : []),
+    ],
+    reachSeconds: timeline.reachSeconds.filter((reach) => reach <= seconds),
+  };
+}
+
+/**
+ * Failed requests put their unpassed targets into fallback, from the next tick on (the backend
+ * moves under the previous report too). The rest of the drive is rebuilt from where the vehicle
+ * is; a junction it is held at decides by the ordinary programme at release.
+ */
+function applyFallback(session: MockSession, passed: boolean[]): void {
+  if (session.request.green_wave_mode === "DISABLED") return;
+  const failed = session.controller.requests
+    .filter((r) => FAILED_STATUSES.has(r.status))
+    .flatMap((r) =>
+      r.intersections_group.map((id) => session.route.intersections_on_route.indexOf(id)),
+    )
+    .filter((i) => i >= 0 && !passed[i] && !session.fallback.has(i));
+  const offset = session.elapsedSeconds - session.driveSeconds;
+  if (!failed.length && (!session.fallback.size || offset === session.colorOffsetSeconds)) return;
+  const cursor = cursorAt(session.timeline, session.driveSeconds);
+  failed.forEach((i) => session.fallback.add(i));
+  session.colorOffsetSeconds = offset;
+  if (!cursor) return;
+  session.timeline = mockTimeline(
+    session.route,
+    session.request,
+    session.greenwaveSeconds,
+    {
+      fallback: session.fallback,
+      colorOffsetSeconds: offset,
+      decideAtStart: failed.filter(
+        (i) => session.timeline.reachSeconds[i] === session.driveSeconds,
+      ),
+    },
+    cursor,
+  );
 }
 
 /** When the vehicle reaches intersection `index`. */
@@ -317,7 +442,6 @@ export function advanceMockSession(session: MockSession): {
   dispatch: ItsDispatchEvent | null;
   completed: boolean;
   feedbacks: import("@/types/telemetry").ItsFeedbackEvent[];
-  failure: import("@/types/telemetry").CancelReason | null;
 } {
   const enteredClearing = new Set<number>();
   session.tick += 1;
@@ -327,6 +451,7 @@ export function advanceMockSession(session: MockSession): {
   if (session.request.green_wave_mode !== "DISABLED") {
     const blocked = session.route.route_intersections.find(
       (i, n) =>
+        !session.fallback.has(n) &&
         arrivalSeconds(session, n) >= session.driveSeconds &&
         arrivalSeconds(session, n) <= nextDrive &&
         !session.controller.phases.some(
@@ -349,20 +474,32 @@ export function advanceMockSession(session: MockSession): {
     (_, i) => arrivalSeconds(session, i) < session.intervalStartSeconds,
   );
   const feedbacks = session.controller.advance(session.elapsedSeconds, ttis, passed, timestamp);
+  applyFallback(session, passed);
   stepMockSignals(session, enteredClearing);
-  const dispatch = session.controller.failure
-    ? null
-    : buildMockDispatch(session, enteredClearing, timestamp, Date.now());
+  const dispatch = buildMockDispatch(session, enteredClearing, timestamp, Date.now());
   if (dispatch) session.controller.submit(dispatch, session.elapsedSeconds);
   const tick = buildMockTick(session, timestamp);
   const completed =
     routeProgress(session) === 1 && session.signals.every((s) => s.state === "NORMAL");
-  return { tick, dispatch, completed, feedbacks, failure: session.controller.failure };
+  return { tick, dispatch, completed, feedbacks };
+}
+
+/** Route-order ids of the junctions crossed under standard fallback. */
+export function mockFallbackIds(session: MockSession): string[] {
+  return session.route.intersections_on_route.filter((_, i) => session.fallback.has(i));
+}
+
+/**
+ * Simulated seconds of the drive so far: held seconds count, and recovery after arrival does not.
+ * Holds put the timeline behind the simulated clock by `elapsed - drive`.
+ */
+function travelSeconds(session: MockSession): number {
+  const held = session.elapsedSeconds - session.driveSeconds;
+  return Math.min(session.elapsedSeconds, session.timeline.tripSeconds + held);
 }
 
 export function buildMockTick(session: MockSession, timestamp: string): SimulationTickEvent {
   const { route, request } = session;
-  const elapsed = session.elapsedSeconds;
   const progress = routeProgress(session);
   const coordinates = positionOnRoute(route.route_geometry, progress);
   if (!coordinates) throw new Error("Mock simulation requires at least two route coordinates");
@@ -379,6 +516,12 @@ export function buildMockTick(session: MockSession, timestamp: string): Simulati
           ? null
           : Math.max(0, Math.round(arrivalSeconds(session, index) - session.driveSeconds)),
         is_active_corridor: signal.state === "CLEARING" || signal.state === "PRIORITY_GREEN",
+        crossing_strategy:
+          request.green_wave_mode === "DISABLED"
+            ? null
+            : session.fallback.has(index)
+              ? "STANDARD_FALLBACK"
+              : "PRIORITY",
       };
     },
   );
@@ -417,9 +560,9 @@ export function buildMockTick(session: MockSession, timestamp: string): Simulati
         session.request.green_wave_mode === "DISABLED"
           ? 0
           : Math.round(standardSecondsAt(session, progress * route.total_distance_m)) -
-            Math.round(Math.min(elapsed, session.timeline.tripSeconds)),
-      // Signal recovery keeps ticking after arrival but does not add travel time.
-      total_time_elapsed_sec: Math.round(Math.min(elapsed, session.timeline.tripSeconds)),
+            Math.round(travelSeconds(session)),
+      // Held seconds count; signal recovery keeps ticking after arrival but adds no travel time.
+      total_time_elapsed_sec: Math.round(travelSeconds(session)),
     },
     intersections,
     signal_phases: session.controller.phases,
@@ -472,6 +615,7 @@ export function buildMockDispatch(
 /** Request selection only; reported traffic belongs to the synthetic controller. */
 export function stepMockSignals(session: MockSession, selected: Set<number>): void {
   if (session.request.green_wave_mode === "DISABLED") return;
+  // Failed targets stay reserved: a failed request is never repeated.
   const used = new Set(session.controller.requests.flatMap((r) => r.intersections_group));
   const own = session.signals.flatMap((signal, i) =>
     !signal.passed &&

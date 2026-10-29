@@ -209,6 +209,8 @@ ITS_FEEDBACK has request identity and a per-run sequence. Each tick contains the
 bounded request ledger and controller observation time for reconnect/drop recovery.
 Request status is displayed separately from reported traffic, with original JSON in
 diagnostics. Missing legacy feedback is labelled unavailable; ended runs show the
-last report. Rejection, timeout and enforced hold expiry cancel the run explicitly,
-without completion/successful comparison. Estimates are model baselines, not timing
+last report. Rejection, timeout and enforced hold expiry no longer cancel the run: the
+failed request's unpassed targets switch to `STANDARD_FALLBACK` (ordinary signals) and the
+run completes, tagged with `fallback_intersection_ids`; `MIXED` draws each request's outcome
+from `its_outcome_seed` (ADR 0015). Estimates are model baselines, not timing
 guarantees. See proposed [ADR 0008](../docs/adr/0008-simulated-its-feedback.md).

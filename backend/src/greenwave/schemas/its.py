@@ -9,10 +9,27 @@ from greenwave.schemas.ids import MessageId, SimulationId
 
 
 class ItsScenario(StrEnum):
+    """Simulated controller behaviour. ``MIXED`` draws each request's outcome from a seed."""
+
     NOMINAL = "NOMINAL"
     DELAYED = "DELAYED"
     REJECTED = "REJECTED"
     NO_FEEDBACK = "NO_FEEDBACK"
+    MIXED = "MIXED"
+
+
+class MixedOutcome(StrEnum):
+    """One ``MIXED`` request's outcome; the order is the draw's index (top two hash bits)."""
+
+    ACCEPT = "ACCEPT"  # after its_ack_delay_seconds, as NOMINAL
+    ACCEPT_DELAYED = "ACCEPT_DELAYED"  # after its_delayed_ack_seconds, as DELAYED
+    REJECT = "REJECT"  # after its_ack_delay_seconds, as REJECTED
+    NO_RESPONSE = "NO_RESPONSE"  # never answers, as NO_FEEDBACK
+
+
+# Validated range of the seed behind MIXED outcomes (an unsigned 32-bit value).
+ITS_OUTCOME_SEED_MAX = 2**32 - 1
+ItsOutcomeSeed = Annotated[int, Field(ge=0, le=ITS_OUTCOME_SEED_MAX)]
 
 
 class ItsRequestStatus(StrEnum):

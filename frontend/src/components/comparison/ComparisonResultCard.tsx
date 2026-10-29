@@ -35,6 +35,8 @@ export function ComparisonResultCard({
       : state.status === "cancelled"
         ? "Comparison cancelled"
         : "Comparison ended";
+  // Failed requests crossed these junctions on ordinary signals; the difference includes it.
+  const fallback = state.runs.ENABLED.completion?.fallback_intersection_ids.length ?? 0;
   const tone = !result ? "" : result.delta > 0 ? "tone-go" : result.delta < 0 ? "tone-caution" : "";
   return (
     <section
@@ -94,6 +96,15 @@ export function ComparisonResultCard({
           {t(result.prioritised)}
           {t(" of ")}
           {t(result.total)}
+        </p>
+      )}
+      {fallback > 0 && (
+        <p className="hud-chip tone-caution mt-2">
+          {t(
+            fallback === 1
+              ? "Priority fallback · 1 junction"
+              : `Priority fallback · ${fallback} junctions`,
+          )}
         </p>
       )}
       <p className="mt-2 text-xs text-muted-foreground">

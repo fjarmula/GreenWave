@@ -57,6 +57,7 @@ describe("nextSignal", () => {
       name: "Alpha",
       state: "PRIORITY_GREEN",
       distanceM: 184,
+      fallback: false,
     });
   });
   it("skips passed intersections", () => {
@@ -86,7 +87,11 @@ describe("copy", () => {
   });
   it("names the signal state", () => {
     const signal = { intersectionId: "INT-A", name: null, distanceM: 184 };
-    expect(nextSignalCopy({ ...signal, state: "PRIORITY_GREEN" })).toBe("Green in 180 m");
+    expect(nextSignalCopy({ ...signal, state: "PRIORITY_GREEN" })).toBe("Priority green in 180 m");
+    // A failed request: ordinary signals there, never shown as granted priority.
+    expect(nextSignalCopy({ ...signal, state: "NORMAL", fallback: true })).toBe(
+      "Ordinary signal · priority unavailable in 180 m",
+    );
     expect(nextSignalCopy({ ...signal, state: "CLEARING" })).toBe("Clearing in 180 m");
     expect(nextSignalCopy({ ...signal, state: "NORMAL" })).toBe("Ordinary signal in 180 m");
     expect(nextSignalCopy({ ...signal, state: "RECOVERY" })).toBe("Recovery in 180 m");

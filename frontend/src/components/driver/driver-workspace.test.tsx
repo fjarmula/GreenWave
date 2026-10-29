@@ -87,7 +87,7 @@ describe("driver workspace", () => {
 
   it("shows the next signal card with friendly copy", () => {
     const html = render(running);
-    expect(html).toContain("Green in 180 m");
+    expect(html).toContain("Priority green in 180 m");
     expect(html).toContain(first.name);
   });
 

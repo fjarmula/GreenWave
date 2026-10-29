@@ -260,7 +260,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         },
         {
           kind: "paragraph",
-          text: "Sterownik może przyjąć żądanie po 1 s lub 5 s, odrzucić je albo nie odpowiedzieć. Brak odpowiedzi przez 8 s lub odmowa kończy symulowany przejazd. Pozwala to sprawdzić także scenariusze niepowodzenia.",
+          text: "Sterownik może przyjąć żądanie po 1 s lub 5 s, odrzucić je albo nie odpowiedzieć. Po odmowie lub braku odpowiedzi przez 8 s pojazd przejeżdża tylko te skrzyżowania na zwykłej sygnalizacji i jedzie dalej, a kolejne skrzyżowania nadal mogą dać mu priorytet. Scenariusz mieszany losuje wynik każdego żądania z podanego ziarna.",
         },
         { kind: "heading", text: "Ruch standardowy" },
         {
@@ -525,7 +525,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         },
         {
           kind: "paragraph",
-          text: "The simulated controller can answer normally (after 1 s), late (after 5 s), refuse, or not answer at all (8 s limit). A refusal or a missing answer ends the run visibly, because a real system would have to handle exactly these cases.",
+          text: "The simulated controller can answer normally (after 1 s), late (after 5 s), refuse, or not answer at all (8 s limit). After a refusal or a missing answer the vehicle crosses only those junctions on ordinary signals and drives on; later junctions can still give it priority. A mixed scenario draws each request's answer from a chosen seed.",
         },
         { kind: "heading", text: "Standard traffic" },
         {

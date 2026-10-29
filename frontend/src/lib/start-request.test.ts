@@ -30,6 +30,7 @@ it("starts at the station and ends at the incident with the vehicle type", () =>
     vehicle_type: "FIRE_TRUCK",
     green_wave_mode: "ENABLED",
     its_scenario: "NOMINAL" as const,
+    its_outcome_seed: 0,
   });
 });
 

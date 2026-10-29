@@ -33,6 +33,7 @@ function requestWithCascade(enableCascadeMode: boolean): SimulationStartRequest 
   return {
     green_wave_mode: "ENABLED",
     its_scenario: "NOMINAL" as const,
+    its_outcome_seed: 0,
     simulation_id: "cascade",
     origin: { lat: 0, lng: 0 },
     destination: { lat: (5400 / 6_371_000) * (180 / Math.PI), lng: 0 },

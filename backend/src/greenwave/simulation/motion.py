@@ -16,27 +16,36 @@ _DISTANCE_EPSILON_M = 1e-9
 
 
 def next_stop(
-    route_model: RouteModel, state: EngineState, distance_m: float
+    route_model: RouteModel,
+    state: EngineState,
+    distance_m: float,
+    skip: frozenset[str] = frozenset(),
 ) -> RouteIntersection | None:
-    """The first unpassed intersection whose first stop line is strictly ahead."""
+    """The first unpassed intersection not in ``skip`` whose first stop line is strictly ahead."""
     return next(
         (
             item
             for item, runtime in route_runtimes(route_model, state)
-            if not runtime.passed and item.first_stop_line_m > distance_m
+            if not runtime.passed and item.id not in skip and item.first_stop_line_m > distance_m
         ),
         None,
     )
 
 
 def next_stop_line(
-    route_model: RouteModel, state: EngineState, distance_m: float
+    route_model: RouteModel,
+    state: EngineState,
+    distance_m: float,
+    only: frozenset[str] | None = None,
 ) -> tuple[float, list[RouteIntersection]] | None:
-    """The nearest route stop line strictly ahead of any unpassed intersection, and its owners."""
+    """The nearest route stop line strictly ahead of any unpassed intersection, and its owners.
+
+    ``only`` limits the owners to those intersections (every one when ``None``).
+    """
     lines = [
         (line_m, item)
         for item, runtime in route_runtimes(route_model, state)
-        if not runtime.passed
+        if not runtime.passed and (only is None or item.id in only)
         for line_m in item.route_stop_lines_m
         if line_m > distance_m
     ]
@@ -159,6 +168,52 @@ def _window_start_m(
     return max(previous, stop.first_stop_line_m - settings.greenwave_approach_distance_m)
 
 
+def _standard_decision(
+    owners: list[RouteIntersection],
+    at_s: float,
+    distance_m: float,
+    crossing: tuple[float, float, bool],
+    slowdown_id: str | None,
+    track: RouteTrack,
+    density: float,
+    settings: SimulationSettings,
+    route_movement_color_at: Callable[[str, float], SignalPhaseColor | None],
+    route_seconds_until_green: Callable[[str, float], float | None],
+) -> tuple[float, float, bool]:
+    """The ``(remaining_m, extra_s, is_standard)`` crossing after a standard stop-line decision.
+
+    GREEN for every owner drives on; otherwise the controlled crossing of :func:`move_one_second`
+    starts. It replaces a standard crossing already running and the remainder of an owner's own
+    ``D_min`` slowdown (a junction is never charged both); a slowdown still running for an earlier
+    priority junction is kept and merged, so that junction keeps its own delay.
+    """
+    remaining, extra, standard = crossing
+    replaceable = standard or remaining <= 0 or slowdown_id in {o.id for o in owners}
+    facing = [
+        item
+        for item in owners
+        if route_movement_color_at(item.id, at_s) is not SignalPhaseColor.GREEN
+    ]
+    if not facing:
+        return (0.0, 0.0, False) if replaceable else crossing
+    waits = [
+        item.delay_seconds if wait is None else wait
+        for item in facing
+        for wait in (route_seconds_until_green(item.id, at_s),)
+    ]
+    length, added = _sized_standard_crossing(
+        track,
+        distance_m,
+        max(waits),
+        max(item.delay_seconds for item in facing),
+        density,
+        settings,
+    )
+    if replaceable:
+        return length, added, True
+    return max(remaining, length), extra + added, True
+
+
 def move_one_second(
     state: EngineState,
     track: RouteTrack,
@@ -189,6 +244,9 @@ def move_one_second(
     crossing long enough to stay above ``standard_min_rolling_speed_kmh`` at the ordinary limit
     there, rolled at no more than each edge's ordinary limit, across edge ends. A later stop line
     replaces it with its own decision.
+    Enabled crosses an intersection in ``state.fallback_intersection_ids`` (its priority request
+    failed) by these standard rules instead, with no slowdown or hold for it; a hold already
+    waiting there ends and the standard decision is taken at release (:func:`_standard_decision`).
     Open-road motion is the same in both modes.
     """
     now, tick = state.simulated_time_s + 1, state.tick + 1
@@ -199,8 +257,32 @@ def move_one_second(
     dwell, dwelling = state.dwell_remaining_s, state.dwelling_intersection_id
     crossing, cautious = state.cautious_crossing_remaining_m, state.cautious_time_remaining_s
     slowdown = state.slowdown_intersection_id
+    standard = state.crossing_is_standard
     enabled = green_wave_mode is GreenWaveMode.ENABLED
+    fallback = state.fallback_intersection_ids
+    # Intersections crossed by standard rules: every one when disabled, failed ones when enabled.
+    standard_ids = (
+        frozenset(item.id for item in route_model.intersections)
+        if not enabled
+        else fallback & {item.id for item in route_model.intersections}
+    )
     arrived_at: float | None = None
+
+    def decide(owners: list[RouteIntersection]) -> None:
+        nonlocal crossing, cautious, standard
+        crossing, cautious, standard = _standard_decision(
+            owners,
+            state.simulated_time_s + (1.0 - budget),
+            distance,
+            (crossing, cautious, standard),
+            slowdown,
+            track,
+            traffic_density_multiplier,
+            settings,
+            route_movement_color_at,
+            route_seconds_until_green,
+        )
+
     while budget > _TIME_EPSILON_S:
         if dwell > 0:
             spent = min(dwell, budget)
@@ -211,13 +293,29 @@ def move_one_second(
         if dwelling is not None:
             if not may_leave_stop_line(distance):
                 break  # held at the stop line for the rest of this second
+            if dwelling in fallback:
+                # The request failed while held: cross this line by the ordinary programme now.
+                decide(
+                    [
+                        item
+                        for item, runtime in route_runtimes(route_model, state)
+                        if not runtime.passed
+                        and item.id in standard_ids
+                        and distance in item.route_stop_lines_m
+                    ]
+                )
             dwelling = None
         edge = track.edge_at(distance)
         speed = track.speed_mps(edge)
         window_start = inf
+        line = next_stop_line(route_model, state, distance, standard_ids) if standard_ids else None
         if enabled:
-            stop = next_stop(route_model, state, distance)
-            line = None if stop is None else (stop.first_stop_line_m, [stop])
+            stop = next_stop(route_model, state, distance, fallback)
+            if stop is not None:
+                if line is None or stop.first_stop_line_m < line[0]:
+                    line = (stop.first_stop_line_m, [stop])
+                elif stop.first_stop_line_m == line[0]:
+                    line = (line[0], [stop, *line[1]])
             if stop is not None and slowdown != stop.id:
                 window_start = _window_start_m(route_model, stop, settings)
                 if distance >= window_start:
@@ -232,10 +330,8 @@ def move_one_second(
                     # arrival and the trip still takes T_greenwave.
                     crossing = min(crossing + added, track.total_distance_m - distance)
                     cautious += settings.min_intersection_delay_seconds
-        else:
-            line = next_stop_line(route_model, state, distance)
         if crossing > 0:
-            limit_mps = speed if enabled else min(speed, track.speed_limit_mps(edge))
+            limit_mps = min(speed, track.speed_limit_mps(edge)) if standard else speed
             speed = cautious_speed_mps(limit_mps, crossing, cautious)
         limit = min(
             track.edge_end_m(edge),
@@ -249,7 +345,7 @@ def move_one_second(
             cautious -= cautious * step / crossing
             crossing -= step
             if crossing <= _DISTANCE_EPSILON_M:
-                crossing, cautious = 0.0, 0.0
+                crossing, cautious, standard = 0.0, 0.0, False
         if speed * budget < limit - distance:
             distance += step
             break
@@ -258,30 +354,12 @@ def move_one_second(
             arrived_at = state.simulated_time_s + (1.0 - budget)
             break
         if line is not None and distance == line[0]:
-            if enabled:
-                dwelling = line[1][0].id  # safety hold; the slowdown carries on past the line
-                continue
-            at_s = state.simulated_time_s + (1.0 - budget)
-            facing = [
-                item
-                for item in line[1]
-                if route_movement_color_at(item.id, at_s) is not SignalPhaseColor.GREEN
-            ]
-            crossing, cautious = 0.0, 0.0
-            if facing:
-                waits = [
-                    item.delay_seconds if wait is None else wait
-                    for item in facing
-                    for wait in (route_seconds_until_green(item.id, at_s),)
-                ]
-                crossing, cautious = _sized_standard_crossing(
-                    track,
-                    distance,
-                    max(waits),
-                    max(item.delay_seconds for item in facing),
-                    traffic_density_multiplier,
-                    settings,
-                )
+            owners = [item for item in line[1] if item.id in standard_ids]
+            if owners:
+                decide(owners)
+            prioritised = [item for item in line[1] if item.id not in standard_ids]
+            if prioritised:
+                dwelling = prioritised[0].id  # safety hold; the slowdown carries on past the line
     moved = distance - state.distance_travelled_m
     arrived = arrived_at is not None
     return replace(
@@ -294,6 +372,7 @@ def move_one_second(
         dwelling_intersection_id=dwelling,
         cautious_crossing_remaining_m=0.0 if arrived else crossing,
         cautious_time_remaining_s=0.0 if arrived else cautious,
+        crossing_is_standard=False if arrived else standard,
         v_avg_meters_per_second=max(
             settings.speed_floor_meters_per_second,
             settings.speed_ema_alpha * moved

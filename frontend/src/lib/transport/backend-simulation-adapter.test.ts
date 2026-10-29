@@ -85,6 +85,7 @@ function latestSource(): FakeEventSource {
 const request: SimulationStartRequest = {
   green_wave_mode: "ENABLED",
   its_scenario: "NOMINAL",
+  its_outcome_seed: 0,
   simulation_id: SIMULATION_ID,
   origin: { lat: 50.0612, lng: 19.9571 },
   destination: { lat: 50.0134, lng: 19.9982 },
@@ -524,6 +525,7 @@ it("retains raw named SSE data and validation rejection without delivering rejec
 describe("startComparison", () => {
   const comparison = {
     its_scenario: "NOMINAL" as const,
+    its_outcome_seed: 0,
     enabled_simulation_id: "pair-e",
     disabled_simulation_id: "pair-d",
     origin: request.origin,

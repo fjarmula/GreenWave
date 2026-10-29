@@ -473,7 +473,10 @@ actually driven in that simulated second, including the arrival tick.
 
 The stream carries a discriminated union on `event_type`:
 `SIMULATION_TICK`, `ITS_DISPATCH`, `ITS_FEEDBACK`, `SIMULATION_COMPLETED`,
-`SIMULATION_CANCELLED` (`reason: STOPPED | SUPERSEDED | SERVER_ERROR | ITS_REJECTED | ITS_TIMEOUT | ITS_HOLD_EXPIRED`). Every event has
+`SIMULATION_CANCELLED` (`reason: STOPPED | SUPERSEDED | SERVER_ERROR`; the legacy
+`ITS_REJECTED | ITS_TIMEOUT | ITS_HOLD_EXPIRED` values stay valid but are no longer emitted).
+`SIMULATION_COMPLETED` adds `fallback_intersection_ids` (route order) for runs that crossed
+junctions under standard fallback. Every event has
 `schema_version`, `is_simulated`, `simulation_id`, `tick` and `timestamp`
 (wall-clock UTC at emission; simulated time is
 `kpi_metrics.total_time_elapsed_sec`).
@@ -526,7 +529,8 @@ terminal event. `POST /stop` returns `StopResponse`
       "state": "CLEARING",
       "is_cascade": false,
       "tti_seconds": 28,
-      "is_active_corridor": true
+      "is_active_corridor": true,
+      "crossing_strategy": "PRIORITY"
     },
     {
       "id": "INT-0367",
@@ -534,7 +538,8 @@ terminal event. `POST /stop` returns `StopResponse`
       "state": "CLEARING",
       "is_cascade": true,
       "tti_seconds": 38,
-      "is_active_corridor": true
+      "is_active_corridor": true,
+      "crossing_strategy": "PRIORITY"
     }
   ],
   "signal_phases": [
@@ -661,8 +666,12 @@ legacy gateway is only a diagnostic sink and is not installed by the application
 No controller network connection or physical signal actuation exists.
 
 `its_scenario` selects `NOMINAL` (accept after 1 simulated second), `DELAYED`
-(5 seconds), `REJECTED` (reject after 1 second), or `NO_FEEDBACK` (timeout at
-8 seconds). Settings validate both acknowledgement delays before timeout. Disabled
+(5 seconds), `REJECTED` (reject after 1 second), `NO_FEEDBACK` (timeout at
+8 seconds), or `MIXED`: each request's outcome is one of those four, drawn from the
+validated `its_outcome_seed` (`0..4294967295`, default 0) and the request's sorted target ids
+(top two bits of FNV-1a 32-bit with the MurmurHash3 `fmix32` finaliser over
+`"<seed>:<id>,<id>"`; the mock uses the same hash). Signal colours are never randomised.
+Settings validate both acknowledgement delays before timeout. Disabled
 runs normalize the scenario to NOMINAL and submit no priority requests; live comparisons
 use the selected scenario for the enabled member and NOMINAL for the baseline. Wall-clock timestamps never decide acknowledgements.
 
@@ -689,9 +698,19 @@ road to its **last** stop line at each edge's ambulance speed, plus $D_{\min}$ f
 unpassed route intersection up to and including it or whose first stop line lies inside it,
 plus the extra time a slowdown in progress has still to spend (ADR 0010), so a nominal run
 outlasts its rolling slowdowns and multi-line crossings; controller waits can still
-exceed it. Rejection, acknowledgement timeout and
-active expiry emit a final diagnostic tick then exactly one cancellation:
-ITS_REJECTED, ITS_TIMEOUT or ITS_HOLD_EXPIRED. They never emit successful completion.
+exceed it.
+
+**Per-junction fallback.** Rejection, acknowledgement timeout and active expiry never end the
+run and never change its mode. Each emits its correlated `ITS_FEEDBACK` (on timeout the engine
+emits it and withdraws the request from the controller, so a late acceptance cannot activate
+priority) and puts the request's unpassed targets into `STANDARD_FALLBACK` for the rest of the
+run (`IntersectionTelemetry.crossing_strategy`; `PRIORITY` otherwise, `null` in disabled runs).
+Fallback targets are crossed by disabled-mode rules: the ordinary programme decides at each
+route stop line, with no `D_min` slowdown or hold. A hold already waiting ends and decides at
+release; a slowdown remainder of the junction itself is replaced by its standard decision. Failed
+targets are never requested again, never shown as prioritised and, never having held priority,
+never enter RECOVERY. A grouped request fails as one. Other junctions keep requesting priority.
+Savings stay `round(standard) - round(actual)`, including all waiting and fallback time.
 Stop, supersession, server error and completion close the controller idempotently.
 The terminal dashboard/driver retains the last report and requires an explicit new run.
 

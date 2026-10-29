@@ -752,19 +752,22 @@ def test_comparison_members_preserve_the_selected_its_scenario() -> None:
     from greenwave.schemas.its import ItsScenario
 
     request = ComparisonStartRequest.model_validate(
-        {**_comparison().model_dump(), "its_scenario": "REJECTED"}
+        {**_comparison().model_dump(), "its_scenario": "MIXED", "its_outcome_seed": 42}
     )
-    assert request.member(GreenWaveMode.ENABLED).its_scenario is ItsScenario.REJECTED
+    for mode in GreenWaveMode:
+        assert request.member(mode).its_scenario is ItsScenario.MIXED
+        assert request.member(mode).its_outcome_seed == 42
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("scenario", "failure"),
-    # A nominal request holds until the vehicle clears its farthest target (ADR 0010).
-    [("NOMINAL", None), ("REJECTED", "ITS_REJECTED"), ("NO_FEEDBACK", "ITS_TIMEOUT")],
+    ("scenario", "fallback"),
+    # A nominal request holds until the vehicle clears its farthest target (ADR 0010); a failed
+    # one falls back to standard crossing and the run still completes.
+    [("NOMINAL", False), ("REJECTED", True), ("NO_FEEDBACK", True), ("MIXED", None)],
 )
 async def test_real_engine_comparison_keeps_feedback_and_baseline_isolated(
-    scenario: str, failure: str | None
+    scenario: str, fallback: bool | None
 ) -> None:
     from tests.support.route_fixtures import corridor_index, position_at
 
@@ -789,12 +792,11 @@ async def test_real_engine_comparison_keeps_feedback_and_baseline_isolated(
             asyncio.gather(_events(manager, "on"), _events(manager, "off")), timeout=3
         )
         assert isinstance(off[-1], SimulationCompletedEvent)
-        if failure:
-            assert isinstance(on[-1], SimulationCancelledEvent)
-            assert on[-1].reason.value == failure
-            assert not any(isinstance(event, SimulationCompletedEvent) for event in on)
-        else:
-            assert isinstance(on[-1], SimulationCompletedEvent)
+        assert off[-1].fallback_intersection_ids == []
+        assert isinstance(on[-1], SimulationCompletedEvent)
+        assert not any(isinstance(event, SimulationCancelledEvent) for event in on)
+        if fallback is not None:
+            assert bool(on[-1].fallback_intersection_ids) is fallback
         assert all(session.engine._closed for session in manager._sessions.values())
     finally:
         await manager.shutdown()

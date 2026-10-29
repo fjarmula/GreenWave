@@ -8,6 +8,7 @@ import { cancelledEventExample } from "@/lib/transport/__fixtures__/architecture
 
 const request: ComparisonStartRequest = {
   its_scenario: "NOMINAL" as const,
+  its_outcome_seed: 0,
   enabled_simulation_id: "pair-e",
   disabled_simulation_id: "pair-d",
   origin: { lat: 50.0612, lng: 19.9571 },

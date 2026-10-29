@@ -11,6 +11,8 @@ import type {
 
 export type DispatchSettings = {
   itsScenario?: ItsScenario;
+  /** Seed of the MIXED scenario's per-request outcomes (0 to ITS_OUTCOME_SEED_MAX). */
+  itsOutcomeSeed?: number;
   trafficDensity: number;
   cascadeEnabled: boolean;
   playbackSpeed: PlaybackSpeed;
@@ -23,7 +25,17 @@ export const DEFAULT_DISPATCH_SETTINGS: DispatchSettings = {
   playbackSpeed: 1,
   greenWaveMode: "ENABLED",
   itsScenario: "NOMINAL",
+  itsOutcomeSeed: 0,
 };
+
+/** The contract's validated seed range (`its_outcome_seed`, an unsigned 32-bit value). */
+export const ITS_OUTCOME_SEED_MAX = 4_294_967_295;
+
+/** A typed seed clamped into the contract range; anything not a whole number becomes 0. */
+export function normalizeOutcomeSeed(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) return 0;
+  return Math.min(ITS_OUTCOME_SEED_MAX, Math.max(0, Math.trunc(value)));
+}
 
 /** The run goes from the chosen station to the incident; the engine itself is unchanged. */
 export function buildStartRequest(
@@ -44,5 +56,6 @@ export function buildStartRequest(
     green_wave_mode: settings.greenWaveMode,
     its_scenario:
       settings.greenWaveMode === "DISABLED" ? "NOMINAL" : (settings.itsScenario ?? "NOMINAL"),
+    its_outcome_seed: normalizeOutcomeSeed(settings.itsOutcomeSeed),
   };
 }

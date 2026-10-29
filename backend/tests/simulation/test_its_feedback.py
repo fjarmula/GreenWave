@@ -7,7 +7,12 @@ import pytest
 from tests.simulation.test_engine import engine_for_single_stop
 
 from greenwave.its.controller import SimulatedItsController
-from greenwave.schemas import ItsScenario, SimulationCancelledEvent, SimulationTickEvent
+from greenwave.schemas import (
+    ItsScenario,
+    SimulationCancelledEvent,
+    SimulationCompletedEvent,
+    SimulationTickEvent,
+)
 
 NOW = datetime(2026, 10, 23, tzinfo=UTC)
 
@@ -26,11 +31,8 @@ def test_request_does_not_clear_without_controller_feedback():
     assert tick.intersections[0].state == "CLEARING"  # no supported signals
 
 
-@pytest.mark.parametrize(
-    "scenario,reason",
-    [(ItsScenario.REJECTED, "ITS_REJECTED"), (ItsScenario.NO_FEEDBACK, "ITS_TIMEOUT")],
-)
-def test_fault_has_diagnostic_tick_then_one_terminal(scenario, reason):
+@pytest.mark.parametrize("scenario", [ItsScenario.REJECTED, ItsScenario.NO_FEEDBACK])
+def test_fault_falls_back_and_completes_without_a_cancellation(scenario):
     engine = engine_for_single_stop()
     engine.route_model = replace(
         engine.route_model,
@@ -45,9 +47,10 @@ def test_fault_has_diagnostic_tick_then_one_terminal(scenario, reason):
     events = []
     while not state.completed:
         state, events = engine.step(state, NOW)
-    assert isinstance(events[-1], SimulationCancelledEvent)
-    assert events[-1].reason == reason
+    assert isinstance(events[-1], SimulationCompletedEvent)
+    assert events[-1].fallback_intersection_ids == ["INT-1"]
     assert isinstance(events[-2], SimulationTickEvent)
+    assert not any(isinstance(e, SimulationCancelledEvent) for e in events)
     assert engine.step(state, NOW)[1] == []
 
 
@@ -151,8 +154,8 @@ def test_closed_engine_cannot_emit_or_submit_more_work() -> None:
     [
         (ItsScenario.NOMINAL, 1, "ACCEPTED", None),
         (ItsScenario.DELAYED, 5, "ACCEPTED", None),
-        (ItsScenario.REJECTED, 1, "REJECTED", "ITS_REJECTED"),
-        (ItsScenario.NO_FEEDBACK, 8, "TIMED_OUT", "ITS_TIMEOUT"),
+        (ItsScenario.REJECTED, 1, "REJECTED", "CONTROLLER_REJECTED"),
+        (ItsScenario.NO_FEEDBACK, 8, "TIMED_OUT", "ACK_TIMEOUT"),
     ],
 )
 @pytest.mark.parametrize("playback_speed", [1, 10])
@@ -187,7 +190,8 @@ def test_scenario_decision_time_starts_at_request_submission(
         else:
             assert [event.status for event in feedback] == [status]
             assert feedback[0].observed_at_simulated_sec == dispatch.tick + delay
-            terminals = [event for event in events if event.event_type == "SIMULATION_CANCELLED"]
-            assert [event.reason for event in terminals] == ([] if reason is None else [reason])
+            assert feedback[0].reason == reason
+            # A failed request falls back; it never ends the run.
+            assert not any(event.event_type == "SIMULATION_CANCELLED" for event in events)
             assert not any(event.event_type == "SIMULATION_COMPLETED" for event in events)
     engine.close()

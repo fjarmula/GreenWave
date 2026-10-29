@@ -1,6 +1,6 @@
 """Deterministic simulated ITS. Owns the sole runtime phase programme."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import replace
 
 from greenwave.its.models import (
@@ -15,6 +15,7 @@ from greenwave.schemas import (
     ItsFeedbackReason,
     ItsRequestStatus,
     ItsScenario,
+    MixedOutcome,
     SignalMovementKind,
     SignalPhaseColor,
 )
@@ -29,6 +30,33 @@ from greenwave.simulation.state import initial_engine_state
 from greenwave.simulation.state_machine import IntersectionRuntime
 from greenwave.simulation_settings import SimulationSettings
 
+_FNV_OFFSET, _FNV_PRIME = 0x811C9DC5, 0x01000193
+_PRESET_OUTCOMES = {
+    ItsScenario.NOMINAL: MixedOutcome.ACCEPT,
+    ItsScenario.DELAYED: MixedOutcome.ACCEPT_DELAYED,
+    ItsScenario.REJECTED: MixedOutcome.REJECT,
+    ItsScenario.NO_FEEDBACK: MixedOutcome.NO_RESPONSE,
+}
+
+
+def mixed_outcome(seed: int, intersection_ids: Iterable[str]) -> MixedOutcome:
+    """The ``MIXED`` outcome of a request: the top two bits of the FNV-1a 32-bit hash of
+    ``"<seed>:<sorted ids>"``, finalised by MurmurHash3's ``fmix32`` (plain FNV barely changes
+    between ids that differ only in their last character).
+
+    Only the seed and the request's stable target identity count, never its time, so a run
+    replays exactly. The mock transport implements the same hash.
+    """
+    value = _FNV_OFFSET
+    for byte in f"{seed}:{','.join(sorted(intersection_ids))}".encode():
+        value = ((value ^ byte) * _FNV_PRIME) & 0xFFFFFFFF
+    value ^= value >> 16
+    value = (value * 0x85EBCA6B) & 0xFFFFFFFF
+    value ^= value >> 13
+    value = (value * 0xC2B2AE35) & 0xFFFFFFFF
+    value ^= value >> 16
+    return list(MixedOutcome)[value >> 30]
+
 
 class SimulatedItsController:
     def __init__(
@@ -36,8 +64,10 @@ class SimulatedItsController:
         route_model: RouteModel,
         settings: SimulationSettings,
         scenario: ItsScenario = ItsScenario.NOMINAL,
+        outcome_seed: int = 0,
     ) -> None:
         self.model, self.settings, self.scenario = route_model, settings, scenario
+        self.outcome_seed = outcome_seed
         self._requests: dict[tuple[str, str], ItsRequest] = {}
         self._statuses: dict[tuple[str, str], ItsRequestStatus] = {}
         self._sequence = 0
@@ -68,6 +98,24 @@ class SimulatedItsController:
         self._requests[key] = request
         self._statuses[key] = ItsRequestStatus.REQUESTED
 
+    def withdraw(self, simulation_id: str, message_id: str) -> int:
+        """The requester gave up waiting (acknowledgement timeout): never decide or activate it.
+
+        Returns the feedback sequence number reserved for the requester's timeout event, so the
+        run's single sequence stays monotonic and later decisions are not taken for stale ones.
+        The targets stay reserved, so a failed request is never re-requested; no feedback is sent.
+        """
+        key = (simulation_id, message_id)
+        if self._statuses.get(key) is ItsRequestStatus.REQUESTED:
+            self._statuses[key] = ItsRequestStatus.TIMED_OUT
+        self._sequence += 1
+        return self._sequence
+
+    def _outcome(self, request: ItsRequest) -> MixedOutcome:
+        if self.scenario is ItsScenario.MIXED:
+            return mixed_outcome(self.outcome_seed, request.payload.intersections_group)
+        return _PRESET_OUTCOMES[self.scenario]
+
     def advance(self, observation: ItsObservation) -> ItsControllerUpdate:
         now = observation.simulated_sec
         if self._closed:
@@ -78,26 +126,27 @@ class SimulatedItsController:
         if set(observations) != {i.id for i in self.model.intersections}:
             raise ValueError("controller requires complete route observations")
         feedback: list[ItsDecision] = []
-        delay = (
-            self.settings.its_delayed_ack_seconds
-            if self.scenario is ItsScenario.DELAYED
-            else self.settings.its_ack_delay_seconds
-        )
         for key, request in self._requests.items():
             status = self._statuses[key]
             ids = request.payload.intersections_group
             passed = all(observations[i].passed for i in ids)
+            outcome = self._outcome(request)
+            delay = (
+                self.settings.its_delayed_ack_seconds
+                if outcome is MixedOutcome.ACCEPT_DELAYED
+                else self.settings.its_ack_delay_seconds
+            )
             next_status, reason = status, None
             if status in {ItsRequestStatus.REQUESTED, ItsRequestStatus.ACCEPTED} and passed:
                 next_status = ItsRequestStatus.RELEASED
             elif (
                 status is ItsRequestStatus.REQUESTED
-                and self.scenario is not ItsScenario.NO_FEEDBACK
+                and outcome is not MixedOutcome.NO_RESPONSE
                 and now >= request.submitted_at_simulated_sec + delay
             ):
                 next_status = (
                     ItsRequestStatus.REJECTED
-                    if self.scenario is ItsScenario.REJECTED
+                    if outcome is MixedOutcome.REJECT
                     else ItsRequestStatus.ACCEPTED
                 )
                 reason = (
@@ -233,4 +282,5 @@ class SimulatedItsController:
         self._statuses.clear()
 
 
-ItsControllerFactory = Callable[[RouteModel, SimulationSettings, ItsScenario], ItsController]
+# (route model, settings, scenario, MIXED outcome seed)
+ItsControllerFactory = Callable[[RouteModel, SimulationSettings, ItsScenario, int], ItsController]

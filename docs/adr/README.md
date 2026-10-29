@@ -27,5 +27,6 @@ Statuses are copied from each ADR's own `Status` line; only a maintainer changes
 | [0012](0012-on-site-dispatch.md) | On-site dispatch | Proposed | `0b7729f` |
 | [0013](0013-municipal-address-provenance.md) | Municipal address provenance (EMUiA) | Proposed | #52 (`b650cbb`) |
 | [0014](0014-resource-aware-ambulance-dispatch.md) | Resource-aware ambulance dispatch (PRM roster) | Proposed | #52 (`b650cbb`) |
+| [0015](0015-per-junction-priority-fallback.md) | Per-junction fallback for failed priority requests | Proposed | this branch (pending merge) |
 
-**Two ADRs numbered 0008.** The live comparison pair and the simulated ITS feedback were written on parallel branches and both took 0008 before either merged. Both numbers are cited in code, commits and other ADRs, so they are not renumbered; cite them by number and title (for example "ADR 0008 live comparison pair"). The next new ADR is 0015.
+**Two ADRs numbered 0008.** The live comparison pair and the simulated ITS feedback were written on parallel branches and both took 0008 before either merged. Both numbers are cited in code, commits and other ADRs, so they are not renumbered; cite them by number and title (for example "ADR 0008 live comparison pair"). The next new ADR is 0016.

@@ -36,6 +36,7 @@ export function DriverStatus({
   const kpis = state.completion?.kpi_metrics ?? state.liveTelemetry?.kpi_metrics ?? null;
   const saved = kpis?.current_time_saved_sec ?? 0;
   const status = RUN_STATUS_LABELS[runStatusKey(state.simulationState, state.cancelReason)];
+  const fallback = state.completion?.fallback_intersection_ids.length ?? 0;
 
   if (!running) {
     const onFoot = state.routeData?.destination_on_foot;
@@ -64,6 +65,15 @@ export function DriverStatus({
         {state.simulationState === "FINISHED" && (
           <p className={`hud-chip mt-2 ${PILL_TONES[timeSavedTone(saved)]}`}>
             {t(savedPill(saved))}
+          </p>
+        )}
+        {state.simulationState === "FINISHED" && fallback > 0 && (
+          <p className="hud-chip tone-caution mt-2">
+            {t(
+              fallback === 1
+                ? "Priority fallback · 1 junction"
+                : `Priority fallback · ${fallback} junctions`,
+            )}
           </p>
         )}
         <button type="button" className="hud-secondary pressable mt-3" onClick={onBackToSetup}>

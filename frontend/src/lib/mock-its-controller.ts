@@ -10,8 +10,8 @@ import type {
   ItsDispatchEvent,
   ItsFeedbackEvent,
   ItsRequestSnapshot,
-  CancelReason,
 } from "@/types/telemetry";
+import { mixedOutcome, type MixedOutcome } from "./its-outcome";
 import {
   MOCK_SIGNAL_GREEN_SECONDS,
   MOCK_SIGNAL_YELLOW_SECONDS,
@@ -141,7 +141,25 @@ function mockPhase(
   };
 }
 
-/** Pure synthetic controller. Decisions, target states and reported indications are separate. */
+const PRESET_OUTCOMES: Record<Exclude<ItsScenario, "MIXED">, MixedOutcome> = {
+  NOMINAL: "ACCEPT",
+  DELAYED: "ACCEPT_DELAYED",
+  REJECTED: "REJECT",
+  NO_FEEDBACK: "NO_RESPONSE",
+};
+
+/** Request statuses after which its targets cross by standard rules (STANDARD_FALLBACK). */
+export const FAILED_STATUSES: ReadonlySet<ItsRequestSnapshot["status"]> = new Set([
+  "REJECTED",
+  "TIMED_OUT",
+  "EXPIRED",
+]);
+
+/**
+ * Pure synthetic controller. Decisions, target states and reported indications are separate.
+ * It also plays the requester's 8 s acknowledgement timeout (TIMED_OUT), as the backend engine
+ * does; a failed request never ends the run and is never decided again.
+ */
 export class MockItsController {
   readonly signals: MockSignal[];
   readonly signalHeads = new Map<string, MockSignalHead>();
@@ -150,10 +168,10 @@ export class MockItsController {
   private sequence = 0;
   private closed = false;
   phases: SignalPhaseIndicator[] = [];
-  failure: CancelReason | null = null;
   constructor(
     readonly route: SimulationStartResponse,
     readonly scenario: ItsScenario,
+    readonly outcomeSeed = 0,
   ) {
     this.signals = route.route_intersections.map(() => ({
       state: "NORMAL",
@@ -194,15 +212,19 @@ export class MockItsController {
       const indexes = r.intersections_group.map((id) =>
         this.route.intersections_on_route.indexOf(id),
       );
+      const outcome =
+        this.scenario === "MIXED"
+          ? mixedOutcome(this.outcomeSeed, r.intersections_group)
+          : PRESET_OUTCOMES[this.scenario];
       let status = r.status;
       if (["REQUESTED", "ACCEPTED"].includes(status) && indexes.every((i) => passed[i]))
         status = "RELEASED";
       else if (
         status === "REQUESTED" &&
-        now >= r.submitted_at_simulated_sec + (this.scenario === "DELAYED" ? 5 : 1) &&
-        this.scenario !== "NO_FEEDBACK"
+        now >= r.submitted_at_simulated_sec + (outcome === "ACCEPT_DELAYED" ? 5 : 1) &&
+        outcome !== "NO_RESPONSE"
       )
-        status = this.scenario === "REJECTED" ? "REJECTED" : "ACCEPTED";
+        status = outcome === "REJECT" ? "REJECTED" : "ACCEPTED";
       else if (status === "REQUESTED" && now >= r.submitted_at_simulated_sec + 8)
         status = "TIMED_OUT";
       else if (
@@ -238,9 +260,6 @@ export class MockItsController {
           observed_at_simulated_sec: now,
           reason,
         });
-        if (status === "REJECTED") this.failure = "ITS_REJECTED";
-        if (status === "TIMED_OUT") this.failure = "ITS_TIMEOUT";
-        if (status === "EXPIRED") this.failure = "ITS_HOLD_EXPIRED";
       }
     });
     this.signals.forEach((signal, i) => {

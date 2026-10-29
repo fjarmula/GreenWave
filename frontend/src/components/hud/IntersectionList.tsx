@@ -134,7 +134,13 @@ function IntersectionCard({
   const { t } = useTranslation();
   const { id, name, state, tti_seconds: ttiSeconds, is_active_corridor: active } = intersection;
   const isCascade = isCascadeClearing(intersection);
-  const detail = active ? "SIMULATED CORRIDOR ACTIVE" : "ORDINARY TRAFFIC REPORT";
+  const fallback = intersection.crossing_strategy === "STANDARD_FALLBACK";
+  // Ordinary green is never shown as granted priority: a fallback junction says so.
+  const detail = active
+    ? "SIMULATED CORRIDOR ACTIVE"
+    : fallback
+      ? "STANDARD FALLBACK · ORDINARY SIGNALS"
+      : "ORDINARY TRAFFIC REPORT";
 
   return (
     <article className="intersection-card">
@@ -161,12 +167,13 @@ function IntersectionCard({
         </div>
         <span
           className={`hud-chip hud-value shrink-0 text-2xs ${
-            isCascade ? "tone-cascade" : active ? "tone-go" : ""
+            isCascade ? "tone-cascade" : active ? "tone-go" : fallback ? "tone-caution" : ""
           }`}
         >
           <i className="hud-dot shadow-[0_0_8px_currentColor]" />
           {t(state)}
           {t(isCascade && " · CASCADE")}
+          {t(fallback && " · FALLBACK")}
         </span>
       </div>
       <div className="hud-value mt-3 flex flex-wrap items-center justify-between gap-2">

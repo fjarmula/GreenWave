@@ -5,9 +5,9 @@ const labels = {
   REQUESTED: "Priority requested · awaiting decision",
   ACCEPTED: "Priority accepted",
   RELEASED: "Priority released",
-  REJECTED: "Priority rejected",
-  TIMED_OUT: "Priority acknowledgement timed out",
-  EXPIRED: "Priority hold expired",
+  REJECTED: "Priority rejected · standard fallback",
+  TIMED_OUT: "Priority acknowledgement timed out · standard fallback",
+  EXPIRED: "Priority hold expired · standard fallback",
 };
 export function ItsFeedbackStatus({
   request,
