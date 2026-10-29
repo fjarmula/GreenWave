@@ -24,6 +24,11 @@ describe("localized interactions", () => {
     expect(html).toContain(language === "pl" ? "Wyłącznie symulacja." : "Simulation only.");
     expect(html).toContain("Aleje Trzech Wieszczów");
     expect(html).toMatch(
+      new RegExp(
+        `href="/docs"[^>]*>[\\s\\S]*?${language === "pl" ? "Dokumentacja" : "Documentation"}`,
+      ),
+    );
+    expect(html).toMatch(
       language === "pl"
         ? /aria-label="Polski" aria-pressed="true"/
         : /aria-label="English" aria-pressed="true"/,

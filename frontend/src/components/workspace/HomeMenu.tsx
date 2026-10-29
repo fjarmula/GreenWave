@@ -2,7 +2,7 @@
 import { useTranslation } from "@/components/language-provider";
 
 import Link from "next/link";
-import { Activity, ArrowRight, ArrowUpRight, Info, Smartphone } from "lucide-react";
+import { Activity, ArrowRight, ArrowUpRight, BookOpen, Info, Smartphone } from "lucide-react";
 import { useSimulationState } from "@/components/simulation-provider";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { HomeBackdrop } from "@/components/workspace/HomeBackdrop";
@@ -29,7 +29,7 @@ const MODES = [
     copy: "Record both modes. Replay together.",
   },
 ];
-const TOOL_ICONS = [Activity, Smartphone];
+const TOOL_ICONS = [Activity, Smartphone, BookOpen];
 
 export function HomeMenu() {
   const { t } = useTranslation();

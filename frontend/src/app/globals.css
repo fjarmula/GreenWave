@@ -2016,6 +2016,7 @@ button,
   }
   /* A selected segment takes its tone when it has one (e.g. Green Wave "Enabled"). */
   .hud-segment[aria-pressed="true"],
+  .hud-segment[aria-selected="true"],
   .hud-segment[aria-checked="true"] {
     color: var(--tone, var(--foreground));
     background: var(--thumb);
@@ -3135,4 +3136,27 @@ button,
   .docs-diagram-narrow {
     display: block;
   }
+}
+
+/* Docs tabs: the segmented track as one row that scrolls inside itself on narrow screens. */
+.docs-tabs {
+  display: flex;
+  max-width: 100%;
+  width: fit-content;
+  margin-bottom: 1.75rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.docs-tabs::-webkit-scrollbar {
+  display: none;
+}
+.docs-tabs .hud-segment {
+  flex: none;
+  padding-inline: 0.875rem;
+  white-space: nowrap;
+}
+.docs-panel:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 6px;
+  border-radius: var(--radius-control);
 }

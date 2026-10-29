@@ -12,6 +12,7 @@ it("names every destination and marks the current page", () => {
     "Comparison",
     "Diagnostics",
     "Driver",
+    "Documentation",
   ])
     expect(html).toContain(name);
 });

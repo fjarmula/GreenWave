@@ -9,7 +9,7 @@ it("names the current page and keeps the destinations behind a closed menu", () 
   expect(html).toMatch(/class="page-menu[ "][^>]*hidden=""/);
   expect(html.match(/<h1/g)).toHaveLength(1);
   expect(html).toMatch(/<h1[^>]*><button[\s\S]*Driver simulation[\s\S]*<\/button><\/h1>/);
-  expect(html.match(/<a /g)).toHaveLength(6);
+  expect(html.match(/<a /g)).toHaveLength(7);
   expect(html).not.toContain("/ Setup");
 });
 

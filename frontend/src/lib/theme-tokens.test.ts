@@ -194,6 +194,12 @@ describe("segmented controls", () => {
     expect(rule(selector)).toContain("var(--thumb)");
   });
 
+  it("gives selected tabs the same thumb as checked segments", () => {
+    expect(css).toMatch(
+      /\.hud-segment\[aria-selected="true"\],\s*\.hud-segment\[aria-checked="true"\] \{/,
+    );
+  });
+
   it("separates thumb from track in both themes", () => {
     for (const tokens of Object.values(themes)) {
       expect(resolve(tokens, "--thumb")).not.toBe(resolve(tokens, "--track"));
