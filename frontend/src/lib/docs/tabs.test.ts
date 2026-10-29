@@ -20,3 +20,10 @@ describe("nextTabIndex", () => {
   });
   it("ignores other keys", () => expect(nextTabIndex("Enter", 2, 6)).toBeNull());
 });
+
+it("uses Up/Down for the vertical documentation rail", () => {
+  expect(nextTabIndex("ArrowDown", 0, 5, "vertical")).toBe(1);
+  expect(nextTabIndex("ArrowUp", 0, 5, "vertical")).toBe(4);
+  expect(nextTabIndex("ArrowRight", 0, 5, "vertical")).toBeNull();
+  expect(sectionFromHash("#run")).toBe("about");
+});

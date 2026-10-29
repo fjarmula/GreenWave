@@ -5,7 +5,7 @@ export type DocsLayoutItem =
   | { kind: "wide"; block: DocsBlock }
   | { kind: "note"; block: DocsBlock };
 
-/** A section as the full-width page lays it out: an intro, then grid items (one panel each). */
+/** Group the introduction, titled subsections, tables and notes in reading order. */
 export function groupDocsBlocks(blocks: DocsBlock[]) {
   const intro: DocsBlock[] = [];
   const items: DocsLayoutItem[] = [];

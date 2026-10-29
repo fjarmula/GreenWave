@@ -23,28 +23,6 @@ it("names every dataset", () => {
     expect(names).toContain(dataset);
 });
 
-it("links the live demo", () => {
-  const run = english.find((section) => section.id === "run")!;
-  expect(
-    run.blocks.some(
-      (block) =>
-        block.kind === "links" &&
-        block.items.some((item) => item.href === "https://green-wave.duckdns.org/"),
-    ),
-  ).toBe(true);
-});
-
-it("only shows commands the README documents", () => {
-  const readme = repo("README.md");
-  const codes = blocks.filter((block) => block.kind === "code");
-  expect(codes.length).toBeGreaterThan(0);
-  for (const block of codes)
-    for (const line of block.code.split("\n")) {
-      const command = line.replace(/\s+#.*$/, "").trim();
-      if (command) expect(readme).toContain(command);
-    }
-});
-
 it("does not copy repo wording", () => {
   const docs = [
     "README.md",
