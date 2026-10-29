@@ -42,6 +42,12 @@ class EngineState:
     signal_heads: tuple[SignalHead, ...] = ()
     # Enabled mode: the intersection whose D_min slowdown has started, so it starts only once.
     slowdown_intersection_id: str | None = None
+    # Whether the current crossing includes a standard-traffic crossing, which rolls at no more
+    # than the ordinary limit (always so with ER Green Wave disabled).
+    crossing_is_standard: bool = False
+    # Enabled mode: intersections whose priority request failed; they are crossed by standard
+    # rules (CrossingStrategy.STANDARD_FALLBACK) for the rest of the run.
+    fallback_intersection_ids: frozenset[str] = frozenset()
 
 
 def initial_engine_state(intersection_count: int, v_avg_meters_per_second: float) -> EngineState:

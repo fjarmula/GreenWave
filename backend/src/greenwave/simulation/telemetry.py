@@ -5,6 +5,7 @@ from datetime import datetime
 from greenwave.schemas import (
     AmbulanceStatus,
     AmbulanceTelemetry,
+    CrossingStrategy,
     GreenWaveMode,
     IntersectionTelemetry,
     KpiMetrics,
@@ -56,8 +57,15 @@ def _ambulance_status(state: EngineState) -> AmbulanceStatus:
 
 
 def intersection_telemetry(
-    route_model: RouteModel, state: EngineState
+    route_model: RouteModel, state: EngineState, mode: GreenWaveMode = GreenWaveMode.ENABLED
 ) -> list[IntersectionTelemetry]:
+    def strategy(intersection_id: str) -> CrossingStrategy | None:
+        if mode is GreenWaveMode.DISABLED:
+            return None
+        if intersection_id in state.fallback_intersection_ids:
+            return CrossingStrategy.STANDARD_FALLBACK
+        return CrossingStrategy.PRIORITY
+
     return [
         IntersectionTelemetry(
             id=item.id,
@@ -68,6 +76,7 @@ def intersection_telemetry(
             if runtime.passed
             else round(time_to_intersection(item.first_stop_line_m, runtime, state) or 0),
             is_active_corridor=runtime.state in ACTIVE_STATES,
+            crossing_strategy=strategy(item.id),
         )
         for item, runtime in route_runtimes(route_model, state)
     ]
@@ -113,7 +122,11 @@ def tick_event(
 
 
 def completed_event(
-    simulation_id: str, state: EngineState, now: datetime, kpi: KpiMetrics
+    simulation_id: str,
+    state: EngineState,
+    now: datetime,
+    kpi: KpiMetrics,
+    fallback_intersection_ids: list[str] | None = None,
 ) -> SimulationCompletedEvent:
     return SimulationCompletedEvent(
         schema_version="1.0",
@@ -123,4 +136,5 @@ def completed_event(
         tick=state.tick,
         timestamp=now,
         kpi_metrics=kpi,
+        fallback_intersection_ids=fallback_intersection_ids or [],
     )

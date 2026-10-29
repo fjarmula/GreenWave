@@ -12,7 +12,12 @@ from pydantic import AwareDatetime, BaseModel, Field, RootModel, model_validator
 
 from greenwave.schemas.ids import SIMULATION_ID_PATTERN as SIMULATION_ID_PATTERN
 from greenwave.schemas.ids import MessageId, SimulationId
-from greenwave.schemas.its import ItsFeedbackEvent, ItsRequestSnapshot, ItsScenario
+from greenwave.schemas.its import (
+    ItsFeedbackEvent,
+    ItsOutcomeSeed,
+    ItsRequestSnapshot,
+    ItsScenario,
+)
 
 SchemaVersion = Literal["1.0"]
 
@@ -82,7 +87,16 @@ class ErrorCode(StrEnum):
     NO_STATION_REACHABLE = "NO_STATION_REACHABLE"
 
 
+class CrossingStrategy(StrEnum):
+    """How an enabled run crosses one intersection; a failed priority request falls back."""
+
+    PRIORITY = "PRIORITY"
+    STANDARD_FALLBACK = "STANDARD_FALLBACK"
+
+
 class CancelReason(StrEnum):
+    # The three ITS_* reasons are kept for compatibility: a failed request now falls back per
+    # junction and no longer ends the run, so the engine does not emit them.
     ITS_REJECTED = "ITS_REJECTED"
     ITS_TIMEOUT = "ITS_TIMEOUT"
     ITS_HOLD_EXPIRED = "ITS_HOLD_EXPIRED"
@@ -115,6 +129,8 @@ class SimulationStartRequest(BaseModel):
     # Optional so clients from before the mode choice keep the existing priority behaviour.
     its_scenario: ItsScenario = ItsScenario.NOMINAL
     green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED
+    # Draws MIXED outcomes reproducibly; ignored by the fixed presets.
+    its_outcome_seed: ItsOutcomeSeed = 0
 
 
 class SnappedEndpoint(BaseModel):
@@ -158,6 +174,7 @@ class SimulationStartResponse(BaseModel):
     origin_snapped: SnappedEndpoint
     destination_snapped: SnappedEndpoint
     its_scenario: ItsScenario = ItsScenario.NOMINAL
+    its_outcome_seed: ItsOutcomeSeed = 0
     green_wave_mode: GreenWaveMode = GreenWaveMode.ENABLED  # the mode this run uses
     # Set when the incident is off the network: the run ends at destination_snapped (the access
     # point) and the crew walks this leg; the estimates cover the drive only.
@@ -180,6 +197,7 @@ class ComparisonStartRequest(BaseModel):
     playback_speed: Annotated[int, Field(ge=1, le=10)] = 1
     vehicle_type: VehicleType = VehicleType.AMBULANCE
     its_scenario: ItsScenario = ItsScenario.NOMINAL
+    its_outcome_seed: ItsOutcomeSeed = 0
 
     @model_validator(mode="after")
     def distinct_ids(self) -> Self:
@@ -200,6 +218,7 @@ class ComparisonStartRequest(BaseModel):
             vehicle_type=self.vehicle_type,
             green_wave_mode=mode,
             its_scenario=self.its_scenario,
+            its_outcome_seed=self.its_outcome_seed,
         )
 
 
@@ -229,6 +248,8 @@ class IntersectionTelemetry(BaseModel):
     is_cascade: bool
     tti_seconds: int | None  # None once the intersection has been passed
     is_active_corridor: bool  # state in {CLEARING, PRIORITY_GREEN}; computed by the backend
+    # PRIORITY until a request for it fails, then STANDARD_FALLBACK; None in standard-mode runs.
+    crossing_strategy: CrossingStrategy | None = None
 
 
 class SignalPhaseIndicator(BaseModel):
@@ -302,6 +323,8 @@ class SimulationCompletedEvent(BaseModel):
     tick: Annotated[int, Field(ge=0)]
     timestamp: AwareDatetime
     kpi_metrics: KpiMetrics  # final
+    # Route-order intersections crossed under STANDARD_FALLBACK after a failed request.
+    fallback_intersection_ids: list[str] = []
 
 
 class SimulationCancelledEvent(BaseModel):
@@ -352,6 +375,7 @@ __all__ = [
     "CancelReason",
     "ComparisonStartRequest",
     "ComparisonStartResponse",
+    "CrossingStrategy",
     "ErrorCode",
     "ErrorResponse",
     "GreenWaveMode",

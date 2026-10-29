@@ -71,7 +71,7 @@ def plan_simulation(
         gateway,
         request.vehicle_type,
         mode,
-        controller_factory(route_model, settings, scenario),
+        controller_factory(route_model, settings, scenario, request.its_outcome_seed),
         scenario,
         request.playback_speed,
     )
@@ -85,4 +85,5 @@ def plan_simulation(
         standard_seconds=engine.standard_profile.total_seconds,
     )
     response.its_scenario = scenario
+    response.its_outcome_seed = request.its_outcome_seed
     return PlannedSimulation(engine, response)

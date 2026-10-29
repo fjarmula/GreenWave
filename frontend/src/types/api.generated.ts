@@ -264,6 +264,11 @@ export interface components {
             enable_cascade_mode: boolean;
             /** Enabled Simulation Id */
             enabled_simulation_id: string;
+            /**
+             * Its Outcome Seed
+             * @default 0
+             */
+            its_outcome_seed: number;
             /** @default NOMINAL */
             its_scenario: components["schemas"]["ItsScenario"];
             origin: components["schemas"]["Position"];
@@ -292,6 +297,12 @@ export interface components {
              */
             schema_version: "1.0";
         };
+        /**
+         * CrossingStrategy
+         * @description How an enabled run crosses one intersection; a failed priority request falls back.
+         * @enum {string}
+         */
+        CrossingStrategy: "PRIORITY" | "STANDARD_FALLBACK";
         /** DatasetQualityResponse */
         DatasetQualityResponse: {
             /** Checks */
@@ -470,6 +481,7 @@ export interface components {
         IntersectionState: "NORMAL" | "CLEARING" | "PRIORITY_GREEN" | "RECOVERY";
         /** IntersectionTelemetry */
         IntersectionTelemetry: {
+            crossing_strategy?: components["schemas"]["CrossingStrategy"] | null;
             /** Id */
             id: string;
             /** Is Active Corridor */
@@ -614,9 +626,10 @@ export interface components {
         ItsRequestStatus: "REQUESTED" | "ACCEPTED" | "RELEASED" | "REJECTED" | "TIMED_OUT" | "EXPIRED";
         /**
          * ItsScenario
+         * @description Simulated controller behaviour. ``MIXED`` draws each request's outcome from a seed.
          * @enum {string}
          */
-        ItsScenario: "NOMINAL" | "DELAYED" | "REJECTED" | "NO_FEEDBACK";
+        ItsScenario: "NOMINAL" | "DELAYED" | "REJECTED" | "NO_FEEDBACK" | "MIXED";
         /** KpiMetrics */
         KpiMetrics: {
             /** Current Time Saved Sec */
@@ -831,6 +844,11 @@ export interface components {
              */
             event_type: "SIMULATION_COMPLETED";
             /**
+             * Fallback Intersection Ids
+             * @default []
+             */
+            fallback_intersection_ids: string[];
+            /**
              * Is Simulated
              * @constant
              */
@@ -858,6 +876,11 @@ export interface components {
             enable_cascade_mode: boolean;
             /** @default ENABLED */
             green_wave_mode: components["schemas"]["GreenWaveMode"];
+            /**
+             * Its Outcome Seed
+             * @default 0
+             */
+            its_outcome_seed: number;
             /** @default NOMINAL */
             its_scenario: components["schemas"]["ItsScenario"];
             origin: components["schemas"]["Position"];
@@ -892,6 +915,11 @@ export interface components {
              * @constant
              */
             is_simulated: true;
+            /**
+             * Its Outcome Seed
+             * @default 0
+             */
+            its_outcome_seed: number;
             /** @default NOMINAL */
             its_scenario: components["schemas"]["ItsScenario"];
             origin_snapped: components["schemas"]["SnappedEndpoint"];
