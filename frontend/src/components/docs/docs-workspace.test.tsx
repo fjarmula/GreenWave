@@ -53,6 +53,9 @@ describe("DocsWorkspace", () => {
     expect(html).not.toContain("↗");
     expect(html).toContain('class="docs-navigation"');
     expect(html).toMatch(/Live demo[\s\S]*?<svg/);
+    expect(html).toMatch(
+      /href="https:\/\/github.com\/fjarmula\/GreenWave"[^>]*>[\s\S]*?GitHub[\s\S]*?<svg/,
+    );
     expect(html).toContain('aria-orientation="vertical"');
     expect(html).not.toContain("Contest documentation");
     expect(html).toMatch(/<h1[^>]*>Documentation<\/h1>/);

@@ -43,6 +43,14 @@ export function DocsWorkspace() {
           <a className="docs-chip" href={DEMO_URL} target="_blank" rel="noopener">
             {t("Live demo")} <ArrowUpRight aria-hidden className="size-4 shrink-0" />
           </a>
+          <a
+            className="docs-chip"
+            href="https://github.com/fjarmula/GreenWave"
+            target="_blank"
+            rel="noopener"
+          >
+            GitHub <ArrowUpRight aria-hidden className="size-4 shrink-0" />
+          </a>
         </div>
       </div>
       <div className="docs-layout">

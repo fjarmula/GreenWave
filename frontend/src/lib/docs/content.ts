@@ -127,7 +127,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
             ],
             [
               "Wdrożenie",
-              "Docker Compose, Caddy, Oracle Cloud Always Free",
+              "Docker Compose, Caddy, Oracle Cloud",
               "Uruchamianie usług w kontenerach, obsługa HTTPS i automatyczne wdrażanie zmian z gałęzi main.",
             ],
             [
@@ -392,7 +392,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
             ],
             [
               "Deployment",
-              "Docker Compose, Caddy, Oracle Cloud Always Free",
+              "Docker Compose, Caddy, Oracle Cloud",
               "Containerised services, HTTPS and automatic deployment of changes from main.",
             ],
             [
