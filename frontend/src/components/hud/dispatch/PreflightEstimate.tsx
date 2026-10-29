@@ -42,6 +42,7 @@ export function PreflightEstimate({
           playback_speed: 1,
           vehicle_type: "AMBULANCE",
           its_scenario: "NOMINAL",
+          its_outcome_seed: 0,
         }).route
       : null;
   const hasEstimate = isMockTransport ? mockRoute !== null : candidate !== null;

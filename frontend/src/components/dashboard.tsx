@@ -40,6 +40,7 @@ import { useIsPhone } from "@/lib/useIsPhone";
 import { setupSheetMinimizable } from "@/lib/driver-setup-sheet";
 import { KpiHeader } from "@/components/hud/KpiHeader";
 import { RunSummary } from "@/components/hud/RunSummary";
+import { PriorityFallbackNotice } from "@/components/hud/PriorityFallbackNotice";
 import { IntersectionList } from "@/components/hud/IntersectionList";
 import { ItsConsole } from "@/components/hud/ItsConsole";
 import { DispatchStartButton } from "@/components/hud/dispatch/DispatchStartButton";
@@ -262,10 +263,14 @@ export function Dashboard({
             snap,
             onSnapChange: setSnap,
             collapsed: (
-              <DriverStatus state={simulation} onStop={stopRun} onBackToSetup={backToSetup} />
+              <>
+                <DriverStatus state={simulation} onStop={stopRun} onBackToSetup={backToSetup} />
+                <PriorityFallbackNotice compact />
+              </>
             ),
             expanded: (
               <div className="space-y-4 pt-2">
+                <PriorityFallbackNotice />
                 <IntersectionList />
                 <ItsConsole />
               </div>
@@ -277,13 +282,17 @@ export function Dashboard({
             // Running: telemetry and the one Stop. Ended: the outcome and the way back to setup.
             collapsed:
               simulationState === "RUNNING" ? (
-                <KpiHeader onStop={stopRun} />
+                <>
+                  <KpiHeader onStop={stopRun} />
+                  <PriorityFallbackNotice compact />
+                </>
               ) : (
                 <RunSummary onBackToSetup={backToSetup} onStop={stopRun} showStop={false} />
               ),
             expanded: (
               <div className="space-y-4 pt-1">
                 {simulationState !== "RUNNING" && <KpiHeader />}
+                <PriorityFallbackNotice />
                 <IntersectionList />
                 <ItsConsole />
               </div>
@@ -368,6 +377,7 @@ export function Dashboard({
               <div className="space-y-4 p-4">
                 <KpiHeader />
                 <RunSummary onBackToSetup={backToSetup} onStop={stopRun} />
+                <PriorityFallbackNotice />
                 <IntersectionList />
                 <ItsConsole />
               </div>

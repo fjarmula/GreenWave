@@ -12,6 +12,8 @@ export type NextSignal = {
   name: string | null;
   state: IntersectionState;
   distanceM: number;
+  /** Its priority request failed: crossed with ordinary signals. */
+  fallback?: boolean;
 };
 
 /**
@@ -32,7 +34,13 @@ export function nextSignal(
   if (!onRoute || travelled === null) return null;
   const distanceM = onRoute.distance_along_route_m - travelled;
   if (distanceM < 0) return null;
-  return { intersectionId: ahead.id, name: onRoute.name ?? null, state: ahead.state, distanceM };
+  return {
+    intersectionId: ahead.id,
+    name: onRoute.name ?? null,
+    state: ahead.state,
+    distanceM,
+    fallback: ahead.crossing_strategy === "STANDARD_FALLBACK",
+  };
 }
 
 /** "180 m" (nearest 10 m) below a kilometre, "1.2 km" above. */
@@ -43,14 +51,17 @@ export function formatSignalDistance(meters: number): string {
 }
 
 const SIGNAL_COPY: Record<IntersectionState, string> = {
-  PRIORITY_GREEN: "Green",
+  PRIORITY_GREEN: "Priority green",
   CLEARING: "Clearing",
   NORMAL: "Ordinary signal",
   RECOVERY: "Recovery",
 };
 
 export function nextSignalCopy(signal: NextSignal): string {
-  return `${SIGNAL_COPY[signal.state]} in ${formatSignalDistance(signal.distanceM)}`;
+  const copy = signal.fallback
+    ? "Ordinary signal · priority unavailable"
+    : SIGNAL_COPY[signal.state];
+  return `${copy} in ${formatSignalDistance(signal.distanceM)}`;
 }
 
 /** Simulated seconds left on the run's own estimate. */
@@ -74,6 +85,7 @@ export function itsScenarioLabel(scenario: ItsScenario): string {
     DELAYED: "Delayed",
     REJECTED: "Rejected",
     NO_FEEDBACK: "No feedback",
+    MIXED: "Mixed",
   }[scenario];
 }
 
@@ -83,6 +95,7 @@ export function itsScenarioCaption(scenario: ItsScenario): string {
     DELAYED: "accept · 5 s",
     REJECTED: "reject · 1 s",
     NO_FEEDBACK: "timeout · 8 s",
+    MIXED: "seeded · per request",
   }[scenario];
 }
 
@@ -95,10 +108,14 @@ export function itsScenarioTone(
       DELAYED: "tone-caution",
       REJECTED: "tone-emergency",
       NO_FEEDBACK: "tone-muted",
+      MIXED: "tone-caution",
     } as const
   )[scenario];
 }
 
 export function settingsSummary(settings: DispatchSettings): string {
-  return `Traffic ${settings.trafficDensity}× · Cascade ${settings.cascadeEnabled ? "on" : "off"} · ${settings.playbackSpeed}× speed · ITS ${itsScenarioLabel(settings.greenWaveMode === "DISABLED" ? "NOMINAL" : (settings.itsScenario ?? "NOMINAL"))}`;
+  const scenario =
+    settings.greenWaveMode === "DISABLED" ? "NOMINAL" : (settings.itsScenario ?? "NOMINAL");
+  const seed = scenario === "MIXED" ? ` #${settings.itsOutcomeSeed ?? 0}` : "";
+  return `Traffic ${settings.trafficDensity}× · Cascade ${settings.cascadeEnabled ? "on" : "off"} · ${settings.playbackSpeed}× speed · ITS ${itsScenarioLabel(scenario)}${seed}`;
 }

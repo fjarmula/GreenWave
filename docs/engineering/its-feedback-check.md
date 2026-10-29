@@ -1,5 +1,9 @@
 # Simulated ITS feedback: behavior check and corrections
 
+> Superseded in part (2026-10-30): rejection, timeout and hold expiry no longer end the run;
+> they fall back per junction (ADR 0015,
+> `docs/superpowers/specs/2026-10-29-per-junction-fallback-design.md`).
+
 ## Requirement and expected behavior
 
 Check the four response presets shown in setup against the backend and mock controller.

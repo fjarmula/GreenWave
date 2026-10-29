@@ -17,6 +17,7 @@ function reviewState(): SimulationState {
     routeData: {
       green_wave_mode: "ENABLED",
       its_scenario: "NOMINAL" as const,
+      its_outcome_seed: 0,
       schema_version: "1.0",
       is_simulated: true,
       simulation_id: "detail",

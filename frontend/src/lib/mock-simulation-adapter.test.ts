@@ -14,6 +14,7 @@ import type {
 const request: SimulationStartRequest = {
   green_wave_mode: "ENABLED",
   its_scenario: "NOMINAL" as const,
+  its_outcome_seed: 0,
   simulation_id: "test",
   origin: { lat: 0, lng: 0 },
   destination: { lat: (5400 / 6_371_000) * (180 / Math.PI), lng: 0 },
@@ -274,6 +275,7 @@ it("keeps public estimate seconds integral without stalling a subsecond trip", a
 describe("mock comparison pair", () => {
   const comparison = {
     its_scenario: "NOMINAL" as const,
+    its_outcome_seed: 0,
     enabled_simulation_id: "pair-e",
     disabled_simulation_id: "pair-d",
     origin: request.origin,
@@ -387,7 +389,7 @@ describe("mock comparison pair", () => {
 });
 
 it.each(["REJECTED", "NO_FEEDBACK"] as const)(
-  "propagates %s controller failures from a comparison member",
+  "keeps a comparison member running through %s and tags its fallback",
   async (its_scenario) => {
     vi.useFakeTimers();
     const adapter = createMockSimulationAdapter();
@@ -395,6 +397,7 @@ it.each(["REJECTED", "NO_FEEDBACK"] as const)(
     const pair = await adapter.startComparison({
       ...scenario,
       its_scenario,
+      its_outcome_seed: 0,
       enabled_simulation_id: "failed-on",
       disabled_simulation_id: "baseline-off",
     });
@@ -403,15 +406,15 @@ it.each(["REJECTED", "NO_FEEDBACK"] as const)(
     const feedback = vi.fn();
     adapter.subscribe("failed-on", { ...enabled.subscriber, onItsFeedback: feedback });
     adapter.subscribe("baseline-off", disabled.subscriber);
-    vi.advanceTimersByTime(120_000);
+    vi.advanceTimersByTime(600_000);
     expect(feedback).toHaveBeenCalled();
-    expect(enabled.completions).toHaveLength(0);
-    expect(enabled.cancellations).toEqual([
-      expect.objectContaining({
-        reason: its_scenario === "REJECTED" ? "ITS_REJECTED" : "ITS_TIMEOUT",
-      }),
+    expect(enabled.cancellations).toHaveLength(0);
+    expect(enabled.completions).toEqual([
+      expect.objectContaining({ fallback_intersection_ids: ["INT-9001", "INT-9002"] }),
     ]);
-    expect(disabled.completions).toHaveLength(1);
+    expect(disabled.completions).toEqual([
+      expect.objectContaining({ fallback_intersection_ids: [] }),
+    ]);
     expect(pair.disabled.its_scenario).toBe("NOMINAL");
   },
 );

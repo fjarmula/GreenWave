@@ -8,6 +8,7 @@ const COMPLETION: SimulationCompletedEvent = {
   schema_version: "1.0",
   is_simulated: true,
   event_type: "SIMULATION_COMPLETED",
+  fallback_intersection_ids: [],
   simulation_id: "SIM-summary",
   tick: 520,
   timestamp: "2026-10-21T00:08:40Z",

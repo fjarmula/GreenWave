@@ -14,6 +14,7 @@ const SIMULATION_ID = "test-simulation";
 const request: SimulationStartRequest = {
   green_wave_mode: "DISABLED",
   its_scenario: "NOMINAL" as const,
+  its_outcome_seed: 0,
   simulation_id: SIMULATION_ID,
   origin: { lat: 50.0612, lng: 19.9571 },
   destination: { lat: 50.0134, lng: 19.9982 },
@@ -26,6 +27,7 @@ const request: SimulationStartRequest = {
 const route: SimulationStartResponse = {
   green_wave_mode: "DISABLED",
   its_scenario: "NOMINAL" as const,
+  its_outcome_seed: 0,
   schema_version: "1.0",
   is_simulated: true,
   simulation_id: SIMULATION_ID,
@@ -62,6 +64,7 @@ const finished = reduce(...started, {
     schema_version: "1.0",
     is_simulated: true,
     event_type: "SIMULATION_COMPLETED",
+    fallback_intersection_ids: [],
     simulation_id: SIMULATION_ID,
     tick: 812,
     timestamp: "2026-10-22T12:00:00Z",

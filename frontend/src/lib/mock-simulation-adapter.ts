@@ -1,4 +1,9 @@
-import { advanceMockSession, createMockSession, type MockSession } from "@/lib/mock-session";
+import {
+  advanceMockSession,
+  createMockSession,
+  mockFallbackIds,
+  type MockSession,
+} from "@/lib/mock-session";
 import { tickIntervalMilliseconds } from "@/lib/playback-speed";
 import type { SimulationAdapter, SimulationStreamSubscriber } from "@/lib/simulation-adapter";
 import { SimulationAdapterError } from "@/lib/transport/errors";
@@ -52,15 +57,15 @@ export function createMockSimulationAdapter(): SimulationAdapter {
 
   const emitNextTicks = () => {
     for (const session of [...live]) {
-      const { tick, dispatch, completed, feedbacks, failure } = advanceMockSession(session);
+      const { tick, dispatch, completed, feedbacks } = advanceMockSession(session);
       const listeners = [...(subscribers.get(session.request.simulation_id) ?? [])];
       feedbacks.forEach((event) =>
         listeners.forEach((subscriber) => subscriber.onItsFeedback(event)),
       );
       if (dispatch) listeners.forEach((subscriber) => subscriber.onItsDispatch(dispatch));
       listeners.forEach((subscriber) => subscriber.onTick(tick));
-      if (failure) endSession(session, cancelledEvent(session, failure));
-      else if (completed) endSession(session, completedEvent(tick));
+      // A failed priority request only falls back at its junctions; it never ends the run.
+      if (completed) endSession(session, completedEvent(tick, mockFallbackIds(session)));
     }
   };
 
@@ -149,7 +154,10 @@ function cancelledEvent(session: MockSession, reason: CancelReason): SimulationC
   };
 }
 
-function completedEvent(tick: SimulationTickEvent): SimulationCompletedEvent {
+function completedEvent(
+  tick: SimulationTickEvent,
+  fallbackIntersectionIds: string[],
+): SimulationCompletedEvent {
   return {
     schema_version: "1.0",
     is_simulated: true,
@@ -158,5 +166,6 @@ function completedEvent(tick: SimulationTickEvent): SimulationCompletedEvent {
     tick: tick.tick,
     timestamp: tick.timestamp,
     kpi_metrics: tick.kpi_metrics,
+    fallback_intersection_ids: fallbackIntersectionIds,
   };
 }

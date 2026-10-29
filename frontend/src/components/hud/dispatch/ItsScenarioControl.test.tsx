@@ -6,23 +6,33 @@ import { itsScenarioCaption, itsScenarioTone } from "@/lib/driver-presentation";
 const radios = (html: string) => html.match(/<button[^>]*role="radio"[^>]*>.*?<\/button>/g) ?? [];
 
 describe("ItsScenarioControl", () => {
-  it("renders four labelled radio cards", () => {
+  it("renders five labelled radio cards", () => {
     const html = renderToStaticMarkup(
       <ItsScenarioControl value="NOMINAL" disabled={false} onChange={() => {}} />,
     );
     expect(html).toContain('role="radiogroup"');
     expect(html).toContain('aria-label="Simulated ITS feedback"');
-    expect(radios(html)).toHaveLength(4);
-    for (const label of ["Nominal", "Delayed", "Rejected", "No feedback", "accept · 1 s"])
+    expect(radios(html)).toHaveLength(5);
+    for (const label of ["Nominal", "Delayed", "Rejected", "No feedback", "Mixed", "accept · 1 s"])
       expect(html).toContain(label);
     expect(html).not.toContain("<select");
+    expect(html).not.toContain('type="number"');
+  });
+
+  it("asks for the outcome seed only for the mixed scenario", () => {
+    const html = renderToStaticMarkup(
+      <ItsScenarioControl value="MIXED" seed={42} disabled={false} onChange={() => {}} />,
+    );
+    expect(html).toMatch(/<input[^>]*type="number"[^>]*min="0"[^>]*max="4294967295"/);
+    expect(html).toContain('value="42"');
+    expect(html).toContain("Outcome seed");
   });
 
   it("checks the current value with roving tabindex", () => {
     const html = renderToStaticMarkup(
       <ItsScenarioControl value="REJECTED" disabled={false} onChange={() => {}} />,
     );
-    expect(radios(html)).toHaveLength(4);
+    expect(radios(html)).toHaveLength(5);
     for (const radio of radios(html)) {
       const rejected = radio.includes("Rejected");
       expect(radio).toContain(`aria-checked="${rejected}"`);
@@ -44,10 +54,10 @@ describe("ItsScenarioControl", () => {
 
 describe("nextItsScenario", () => {
   it.each([
-    ["NO_FEEDBACK", "ArrowRight", "NOMINAL"],
-    ["NO_FEEDBACK", "ArrowDown", "NOMINAL"],
-    ["NOMINAL", "ArrowLeft", "NO_FEEDBACK"],
-    ["NOMINAL", "ArrowUp", "NO_FEEDBACK"],
+    ["NO_FEEDBACK", "ArrowRight", "MIXED"],
+    ["MIXED", "ArrowDown", "NOMINAL"],
+    ["NOMINAL", "ArrowLeft", "MIXED"],
+    ["MIXED", "ArrowUp", "NO_FEEDBACK"],
     ["DELAYED", "ArrowRight", "REJECTED"],
     ["DELAYED", "Enter", null],
   ] as const)("%s + %s → %s", (current, key, next) => {

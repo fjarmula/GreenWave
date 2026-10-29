@@ -37,6 +37,7 @@ passage prevents late activation. The existing hold duration is enforced from
 submission, passage at expiry wins, and no automatic renewal/retry is added.
 Rejection/timeout/expiry produce final diagnostic tick then one ITS_REJECTED /
 ITS_TIMEOUT / ITS_HOLD_EXPIRED cancellation. Close on every terminal, idempotently.
+(Proposed superseding change: ADR 0015 replaces this cancellation with per-junction fallback.)
 
 Add ITS_FEEDBACK to the stream. Feedback precedes dispatch precedes tick precedes
 terminal. SSE id remains tick. Self-contained ticks carry request snapshots and

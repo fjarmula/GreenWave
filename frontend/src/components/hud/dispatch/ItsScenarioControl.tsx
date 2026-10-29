@@ -1,13 +1,14 @@
 "use client";
 import { useTranslation } from "@/components/language-provider";
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import { itsScenarioCaption, itsScenarioLabel, itsScenarioTone } from "@/lib/driver-presentation";
+import { ITS_OUTCOME_SEED_MAX, normalizeOutcomeSeed } from "@/lib/start-request";
 import type { ItsScenario } from "@/types/telemetry";
-const scenarios: ItsScenario[] = ["NOMINAL", "DELAYED", "REJECTED", "NO_FEEDBACK"];
+const scenarios: ItsScenario[] = ["NOMINAL", "DELAYED", "REJECTED", "NO_FEEDBACK", "MIXED"];
 const FORWARD = ["ArrowRight", "ArrowDown"];
 const BACK = ["ArrowLeft", "ArrowUp"];
 
-/** Radio-group arrow keys: wrap through the four scenarios; other keys are not ours. */
+/** Radio-group arrow keys: wrap through the scenarios; other keys are not ours. */
 export function nextItsScenario(current: ItsScenario, key: string): ItsScenario | null {
   const step = FORWARD.includes(key) ? 1 : BACK.includes(key) ? -1 : 0;
   if (!step) return null;
@@ -19,13 +20,19 @@ export function ItsScenarioControl({
   value,
   disabled,
   onChange,
+  seed = 0,
+  onSeedChange = () => {},
 }: {
   value: ItsScenario;
   disabled: boolean;
   onChange: (value: ItsScenario) => void;
+  /** The MIXED scenario's outcome seed. */
+  seed?: number;
+  onSeedChange?: (seed: number) => void;
 }) {
   const { t } = useTranslation();
   const group = useRef<HTMLDivElement>(null);
+  const seedId = useId();
   const shown = disabled ? "NOMINAL" : value;
   return (
     <div className="mt-6">
@@ -60,7 +67,9 @@ export function ItsScenarioControl({
             tabIndex={scenario === shown ? 0 : -1}
             disabled={disabled}
             onClick={() => onChange(scenario)}
-            className={`its-option pressable ${itsScenarioTone(scenario)}`}
+            className={`its-option pressable ${itsScenarioTone(scenario)}${
+              scenario === "MIXED" ? " its-option-wide" : ""
+            }`}
           >
             <span className="its-option-title">
               <span className="hud-dot" aria-hidden />
@@ -70,6 +79,30 @@ export function ItsScenarioControl({
           </button>
         ))}
       </div>
+      {shown === "MIXED" && (
+        <div className="mt-2">
+          <label htmlFor={seedId} className="text-xs font-semibold">
+            {t("Outcome seed")}
+          </label>
+          <input
+            id={seedId}
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={ITS_OUTCOME_SEED_MAX}
+            step={1}
+            value={seed}
+            onChange={(event) => onSeedChange(normalizeOutcomeSeed(event.target.valueAsNumber))}
+            className="hud-input hud-value mt-1"
+            aria-describedby={`${seedId}-hint`}
+          />
+          <p id={`${seedId}-hint`} className="mt-1 text-2xs text-muted-foreground">
+            {t(
+              "Each request is accepted, delayed, rejected or left unanswered by this seed and its junctions, so the same seed replays the same outcomes.",
+            )}
+          </p>
+        </div>
+      )}
       <p className="mt-2 text-xs text-muted-foreground">
         {disabled ? (
           t("Standard mode sends no priority requests.")
@@ -77,7 +110,7 @@ export function ItsScenarioControl({
           <>
             {t("Times count from each priority request in simulated seconds.")}{" "}
             {t(
-              "Acceptance starts signal clearing; rejection or an 8 s acknowledgement timeout ends the run.",
+              "Acceptance starts signal clearing. After a rejection or an 8 s acknowledgement timeout, only those junctions use ordinary signals; the run continues.",
             )}
           </>
         )}

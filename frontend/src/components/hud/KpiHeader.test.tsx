@@ -138,6 +138,7 @@ describe("KpiHeader vehicle type", () => {
         vehicle_type: type,
         green_wave_mode: "ENABLED",
         its_scenario: "NOMINAL",
+        its_outcome_seed: 0,
       },
     };
     const markup = renderToStaticMarkup(<KpiHeader />);

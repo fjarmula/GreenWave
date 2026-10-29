@@ -14,6 +14,7 @@ import type {
   AmbulanceStatus,
   CancelReason,
   ComparisonStartResponse,
+  CrossingStrategy,
   DatasetQualityResponse,
   DispatchRankResponse,
   ErrorCode,
@@ -95,6 +96,11 @@ const ITS_SCENARIOS: Record<ItsScenario, true> = {
   DELAYED: true,
   REJECTED: true,
   NO_FEEDBACK: true,
+  MIXED: true,
+};
+const CROSSING_STRATEGIES: Record<CrossingStrategy, true> = {
+  PRIORITY: true,
+  STANDARD_FALLBACK: true,
 };
 const ITS_REQUEST_STATUSES: Record<ItsRequestStatus, true> = {
   REQUESTED: true,
@@ -273,7 +279,13 @@ export function parseStartResponse(value: unknown): SimulationStartResponse {
   optionalOnFootLeg(body.destination_on_foot, "destination_on_foot");
   member(GREEN_WAVE_MODES, body.green_wave_mode, "green_wave_mode");
   member(ITS_SCENARIOS, body.its_scenario ?? "NOMINAL", "its_scenario");
-  return { ...body, its_scenario: body.its_scenario ?? "NOMINAL" } as SimulationStartResponse;
+  const seed = finite(body.its_outcome_seed ?? 0, "its_outcome_seed");
+  if (!Number.isInteger(seed) || seed < 0) fail("its_outcome_seed", "a non-negative integer");
+  return {
+    ...body,
+    its_scenario: body.its_scenario ?? "NOMINAL",
+    its_outcome_seed: seed,
+  } as SimulationStartResponse;
 }
 
 function checkItsStatus(event: UnknownRecord, snapshot: boolean): void {
@@ -338,6 +350,8 @@ function checkStreamEvent(
         member(INTERSECTION_STATES, intersection.state, `${path}.state`);
         bool(intersection.is_cascade, `${path}.is_cascade`);
         bool(intersection.is_active_corridor, `${path}.is_active_corridor`);
+        if (intersection.crossing_strategy != null)
+          member(CROSSING_STRATEGIES, intersection.crossing_strategy, `${path}.crossing_strategy`);
         if (intersection.tti_seconds !== null) {
           finite(intersection.tti_seconds, `${path}.tti_seconds`);
         }
@@ -417,6 +431,9 @@ function checkStreamEvent(
     }
     case "SIMULATION_COMPLETED":
       kpiMetrics(event.kpi_metrics, "kpi_metrics");
+      list(event.fallback_intersection_ids ?? [], "fallback_intersection_ids").forEach((id, i) =>
+        text(id, `fallback_intersection_ids[${i}]`),
+      );
       return;
     case "SIMULATION_CANCELLED":
       member(CANCEL_REASONS, event.reason, "reason");
@@ -468,7 +485,9 @@ export function parseStreamEvent(
           })),
           its_observed_at_simulated_sec: value.its_observed_at_simulated_sec ?? null,
         }
-      : value
+      : eventType === "SIMULATION_COMPLETED"
+        ? { ...value, fallback_intersection_ids: value.fallback_intersection_ids ?? [] }
+        : value
   ) as SimulationStreamEvent;
 }
 

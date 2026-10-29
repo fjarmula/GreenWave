@@ -374,8 +374,31 @@ export const polish: Record<string, string> = {
   "reject · 1 s": "odrzucenie · 1 s",
   "Times count from each priority request in simulated seconds.":
     "Czasy liczone są od wysłania żądania priorytetu w sekundach symulacji.",
-  "Acceptance starts signal clearing; rejection or an 8 s acknowledgement timeout ends the run.":
-    "Akceptacja rozpoczyna przygotowanie sygnalizacji do priorytetu. Odrzucenie lub brak potwierdzenia przez 8 s kończy przejazd.",
+  "Acceptance starts signal clearing. After a rejection or an 8 s acknowledgement timeout, only those junctions use ordinary signals; the run continues.":
+    "Akceptacja rozpoczyna przygotowanie sygnalizacji do priorytetu. Po odrzuceniu lub braku potwierdzenia przez 8 s tylko te skrzyżowania działają na zwykłej sygnalizacji; przejazd trwa dalej.",
+  Mixed: "Mieszany",
+  "seeded · per request": "losowo z ziarna · dla każdego żądania",
+  "Outcome seed": "Ziarno losowania",
+  "Each request is accepted, delayed, rejected or left unanswered by this seed and its junctions, so the same seed replays the same outcomes.":
+    "Ziarno i skrzyżowania żądania decydują, czy zostanie przyjęte, przyjęte z opóźnieniem, odrzucone, czy pozostanie bez odpowiedzi; to samo ziarno odtwarza te same wyniki.",
+  "Priority unavailable · run continues": "Priorytet niedostępny · przejazd trwa dalej",
+  "These junctions are crossed with ordinary signals (standard fallback). The run continues and other junctions keep requesting priority.":
+    "Te skrzyżowania pojazd przejeżdża na zwykłej sygnalizacji (tryb awaryjny). Przejazd trwa dalej, a pozostałe skrzyżowania nadal otrzymują żądania priorytetu.",
+  "No controller response · 8 s timeout": "Brak odpowiedzi sterownika · limit 8 s",
+  "Priority fallback · 1 junction": "Tryb awaryjny · 1 skrzyżowanie",
+  "Priority fallback · {0} junctions": "Tryb awaryjny · skrzyżowania: {0}",
+  "Priority fallback": "Tryb awaryjny priorytetu",
+  "1 junction · ordinary signals": "1 skrzyżowanie · zwykła sygnalizacja",
+  "{0} junctions · ordinary signals": "skrzyżowania: {0} · zwykła sygnalizacja",
+  "standard fallback": "tryb awaryjny",
+  "STANDARD FALLBACK · ORDINARY SIGNALS": "TRYB AWARYJNY · ZWYKŁA SYGNALIZACJA",
+  " · FALLBACK": " · AWARYJNY",
+  "ORDINARY TRAFFIC REPORT": "RAPORT ZWYKŁEGO RUCHU",
+  "Priority green in {0}": "Zielone z priorytetem za {0}",
+  "Clearing in {0}": "Opróżnianie za {0}",
+  "Ordinary signal in {0}": "Zwykła sygnalizacja za {0}",
+  "Recovery in {0}": "Przywracanie za {0}",
+  "Ordinary signal · priority unavailable in {0}": "Zwykła sygnalizacja · brak priorytetu za {0}",
   "Standard mode sends no priority requests.":
     "W trybie standardowym żądania priorytetu nie są wysyłane.",
   "timeout · 8 s": "limit · 8 s",

@@ -31,6 +31,7 @@ export type SimulationCompletedEvent = Schemas["SimulationCompletedEvent"];
 export type SimulationCancelledEvent = Schemas["SimulationCancelledEvent"];
 export type SimulationStreamEvent = Schemas["SimulationStreamEvent"];
 export type CancelReason = Schemas["CancelReason"];
+export type CrossingStrategy = Schemas["CrossingStrategy"];
 export type ErrorCode = Schemas["ErrorCode"];
 export type ErrorResponse = Schemas["ErrorResponse"];
 export type StopResponse = Schemas["StopResponse"];

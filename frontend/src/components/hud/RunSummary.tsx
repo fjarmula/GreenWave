@@ -8,6 +8,7 @@ import { getFrontendConfig } from "@/lib/config";
 import {
   cancelReasonLabel,
   describeSimulationError,
+  FALLBACK_LABEL,
   SAVED_LABEL,
   SERVER_ERROR_COPY,
   summarizeFinishedRun,
@@ -156,7 +157,11 @@ export function FinishedRunSummary({
   onBackToSetup: () => void;
 }) {
   const { t } = useTranslation();
-  const [total, ...details] = summarizeFinishedRun(route, completion.kpi_metrics);
+  const [total, ...details] = summarizeFinishedRun(
+    route,
+    completion.kpi_metrics,
+    completion.fallback_intersection_ids,
+  );
   const savedTone = SAVED_VALUE_TONES[timeSavedTone(completion.kpi_metrics.current_time_saved_sec)];
   return (
     <SummaryCard
@@ -181,6 +186,7 @@ export function FinishedRunSummary({
               className={[
                 "hud-value mt-1 text-sm font-semibold",
                 label === SAVED_LABEL && savedTone,
+                label === FALLBACK_LABEL && "text-caution",
               ]
                 .filter(Boolean)
                 .join(" ")}

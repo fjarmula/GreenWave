@@ -15,8 +15,9 @@ signal state, ITS message, delay and priority command it shows is simulated.
 - **Live comparison.** Both modes start together on one simulated clock and stream into two maps
   side by side, then a result card compares the actual travel times.
 - **Simulated ITS scenarios.** The priority request to the (simulated) traffic controller can be
-  nominal, delayed, rejected or unanswered; rejection and timeout end the run visibly
-  ([backend README](backend/README.md#simulated-its-feedback), ADR 0008).
+  nominal, delayed, rejected, unanswered, or drawn per request from a seed (mixed). A failed
+  request only puts its own junctions on ordinary signals; the run continues
+  ([backend README](backend/README.md#simulated-its-feedback), ADR 0008, ADR 0015).
 - **On-foot and on-site dispatch.** An incident off the road network adds the final walk; an
   incident at the station itself is answered on foot, with no drive (ADR 0012).
 - **Address search.** Incident addresses geocode against Kraków's official address points (EMUiA),

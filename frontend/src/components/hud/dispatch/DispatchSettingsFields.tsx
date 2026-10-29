@@ -157,6 +157,8 @@ export function DispatchSettingsFields({
         value={settings.itsScenario ?? "NOMINAL"}
         disabled={greenWaveOff}
         onChange={(itsScenario) => update({ itsScenario })}
+        seed={settings.itsOutcomeSeed ?? 0}
+        onSeedChange={(itsOutcomeSeed) => update({ itsOutcomeSeed })}
       />
       <CascadeToggle
         enabled={cascadeEnabled}

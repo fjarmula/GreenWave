@@ -20,7 +20,7 @@ import type { ComparisonMode } from "@/lib/comparison/race";
 import { getFrontendConfig } from "@/lib/config";
 import { dispatchAdapter } from "@/lib/dispatch-adapter";
 import { createSimulationId } from "@/lib/simulation-id";
-import type { DispatchSettings } from "@/lib/start-request";
+import { normalizeOutcomeSeed, type DispatchSettings } from "@/lib/start-request";
 import {
   onSiteResult,
   pageCandidate,
@@ -101,6 +101,7 @@ export function ComparisonWorkspace() {
       playback_speed: runSettings.playbackSpeed,
       vehicle_type: dispatch.vehicleType,
       its_scenario: runSettings.itsScenario ?? "NOMINAL",
+      its_outcome_seed: normalizeOutcomeSeed(runSettings.itsOutcomeSeed),
     };
     await controller.start(request);
   };

@@ -116,6 +116,7 @@ export function greenWaveModeLabel(mode: GreenWaveMode): string {
  * baselines; the GreenWave estimate is shown only for a run that used ER Green Wave.
  */
 export const SAVED_LABEL = "Saved vs standard run";
+export const FALLBACK_LABEL = "Priority fallback";
 
 export function summarizeFinishedRun(
   route: Pick<
@@ -124,8 +125,10 @@ export function summarizeFinishedRun(
   > &
     Partial<Pick<SimulationStartResponse, "destination_on_foot">>,
   finalKpis: KpiMetrics,
+  fallbackIntersectionIds: readonly string[] = [],
 ): { label: string; value: string }[] {
   const enabled = route.green_wave_mode === "ENABLED";
+  const fallback = fallbackIntersectionIds.length;
   return [
     {
       label: route.destination_on_foot ? "Drive to access point" : "Total travel time",
@@ -151,6 +154,19 @@ export function summarizeFinishedRun(
       : []),
     ...(enabled
       ? [{ label: SAVED_LABEL, value: formatDuration(finalKpis.current_time_saved_sec) }]
+      : []),
+    // A completed run that crossed failed junctions by standard rules is tagged as such; its
+    // saving already includes that waiting and fallback time.
+    ...(enabled && fallback
+      ? [
+          {
+            label: FALLBACK_LABEL,
+            value:
+              fallback === 1
+                ? "1 junction · ordinary signals"
+                : `${fallback} junctions · ordinary signals`,
+          },
+        ]
       : []),
   ];
 }
