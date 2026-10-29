@@ -42,6 +42,7 @@ export type MockSession = {
   /** Shown vehicle light per synthetic signal key, so lights change only legally between ticks. */
   signalHeads: Map<string, MockSignalHead>;
   timeline: MockTimeline;
+  standardTimeline: MockTimeline;
   /** Elapsed seconds when the current tick began; the map animates the vehicle across the tick. */
   intervalStartSeconds: number;
 };
@@ -81,6 +82,11 @@ export function createMockSession(request: SimulationStartRequest): MockSession 
   const controller = new MockItsController(route, request.its_scenario);
   return {
     timeline: mockTimeline(route, request, metrics.greenwaveSeconds),
+    standardTimeline: mockTimeline(
+      route,
+      { ...request, green_wave_mode: "DISABLED" },
+      metrics.greenwaveSeconds,
+    ),
     intervalStartSeconds: 0,
     request,
     route,
@@ -291,6 +297,15 @@ function metersAt(session: MockSession, seconds: number): number {
   return leg.startMeters + (Math.max(0, seconds) - leg.startSeconds) * leg.speedMps;
 }
 
+/** Standard run time to the priority vehicle's current route position. */
+function standardSecondsAt(session: MockSession, meters: number): number {
+  for (const leg of session.standardTimeline.legs) {
+    const endMeters = leg.startMeters + (leg.endSeconds - leg.startSeconds) * leg.speedMps;
+    if (meters <= endMeters) return leg.startSeconds + (meters - leg.startMeters) / leg.speedMps;
+  }
+  return session.standardTimeline.tripSeconds;
+}
+
 /** Share of the route driven so far. */
 function routeProgress(session: MockSession): number {
   return Math.min(1, metersAt(session, session.driveSeconds) / session.route.total_distance_m);
@@ -398,9 +413,11 @@ export function buildMockTick(session: MockSession, timestamp: string): Simulati
             : "EN_ROUTE",
     },
     kpi_metrics: {
-      current_time_saved_sec: Math.round(
-        Math.max(0, route.estimated_normal_time_sec - session.timeline.tripSeconds) * progress,
-      ),
+      current_time_saved_sec:
+        session.request.green_wave_mode === "DISABLED"
+          ? 0
+          : Math.round(standardSecondsAt(session, progress * route.total_distance_m)) -
+            Math.round(Math.min(elapsed, session.timeline.tripSeconds)),
       // Signal recovery keeps ticking after arrival but does not add travel time.
       total_time_elapsed_sec: Math.round(Math.min(elapsed, session.timeline.tripSeconds)),
     },

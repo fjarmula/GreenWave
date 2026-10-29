@@ -3,12 +3,13 @@ import { useTranslation } from "@/components/language-provider";
 import { ArrowDownRight, TimerReset } from "lucide-react";
 
 import { formatSignalDistance } from "@/lib/driver-presentation";
-import { formatMinutesSeconds } from "@/lib/format-duration";
-import { estimateMockRoute } from "@/lib/mock-route-metrics";
-import type { Position, RankedCandidate } from "@/types/telemetry";
+import { formatMinutesSeconds, roundBackendSeconds } from "@/lib/format-duration";
+import { createMockSession } from "@/lib/mock-session";
+import type { GreenWaveMode, Position, RankedCandidate } from "@/types/telemetry";
 
 type PreflightEstimateProps = {
   isMockTransport: boolean;
+  greenWaveMode?: GreenWaveMode;
   trafficDensity: number;
   origin: Position | null;
   incident: Position | null;
@@ -22,22 +23,35 @@ export function PreflightEstimate({
   origin,
   incident,
   candidate = null,
+  greenWaveMode = "ENABLED",
 }: PreflightEstimateProps) {
   const { t } = useTranslation();
-  const metrics =
-    isMockTransport && origin && incident
-      ? estimateMockRoute(origin, incident, trafficDensity)
+  const enabled = greenWaveMode === "ENABLED";
+  const mockRoute =
+    isMockTransport &&
+    origin &&
+    incident &&
+    (origin.lat !== incident.lat || origin.lng !== incident.lng)
+      ? createMockSession({
+          simulation_id: "preflight",
+          origin,
+          destination: incident,
+          traffic_density_multiplier: trafficDensity,
+          green_wave_mode: "DISABLED",
+          enable_cascade_mode: false,
+          playback_speed: 1,
+          vehicle_type: "AMBULANCE",
+          its_scenario: "NOMINAL",
+        }).route
       : null;
-  const hasEstimate = isMockTransport
-    ? metrics !== null && metrics.distanceMeters > 0
-    : candidate !== null;
-  const normalSeconds = isMockTransport
-    ? (metrics?.normalSeconds ?? 0)
-    : (candidate?.standard_seconds ?? 0);
+  const hasEstimate = isMockTransport ? mockRoute !== null : candidate !== null;
+  const standardSeconds = isMockTransport
+    ? (mockRoute?.estimated_standard_time_sec ?? 0)
+    : roundBackendSeconds(candidate?.standard_seconds ?? 0);
   const greenwaveSeconds = isMockTransport
-    ? (metrics?.greenwaveSeconds ?? 0)
-    : (candidate?.greenwave_seconds ?? 0);
-  const saved = Math.round(normalSeconds - greenwaveSeconds);
+    ? (mockRoute?.estimated_greenwave_time_sec ?? 0)
+    : roundBackendSeconds(candidate?.greenwave_seconds ?? 0);
+  const saved = Math.round(standardSeconds - greenwaveSeconds);
   const onFoot = isMockTransport ? null : (candidate?.on_foot ?? null);
 
   return (
@@ -71,7 +85,7 @@ export function PreflightEstimate({
             {t(
               isMockTransport
                 ? "Approximate (mock) · straight line, not a drivable route or a real response-time prediction."
-                : `Simulated runs from the selected station, without and with ER Green Wave${
+                : `${enabled ? "Simulated runs from the selected station, without and with ER Green Wave" : "Simulated standard run from the selected station"}${
                     onFoot
                       ? ` · drive only, plus ${formatMinutesSeconds(Math.round(onFoot.seconds))} on foot`
                       : ""
@@ -81,35 +95,38 @@ export function PreflightEstimate({
           <div className="my-4 grid grid-cols-2 gap-3">
             <Estimate
               label={t("Standard time")}
-              value={formatMinutesSeconds(Math.round(normalSeconds))}
+              value={formatMinutesSeconds(Math.round(standardSeconds))}
             />
-            <Estimate
-              label={t("GreenWave time")}
-              value={formatMinutesSeconds(Math.round(greenwaveSeconds))}
-              highlighted
-            />
+            {enabled && (
+              <Estimate
+                label={t("GreenWave time")}
+                value={formatMinutesSeconds(Math.round(greenwaveSeconds))}
+                highlighted
+              />
+            )}
           </div>
           {/* Standard can be the shorter run (it spends no D_min); never claim a saving then. */}
-          {saved > 0 ? (
-            <div className="flex items-center gap-2 border-t border-border pt-3 text-go">
-              <ArrowDownRight className="size-4" aria-hidden />
-              <strong className="text-xs font-semibold">
-                {t(Math.round((saved / normalSeconds) * 100))}
-                {t("% TIME SAVED")}
-              </strong>
-              <span className="hud-value ml-auto text-2xs text-muted-foreground">
-                {t("−")}
-                {t(formatMinutesSeconds(saved))}
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 border-t border-border pt-3 text-muted-foreground">
-              <strong className="text-xs font-semibold">{t("NO TIME SAVED")}</strong>
-              <span className="hud-value ml-auto text-2xs">
-                {t(saved === 0 ? formatMinutesSeconds(0) : `+${formatMinutesSeconds(-saved)}`)}
-              </span>
-            </div>
-          )}
+          {enabled &&
+            (saved > 0 ? (
+              <div className="flex items-center gap-2 border-t border-border pt-3 text-go">
+                <ArrowDownRight className="size-4" aria-hidden />
+                <strong className="text-xs font-semibold">
+                  {t(Math.round((saved / standardSeconds) * 100))}
+                  {t("% TIME SAVED")}
+                </strong>
+                <span className="hud-value ml-auto text-2xs text-muted-foreground">
+                  {t("−")}
+                  {t(formatMinutesSeconds(saved))}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 border-t border-border pt-3 text-muted-foreground">
+                <strong className="text-xs font-semibold">{t("NO TIME SAVED")}</strong>
+                <span className="hud-value ml-auto text-2xs">
+                  {t(saved === 0 ? formatMinutesSeconds(0) : `+${formatMinutesSeconds(-saved)}`)}
+                </span>
+              </div>
+            ))}
         </>
       )}
     </div>

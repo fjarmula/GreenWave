@@ -295,7 +295,7 @@ describe("DispatchForm settings", () => {
       greenWaveMode: "ENABLED",
       totalSeconds: 400,
       savedSeconds: 380,
-      normalEstimateSeconds: 780,
+      standardEstimateSeconds: 780,
       stationName: "JRG PSP nr 1",
       incidentLabel: "Rynek Główny 1",
       trafficDensity: 1.5,
@@ -395,17 +395,17 @@ describe("mock preflight estimates", () => {
         false,
       ),
     );
-    expect(far).toContain("13m 00s");
+    expect(far).toContain("06m 44s");
     expect(far).toContain("06m 20s");
-    expect(near).toContain("06m 30s");
+    expect(near).toContain("03m 19s");
     expect(near).toContain("03m 10s");
-    expect(otherStation).toContain("06m 30s");
+    expect(otherStation).toContain("03m 19s");
     expect(otherStation).toContain("03m 10s");
     expect(far).toContain("Approximate (mock)");
     expect(far).toContain("straight line");
   });
 
-  it("recomputes normal time with density while retaining the GreenWave baseline", () => {
+  it("uses the capped standard crossing time at high density", () => {
     const markup = renderToStaticMarkup(
       <PreflightEstimate
         isMockTransport
@@ -414,7 +414,7 @@ describe("mock preflight estimates", () => {
         incident={nearIncident}
       />,
     );
-    expect(markup).toContain("13m 00s");
+    expect(markup).toContain("03m 19s");
     expect(markup).toContain("03m 10s");
   });
 
@@ -562,3 +562,43 @@ vi.mock("@/components/language-provider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/components/language-provider")>();
   return { ...actual, useTranslation: () => ({ language: "en", t: <T,>(value: T) => value }) };
 });
+
+describe("standard-mode preflight", () => {
+  it.each(["backend", "mock"] as const)("shows only the selected run's estimate (%s)", (kind) => {
+    transport.current = kind;
+    const markup = render(dispatchState({ rankTimeMode: "DISABLED" }), true, {
+      ...DEFAULT_DISPATCH_SETTINGS,
+      greenWaveMode: "DISABLED",
+    });
+    const card = markup.slice(
+      markup.indexOf("pre-flight estimation") >= 0
+        ? markup.indexOf("pre-flight estimation")
+        : markup.indexOf("Pre-flight estimation"),
+    );
+    expect(card).toContain("Standard time");
+    if (kind === "backend") expect(card).toContain("06m 12s");
+    expect(card).not.toContain("GreenWave time");
+    expect(card).not.toContain("TIME SAVED");
+    expect(card).not.toContain("without and with");
+  });
+});
+
+it.each([
+  [372.5, "06m 12s"],
+  [373.5, "06m 14s"],
+] as const)(
+  "rounds backend standard time %s consistently with the start response",
+  (seconds, expected) => {
+    const markup = renderToStaticMarkup(
+      <PreflightEstimate
+        isMockTransport={false}
+        greenWaveMode="DISABLED"
+        trafficDensity={1}
+        origin={null}
+        incident={null}
+        candidate={{ ...RANKING.candidates[0], standard_seconds: seconds }}
+      />,
+    );
+    expect(markup).toContain(expected);
+  },
+);

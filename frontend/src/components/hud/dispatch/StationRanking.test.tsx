@@ -341,3 +341,15 @@ it("preserves station identity, availability and drive/walk totals for narrow-pa
   expect(markup).toContain("Recommended");
   expect(markup).toContain("Fastest");
 });
+
+it("rounds backend station times the same way as the simulation response", () => {
+  const markup = render({
+    timeMode: "STANDARD",
+    ranking: {
+      ...RANKING,
+      candidates: [{ ...RANKING.candidates[0], standard_seconds: 372.5 }],
+    },
+  });
+  expect(markup).toContain("06m 12s");
+  expect(markup).not.toContain("06m 13s");
+});

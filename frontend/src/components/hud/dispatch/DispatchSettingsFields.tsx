@@ -181,6 +181,7 @@ export function DispatchSettingsFields({
       {previousRun && <PreviousRunCard run={previousRun} />}
 
       <PreflightEstimate
+        greenWaveMode={intent === "comparison" ? "ENABLED" : greenWaveMode}
         isMockTransport={isMockTransport}
         trafficDensity={trafficDensity}
         origin={candidate?.station.position ?? null}

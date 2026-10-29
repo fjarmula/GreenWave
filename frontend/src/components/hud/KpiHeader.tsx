@@ -75,7 +75,11 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
   const stale = isTelemetryStale({ simulationState, connection });
   const elapsedLabel = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
   return (
-    <section aria-label={t("Simulation telemetry")} className="kpi-panel hud-panel">
+    <section
+      aria-label={t("Simulation telemetry")}
+      className="kpi-panel hud-panel"
+      data-standard={routeData?.green_wave_mode === "DISABLED"}
+    >
       <div className="kpi-vehicle">
         <span
           title={t(VEHICLE_NAMES[vehicleType])}
@@ -135,22 +139,18 @@ export function KpiHeader({ onStop }: KpiHeaderProps = {}) {
         <span className="sr-only">{t(speed.label)}</span>
       </div>
 
-      <div className="kpi-saved">
-        <span className="hud-stat-label">
-          {t(
-            failedIts
-              ? "No completed savings"
-              : routeData?.green_wave_mode === "DISABLED"
-                ? "vs normal traffic"
-                : "Time saved",
-          )}
-        </span>
-        <strong
-          className={`kpi-value hud-value mt-0.5 text-3xl font-semibold ${TIME_SAVED_STYLES[failedIts ? "neutral" : timeSavedTone(saved)]}`}
-        >
-          {t(failedIts ? "—" : formatSignedSeconds(saved))}
-        </strong>
-      </div>
+      {routeData?.green_wave_mode !== "DISABLED" && (
+        <div className="kpi-saved">
+          <span className="hud-stat-label">
+            {t(failedIts ? "No completed savings" : "Time saved")}
+          </span>
+          <strong
+            className={`kpi-value hud-value mt-0.5 text-3xl font-semibold ${TIME_SAVED_STYLES[failedIts ? "neutral" : timeSavedTone(saved)]}`}
+          >
+            {t(failedIts ? "—" : formatSignedSeconds(saved))}
+          </strong>
+        </div>
+      )}
 
       <div className="kpi-elapsed">
         <span className="hud-stat-label">{t("Elapsed")}</span>

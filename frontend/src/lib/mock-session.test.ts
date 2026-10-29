@@ -492,3 +492,19 @@ it("keeps a short trip's arrival KPI while its signals recover", () => {
   expect(arrived.every((tick) => tick.kpi_metrics.total_time_elapsed_sec === 7)).toBe(true);
   expect(ticks.at(-1)?.intersections.every((item) => item.state === "NORMAL")).toBe(true);
 });
+
+describe("standard baseline for mock savings", () => {
+  it("reports no savings throughout standard mode", () => {
+    const { ticks } = runToCompletion(createMockSession(modeRequest("DISABLED")));
+    expect(ticks.every((tick) => tick.kpi_metrics.current_time_saved_sec === 0)).toBe(true);
+  });
+
+  it("compares the finished priority run with the standard estimate", () => {
+    const session = createMockSession(modeRequest("ENABLED"));
+    const { ticks } = runToCompletion(session);
+    const final = ticks.at(-1)!.kpi_metrics;
+    expect(final.current_time_saved_sec).toBe(
+      session.route.estimated_standard_time_sec - final.total_time_elapsed_sec,
+    );
+  });
+});

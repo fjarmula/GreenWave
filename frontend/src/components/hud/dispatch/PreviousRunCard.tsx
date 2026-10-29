@@ -49,14 +49,16 @@ export function PreviousRunCard({ run }: PreviousRunCardProps) {
             {t(formatDuration(run.totalSeconds))}
           </dd>
         </div>
-        <div className="flex flex-col justify-between">
-          <dt className="text-2xs text-muted-foreground">{t(SAVED_LABEL)}</dt>
-          <dd
-            className={`hud-value mt-1 text-lg font-semibold ${SAVED_VALUE_TONES[timeSavedTone(run.savedSeconds)]}`}
-          >
-            {t(formatDuration(run.savedSeconds))}
-          </dd>
-        </div>
+        {enabled && (
+          <div className="flex flex-col justify-between">
+            <dt className="text-2xs text-muted-foreground">{t(SAVED_LABEL)}</dt>
+            <dd
+              className={`hud-value mt-1 text-lg font-semibold ${SAVED_VALUE_TONES[timeSavedTone(run.savedSeconds)]}`}
+            >
+              {t(formatDuration(run.savedSeconds))}
+            </dd>
+          </div>
+        )}
       </dl>
     </section>
   );

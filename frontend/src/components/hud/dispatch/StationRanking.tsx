@@ -5,7 +5,7 @@ import { useId } from "react";
 
 import { ExcludedTeams } from "@/components/hud/dispatch/ExcludedTeams";
 import { formatSignalDistance } from "@/lib/driver-presentation";
-import { formatMinutesSeconds } from "@/lib/format-duration";
+import { formatMinutesSeconds, roundBackendSeconds } from "@/lib/format-duration";
 import {
   candidateDriveSeconds,
   candidateTotalSeconds,
@@ -169,7 +169,7 @@ function CandidateRow({
   // The comparison keeps the green-wave order, so its deltas are green-wave deltas.
   const deltaMode = timeMode === "STANDARD" ? "STANDARD" : "GREENWAVE";
   const total = (mode: "GREENWAVE" | "STANDARD") =>
-    formatMinutesSeconds(Math.round(candidateTotalSeconds(candidate, mode)));
+    formatMinutesSeconds(roundBackendSeconds(candidateTotalSeconds(candidate, mode)));
   return (
     <label className="station-choice-row" data-checked={checked || undefined}>
       <input
@@ -268,6 +268,8 @@ function onFootLine(
   if (!roadTimeRanking) return `incl. ${distance} on foot`;
   const walk = formatMinutesSeconds(Math.round(onFoot.seconds));
   if (timeMode === "BOTH") return `incl. ${walk} on foot · ${distance}`;
-  const drive = formatMinutesSeconds(Math.round(candidateDriveSeconds(candidate, timeMode)));
+  const drive = formatMinutesSeconds(
+    roundBackendSeconds(candidateDriveSeconds(candidate, timeMode)),
+  );
   return `${drive} drive + ${walk} on foot · ${distance}`;
 }

@@ -6,7 +6,7 @@ export type PreviousRun = {
   greenWaveMode: GreenWaveMode;
   totalSeconds: number;
   savedSeconds: number;
-  normalEstimateSeconds: number;
+  standardEstimateSeconds: number;
   stationName: string;
   incidentLabel: string;
   trafficDensity: number;
@@ -23,7 +23,7 @@ export function toPreviousRun(
     greenWaveMode: startRequest.green_wave_mode,
     totalSeconds: completion.kpi_metrics.total_time_elapsed_sec,
     savedSeconds: completion.kpi_metrics.current_time_saved_sec,
-    normalEstimateSeconds: routeData.estimated_normal_time_sec,
+    standardEstimateSeconds: routeData.estimated_standard_time_sec,
     stationName,
     incidentLabel,
     trafficDensity: startRequest.traffic_density_multiplier,

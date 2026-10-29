@@ -91,7 +91,7 @@ export const polish: Record<string, string> = {
   "On foot to incident (estimate):": "Pieszo do zdarzenia (szacunek):",
   "Normal-traffic estimate": "Szacowany czas bez priorytetu",
   "GreenWave estimate": "Szacowany czas z GreenWave",
-  "Saved vs normal-traffic estimate": "Oszczędność względem szacowanego czasu bez priorytetu",
+  "Saved vs standard run": "Oszczędność względem przejazdu standardowego",
   "At destination": "Na miejscu",
   "No current speed": "Brak aktualnej prędkości",
   "Speed during last simulated second": "Prędkość w ostatniej sekundzie symulacji",
@@ -194,6 +194,8 @@ export const polish: Record<string, string> = {
     "Szacunki trasy pochodzą z serwera symulacji. Wszystkie stany sygnalizacji są symulowane.",
   "GreenWave time": "Czas z GreenWave",
   "Standard time": "Czas standardowy",
+  "Simulated standard run from the selected station{0}.":
+    "Symulowany przejazd standardowy z wybranej stacji{0}.",
   "Simulated runs from the selected station, without and with ER Green Wave{0}.":
     "Symulowane przejazdy z wybranej jednostki: bez ER GreenWave i z ER GreenWave{0}.",
   " · drive only, plus {0} on foot": " · czas samego dojazdu, dodatkowo {0} pieszo",

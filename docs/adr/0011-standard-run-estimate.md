@@ -69,3 +69,14 @@ Additive to contract v1; `schema_version` stays `"1.0"`.
   and dashboard markup snapshots.
 - `backend/scripts/sample_runs.py --routes 40 --seed 11` at density 1.0 and 2.5:
   `docs/engineering/history/post-merge-regressions-verification.md`.
+
+## Follow-up: 2026-10-29 standard baseline correction
+
+The standard-mode fix supersedes the decision above to keep savings against `T_normal`.
+`current_time_saved_sec` now compares Green Wave with the same disabled-motion profile used
+by `estimated_standard_time_sec` and ranking, at the same route distance. Arrival subtracts
+rounded totals so displayed times agree exactly. Standard runs report zero. The setup,
+telemetry strip, completed summary and previous-result card hide savings in standard mode;
+Green Wave and comparison setup retain both estimates. Mock pre-flight and savings use its
+actual disabled timeline. `estimated_normal_time_sec` remains available for compatibility.
+See `docs/engineering/standard-mode-fix.md` for acceptance and verification.

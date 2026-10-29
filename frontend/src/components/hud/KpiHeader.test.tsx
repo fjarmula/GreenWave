@@ -90,7 +90,7 @@ describe("KpiHeader time saved", () => {
 });
 
 describe("KpiHeader baseline label", () => {
-  it('labels the KPI "vs normal traffic" in a disabled run', () => {
+  it("hides the saving KPI in a disabled run", () => {
     const run = (mode: "ENABLED" | "DISABLED") => {
       state = {
         ...initialSimulationState,
@@ -101,7 +101,7 @@ describe("KpiHeader baseline label", () => {
       return renderToStaticMarkup(<KpiHeader />);
     };
 
-    expect(run("DISABLED")).toContain("vs normal traffic");
+    expect(run("DISABLED")).not.toContain("kpi-saved");
     expect(run("DISABLED")).not.toContain("Time saved");
     expect(run("ENABLED")).toContain("Time saved");
   });

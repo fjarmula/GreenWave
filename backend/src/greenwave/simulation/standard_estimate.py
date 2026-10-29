@@ -1,5 +1,7 @@
 """Exact pre-run standard-traffic estimate: a dry run of disabled motion (spec D4)."""
 
+from bisect import bisect_left
+from dataclasses import dataclass
 from math import ceil, inf
 
 from greenwave.its.controller import SimulatedItsController
@@ -12,18 +14,53 @@ from greenwave.simulation.state import initial_engine_state
 from greenwave.simulation_settings import SimulationSettings
 
 
+@dataclass(frozen=True, slots=True)
+class StandardRunProfile:
+    """Disabled motion sampled each second, with an exact final arrival sample."""
+
+    distances_m: tuple[float, ...]
+    seconds: tuple[float, ...]
+
+    @property
+    def total_seconds(self) -> float:
+        return self.seconds[-1]
+
+    def seconds_at(self, distance_m: float) -> float:
+        """Time to the same route position; interpolate within a one-second sample."""
+        if distance_m <= 0:
+            return 0.0
+        right = bisect_left(self.distances_m, distance_m)
+        if right >= len(self.distances_m):
+            return self.total_seconds
+        left = right - 1
+        fraction = (distance_m - self.distances_m[left]) / (
+            self.distances_m[right] - self.distances_m[left]
+        )
+        return self.seconds[left] + fraction * (self.seconds[right] - self.seconds[left])
+
+
 def standard_run_seconds(
     route: PlannedRoute,
     route_model: RouteModel,
     density: float,
     settings: SimulationSettings,
 ) -> float:
+    """Exact pre-run standard arrival time, shared with ranking and the start response."""
+    return standard_run_profile(route, route_model, density, settings).total_seconds
+
+
+def standard_run_profile(
+    route: PlannedRoute,
+    route_model: RouteModel,
+    density: float,
+    settings: SimulationSettings,
+) -> StandardRunProfile:
     """Simulated seconds a run with ER Green Wave disabled takes to arrive.
 
     Disabled motion never requests priority, so its every stop-line decision comes from the
     ordinary programme, which is deterministic from t = 0: this drives the same
     :func:`move_one_second` as the engine, against an untouched controller's ordinary queries,
-    and returns the engine's ``arrived_at_s`` exactly.
+    and records the engine's ``arrived_at_s`` exactly.
     """
     track = RouteTrack.from_route(route, settings)
     controller = SimulatedItsController(route_model, settings, ItsScenario.NOMINAL)
@@ -36,6 +73,8 @@ def standard_run_seconds(
     if bound_s == inf:
         raise RuntimeError("standard run cannot arrive: a route edge has no positive speed")
     max_iterations = ceil(bound_s) + 1
+    distances = [0.0]
+    seconds = [0.0]
     for _ in range(max_iterations):
         state, _moved = move_one_second(
             state,
@@ -47,8 +86,13 @@ def standard_run_seconds(
             controller.ordinary_route_color_at,
             route_seconds_until_green=controller.ordinary_route_seconds_until_green,
         )
+        distances.append(state.distance_travelled_m)
+        seconds.append(
+            state.arrived_at_s if state.arrived_at_s is not None else float(state.simulated_time_s)
+        )
         if state.arrived_at_s is not None:
-            return state.arrived_at_s
+            controller.close()
+            return StandardRunProfile(tuple(distances), tuple(seconds))
     raise RuntimeError(f"standard run did not arrive within {max_iterations} simulated seconds")
 
 

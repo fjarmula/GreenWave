@@ -115,12 +115,12 @@ export function greenWaveModeLabel(mode: GreenWaveMode): string {
  * The simulated arrival time first, then the mode it was run in. Estimates are simulated
  * baselines; the GreenWave estimate is shown only for a run that used ER Green Wave.
  */
-export const SAVED_LABEL = "Saved vs normal-traffic estimate";
+export const SAVED_LABEL = "Saved vs standard run";
 
 export function summarizeFinishedRun(
   route: Pick<
     SimulationStartResponse,
-    "estimated_normal_time_sec" | "estimated_greenwave_time_sec" | "green_wave_mode"
+    "estimated_standard_time_sec" | "estimated_greenwave_time_sec" | "green_wave_mode"
   > &
     Partial<Pick<SimulationStartResponse, "destination_on_foot">>,
   finalKpis: KpiMetrics,
@@ -140,7 +140,7 @@ export function summarizeFinishedRun(
         ]
       : []),
     { label: "ER Green Wave", value: enabled ? "Enabled" : "Disabled" },
-    { label: "Normal-traffic estimate", value: formatDuration(route.estimated_normal_time_sec) },
+    { label: "Standard time", value: formatDuration(route.estimated_standard_time_sec) },
     ...(enabled
       ? [
           {
@@ -149,7 +149,9 @@ export function summarizeFinishedRun(
           },
         ]
       : []),
-    { label: SAVED_LABEL, value: formatDuration(finalKpis.current_time_saved_sec) },
+    ...(enabled
+      ? [{ label: SAVED_LABEL, value: formatDuration(finalKpis.current_time_saved_sec) }]
+      : []),
   ];
 }
 
