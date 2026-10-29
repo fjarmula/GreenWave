@@ -17,6 +17,7 @@ export const polish: Record<string, string> = {
   Documentation: "Dokumentacja",
   "Documentation sections": "Sekcje dokumentacji",
   "Simulation only": "Wyłącznie symulacja",
+  "Simulation mode": "Tryb symulacji",
   "Live demo": "Wersja demonstracyjna",
   Tools: "Narzędzia",
   "Workspace navigation": "Nawigacja",

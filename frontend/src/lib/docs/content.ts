@@ -77,7 +77,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         },
         {
           kind: "note",
-          text: "Aplikacja służy wyłącznie do symulacji. Nie łączy się z rzeczywistymi sterownikami sygnalizacji. Stany świateł, odpowiedzi ITS i czasy przejazdu są obliczane przez model.",
+          text: "Aplikacja służy wyłącznie do celów demonstracyjnych. Nie łączy się z rzeczywistymi sterownikami sygnalizacji. Stany świateł, odpowiedzi ITS i czasy przejazdu są obliczane przez model.",
         },
         { kind: "heading", text: "Autorzy" },
         {
@@ -342,7 +342,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         },
         {
           kind: "note",
-          text: "Simulation only. The app never connects to real traffic signals and controls nothing. Light states, controller answers and travel times all come from the model.",
+          text: "For demonstration purposes only. The app never connects to real traffic signals and controls nothing. Light states, controller answers and travel times all come from the model.",
         },
         { kind: "heading", text: "Authors" },
         {

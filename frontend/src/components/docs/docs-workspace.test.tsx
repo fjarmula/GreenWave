@@ -42,9 +42,12 @@ describe("DocsWorkspace", () => {
     );
   });
 
-  it("flags simulation only and links the demo beside the title", () => {
+  it("shows a simulation-mode badge distinct from the demo link", () => {
     const html = english();
-    expect(html).toMatch(/class="docs-chip docs-chip-sim"[^>]*>Simulation only</);
+    expect(html).toMatch(/data-testid="simulation-mode-badge"[\s\S]*?Simulation mode<\/span>/);
+    expect(html).toContain("bg-amber-500");
+    expect(html).toContain("bg-zinc-900/80");
+    expect(html).toContain("border-neutral-700/60");
     expect(html).toMatch(/class="docs-chip"[^>]*href="https:\/\/green-wave\.duckdns\.org\/"/);
   });
 
@@ -76,5 +79,8 @@ describe("DocsWorkspace", () => {
     expect(html).toContain("O projekcie");
     expect(html).toContain("Dokumentacja");
     expect(html).not.toContain("Dokumentacja konkursowa");
+    expect(html).toContain("Tryb symulacji");
+    expect(html).toContain("Aplikacja służy wyłącznie do celów demonstracyjnych.");
+    expect(html).not.toContain(">Wyłącznie symulacja<");
   });
 });

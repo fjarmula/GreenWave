@@ -39,7 +39,13 @@ export function DocsWorkspace() {
       <div className="docs-head">
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("Documentation")}</h1>
         <div className="docs-head-meta">
-          <span className="docs-chip docs-chip-sim">{t("Simulation only")}</span>
+          <span
+            data-testid="simulation-mode-badge"
+            className="inline-flex items-center gap-2 rounded-full border border-neutral-700/60 bg-zinc-900/80 px-2.5 py-1 text-xs font-medium text-amber-200"
+          >
+            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-amber-500" />
+            {t("Simulation mode")}
+          </span>
           <a className="docs-chip" href={DEMO_URL} target="_blank" rel="noopener">
             {t("Live demo")} <ArrowUpRight aria-hidden className="size-4 shrink-0" />
           </a>
