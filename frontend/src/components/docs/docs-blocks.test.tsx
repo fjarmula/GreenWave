@@ -92,11 +92,10 @@ describe("DocsBlocks", () => {
 
 describe("DocsSectionView", () => {
   const about = docsContent.en[0];
-  const run = docsContent.en.find((section) => section.id === "run")!;
 
   it("puts the leading paragraphs in the lead and each heading in its own panel", () => {
     const html = renderToStaticMarkup(<DocsSectionView section={about} />);
-    expect(html).toMatch(/<div class="docs-lead"><p>An ambulance/);
+    expect(html).toMatch(/<div class="docs-lead"><p>ER-GreenWave/);
     const headings = about.blocks.filter((block) => block.kind === "heading").length;
     expect(html.match(/<section class="docs-group"/g)).toHaveLength(headings);
     expect(html).toMatch(/class="docs-grid"[\s\S]*role="note"/);
@@ -105,15 +104,42 @@ describe("DocsSectionView", () => {
   it("spans tables across the grid", () => {
     const data = docsContent.en.find((section) => section.id === "data")!;
     expect(renderToStaticMarkup(<DocsSectionView section={data} />)).toContain(
-      '<div class="docs-wide"><div class="docs-table-scroll">',
+      '<div class="docs-wide"><div class="docs-data-table"><div class="docs-table-scroll">',
     );
   });
 
   it("numbers the steps of a numbered section only", () => {
-    const steps = renderToStaticMarkup(<DocsSectionView section={run} />).match(
-      /class="docs-step">(\d+)</g,
-    );
-    expect(steps).toHaveLength(5);
+    const steps = renderToStaticMarkup(
+      <DocsSectionView
+        section={{
+          id: "about",
+          label: "Steps",
+          title: "Steps",
+          numbered: true,
+          blocks: [
+            { kind: "heading", text: "First" },
+            { kind: "paragraph", text: "Details" },
+          ],
+        }}
+      />,
+    ).match(/class="docs-step">(\d+)</g);
+    expect(steps).toHaveLength(1);
     expect(renderToStaticMarkup(<DocsSectionView section={about} />)).not.toContain("docs-step");
   });
+});
+
+it("offers labelled source details for narrow screens", () => {
+  const html = renderToStaticMarkup(
+    <DocsBlocks
+      blocks={[
+        {
+          kind: "table",
+          columns: ["Source", "Publisher", "Use"],
+          rows: [["OSM", "Community", "Road graph"]],
+        },
+      ]}
+    />,
+  );
+  expect(html).toContain('class="docs-table-mobile"');
+  expect(html).toContain("<dt>Publisher</dt><dd>Community</dd>");
 });

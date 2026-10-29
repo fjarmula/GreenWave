@@ -33,27 +33,44 @@ export function Block({ block }: { block: DocsBlock }) {
           </ul>
         );
       return (
-        <div className="docs-table-scroll">
-          <table>
-            <thead>
-              <tr>
-                {block.columns.map((column) => (
-                  <th scope="col" key={column}>
-                    {column}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {block.rows.map((row) => (
-                <tr key={row[0]}>
-                  {row.map((cell, index) => (
-                    <td key={index}>{cell}</td>
+        <div className="docs-data-table">
+          <div className="docs-table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  {block.columns.map((column) => (
+                    <th scope="col" key={column}>
+                      {column}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {block.rows.map((row) => (
+                  <tr key={row[0]}>
+                    {row.map((cell, index) => (
+                      <td key={index}>{cell}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="docs-table-mobile">
+            {block.rows.map((row) => (
+              <section className="docs-source" key={row[0]}>
+                <h3>{row[0]}</h3>
+                <dl>
+                  {block.columns.slice(1).map((column, index) => (
+                    <div key={column}>
+                      <dt>{column}</dt>
+                      <dd>{row[index + 1]}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            ))}
+          </div>
         </div>
       );
     case "code":

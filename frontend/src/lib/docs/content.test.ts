@@ -26,7 +26,7 @@ function strings(block: DocsBlock): string[] {
 }
 
 describe("docs content", () => {
-  it("lists the six sections in order in both languages", () => {
+  it("lists the five sections in order in both languages", () => {
     for (const language of languages)
       expect(docsContent[language].map((section) => section.id)).toEqual([...DOCS_SECTION_IDS]);
   });
@@ -52,14 +52,6 @@ describe("docs content", () => {
     }
   });
 
-  it("keeps commands identical across languages", () => {
-    for (const [pl, en] of pairs())
-      en.blocks.forEach((block, index) => {
-        const other = pl.blocks[index];
-        if (block.kind === "code" && other.kind === "code") expect(other.code).toBe(block.code);
-      });
-  });
-
   it("has non-empty copy", () => {
     for (const language of languages)
       for (const section of docsContent[language]) {
@@ -69,12 +61,14 @@ describe("docs content", () => {
       }
   });
 
-  it("numbers the run steps, one heading per step", () => {
+  it("omits local setup instructions in both languages", () => {
     for (const language of languages) {
-      const run = docsContent[language].find((s) => s.id === "run")!;
-      expect(run.numbered).toBe(true);
-      expect(run.blocks.filter((block) => block.kind === "heading")).toHaveLength(5);
-      expect(docsContent[language].filter((s) => s.numbered)).toHaveLength(1);
+      expect(docsContent[language].map((section) => section.id)).not.toContain("run");
+      expect(
+        docsContent[language]
+          .flatMap((section) => section.blocks)
+          .some((block) => block.kind === "code"),
+      ).toBe(false);
     }
   });
 

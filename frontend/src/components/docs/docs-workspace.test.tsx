@@ -14,10 +14,10 @@ const english = () =>
   );
 
 describe("DocsWorkspace", () => {
-  it("names a tablist with six tabs", () => {
+  it("names a tablist with five tabs", () => {
     const html = english();
     expect(html).toMatch(/role="tablist"[^>]*aria-label="Documentation sections"/);
-    expect(html.match(/role="tab"/g)).toHaveLength(6);
+    expect(html.match(/role="tab"/g)).toHaveLength(5);
   });
 
   it("selects About first with roving focus", () => {
@@ -48,12 +48,14 @@ describe("DocsWorkspace", () => {
     expect(html).toMatch(/class="docs-chip"[^>]*href="https:\/\/green-wave\.duckdns\.org\/"/);
   });
 
-  it("draws the sliding thumb and the corridor backdrop", () => {
+  it("uses an SVG external-link icon and a documentation navigation rail", () => {
     const html = english();
-    expect(html).toMatch(
-      /role="tablist"[^>]*>[\s\S]*<span aria-hidden="true" class="docs-tab-thumb"/,
-    );
-    expect(html).toMatch(/class="docs-backdrop"[^>]*aria-hidden="true"/);
+    expect(html).not.toContain("↗");
+    expect(html).toContain('class="docs-navigation"');
+    expect(html).toMatch(/Live demo[\s\S]*?<svg/);
+    expect(html).toContain('aria-orientation="vertical"');
+    expect(html).not.toContain("Contest documentation");
+    expect(html).toMatch(/<h1[^>]*>Documentation<\/h1>/);
   });
 
   it("renders only the About panel on the server", () => {
@@ -69,6 +71,7 @@ describe("DocsWorkspace", () => {
       </LanguageProvider>,
     );
     expect(html).toContain("O projekcie");
-    expect(html).toContain("Dokumentacja konkursowa");
+    expect(html).toContain("Dokumentacja");
+    expect(html).not.toContain("Dokumentacja konkursowa");
   });
 });

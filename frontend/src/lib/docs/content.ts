@@ -32,28 +32,6 @@ export interface DocsSection {
 
 export const DEMO_URL = "https://green-wave.duckdns.org/";
 
-/** Commands are shared by both languages and must match README.md (content-facts test). */
-const COMMANDS = {
-  install: "cd backend && uv sync --dev --locked && cd ..\ncd frontend && npm ci && cd ..",
-  dataset: [
-    "cd backend",
-    "uv run python scripts/build_manifest.py --check",
-    "uv run python scripts/run_etl.py profile",
-    "uv run python scripts/run_etl.py signals",
-    "uv run python scripts/run_etl.py graph",
-    "uv run python scripts/run_etl.py override-map",
-    "uv run python scripts/run_etl.py intersections",
-    "uv run python scripts/run_etl.py neighbours",
-    "uv run python scripts/run_etl.py places",
-    "uv run python scripts/run_etl.py quality",
-  ].join("\n"),
-  compose: "docker compose up --build",
-  backend: "cd backend\nuv run uvicorn greenwave.main:app --reload",
-  frontend: "cd frontend\nnpm run dev",
-  frontendWithBackend:
-    "NEXT_PUBLIC_SIMULATION_TRANSPORT=backend NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 npm run dev",
-};
-
 const SOURCE_LINKS = [
   "https://www.openstreetmap.org/copyright",
   "https://msip.krakow.pl/dataset/1379",
@@ -61,93 +39,51 @@ const SOURCE_LINKS = [
   "https://extract.bbbike.org",
 ];
 
-/** Contest documentation (§5.2 of the Open Data App rules), already localized: not passed through t(). */
+/** Bilingual documentation copy, rendered directly rather than passed through t(). */
 export const docsContent: Record<Language, DocsSection[]> = {
   pl: [
     {
       id: "about",
       label: "O projekcie",
-      title: "ER-GreenWave: zielony korytarz dla pojazdów uprzywilejowanych",
+      title: "Symulacja przejazdów ratunkowych w Krakowie",
       blocks: [
         {
           kind: "paragraph",
-          text: "Karetka, wóz strażacki czy radiowóz w drodze do zdarzenia traci cenne sekundy na skrzyżowaniach z sygnalizacją. Nawet na sygnale kierowca musi zwolnić przed czerwonym światłem i ostrożnie przecisnąć się przez ruch poprzeczny. W mieście takim jak Kraków, z gęstą siecią sygnalizacji, te straty sumują się na każdym przejeździe.",
+          text: "ER-GreenWave porównuje czas dojazdu pojazdu uprzywilejowanego z priorytetem na skrzyżowaniach i bez niego. Symulacja korzysta z sieci drogowej Krakowa, lokalizacji jednostek ratunkowych i miejskich danych adresowych.",
         },
         {
           kind: "paragraph",
-          text: "ER-GreenWave pokazuje, jak mógłby działać zielony korytarz. System wybiera jednostkę, która dotrze najszybciej, wyznacza trasę po rzeczywistej sieci drogowej Krakowa i z wyprzedzeniem prosi sygnalizację na trasie o zielone światło. Ten sam przejazd można odtworzyć przy zwykłej pracy sygnalizacji i porównać czasy dojazdu.",
+          text: "Użytkownik wskazuje miejsce zdarzenia i typ pojazdu. Aplikacja wybiera jednostkę na podstawie szacowanego czasu dojazdu, wyznacza trasę i pokazuje przejazd na mapie. Oba warianty można uruchomić jednocześnie, aby porównać ich wyniki.",
         },
-        { kind: "heading", text: "Co można zrobić w aplikacji" },
+        { kind: "heading", text: "Widoki aplikacji" },
         {
           kind: "list",
           items: [
-            "GreenWave: przejazd z priorytetem, w którym kolejne sygnalizacje przełączają się na zielone przed pojazdem.",
-            "Ruch standardowy: ta sama trasa, ale sygnalizacja działa według zwykłego programu, a czerwone światło kosztuje czas.",
-            "Porównanie: oba tryby startują jednocześnie na wspólnym zegarze, obok siebie na dwóch mapach, a karta wyników pokazuje różnicę.",
-            "Kierowca: widok na telefon z mapą i najbliższą sygnalizacją przed pojazdem.",
-            "Diagnostyka: podgląd każdego zapytania i zdarzenia oraz raport jakości danych.",
+            "GreenWave — symulowany przejazd z priorytetem na kolejnych skrzyżowaniach.",
+            "Ruch standardowy — przejazd tą samą trasą bez priorytetu sygnalizacji.",
+            "Porównanie — oba przejazdy na wspólnym zegarze symulacji, z osobnymi mapami i zestawieniem czasów.",
+            "Kierowca — widok dostosowany do telefonu, z mapą i informacją o najbliższej sygnalizacji.",
+            "Diagnostyka — podgląd żądań, zdarzeń symulacji i raportu jakości danych.",
           ],
         },
-        { kind: "heading", text: "Komu to służy" },
+        { kind: "heading", text: "Zastosowanie" },
         {
           kind: "list",
           items: [
-            "Mieszkańcom: szybsza pomoc medyczna, a w przyszłości także szybsze interwencje straży pożarnej i policji.",
-            "Dyspozytorom: wybór jednostki według realnego czasu dojazdu, a nie odległości w linii prostej.",
-            "Miastu i zarządcy dróg: narzędzie do oceny, na których ciągach priorytet daje największy zysk, zanim zapadnie decyzja o inwestycji.",
+            "Analiza, o ile priorytet sygnalizacji może skrócić dojazd służb ratunkowych.",
+            "Porównanie jednostek według szacowanego czasu przejazdu, a nie samej odległości.",
+            "Ocena wybranych tras i scenariuszy przed ewentualnymi testami w terenie.",
           ],
         },
         {
           kind: "note",
-          text: "Wyłącznie symulacja. Aplikacja nie łączy się z prawdziwą sygnalizacją świetlną i niczym nie steruje. Stany świateł, odpowiedzi sterownika i czasy przejazdu są wynikiem modelu.",
+          text: "Aplikacja służy wyłącznie do symulacji. Nie łączy się z rzeczywistymi sterownikami sygnalizacji. Stany świateł, odpowiedzi ITS i czasy przejazdu są obliczane przez model.",
         },
-        { kind: "heading", text: "Zespół" },
-        { kind: "paragraph", text: "Filip Jarmuła, Piotr Lorek." },
-      ],
-    },
-    {
-      id: "run",
-      label: "Uruchomienie",
-      title: "Jak uruchomić",
-      numbered: true,
-      blocks: [
+        { kind: "heading", text: "Autorzy" },
         {
           kind: "paragraph",
-          text: "Najprościej obejrzeć działającą wersję demonstracyjną w przeglądarce. Nie wymaga instalacji i działa na komputerze oraz telefonie.",
+          text: "Filip Jarmuła, Piotr Lorek.",
         },
-        { kind: "links", items: [{ label: "Wersja demonstracyjna ER-GreenWave", href: DEMO_URL }] },
-        { kind: "heading", text: "Wymagania do uruchomienia lokalnego" },
-        {
-          kind: "list",
-          items: [
-            "Git oraz Python 3.12 z menedżerem uv.",
-            "Node.js 22 z npm.",
-            "Opcjonalnie Docker z Docker Compose.",
-            "Paczka surowych danych GIS przekazywana przez zespół. Nie jest częścią repozytorium.",
-          ],
-        },
-        { kind: "heading", text: "Instalacja" },
-        { kind: "code", label: "Instalacja zależności", code: COMMANDS.install },
-        { kind: "heading", text: "Dane symulacji" },
-        {
-          kind: "paragraph",
-          text: "Po skopiowaniu paczki danych do backend/data/raw/ zbiór symulacji przygotowuje się jednorazowo poniższymi krokami.",
-        },
-        { kind: "code", label: "Przygotowanie zbioru danych", code: COMMANDS.dataset },
-        { kind: "heading", text: "Uruchomienie" },
-        { kind: "code", label: "Całość w Docker Compose", code: COMMANDS.compose },
-        {
-          kind: "paragraph",
-          text: "Panel otwiera się pod adresem http://localhost:3000, a dokumentacja API pod http://localhost:8000/docs.",
-        },
-        { kind: "code", label: "Serwer symulacji (lokalnie)", code: COMMANDS.backend },
-        { kind: "code", label: "Panel (lokalnie, tryb demonstracyjny)", code: COMMANDS.frontend },
-        { kind: "heading", text: "Panel z serwerem symulacji" },
-        {
-          kind: "paragraph",
-          text: "Sam panel uruchomiony w ten sposób korzysta z wbudowanej symulacji demonstracyjnej i nie potrzebuje ani serwera, ani danych GIS. Aby połączyć go z serwerem symulacji, w katalogu frontend użyj polecenia poniżej.",
-        },
-        { kind: "code", label: "Panel z serwerem symulacji", code: COMMANDS.frontendWithBackend },
       ],
     },
     {
@@ -157,47 +93,47 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "Wybraliśmy dojrzałe, otwarte narzędzia, które nie wymagają płatnych licencji ani kluczy dostępowych. Każdy element da się zastąpić bez przebudowy całości.",
+          text: "Panel działa w przeglądarce, a serwer odpowiada za wybór jednostki, wyznaczanie trasy i przebieg symulacji. Dane przestrzenne są przygotowywane osobno, przed uruchomieniem serwera.",
         },
         {
           kind: "table",
           cards: true,
-          columns: ["Warstwa", "Technologia", "Dlaczego"],
+          columns: ["Obszar", "Narzędzia", "Zastosowanie"],
           rows: [
             [
               "Interfejs",
               "Next.js 16, React 19, Tailwind CSS 4",
-              "Jeden kod dla komputera i telefonu, motyw jasny i ciemny, wersja polska i angielska.",
+              "Panel na komputer i telefon, z obsługą języka polskiego i angielskiego oraz jasnego i ciemnego motywu.",
             ],
             [
               "Mapa",
               "MapLibre GL JS, podkład CARTO na danych OSM",
-              "Płynne renderowanie WebGL bez tokenów i opłat za mapę.",
+              "Wyświetlanie mapy, tras, pojazdów i sygnalizacji z użyciem WebGL.",
             ],
             [
               "Serwer i symulacja",
               "Python 3.12, FastAPI, Pydantic",
-              "Asynchroniczne strumieniowanie oraz typowane kontrakty, z których generujemy specyfikację OpenAPI i typy panelu.",
+              "Obsługa żądań i symulacji. Modele danych definiują kontrakt API oraz typy używane przez panel.",
             ],
             [
               "Przetwarzanie danych",
               "GeoPandas, Shapely, Polars, NetworkX",
-              "Operacje przestrzenne w metrycznym układzie PL-2000 (EPSG:2178), szybkie tabele i wyznaczanie tras na grafie.",
+              "Przetwarzanie danych przestrzennych, budowa grafu drogowego i wyznaczanie tras. Obliczenia odległości korzystają z układu PL-2000 (EPSG:2178).",
             ],
             [
-              "Transmisja na żywo",
+              "Aktualizacja stanu",
               "Server-Sent Events (SSE)",
-              "Jednokierunkowy strumień po zwykłym HTTP: jedna wiadomość na każdą sekundę symulacji.",
+              "Jednokierunkowy strumień HTTP przekazujący kolejne stany symulacji do panelu.",
             ],
             [
               "Wdrożenie",
               "Docker Compose, Caddy, Oracle Cloud Always Free",
-              "Automatyczny HTTPS, zerowy koszt utrzymania i wdrożenie po każdej zmianie w gałęzi main.",
+              "Uruchamianie usług w kontenerach, obsługa HTTPS i automatyczne wdrażanie zmian z gałęzi main.",
             ],
             [
-              "Jakość",
+              "Weryfikacja",
               "pytest, Vitest, Ruff, mypy, ESLint, Playwright",
-              "Testy i analiza statyczna przy każdej zmianie oraz testy w prawdziwej przeglądarce.",
+              "Testy jednostkowe, analiza statyczna kodu i testy interfejsu w przeglądarce.",
             ],
           ],
         },
@@ -210,7 +146,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "Projekt łączy otwarte dane Miasta Krakowa z OpenStreetMap i wojewódzkim planem ratownictwa medycznego. Każdy plik źródłowy ma w repozytorium zapisane pochodzenie i sumę kontrolną. Przetworzony zbiór jest powiązany z tym spisem, a serwer nie wystartuje na zbiorze zbudowanym z innych danych.",
+          text: "Symulacja łączy dane OpenStreetMap, miejskie zbiory MSIP i wojewódzki plan działania systemu Państwowe Ratownictwo Medyczne. Pochodzenie plików i ich sumy kontrolne są zapisane w repozytorium. Serwer sprawdza zgodność przygotowanego zbioru z tym wykazem.",
         },
         {
           kind: "table",
@@ -242,7 +178,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
               "Urząd Miasta Krakowa, Wydział Geodezji / MSIP",
               "Ustawa o otwartych danych, warunki MSIP",
               "27.10.2026",
-              "Wyszukiwanie adresu zdarzenia. Miejskie współrzędne są rozstrzygające.",
+              "Wyszukiwanie adresów zdarzeń. Przy rozbieżności z OSM trasa prowadzi do współrzędnych z EMUiA.",
             ],
             [
               "Wojewódzki plan działania systemu PRM, aktualizacja nr 2",
@@ -253,24 +189,36 @@ export const docsContent: Record<Language, DocsSection[]> = {
             ],
           ],
         },
-        { kind: "heading", text: "Jak łączymy źródła" },
+        { kind: "heading", text: "Łączenie i weryfikacja danych" },
         {
           kind: "list",
           items: [
-            "Graf drogowy z OpenStreetMap otrzymuje sygnalizację przypisaną do konkretnych wlotów skrzyżowań. To na tym grafie liczona jest trasa i czas przejazdu.",
-            "Nazwy z miejskiego rejestru Ulice sprawdzają nazwy i długości ulic w OpenStreetMap. Rozbieżności trafiają do raportu jakości danych widocznego w Diagnostyce.",
-            "Rejestr buspasów porównywany jest z buspasami z OpenStreetMap po nazwie ulicy. Służy wyłącznie do kontroli.",
-            "Punkty adresowe EMUiA są parowane z adresami z OpenStreetMap. Przy rozbieżności panel pokazuje obie lokalizacje i ich odległość.",
-            "Bazy zespołów z planu PRM są lokalizowane według adresów EMUiA (lub udokumentowanej współrzędnej) i przypinane do sieci drogowej. Tak powstaje lista miejsc, z których wyjeżdżają karetki.",
+            "Na podstawie OpenStreetMap powstaje graf drogowy. Sygnalizatory są przypisywane do wlotów skrzyżowań, a graf służy do wyznaczania tras i czasu przejazdu.",
+            "Miejski rejestr Ulice służy do weryfikacji nazw i długości ulic w OpenStreetMap. Rozbieżności są widoczne w raporcie jakości danych w Diagnostyce.",
+            "Rejestr buspasów jest porównywany z OpenStreetMap według nazw ulic. Wynik tej kontroli nie zmienia czasów przejazdu.",
+            "Adresy EMUiA są dopasowywane do adresów OpenStreetMap. Jeśli lokalizacje się różnią, panel pokazuje oba punkty i odległość między nimi.",
+            "Lokalizacje baz zespołów PRM są ustalane na podstawie adresów EMUiA lub udokumentowanych współrzędnych, a następnie dopasowywane do sieci drogowej.",
           ],
         },
         {
           kind: "links",
           items: [
-            { label: "Prawa autorskie OpenStreetMap", href: SOURCE_LINKS[0] },
-            { label: "MSIP: Ulice", href: SOURCE_LINKS[1] },
-            { label: "MSIP: Punkty adresowe (EMUiA)", href: SOURCE_LINKS[2] },
-            { label: "BBBike: wycinki OpenStreetMap", href: SOURCE_LINKS[3] },
+            {
+              label: "Prawa autorskie OpenStreetMap",
+              href: SOURCE_LINKS[0],
+            },
+            {
+              label: "MSIP: Ulice",
+              href: SOURCE_LINKS[1],
+            },
+            {
+              label: "MSIP: Punkty adresowe (EMUiA)",
+              href: SOURCE_LINKS[2],
+            },
+            {
+              label: "BBBike: wycinki OpenStreetMap",
+              href: SOURCE_LINKS[3],
+            },
           ],
         },
       ],
@@ -278,7 +226,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
     {
       id: "architecture",
       label: "Architektura",
-      title: "Architektura rozwiązania",
+      title: "Jak działa symulacja",
       blocks: [
         {
           kind: "diagram",
@@ -293,35 +241,35 @@ export const docsContent: Record<Language, DocsSection[]> = {
             dashboard: "Panel Next.js",
           },
           caption:
-            "Dane źródłowe są przetwarzane raz, offline. Serwer symulacji wysyła stan przejazdu do panelu co sekundę symulacji. Zielona linia to ścieżka danych na żywo.",
+            "Dane źródłowe są przetwarzane przed uruchomieniem serwera. W czasie przejazdu panel otrzymuje kolejne stany symulacji przez SSE. Zielona linia oznacza przepływ danych podczas symulacji.",
         },
         { kind: "heading", text: "Przygotowanie danych" },
         {
           kind: "paragraph",
-          text: "Etap ETL zamienia surowe pliki w skierowany graf drogowy z tabelami skrzyżowań, wlotów i adresów. Serwer wczytuje go raz przy starcie, więc wyznaczanie trasy nie sięga już do surowych plików GIS.",
+          text: "Proces ETL przekształca pliki źródłowe w skierowany graf drogowy oraz tabele skrzyżowań, wlotów i adresów. Serwer wczytuje gotowy zbiór przy uruchomieniu. Wyznaczanie tras nie wymaga ponownego odczytu surowych plików GIS.",
         },
         { kind: "heading", text: "Wybór jednostki i trasa" },
         {
           kind: "paragraph",
-          text: "Po wskazaniu miejsca zdarzenia serwer szacuje czas dojazdu z każdej pasującej bazy i wybiera najszybszą. Prędkość pojazdu uprzywilejowanego wynika z ograniczenia prędkości na odcinku. Buspas lub torowisko pozwalają jechać szybciej, a każdy próg zwalniający kosztuje kilka sekund.",
+          text: "Po wskazaniu zdarzenia serwer szacuje czas dojazdu z baz obsługujących wybrany typ pojazdu. Model uwzględnia ograniczenia prędkości i cechy drogi, między innymi buspasy, torowiska oraz progi zwalniające.",
         },
-        { kind: "heading", text: "Zielony korytarz" },
+        { kind: "heading", text: "Priorytet sygnalizacji" },
         {
           kind: "paragraph",
-          text: "Co sekundę symulacji silnik liczy dla każdej sygnalizacji przed pojazdem czas dotarcia (TTI): pozostały dystans podzielony przez wygładzoną prędkość. Gdy pojazd się zbliża, silnik wysyła prośbę o priorytet do symulowanego sterownika ITS. Sygnalizacje leżące w odległości do 250 m wzdłuż trasy są obsługiwane razem, żeby korek przy następnym skrzyżowaniu nie zablokował przejazdu.",
+          text: "Co sekundę symulacji silnik oblicza przewidywany czas dotarcia do sygnalizacji (TTI) na podstawie pozostałej odległości i wygładzonej prędkości. Gdy pojazd się zbliża, wysyła żądanie priorytetu do symulowanego sterownika ITS. Sygnalizacje oddalone od siebie o maksymalnie 250 m wzdłuż trasy mogą być obsługiwane razem.",
         },
         {
           kind: "paragraph",
-          text: "Symulowany sterownik może odpowiedzieć normalnie (po 1 s), z opóźnieniem (po 5 s), odmówić albo nie odpowiedzieć wcale (limit 8 s). Odmowa lub brak odpowiedzi kończy przejazd w widoczny sposób, bo właśnie takie przypadki musiałby obsłużyć prawdziwy system.",
+          text: "Sterownik może przyjąć żądanie po 1 s lub 5 s, odrzucić je albo nie odpowiedzieć. Brak odpowiedzi przez 8 s lub odmowa kończy symulowany przejazd. Pozwala to sprawdzić także scenariusze niepowodzenia.",
         },
         { kind: "heading", text: "Ruch standardowy" },
         {
           kind: "paragraph",
-          text: "Bez priorytetu pojazd jedzie tą samą trasą, a sygnalizacja pracuje według zwykłego programu. Na czerwonym pojazd przejeżdża ostrożnie i traci czas zależny od tego, jak długo czekałby na zielone, maksymalnie 15 s na skrzyżowanie. Różnica między oboma przejazdami to zysk z zielonego korytarza.",
+          text: "W wariancie bez priorytetu pojazd porusza się po tej samej trasie, a sygnalizacja działa według zwykłego programu. Przy czerwonym świetle model zakłada ostrożny przejazd i dolicza opóźnienie zależne od czasu do zmiany światła, nie większe niż 15 s na skrzyżowanie. Wynik porównania dotyczy tych założeń modelu.",
         },
         {
           kind: "note",
-          text: "Wyłącznie symulacja. Komunikaty do sterownika ITS ilustrują proponowany interfejs. Wdrożenie wymagałoby integracji z konkretnymi sterownikami oraz walidacji bezpieczeństwa z zarządcą drogi.",
+          text: "Sterownik ITS jest częścią symulacji. Połączenie z rzeczywistą sygnalizacją wymagałoby osobnej integracji i oceny bezpieczeństwa z zarządcą drogi.",
         },
       ],
     },
@@ -332,27 +280,27 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "Aplikacja jest prototypem, ale jej podział na dane, silnik i panel pozwala rozwijać ją krok po kroku w stronę wdrożenia.",
+          text: "Dalsze prace mogą objąć kalibrację modelu, wykorzystanie danych o pozycjach pojazdów i przygotowanie pilotażu. Każdy z tych etapów wymaga osobnej weryfikacji.",
         },
-        { kind: "heading", text: "Droga do wdrożenia" },
+        { kind: "heading", text: "Kierunki prac" },
         {
           kind: "list",
           items: [
-            "Pilotaż z Zarządem Dróg Miasta Krakowa na jednym ciągu, na przykład na Alejach Trzech Wieszczów, z połączeniem do centrum sterowania ruchem przez standardowy interfejs priorytetu.",
-            "Rzeczywiste pozycje pojazdów z systemu dyspozytorskiego zamiast ruchu symulowanego.",
-            "Kalibracja parametrów modelu na zmierzonych danych o ruchu w Krakowie.",
-            "Objęcie korytarzem straży pożarnej, policji i priorytetu dla komunikacji miejskiej tym samym mechanizmem.",
-            "Kolejne miasta: proces przetwarzania przyjmuje dowolny wycinek OpenStreetMap i lokalny rejestr adresów.",
+            "Przygotowanie pilotażu na wybranym ciągu ulic, na przykład na Alejach Trzech Wieszczów, we współpracy z zarządcą drogi i centrum sterowania ruchem.",
+            "Zastąpienie ruchu symulowanego danymi o pozycjach pojazdów z systemu dyspozytorskiego.",
+            "Kalibracja parametrów na podstawie pomiarów ruchu w Krakowie.",
+            "Rozszerzenie testów priorytetu dla straży pożarnej i policji oraz analiza odrębnych zasad dla transportu publicznego.",
+            "Dostosowanie procesu przygotowania danych do innych miast i ich lokalnych rejestrów.",
           ],
         },
-        { kind: "heading", text: "Wartość dla sektora publicznego i prywatnego" },
+        { kind: "heading", text: "Możliwe zastosowania" },
         {
           kind: "list",
           items: [
-            "Miasto i zarządca dróg mogą porównać ciągi ulic i zdecydować, gdzie priorytet dla pojazdów uprzywilejowanych da największy zysk czasu.",
-            "Służby ratunkowe dostają dowód, ile sekund można zyskać, i narzędzie do planowania rozmieszczenia baz.",
-            "Dostawcy sterowników i integratorzy systemów ITS otrzymują referencyjny interfejs priorytetu oraz środowisko testowe.",
-            "Prywatni przewoźnicy medyczni i operatorzy flot mogą wykorzystać szacunki czasu przejazdu do planowania.",
+            "Zarządca dróg — porównanie tras i scenariuszy priorytetu przed wyborem miejsca pilotażu.",
+            "Służby ratunkowe — analiza szacowanych czasów dojazdu i rozmieszczenia baz.",
+            "Dostawcy systemów ITS — testowanie obsługi żądań priorytetu i odpowiedzi sterownika w środowisku symulacyjnym.",
+            "Operatorzy transportu medycznego — analiza wariantów przejazdu z uwzględnieniem ograniczeń modelu.",
           ],
         },
       ],
@@ -362,90 +310,44 @@ export const docsContent: Record<Language, DocsSection[]> = {
     {
       id: "about",
       label: "About",
-      title: "ER-GreenWave: a green corridor for emergency vehicles",
+      title: "Emergency-response simulation in Kraków",
       blocks: [
         {
           kind: "paragraph",
-          text: "An ambulance, fire engine or police car on its way to an incident loses valuable seconds at signalised junctions. Even with sirens on, the driver has to slow down for a red light and edge carefully through cross traffic. In a city like Kraków, with a dense signal network, these losses add up on every trip.",
+          text: "ER-GreenWave compares emergency-vehicle travel times with and without signal priority. The simulation uses Kraków’s road network, emergency-service locations and municipal address data.",
         },
         {
           kind: "paragraph",
-          text: "ER-GreenWave shows how a green corridor could work. It picks the unit that will arrive first, routes it over Kraków's real road network and asks each signal on the way for a green light ahead of time. The same trip can be replayed under ordinary signal timing to compare arrival times.",
+          text: "Choose an incident location and vehicle type. The application selects a unit using estimated travel time, plans a route and shows the simulated journey on the map. Both modes can run together to compare their results.",
         },
         { kind: "heading", text: "What the app does" },
         {
           kind: "list",
           items: [
-            "Green Wave: a priority run in which the signals ahead turn green before the vehicle reaches them.",
+            "GreenWave: a simulated journey with priority at successive junctions.",
             "Standard traffic: the same route under the ordinary signal programme, where a red light costs time.",
             "Comparison: both modes start together on one clock, side by side on two maps, with a result card showing the difference.",
             "Driver: a phone view with the map and the next signal ahead of the vehicle.",
             "Diagnostics: every request and event as it happens, plus the data-quality report.",
           ],
         },
-        { kind: "heading", text: "Who it helps" },
+        { kind: "heading", text: "Uses" },
         {
           kind: "list",
           items: [
-            "Residents: faster medical help and, in future, faster fire and police response.",
-            "Dispatchers: a unit chosen by real driving time, not straight-line distance.",
-            "The city and the road authority: a way to judge which corridors gain most from priority before committing to an investment.",
+            "Analyse how signal priority could shorten emergency response times.",
+            "Compare units by estimated driving time rather than distance alone.",
+            "Evaluate routes and scenarios before considering field trials.",
           ],
         },
         {
           kind: "note",
           text: "Simulation only. The app never connects to real traffic signals and controls nothing. Light states, controller answers and travel times all come from the model.",
         },
-        { kind: "heading", text: "Team" },
-        { kind: "paragraph", text: "Filip Jarmuła, Piotr Lorek." },
-      ],
-    },
-    {
-      id: "run",
-      label: "Running it",
-      title: "How to run it",
-      numbered: true,
-      blocks: [
+        { kind: "heading", text: "Authors" },
         {
           kind: "paragraph",
-          text: "The quickest way in is the live demo in a browser. It needs no installation and works on a computer and on a phone.",
-        },
-        { kind: "links", items: [{ label: "ER-GreenWave live demo", href: DEMO_URL }] },
-        { kind: "heading", text: "Requirements for a local run" },
-        {
-          kind: "list",
-          items: [
-            "Git and Python 3.12 with the uv package manager.",
-            "Node.js 22 with npm.",
-            "Optionally Docker with Docker Compose.",
-            "The raw GIS data bundle supplied by the team. It is not part of the repository.",
-          ],
-        },
-        { kind: "heading", text: "Installation" },
-        { kind: "code", label: "Install dependencies", code: COMMANDS.install },
-        { kind: "heading", text: "Simulation data" },
-        {
-          kind: "paragraph",
-          text: "With the data bundle copied into backend/data/raw/, these one-off steps build the simulation dataset.",
-        },
-        { kind: "code", label: "Build the dataset", code: COMMANDS.dataset },
-        { kind: "heading", text: "Starting it" },
-        { kind: "code", label: "Everything with Docker Compose", code: COMMANDS.compose },
-        {
-          kind: "paragraph",
-          text: "The dashboard opens at http://localhost:3000 and the API reference at http://localhost:8000/docs.",
-        },
-        { kind: "code", label: "Simulation server (local)", code: COMMANDS.backend },
-        { kind: "code", label: "Dashboard (local, demo mode)", code: COMMANDS.frontend },
-        { kind: "heading", text: "Dashboard with the simulation server" },
-        {
-          kind: "paragraph",
-          text: "Started this way, the dashboard runs its built-in demo simulation and needs neither the server nor the GIS data. To connect it to the simulation server, run the command below in the frontend folder.",
-        },
-        {
-          kind: "code",
-          label: "Dashboard with the simulation server",
-          code: COMMANDS.frontendWithBackend,
+          text: "Filip Jarmuła, Piotr Lorek.",
         },
       ],
     },
@@ -456,7 +358,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "We chose mature open tools that need no paid licences or access keys. Any single piece can be swapped without rebuilding the rest.",
+          text: "The browser displays the dashboard. The server selects units, plans routes and runs the simulation. Spatial data is prepared separately before the server starts.",
         },
         {
           kind: "table",
@@ -471,7 +373,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
             [
               "Map",
               "MapLibre GL JS, CARTO basemap on OSM data",
-              "Smooth WebGL rendering with no map tokens or fees.",
+              "WebGL rendering for the map, routes, vehicles and signals.",
             ],
             [
               "Server and simulation",
@@ -486,12 +388,12 @@ export const docsContent: Record<Language, DocsSection[]> = {
             [
               "Live updates",
               "Server-Sent Events (SSE)",
-              "A one-way stream over plain HTTP: one message for every simulated second.",
+              "A one-way HTTP stream delivering successive simulation states to the dashboard.",
             ],
             [
               "Deployment",
               "Docker Compose, Caddy, Oracle Cloud Always Free",
-              "Automatic HTTPS, zero running cost and a fresh deploy after every change on main.",
+              "Containerised services, HTTPS and automatic deployment of changes from main.",
             ],
             [
               "Quality",
@@ -566,10 +468,22 @@ export const docsContent: Record<Language, DocsSection[]> = {
         {
           kind: "links",
           items: [
-            { label: "OpenStreetMap copyright", href: SOURCE_LINKS[0] },
-            { label: "MSIP: Ulice", href: SOURCE_LINKS[1] },
-            { label: "MSIP: Punkty adresowe (EMUiA)", href: SOURCE_LINKS[2] },
-            { label: "BBBike: OpenStreetMap extracts", href: SOURCE_LINKS[3] },
+            {
+              label: "OpenStreetMap copyright",
+              href: SOURCE_LINKS[0],
+            },
+            {
+              label: "MSIP: Ulice",
+              href: SOURCE_LINKS[1],
+            },
+            {
+              label: "MSIP: Punkty adresowe (EMUiA)",
+              href: SOURCE_LINKS[2],
+            },
+            {
+              label: "BBBike: OpenStreetMap extracts",
+              href: SOURCE_LINKS[3],
+            },
           ],
         },
       ],
@@ -631,27 +545,27 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "The app is a prototype, but its split into data, engine and dashboard lets it grow step by step towards deployment.",
+          text: "Further work could cover model calibration, vehicle-position data and preparation for a pilot. Each stage needs separate validation.",
         },
-        { kind: "heading", text: "Path to deployment" },
+        { kind: "heading", text: "Areas for further work" },
         {
           kind: "list",
           items: [
-            "A pilot with the Kraków road authority (ZDMK) on one corridor, such as Aleje Trzech Wieszczów, linked to the traffic control centre through a standard priority interface.",
-            "Real vehicle positions from the dispatch system instead of simulated motion.",
-            "Model parameters calibrated on measured Kraków traffic data.",
-            "Fire brigade, police and public transport priority served by the same mechanism.",
-            "Other cities: the processing pipeline accepts any OpenStreetMap extract and a local address register.",
+            "Prepare a pilot on a selected corridor, such as Aleje Trzech Wieszczów, with the road authority and traffic control centre.",
+            "Replace simulated movement with vehicle positions from the dispatch system.",
+            "Calibrate model parameters using traffic measurements from Kraków.",
+            "Extend fire and police priority testing and examine separate rules for public transport.",
+            "Adapt data preparation to other cities and their local registers.",
           ],
         },
-        { kind: "heading", text: "Value for the public and private sectors" },
+        { kind: "heading", text: "Potential uses" },
         {
           kind: "list",
           items: [
-            "The city and the road authority can compare corridors and decide where emergency priority saves the most time.",
-            "Emergency services get evidence of how many seconds can be saved, and a tool for planning where bases go.",
-            "ITS controller vendors and system integrators get a reference priority interface and a test bench.",
-            "Private medical transport and fleet operators can use the travel-time estimates for planning.",
+            "Road authorities: compare routes and priority scenarios before selecting a pilot location.",
+            "Emergency services: analyse estimated arrival times and base locations.",
+            "ITS suppliers: test priority requests and controller responses in a simulated environment.",
+            "Medical transport operators: analyse route alternatives within the model’s limits.",
           ],
         },
       ],

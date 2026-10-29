@@ -16,7 +16,6 @@ export const polish: Record<string, string> = {
   Driver: "Kierowca",
   Documentation: "Dokumentacja",
   "Documentation sections": "Sekcje dokumentacji",
-  "Contest documentation": "Dokumentacja konkursowa",
   "Simulation only": "Wyłącznie symulacja",
   "Live demo": "Wersja demonstracyjna",
   Tools: "Narzędzia",

@@ -24,7 +24,7 @@ function Group({
   );
 }
 
-/** One section across the full page: the lead in columns, then a grid of panels. */
+/** A readable introduction followed by titled subsections and full-width data blocks. */
 export function DocsSectionView({ section }: { section: DocsSection }) {
   const { intro, items } = groupDocsBlocks(section.blocks);
   let step = 0;
