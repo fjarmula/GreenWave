@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "@/test-utils/render";
+import { docsContent } from "@/lib/docs/content";
 import { DocsBlocks } from "./DocsBlocks";
+import { DocsSectionView } from "./DocsSectionView";
 
 describe("DocsBlocks", () => {
   it("renders tables in their own scroll box with column headers", () => {
@@ -9,6 +11,27 @@ describe("DocsBlocks", () => {
     );
     expect(html).toContain('<div class="docs-table-scroll">');
     expect(html.match(/<th scope="col">/g)).toHaveLength(2);
+  });
+
+  it("renders a cards table as one labelled card per row", () => {
+    const html = renderToStaticMarkup(
+      <DocsBlocks
+        blocks={[
+          {
+            kind: "table",
+            cards: true,
+            columns: ["Layer", "Tech", "Why"],
+            rows: [
+              ["Map", "MapLibre", "WebGL"],
+              ["API", "FastAPI", "Typed"],
+            ],
+          },
+        ]}
+      />,
+    );
+    expect(html).not.toContain("<table");
+    expect(html.match(/<li class="docs-card">/g)).toHaveLength(2);
+    expect(html).toMatch(/Map<\/span>[\s\S]*MapLibre[\s\S]*WebGL/);
   });
 
   it("renders commands verbatim with a copy button", () => {
@@ -64,5 +87,33 @@ describe("DocsBlocks", () => {
   it("marks the simulation-only note", () => {
     const html = renderToStaticMarkup(<DocsBlocks blocks={[{ kind: "note", text: "Sim" }]} />);
     expect(html).toMatch(/role="note"[^>]*>[\s\S]*Sim/);
+  });
+});
+
+describe("DocsSectionView", () => {
+  const about = docsContent.en[0];
+  const run = docsContent.en.find((section) => section.id === "run")!;
+
+  it("puts the leading paragraphs in the lead and each heading in its own panel", () => {
+    const html = renderToStaticMarkup(<DocsSectionView section={about} />);
+    expect(html).toMatch(/<div class="docs-lead"><p>An ambulance/);
+    const headings = about.blocks.filter((block) => block.kind === "heading").length;
+    expect(html.match(/<section class="docs-group"/g)).toHaveLength(headings);
+    expect(html).toMatch(/class="docs-grid"[\s\S]*role="note"/);
+  });
+
+  it("spans tables across the grid", () => {
+    const data = docsContent.en.find((section) => section.id === "data")!;
+    expect(renderToStaticMarkup(<DocsSectionView section={data} />)).toContain(
+      '<div class="docs-wide"><div class="docs-table-scroll">',
+    );
+  });
+
+  it("numbers the steps of a numbered section only", () => {
+    const steps = renderToStaticMarkup(<DocsSectionView section={run} />).match(
+      /class="docs-step">(\d+)</g,
+    );
+    expect(steps).toHaveLength(5);
+    expect(renderToStaticMarkup(<DocsSectionView section={about} />)).not.toContain("docs-step");
   });
 });

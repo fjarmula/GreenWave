@@ -17,6 +17,8 @@ export const polish: Record<string, string> = {
   Documentation: "Dokumentacja",
   "Documentation sections": "Sekcje dokumentacji",
   "Contest documentation": "Dokumentacja konkursowa",
+  "Simulation only": "Wyłącznie symulacja",
+  "Live demo": "Wersja demonstracyjna",
   Tools: "Narzędzia",
   "Workspace navigation": "Nawigacja",
   "ER–GreenWave home": "ER–GreenWave — strona główna",

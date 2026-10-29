@@ -69,6 +69,22 @@ describe("docs content", () => {
       }
   });
 
+  it("numbers the run steps, one heading per step", () => {
+    for (const language of languages) {
+      const run = docsContent[language].find((s) => s.id === "run")!;
+      expect(run.numbered).toBe(true);
+      expect(run.blocks.filter((block) => block.kind === "heading")).toHaveLength(5);
+      expect(docsContent[language].filter((s) => s.numbered)).toHaveLength(1);
+    }
+  });
+
+  it("shows the technology table as cards", () => {
+    for (const language of languages) {
+      const tech = docsContent[language].find((s) => s.id === "tech")!;
+      expect(tech.blocks.find((block) => block.kind === "table")).toMatchObject({ cards: true });
+    }
+  });
+
   it("says simulation only in the architecture tab", () => {
     for (const language of languages) {
       const architecture = docsContent[language].find((s) => s.id === "architecture");

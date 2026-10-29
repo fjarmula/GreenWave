@@ -8,7 +8,8 @@ export type DocsBlock =
   | { kind: "paragraph"; text: string }
   | { kind: "heading"; text: string }
   | { kind: "list"; items: string[] }
-  | { kind: "table"; columns: string[]; rows: string[][] }
+  /** `cards`: one card per row, first column as its label (rows that read as items, not data). */
+  | { kind: "table"; columns: string[]; rows: string[][]; cards?: true }
   | { kind: "code"; label: string; code: string }
   | { kind: "links"; items: { label: string; href: string }[] }
   | {
@@ -24,10 +25,12 @@ export interface DocsSection {
   id: DocsSectionId;
   label: string;
   title: string;
+  /** Its headings are steps to follow in order. */
+  numbered?: true;
   blocks: DocsBlock[];
 }
 
-const DEMO_URL = "https://green-wave.duckdns.org/";
+export const DEMO_URL = "https://green-wave.duckdns.org/";
 
 /** Commands are shared by both languages and must match README.md (content-facts test). */
 const COMMANDS = {
@@ -106,6 +109,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
       id: "run",
       label: "Uruchomienie",
       title: "Jak uruchomić",
+      numbered: true,
       blocks: [
         {
           kind: "paragraph",
@@ -122,12 +126,15 @@ export const docsContent: Record<Language, DocsSection[]> = {
             "Paczka surowych danych GIS przekazywana przez zespół. Nie jest częścią repozytorium.",
           ],
         },
+        { kind: "heading", text: "Instalacja" },
         { kind: "code", label: "Instalacja zależności", code: COMMANDS.install },
+        { kind: "heading", text: "Dane symulacji" },
         {
           kind: "paragraph",
           text: "Po skopiowaniu paczki danych do backend/data/raw/ zbiór symulacji przygotowuje się jednorazowo poniższymi krokami.",
         },
         { kind: "code", label: "Przygotowanie zbioru danych", code: COMMANDS.dataset },
+        { kind: "heading", text: "Uruchomienie" },
         { kind: "code", label: "Całość w Docker Compose", code: COMMANDS.compose },
         {
           kind: "paragraph",
@@ -135,6 +142,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         },
         { kind: "code", label: "Serwer symulacji (lokalnie)", code: COMMANDS.backend },
         { kind: "code", label: "Panel (lokalnie, tryb demonstracyjny)", code: COMMANDS.frontend },
+        { kind: "heading", text: "Panel z serwerem symulacji" },
         {
           kind: "paragraph",
           text: "Sam panel uruchomiony w ten sposób korzysta z wbudowanej symulacji demonstracyjnej i nie potrzebuje ani serwera, ani danych GIS. Aby połączyć go z serwerem symulacji, w katalogu frontend użyj polecenia poniżej.",
@@ -153,6 +161,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         },
         {
           kind: "table",
+          cards: true,
           columns: ["Warstwa", "Technologia", "Dlaczego"],
           rows: [
             [
@@ -395,6 +404,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
       id: "run",
       label: "Running it",
       title: "How to run it",
+      numbered: true,
       blocks: [
         {
           kind: "paragraph",
@@ -411,12 +421,15 @@ export const docsContent: Record<Language, DocsSection[]> = {
             "The raw GIS data bundle supplied by the team. It is not part of the repository.",
           ],
         },
+        { kind: "heading", text: "Installation" },
         { kind: "code", label: "Install dependencies", code: COMMANDS.install },
+        { kind: "heading", text: "Simulation data" },
         {
           kind: "paragraph",
           text: "With the data bundle copied into backend/data/raw/, these one-off steps build the simulation dataset.",
         },
         { kind: "code", label: "Build the dataset", code: COMMANDS.dataset },
+        { kind: "heading", text: "Starting it" },
         { kind: "code", label: "Everything with Docker Compose", code: COMMANDS.compose },
         {
           kind: "paragraph",
@@ -424,6 +437,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         },
         { kind: "code", label: "Simulation server (local)", code: COMMANDS.backend },
         { kind: "code", label: "Dashboard (local, demo mode)", code: COMMANDS.frontend },
+        { kind: "heading", text: "Dashboard with the simulation server" },
         {
           kind: "paragraph",
           text: "Started this way, the dashboard runs its built-in demo simulation and needs neither the server nor the GIS data. To connect it to the simulation server, run the command below in the frontend folder.",
@@ -446,6 +460,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         },
         {
           kind: "table",
+          cards: true,
           columns: ["Layer", "Technology", "Why"],
           rows: [
             [

@@ -3,7 +3,7 @@ import type { DocsBlock } from "@/lib/docs/content";
 import { ArchitectureDiagram } from "./ArchitectureDiagram";
 import { CodeBlock } from "./CodeBlock";
 
-function Block({ block }: { block: DocsBlock }) {
+export function Block({ block }: { block: DocsBlock }) {
   switch (block.kind) {
     case "paragraph":
       return <p>{block.text}</p>;
@@ -18,6 +18,20 @@ function Block({ block }: { block: DocsBlock }) {
         </ul>
       );
     case "table":
+      if (block.cards)
+        return (
+          <ul className="docs-cards">
+            {block.rows.map(([label, title, ...text]) => (
+              <li className="docs-card" key={label}>
+                <span className="docs-card-label">{label}</span>
+                <strong>{title}</strong>
+                {text.map((cell) => (
+                  <p key={cell}>{cell}</p>
+                ))}
+              </li>
+            ))}
+          </ul>
+        );
       return (
         <div className="docs-table-scroll">
           <table>

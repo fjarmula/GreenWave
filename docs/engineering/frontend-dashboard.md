@@ -68,3 +68,10 @@ dictionary. PL and EN must stay structurally identical, every command must appea
 and English sentences must not copy the repository docs (`content.test.ts`,
 `content-facts.test.ts`). The active tab is the URL hash (`/docs#data`), with unknown hashes
 opening About, and the tabs follow the WAI-ARIA tabs keyboard model.
+
+The page uses the full content width. `src/lib/docs/layout.ts` turns a section's blocks into a lead
+(leading paragraphs and links, in columns), one panel per heading, standalone notes, and
+full-width tables and diagrams; a section marked `numbered` numbers its headings as steps, and a
+table marked `cards` renders one card per row. Behind it sits the home corridor in road ink (no
+signal colours). The tab track sticks under the header and turns glass only while stuck; one thumb
+slides to the clicked tab and the panel fades in, while keyboard switches stay instant.

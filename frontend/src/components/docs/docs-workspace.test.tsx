@@ -42,6 +42,20 @@ describe("DocsWorkspace", () => {
     );
   });
 
+  it("flags simulation only and links the demo beside the title", () => {
+    const html = english();
+    expect(html).toMatch(/class="docs-chip docs-chip-sim"[^>]*>Simulation only</);
+    expect(html).toMatch(/class="docs-chip"[^>]*href="https:\/\/green-wave\.duckdns\.org\/"/);
+  });
+
+  it("draws the sliding thumb and the corridor backdrop", () => {
+    const html = english();
+    expect(html).toMatch(
+      /role="tablist"[^>]*>[\s\S]*<span aria-hidden="true" class="docs-tab-thumb"/,
+    );
+    expect(html).toMatch(/class="docs-backdrop"[^>]*aria-hidden="true"/);
+  });
+
   it("renders only the About panel on the server", () => {
     expect(english().match(/role="tabpanel"/g)).toHaveLength(1);
   });
