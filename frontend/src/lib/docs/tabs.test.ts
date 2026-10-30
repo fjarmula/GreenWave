@@ -28,6 +28,7 @@ it("uses Up/Down for the vertical documentation rail", () => {
   expect(sectionFromHash("#run")).toBe("about");
 });
 
-it("opens the system logic reference directly from its URL hash", () => {
-  expect(sectionFromHash("#logic")).toBe("logic");
+it("opens the details reference from its URL hash, including the former #logic link", () => {
+  expect(sectionFromHash("#details")).toBe("details");
+  expect(sectionFromHash("#logic")).toBe("details");
 });

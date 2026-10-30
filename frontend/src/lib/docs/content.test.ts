@@ -17,7 +17,6 @@ function strings(block: DocsBlock): string[] {
     case "table":
       return [...block.columns, ...block.rows.flat()];
     case "formula":
-    case "state":
       return [block.label, block.expression];
     case "code":
       return [block.label, block.code];
@@ -25,6 +24,19 @@ function strings(block: DocsBlock): string[] {
       return block.items.flatMap((item) => [item.label, item.href]);
     case "diagram":
       return [block.caption, ...Object.values(block.nodes)];
+    case "flow":
+      return [
+        block.label,
+        ...(block.cycle ? [block.cycle] : []),
+        ...block.steps.flatMap((step) => [
+          step.label,
+          ...(step.detail ? [step.detail] : []),
+          ...(step.branches ?? []).flatMap((branch) => [
+            branch.label,
+            branch.detail ?? branch.label,
+          ]),
+        ]),
+      ];
   }
 }
 
@@ -51,6 +63,10 @@ describe("docs content", () => {
           );
         if (block.kind === "list" && other.kind === "list")
           expect(other.items).toHaveLength(block.items.length);
+        if (block.kind === "flow" && other.kind === "flow")
+          expect(other.steps.map((step) => step.branches?.length ?? 0)).toEqual(
+            block.steps.map((step) => step.branches?.length ?? 0),
+          );
       });
     }
   });
@@ -79,6 +95,21 @@ describe("docs content", () => {
     for (const language of languages) {
       const tech = docsContent[language].find((s) => s.id === "tech")!;
       expect(tech.blocks.find((block) => block.kind === "table")).toMatchObject({ cards: true });
+    }
+  });
+
+  it("credits the authors in the footer rather than the About tab", () => {
+    for (const language of languages) {
+      const about = docsContent[language].find((s) => s.id === "about")!;
+      expect(JSON.stringify(about)).not.toContain("Lorek");
+    }
+  });
+
+  it("shows the system-level run flows in the architecture tab", () => {
+    for (const language of languages) {
+      const architecture = docsContent[language].find((s) => s.id === "architecture")!;
+      expect(architecture.blocks.filter((block) => block.kind === "flow")).toHaveLength(2);
+      expect(architecture.blocks.some((block) => block.kind === "table")).toBe(true);
     }
   });
 

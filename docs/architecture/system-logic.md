@@ -928,3 +928,9 @@ In-app follow-up verification (2026-10-30): frontend lint, typecheck, formatting
 all 1,286 tests and the production build passed. Playwright CLI checked `/docs#logic`
 in PL and EN at 1440, 390 and 320 px: sixteen formula blocks, no document overflow,
 keyboard tab navigation and browser-back selection all passed.
+
+Later follow-up: the in-app tab is now **Details** / **Szczegóły** at `/docs#details`
+(`#logic` still opens it). System-level ownership, modes, the per-second step and the run
+lifecycle moved to the Architecture tab. The page keeps five core formulas typeset in a serif
+math face, and draws lifecycles as box-and-arrow flows. This document remains the complete
+audit, including every equation.

@@ -62,8 +62,8 @@ camera actions stop an old gesture before applying the new view so rapid toggles
 ## Documentation page
 
 `/docs` holds the contest documentation (Open Data App rules §5.2) as six tabs: About, Technologies,
-Data, Architecture, System logic, Future development. The copy lives in
-`src/lib/docs/content.ts` and `logic-content.ts` as typed blocks per language and does not
+Data, Architecture, Details, Future development. The copy lives in
+`src/lib/docs/content.ts` and `details-content.ts` as typed blocks per language and does not
 go through the `polish.ts` dictionary. PL and EN must stay structurally identical, every command must appear in `README.md`,
 and English sentences must not copy the repository docs (`content.test.ts`,
 `content-facts.test.ts`). The active tab is the URL hash (`/docs#data`), with unknown hashes
@@ -76,8 +76,12 @@ table marked `cards` renders one card per row. Behind it sits the home corridor 
 signal colours). The tab track sticks under the header and turns glass only while stuck; one thumb
 slides to the clicked tab and the panel fades in, while keyboard switches stay instant.
 
-The System logic tab (`/docs#logic`) publishes the implementation audit in both languages.
-Its formula and state blocks render readable notation in keyboard-scrollable figures; they
-are not shell commands and have no command-copy UI. `logic-settings.ts` stores the audited
-parameter reference values, not runtime configuration. Keep it aligned with the audited
-backend settings and ETL constants when updating that reference.
+Architecture covers ownership, modes, the per-second step and the run lifecycle. The Details tab
+(`/docs#details`; the former `#logic` hash still opens it) holds the implementation reference in
+both languages: configuration, parameters, movement and signal rules, and model limits. Keep it to
+the few core formulas. Formula blocks use compact notation (`x_i`, `t_{a,e}`, `x^2`) typeset by
+`MathNotation` in the route-scoped STIX Two Text face. Lifecycles and pipelines are `flow` blocks
+(steps, dashed branches, an optional cycle), never preformatted text. `details-settings.ts` stores
+the audited parameter reference values, not runtime configuration. Keep it aligned with the audited
+backend settings and ETL constants when updating that reference. A footer on every tab credits the
+authors with their GitHub profiles.

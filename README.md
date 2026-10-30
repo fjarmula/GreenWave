@@ -130,8 +130,8 @@ Public HTTPS hosting on a free Oracle VM: [deployment guide](deploy/README.md).
   its workspace controls.
 - [CONTRIBUTING.md](CONTRIBUTING.md): checks, branches, commits and contract changes.
 - The in-app **Documentation** page (`/docs`): the Open Data App contest write-up in Polish and
-  English (project, technologies, data, architecture, system logic, future development).
-  The **System logic** tab at `/docs#logic` contains the formulas, parameter reference and state machines.
+  English (project, technologies, data, architecture, details, future development).
+  The **Details** tab at `/docs#details` contains the core formulas, parameter reference and state machines.
 
 ## Data sources and attribution
 

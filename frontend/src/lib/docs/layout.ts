@@ -16,7 +16,12 @@ export function groupDocsBlocks(blocks: DocsBlock[]) {
     } else if (block.kind === "heading") {
       group = { kind: "group", heading: block.text, blocks: [] };
       items.push(group);
-    } else if (block.kind === "table" || block.kind === "diagram" || block.kind === "note") {
+    } else if (
+      block.kind === "table" ||
+      block.kind === "diagram" ||
+      block.kind === "flow" ||
+      block.kind === "note"
+    ) {
       items.push({ kind: block.kind === "note" ? "note" : "wide", block });
       group = null;
     } else {

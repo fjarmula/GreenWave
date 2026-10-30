@@ -144,26 +144,58 @@ it("offers labelled source details for narrow screens", () => {
   expect(html).toContain("<dt>Publisher</dt><dd>Community</dd>");
 });
 
-it("renders readable mathematical notation with its label, without a command-copy control", () => {
+it("typesets formulas with italic variables and real subscripts, without a copy control", () => {
   const html = renderToStaticMarkup(
     <DocsBlocks
       blocks={[
-        { kind: "formula", label: "Time to intersection", expression: "TTIᵢ = max(0, sᵢ − x) / v̄" },
+        {
+          kind: "formula",
+          label: "Time to intersection",
+          expression: "TTI_i = max(0, s_i − x) / v̄_{t−1}",
+        },
       ]}
     />,
   );
   expect(html).toContain("<figcaption>Time to intersection</figcaption>");
   expect(html).toContain('role="math"');
-  expect(html).toContain("TTIᵢ = max(0, sᵢ − x) / v̄");
+  expect(html).toContain("TTI<sub><var>i</var></sub>");
+  expect(html).toContain("max(0, <var>s</var><sub><var>i</var></sub> − <var>x</var>)");
+  expect(html).toContain("<var>v̄</var><sub><var>t</var>−1</sub>");
+  expect(html).not.toContain("_");
   expect(html).not.toContain("<button");
 });
 
-it("renders the in-app system logic reference as substantive content in both languages", () => {
-  for (const language of ["pl", "en"] as const) {
-    const logic = docsContent[language].find((section) => section.id === "logic");
-    expect(logic).toBeDefined();
-    const html = renderToStaticMarkup(<DocsSectionView section={logic!} />);
-    for (const implementedTerm of [
+it("draws a flow as ordered steps with branches and an optional cycle", () => {
+  const html = renderToStaticMarkup(
+    <DocsBlocks
+      blocks={[
+        {
+          kind: "flow",
+          label: "Lifecycle",
+          steps: [
+            { label: "REQUESTED", branches: [{ label: "REJECTED", detail: "refused" }] },
+            { label: "ACCEPTED", detail: "after 1 s" },
+          ],
+          cycle: "back to REQUESTED",
+        },
+      ]}
+    />,
+  );
+  expect(html).toContain("<figcaption>Lifecycle</figcaption>");
+  expect(html.match(/<li class="docs-flow-step"/g)).toHaveLength(2);
+  expect(html).toMatch(/REQUESTED[\s\S]*class="docs-flow-branches"[\s\S]*REJECTED[\s\S]*ACCEPTED/);
+  expect(html).toContain("after 1 s");
+  expect(html).toContain("back to REQUESTED");
+  expect(html).not.toContain("<pre");
+});
+
+describe("details reference", () => {
+  const details = (language: "pl" | "en") =>
+    docsContent[language].find((section) => section.id === "details")!;
+
+  it.each(["pl", "en"] as const)("renders substantive %s content", (language) => {
+    const html = renderToStaticMarkup(<DocsSectionView section={details(language)} />);
+    for (const term of [
       "STANDARD_FALLBACK",
       "PRIORITY_GREEN",
       "its_ack_timeout_seconds",
@@ -171,8 +203,24 @@ it("renders the in-app system logic reference as substantive content in both lan
       "estimated_standard_time_sec",
       "MIXED",
     ])
-      expect(html).toContain(implementedTerm);
-    expect(html.match(/role="math"/g)?.length).toBeGreaterThan(5);
-    expect(html).toContain("&lt;= 25");
-  }
+      expect(html).toContain(term);
+  });
+
+  it.each(["pl", "en"] as const)("keeps at most five core formulas in %s", (language) => {
+    const formulas = details(language).blocks.filter((block) => block.kind === "formula");
+    expect(formulas.length).toBeGreaterThanOrEqual(4);
+    expect(formulas.length).toBeLessThanOrEqual(5);
+  });
+
+  it.each(["pl", "en"] as const)("draws its lifecycles as flows, not text, in %s", (language) => {
+    const kinds = details(language).blocks.map((block) => block.kind);
+    expect(kinds).not.toContain("state");
+    expect(kinds.filter((kind) => kind === "flow").length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("starts without the audit preamble", () => {
+    expect(details("en").blocks[0].kind).not.toBe("paragraph");
+    expect(JSON.stringify(details("en"))).not.toContain("This reference describes");
+    expect(JSON.stringify(details("pl"))).not.toContain("Ten opis odtwarza");
+  });
 });

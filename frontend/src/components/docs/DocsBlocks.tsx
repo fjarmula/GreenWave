@@ -2,6 +2,8 @@ import { Info } from "lucide-react";
 import type { DocsBlock } from "@/lib/docs/content";
 import { ArchitectureDiagram } from "./ArchitectureDiagram";
 import { CodeBlock } from "./CodeBlock";
+import { FlowDiagram } from "./FlowDiagram";
+import { MathNotation } from "./MathNotation";
 
 export function Block({ block }: { block: DocsBlock }) {
   switch (block.kind) {
@@ -74,19 +76,14 @@ export function Block({ block }: { block: DocsBlock }) {
         </div>
       );
     case "formula":
-    case "state":
       return (
         <figure className="docs-notation">
           <figcaption>{block.label}</figcaption>
-          <pre
-            tabIndex={0}
-            role={block.kind === "formula" ? "math" : undefined}
-            aria-label={block.expression}
-          >
-            {block.expression}
-          </pre>
+          <MathNotation expression={block.expression} />
         </figure>
       );
+    case "flow":
+      return <FlowDiagram label={block.label} steps={block.steps} cycle={block.cycle} />;
     case "code":
       return <CodeBlock label={block.label} code={block.code} />;
     case "links":
