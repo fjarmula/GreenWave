@@ -31,6 +31,7 @@ export function WorkspaceShell({
   sheet,
   header,
   defaultDetails = true,
+  boundedInspector = false,
   provenance = "Simulated · all signal states",
   statusAlign = "start",
 }: {
@@ -48,6 +49,8 @@ export function WorkspaceShell({
   sheet?: WorkspaceSheet;
   header: ReactNode;
   defaultDetails?: boolean;
+  /** Live monitoring owns its inner scroll regions instead of scrolling the inspector. */
+  boundedInspector?: boolean;
   provenance?: string;
 }) {
   const { t } = useTranslation();
@@ -149,6 +152,7 @@ export function WorkspaceShell({
             id="workspace-inspector"
             aria-label={t("Simulation details")}
             className="workspace-inspector surface-glass"
+            data-bounded={boundedInspector || undefined}
             data-map-occluder
             hidden={panelHidden}
             inert={panelHidden}

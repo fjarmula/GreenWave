@@ -1,5 +1,7 @@
 /** Polish presentation copy. English keys also provide the English catalog. */
 export const polish: Record<string, string> = {
+  "Route signal entries": "Lista sygnalizacji na trasie",
+  "ITS gateway entries": "Wpisy bramki ITS",
   "Planning route…": "Wyznaczanie trasy…",
   "Planned route": "Planowana trasa",
   "Route preview unavailable": "Podgląd trasy niedostępny",

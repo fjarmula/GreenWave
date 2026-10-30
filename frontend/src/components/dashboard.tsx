@@ -303,6 +303,7 @@ export function Dashboard({
 
   return (
     <WorkspaceShell
+      boundedInspector={mode === "live"}
       primaryAction={
         onSite ? (
           <div className="surface-glass p-4">
@@ -379,10 +380,12 @@ export function Dashboard({
                 onFocusMap={() => setMapFocusRequest((request) => request + 1)}
               />
             ) : (
-              <div className="space-y-4 p-4">
-                <KpiHeader />
-                <RunSummary onBackToSetup={backToSetup} onStop={stopRun} />
-                <PriorityFallbackNotice />
+              <div className="live-inspector">
+                <div className="live-inspector-controls space-y-4">
+                  <KpiHeader />
+                  <RunSummary onBackToSetup={backToSetup} onStop={stopRun} />
+                  <PriorityFallbackNotice />
+                </div>
                 <IntersectionList />
                 <ItsConsole />
               </div>

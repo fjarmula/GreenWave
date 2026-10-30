@@ -20,7 +20,7 @@ export function ItsConsole() {
   const { itsLog, simulationState, itsRequests, liveTelemetry } = useSimulationState();
   const logEntries = itsLog.slice(-5);
   return (
-    <section className="hud-panel overflow-hidden p-0">
+    <section className="hud-panel monitor-panel overflow-hidden p-0">
       <div className="flex items-center justify-between gap-4 border-b border-border px-3.5 py-2.5 text-2xs font-medium text-muted-foreground">
         <span className="flex items-center gap-2">
           <Activity className="size-3.5 text-beacon" aria-hidden />
@@ -34,7 +34,12 @@ export function ItsConsole() {
           {t(PHASE_CHIPS[simulationState] ?? "IDLE")}
         </span>
       </div>
-      <div className="space-y-1.5 bg-muted/50 px-3.5 py-3 dark:bg-black/25">
+      <div
+        tabIndex={0}
+        role="region"
+        aria-label={t("ITS gateway entries")}
+        className="monitor-panel-body space-y-1.5 bg-muted/50 px-3.5 py-3 dark:bg-black/25"
+      >
         {itsRequests.map((request) => (
           <ItsFeedbackStatus
             key={request.message_id}

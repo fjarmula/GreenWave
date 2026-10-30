@@ -95,3 +95,9 @@ dashed line in either mode and becomes the normal live route on successful start
 crews have no driven route. Mock preview and playback share their synthetic line constructor.
 Ranking retains its already planned geometry; preview needs no additional request or session.
 Start still validates and plans authoritatively on the server using the same deterministic planner.
+
+Live desktop details fill the inspector's available height. Controls have their own bounded
+area, while Route Signals and the ITS audit log share the remainder with separate scrollable
+bodies and fixed headings. Their focusable regions support keyboard scrolling. Phone sheets
+keep their existing scroll and gesture model, with each monitoring panel capped by viewport
+height; the sheet can still scroll between panels.
