@@ -7,7 +7,7 @@ import { WorkspaceHeader } from "./WorkspaceHeader";
 describe.each([false, true])("repository link (compact: %s)", (compact) => {
   it.each(["pl", "en"] as const)("offers a safe, localized external link in %s", (language) => {
     const label =
-      language === "pl" ? "Zobacz kod źródłowy na GitHubie" : "View source code on GitHub";
+      language === "pl" ? "Sprawdź kod źródłowy na GitHubie" : "View source code on GitHub";
     const html = renderToStaticMarkup(
       <LanguageProvider initialLanguage={language}>
         <WorkspaceHeader compact={compact} actions={<button>Utility</button>}>
