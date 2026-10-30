@@ -14,10 +14,20 @@ const english = () =>
   );
 
 describe("DocsWorkspace", () => {
-  it("names a tablist with five tabs", () => {
+  it("names a tablist including the details reference", () => {
     const html = english();
     expect(html).toMatch(/role="tablist"[^>]*aria-label="Documentation sections"/);
-    expect(html.match(/role="tab"/g)).toHaveLength(5);
+    expect(html.match(/role="tab"/g)).toHaveLength(6);
+    expect(html).toMatch(/id="docs-tab-details"[^>]*>Details<\/button>/);
+    expect(html).not.toContain("System logic");
+  });
+
+  it("credits both authors in a footer linking their GitHub profiles", () => {
+    const footer = english().match(/<footer class="docs-footer"[\s\S]*?<\/footer>/)?.[0] ?? "";
+    expect(footer).toMatch(/href="https:\/\/github.com\/fjarmula"[^>]*>[\s\S]*?Filip Jarmuła/);
+    expect(footer).toMatch(/href="https:\/\/github.com\/Piotrek406"[^>]*>[\s\S]*?Piotr Lorek/);
+    expect(footer).toContain('href="https://github.com/fjarmula/GreenWave"');
+    expect(footer).toContain("Authors");
   });
 
   it("selects About first with roving focus", () => {
@@ -42,23 +52,21 @@ describe("DocsWorkspace", () => {
     );
   });
 
-  it("shows a simulation-mode badge distinct from the demo link", () => {
+  it("shows a simulation-mode badge without a redundant live-demo header link", () => {
     const html = english();
     expect(html).toMatch(/data-testid="simulation-mode-badge"[\s\S]*?Simulation mode<\/span>/);
     expect(html).toContain("bg-amber-500");
     expect(html).toContain("bg-zinc-900/80");
     expect(html).toContain("border-neutral-700/60");
-    expect(html).toMatch(/class="docs-chip"[^>]*href="https:\/\/green-wave\.duckdns\.org\/"/);
+    expect(html).not.toMatch(/class="docs-chip"[^>]*href="https:\/\/green-wave\.duckdns\.org\/"/);
   });
 
-  it("uses an SVG external-link icon and a documentation navigation rail", () => {
+  it("keeps the navigation rail without a GitHub header button", () => {
     const html = english();
     expect(html).not.toContain("↗");
     expect(html).toContain('class="docs-navigation"');
-    expect(html).toMatch(/Live demo[\s\S]*?<svg/);
-    expect(html).toMatch(
-      /href="https:\/\/github.com\/fjarmula\/GreenWave"[^>]*>[\s\S]*?GitHub[\s\S]*?<svg/,
-    );
+    expect(html).not.toContain("Live demo");
+    expect(html).not.toMatch(/<a class="docs-chip"/);
     expect(html).toContain('aria-orientation="vertical"');
     expect(html).not.toContain("Contest documentation");
     expect(html).toMatch(/<h1[^>]*>Documentation<\/h1>/);

@@ -1,18 +1,19 @@
 "use client";
 import { useTranslation } from "@/components/language-provider";
 import { useEffect, useRef } from "react";
-import { ArrowUpRight } from "lucide-react";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { ResponsiveNavigation } from "@/components/workspace/ResponsiveNavigation";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { useIsPhone } from "@/lib/useIsPhone";
-import { DEMO_URL, docsContent } from "@/lib/docs/content";
+import { docsContent } from "@/lib/docs/content";
 import { DocsBackdrop } from "./DocsBackdrop";
+import { DocsFooter } from "./DocsFooter";
 import { DocsSectionView } from "./DocsSectionView";
 import { DocsTabs } from "./DocsTabs";
 import { useDocsSection } from "./useDocsSection";
 
-export function DocsWorkspace() {
+/** `className` carries the route-scoped math font variable. */
+export function DocsWorkspace({ className }: { className?: string }) {
   const { t, language } = useTranslation();
   const phone = useIsPhone();
   const [active, select] = useDocsSection();
@@ -31,7 +32,7 @@ export function DocsWorkspace() {
   const sections = docsContent[language];
   const section = sections.find((item) => item.id === active) ?? sections[0];
   return (
-    <main className="home-main content-page docs-page">
+    <main className={["home-main content-page docs-page", className].filter(Boolean).join(" ")}>
       <DocsBackdrop />
       <WorkspaceHeader variant="page" compact={phone} actions={!phone && <ThemeToggle />}>
         <ResponsiveNavigation current="/docs" title={t("Documentation")} heading={false} />
@@ -46,17 +47,6 @@ export function DocsWorkspace() {
             <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-amber-500" />
             {t("Simulation mode")}
           </span>
-          <a className="docs-chip" href={DEMO_URL} target="_blank" rel="noopener">
-            {t("Live demo")} <ArrowUpRight aria-hidden className="size-4 shrink-0" />
-          </a>
-          <a
-            className="docs-chip"
-            href="https://github.com/fjarmula/GreenWave"
-            target="_blank"
-            rel="noopener"
-          >
-            GitHub <ArrowUpRight aria-hidden className="size-4 shrink-0" />
-          </a>
         </div>
       </div>
       <div className="docs-layout">
@@ -80,6 +70,7 @@ export function DocsWorkspace() {
           <DocsSectionView section={section} />
         </section>
       </div>
+      <DocsFooter language={language} />
     </main>
   );
 }

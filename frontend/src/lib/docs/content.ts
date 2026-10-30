@@ -1,3 +1,4 @@
+import { detailsSections } from "./details-content";
 import type { Language } from "@/lib/localization";
 import type { DocsSectionId } from "./tabs";
 
@@ -11,6 +12,10 @@ export type DocsBlock =
   /** `cards`: one card per row, first column as its label (rows that read as items, not data). */
   | { kind: "table"; columns: string[]; rows: string[][]; cards?: true }
   | { kind: "code"; label: string; code: string }
+  /** Lines of notation: `x_i` / `x_{i,j}` subscript, `x^2` / `x^{n}` superscript. */
+  | { kind: "formula"; label: string; expression: string }
+  /** Boxes joined by arrows; branches leave a step, `cycle` returns to the start. */
+  | { kind: "flow"; label: string; steps: FlowStep[]; cycle?: string }
   | { kind: "links"; items: { label: string; href: string }[] }
   | {
       kind: "diagram";
@@ -20,6 +25,12 @@ export type DocsBlock =
     }
   /** A simulation-only callout. */
   | { kind: "note"; text: string };
+
+export interface FlowStep {
+  label: string;
+  detail?: string;
+  branches?: { label: string; detail?: string }[];
+}
 
 export interface DocsSection {
   id: DocsSectionId;
@@ -38,6 +49,27 @@ const SOURCE_LINKS = [
   "https://msip.krakow.pl/dataset/1492",
   "https://extract.bbbike.org",
 ];
+
+export const DOCS_REPOSITORY = "https://github.com/fjarmula/GreenWave";
+
+export const DOCS_AUTHORS = [
+  { name: "Filip Jarmuła", github: "fjarmula" },
+  { name: "Piotr Lorek", github: "Piotrek406" },
+] as const;
+
+export const docsFooter: Record<Language, { authors: string; repository: string; notice: string }> =
+  {
+    pl: {
+      authors: "Autorzy",
+      repository: "Kod źródłowy",
+      notice: "Projekt demonstracyjny. Sygnalizacja i odpowiedzi ITS są symulowane.",
+    },
+    en: {
+      authors: "Authors",
+      repository: "Source code",
+      notice: "Demonstration project. Signals and ITS answers are simulated.",
+    },
+  };
 
 /** Bilingual documentation copy, rendered directly rather than passed through t(). */
 export const docsContent: Record<Language, DocsSection[]> = {
@@ -78,11 +110,6 @@ export const docsContent: Record<Language, DocsSection[]> = {
         {
           kind: "note",
           text: "Aplikacja służy wyłącznie do celów demonstracyjnych. Nie łączy się z rzeczywistymi sterownikami sygnalizacji. Stany świateł, odpowiedzi ITS i czasy przejazdu są obliczane przez model.",
-        },
-        { kind: "heading", text: "Autorzy" },
-        {
-          kind: "paragraph",
-          text: "Filip Jarmuła, Piotr Lorek.",
         },
       ],
     },
@@ -246,7 +273,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         { kind: "heading", text: "Przygotowanie danych" },
         {
           kind: "paragraph",
-          text: "Proces ETL przekształca pliki źródłowe w skierowany graf drogowy oraz tabele skrzyżowań, wlotów i adresów. Serwer wczytuje gotowy zbiór przy uruchomieniu. Wyznaczanie tras nie wymaga ponownego odczytu surowych plików GIS.",
+          text: "Proces ETL przekształca pliki źródłowe w skierowany graf drogowy oraz tabele skrzyżowań, wlotów i adresów. Serwer wczytuje gotowy zbiór przy uruchomieniu. Wyznaczanie tras nie wymaga ponownego odczytu surowych plików GIS. Brak pliku albo niezgodna suma kontrolna lub liczność rekordów przerywa uruchomienie, a wczytany graf jest tylko do odczytu.",
         },
         { kind: "heading", text: "Wybór jednostki i trasa" },
         {
@@ -265,7 +292,89 @@ export const docsContent: Record<Language, DocsSection[]> = {
         { kind: "heading", text: "Ruch standardowy" },
         {
           kind: "paragraph",
-          text: "W wariancie bez priorytetu pojazd porusza się po tej samej trasie, a sygnalizacja działa według zwykłego programu. Przy czerwonym świetle model zakłada ostrożny przejazd i dolicza opóźnienie zależne od czasu do zmiany światła, nie większe niż 15 s na skrzyżowanie. Wynik porównania dotyczy tych założeń modelu.",
+          text: "W wariancie bez priorytetu pojazd porusza się po tej samej trasie, a sygnalizacja działa według zwykłego programu. Przy czerwonym świetle model zakłada ostrożny przejazd i dolicza opóźnienie zależne od czasu do zmiany światła, nie większe niż 15 s na decyzję przy linii zatrzymania. Wynik porównania dotyczy tych założeń modelu.",
+        },
+        { kind: "heading", text: "Odpowiedzialność komponentów" },
+        {
+          kind: "paragraph",
+          text: "Modele Pydantic na serwerze są jedynym źródłem kontraktu: na ich podstawie powstaje specyfikacja OpenAPI i typy TypeScript panelu. Silnik ruchu prowadzi pojazd i wysyła żądania, symulowany sterownik decyduje o odpowiedziach i programie świateł, a menedżer sesji pilnuje, by w procesie serwera trwała tylko jedna operacja. Trasy i szacunki czasu są liczone poza pętlą zdarzeń.",
+        },
+        { kind: "heading", text: "Tryby działania" },
+        {
+          kind: "paragraph",
+          text: "Tryby są niezależnymi osiami. Decyzje zapadają po kolei: transport, ustawienia żądania, tryb przejazdu, odpowiedź sterownika i na końcu fallback pojedynczych skrzyżowań. Odmowa nie zmienia trasy ani nie ponawia żądania.",
+        },
+        {
+          kind: "table",
+          columns: ["Oś", "Wybór i zachowanie"],
+          rows: [
+            [
+              "mock / backend",
+              "Transport wybierany przy budowaniu panelu; domyślnie mock. Błąd serwera nie przełącza na mock.",
+            ],
+            [
+              "ENABLED",
+              "Domyślny tryb przejazdu: żądania priorytetu, płynne zwolnienie przed skrzyżowaniem i przejazd na pokazanym zielonym.",
+            ],
+            [
+              "DISABLED",
+              "Ta sama trasa i prędkości, zwykła sygnalizacja. Bez żądań i kaskady; scenariusz ITS zawsze NOMINAL.",
+            ],
+            [
+              "STANDARD_FALLBACK",
+              "Dotyczy tylko nieprzejechanych skrzyżowań z nieudanego żądania. Cały przejazd pozostaje w ENABLED.",
+            ],
+            [
+              "enable_cascade_mode",
+              "Działa tylko w ENABLED. Dołącza sąsiednie cele w jednym kroku od skrzyżowań, które kwalifikują się samodzielnie.",
+            ],
+            [
+              "comparison",
+              "Jedna operacja z przejazdami ENABLED i DISABLED na wspólnym zegarze, każdy z własnym silnikiem i sterownikiem.",
+            ],
+            [
+              "Home / Driver / Diagnostics",
+              "Widoki dzielą scenariusz i stan przejazdu. Przejście między nimi nie zmienia trybu trwającego przejazdu.",
+            ],
+          ],
+        },
+        { kind: "heading", text: "Jedna sekunda symulacji" },
+        {
+          kind: "paragraph",
+          text: "Każdy krok przesuwa zegar symulacji o dokładnie jedną sekundę i zawsze wykonuje te same etapy. Żądanie wysłane w danym kroku wpływa na ruch dopiero w następnym.",
+        },
+        {
+          kind: "flow",
+          label: "Kolejność działań w kroku",
+          steps: [
+            { label: "Ruch", detail: "według poprzedniego raportu świateł" },
+            { label: "Sterownik", detail: "obserwacje i odpowiedzi" },
+            { label: "Limity czasu", detail: "nieudane cele → fallback" },
+            { label: "Żądanie", detail: "wybór i wysłanie, tylko ENABLED" },
+            { label: "Publikacja", detail: "zdarzenia i tick przez SSE" },
+          ],
+        },
+        { kind: "heading", text: "Przebieg i aktualizacje na żywo" },
+        {
+          kind: "paragraph",
+          text: "Nowy przejazd zastępuje poprzedni dopiero po wyznaczeniu trasy. Panel subskrybuje strumień SSE; po ponownym połączeniu otrzymuje ostatni stan, a rozłączenie nie zatrzymuje symulacji. Przejazd kończy się, gdy pojazd dojedzie i wszystkie skrzyżowania wrócą do NORMAL.",
+        },
+        {
+          kind: "flow",
+          label: "Cykl przejazdu",
+          steps: [
+            { label: "INITIALIZED", detail: "trasa wyznaczona" },
+            {
+              label: "Przejazd",
+              detail: "krok co sekundę symulacji",
+              branches: [
+                { label: "SIMULATION_CANCELLED", detail: "STOPPED, SUPERSEDED lub SERVER_ERROR" },
+              ],
+            },
+            { label: "ARRIVED", detail: "pojazd na miejscu" },
+            { label: "Odzyskiwanie świateł", detail: "do NORMAL na każdym skrzyżowaniu" },
+            { label: "SIMULATION_COMPLETED", detail: "koniec operacji" },
+          ],
         },
         {
           kind: "note",
@@ -273,6 +382,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         },
       ],
     },
+    detailsSections.pl,
     {
       id: "roadmap",
       label: "Rozwój",
@@ -343,11 +453,6 @@ export const docsContent: Record<Language, DocsSection[]> = {
         {
           kind: "note",
           text: "For demonstration purposes only. The app never connects to real traffic signals and controls nothing. Light states, controller answers and travel times all come from the model.",
-        },
-        { kind: "heading", text: "Authors" },
-        {
-          kind: "paragraph",
-          text: "Filip Jarmuła, Piotr Lorek.",
         },
       ],
     },
@@ -511,17 +616,17 @@ export const docsContent: Record<Language, DocsSection[]> = {
         { kind: "heading", text: "Data preparation" },
         {
           kind: "paragraph",
-          text: "The ETL stage turns the raw files into a directed road graph with tables of junctions, approaches and addresses. The server loads it once at startup, so routing never has to touch the raw GIS files.",
+          text: "The ETL stage turns the raw files into a directed road graph with tables of junctions, approaches and addresses. The server loads it once at startup, so routing never has to touch the raw GIS files. A missing file, a mismatched checksum or an unexpected record count stops startup, and the loaded graph is read-only.",
         },
         { kind: "heading", text: "Choosing the unit and the route" },
         {
           kind: "paragraph",
-          text: "Once the incident is placed, the server estimates the driving time from every suitable base and picks the fastest. The emergency vehicle's speed follows the limit on each road. A bus lane or tram track lets it go faster, and each speed bump costs a few seconds.",
+          text: "Once the incident is placed, the server ranks suitable bases by estimated travel time; resource-aware ambulance selection can prefer a team within the incident’s operating area. The emergency vehicle's speed follows the limit on each road. A bus lane or tram track lets it go faster, and each speed bump costs a few seconds.",
         },
         { kind: "heading", text: "The green corridor" },
         {
           kind: "paragraph",
-          text: "Every simulated second, the engine computes the time to intersection (TTI) for each signal ahead: remaining distance divided by smoothed speed. As the vehicle approaches, it sends a priority request to the simulated ITS controller. Signals within 250 m of each other along the route are handled together, so a queue at the next junction cannot block the run.",
+          text: "Every simulated second, the engine computes the time to intersection (TTI) for each signal ahead: remaining distance divided by smoothed speed. As the vehicle approaches, it sends a priority request to the simulated ITS controller. Signals within 250 m of each other along the route are handled together, as a one-hop cascade from independently eligible targets.",
         },
         {
           kind: "paragraph",
@@ -530,7 +635,89 @@ export const docsContent: Record<Language, DocsSection[]> = {
         { kind: "heading", text: "Standard traffic" },
         {
           kind: "paragraph",
-          text: "Without priority, the vehicle takes the same route while the signals run their ordinary programme. At a red light it crosses with care and loses time that depends on how long it would have waited for green, at most 15 s per junction. The difference between the two runs is what the green corridor saves.",
+          text: "Without priority, the vehicle takes the same route while the signals run their ordinary programme. At a red light it crosses with care and loses time that depends on how long it would have waited for green, at most 15 s per stop-line decision. The difference between the two runs is what the green corridor saves.",
+        },
+        { kind: "heading", text: "Who owns what" },
+        {
+          kind: "paragraph",
+          text: "Server-side Pydantic models are the single source of the contract; the OpenAPI spec and the dashboard’s TypeScript types are generated from them. The motion engine drives the vehicle and sends requests, the simulated controller decides answers and the light programme, and the session manager allows one operation per server process. Routes and time estimates are computed off the event loop.",
+        },
+        { kind: "heading", text: "Operating modes" },
+        {
+          kind: "paragraph",
+          text: "Modes are independent axes, decided in order: transport, request settings, run mode, controller answer and finally per-junction fallback. A refusal neither changes the route nor repeats the request.",
+        },
+        {
+          kind: "table",
+          columns: ["Axis", "Selection and behaviour"],
+          rows: [
+            [
+              "mock / backend",
+              "Transport chosen when the dashboard is built; mock by default. A server error never switches to mock.",
+            ],
+            [
+              "ENABLED",
+              "Default run mode: priority requests, a smooth slowdown before each junction and crossing on displayed green.",
+            ],
+            [
+              "DISABLED",
+              "Same route and speeds under ordinary signals. No requests or cascade; the ITS scenario is always NOMINAL.",
+            ],
+            [
+              "STANDARD_FALLBACK",
+              "Applies only to unpassed junctions of a failed request. The run as a whole stays ENABLED.",
+            ],
+            [
+              "enable_cascade_mode",
+              "ENABLED only. Adds neighbouring targets one hop from junctions that qualify on their own.",
+            ],
+            [
+              "comparison",
+              "One operation running ENABLED and DISABLED on a shared clock, each with its own engine and controller.",
+            ],
+            [
+              "Home / Driver / Diagnostics",
+              "Views share the scenario and run state. Moving between them never changes an active run’s mode.",
+            ],
+          ],
+        },
+        { kind: "heading", text: "One simulated second" },
+        {
+          kind: "paragraph",
+          text: "Each step moves the simulation clock forward by exactly one second and always runs the same stages. A request sent during a step first affects movement in the next one.",
+        },
+        {
+          kind: "flow",
+          label: "Order of work in a step",
+          steps: [
+            { label: "Move", detail: "under the previous signal report" },
+            { label: "Controller", detail: "observations and answers" },
+            { label: "Timeouts", detail: "failed targets → fallback" },
+            { label: "Request", detail: "select and submit, ENABLED only" },
+            { label: "Publish", detail: "events and tick over SSE" },
+          ],
+        },
+        { kind: "heading", text: "Run lifecycle and live updates" },
+        {
+          kind: "paragraph",
+          text: "A new run replaces the previous one only once its route is planned. The dashboard subscribes to the SSE stream; a reconnect receives the latest state, and disconnecting never stops the simulation. A run completes when the vehicle has arrived and every junction is back to NORMAL.",
+        },
+        {
+          kind: "flow",
+          label: "Run lifecycle",
+          steps: [
+            { label: "INITIALIZED", detail: "route planned" },
+            {
+              label: "Running",
+              detail: "one step per simulated second",
+              branches: [
+                { label: "SIMULATION_CANCELLED", detail: "STOPPED, SUPERSEDED or SERVER_ERROR" },
+              ],
+            },
+            { label: "ARRIVED", detail: "vehicle on scene" },
+            { label: "Signal recovery", detail: "every junction back to NORMAL" },
+            { label: "SIMULATION_COMPLETED", detail: "operation ends" },
+          ],
         },
         {
           kind: "note",
@@ -538,6 +725,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         },
       ],
     },
+    detailsSections.en,
     {
       id: "roadmap",
       label: "Future development",

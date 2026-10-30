@@ -10,6 +10,7 @@ import { generateMetadata as standard } from "./simulation/standard/page";
 vi.mock("next/font/google", () => ({
   Geist: () => ({ variable: "" }),
   Geist_Mono: () => ({ variable: "" }),
+  STIX_Two_Text: () => ({ variable: "" }),
 }));
 
 it("names each workspace in the browser title", async () => {

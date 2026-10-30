@@ -119,6 +119,9 @@ Public HTTPS hosting on a free Oracle VM: [deployment guide](deploy/README.md).
 
 ## Documentation
 
+- [Implemented system logic and mathematical audit](docs/architecture/system-logic.md): modes,
+  configuration, travel-time formulas, signal state machines and implementation limitations.
+
 - [GreenWave_ARCHITECTURE.md](GreenWave_ARCHITECTURE.md): system design and API.
 - [docs/adr/](docs/adr/README.md): architecture decisions and their status.
 - [backend/README.md](backend/README.md): ETL, simulation settings, simulated ITS feedback.
@@ -127,7 +130,8 @@ Public HTTPS hosting on a free Oracle VM: [deployment guide](deploy/README.md).
   its workspace controls.
 - [CONTRIBUTING.md](CONTRIBUTING.md): checks, branches, commits and contract changes.
 - The in-app **Documentation** page (`/docs`): the Open Data App contest write-up in Polish and
-  English (project, running it, technologies, data, architecture, future development).
+  English (project, technologies, data, architecture, details, future development).
+  The **Details** tab at `/docs#details` contains the core formulas, parameter reference and state machines.
 
 ## Data sources and attribution
 
