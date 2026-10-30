@@ -1,3 +1,4 @@
+import { operatingModeBlocks } from "./operating-modes";
 import { detailsSections } from "./details-content";
 import type { Language } from "@/lib/localization";
 import type { DocsSectionId } from "./tabs";
@@ -81,7 +82,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "ER-GreenWave porównuje czas dojazdu pojazdu uprzywilejowanego z priorytetem na skrzyżowaniach i bez niego. Symulacja korzysta z sieci drogowej Krakowa, lokalizacji jednostek ratunkowych i miejskich danych adresowych.",
+          text: "ER-GreenWave porównuje czas dojazdu pojazdu uprzywilejowanego z priorytetem na skrzyżowaniach i bez niego. Symulacja korzysta z sieci drogowej Krakowa, lokalizacji jednostek ratunkowych i miejskich danych adresowych. Wartość korytarza obejmuje dwa cele: szybszy dojazd służb i wcześniejsze uporządkowanie ruchu ogólnego. Docelowo skoordynowane otwieranie sygnalizacji przed pojazdem ma opróżniać kolejki i zapobiegać blokowaniu skrzyżowań oraz zatorom w dalszej części trasy, zamiast tylko podawać zielone nadjeżdżającemu pojazdowi. Obecny PoC prezentuje koordynację priorytetu; efektu na kolejki jeszcze nie oblicza.",
         },
         {
           kind: "paragraph",
@@ -270,6 +271,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
           caption:
             "Szare linie ciągłe pokazują przygotowanie i wczytanie danych. Zielone strzałki oznaczają przesyłanie stanów symulacji do panelu przez SSE. Przerywana strzałka w obu kierunkach oznacza żądania priorytetu i odpowiedzi symulowanego sterownika ITS. Ta wymiana odbywa się wewnątrz procesu symulacji.",
         },
+        ...operatingModeBlocks("pl"),
         { kind: "heading", text: "Przygotowanie danych" },
         {
           kind: "paragraph",
@@ -424,7 +426,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "ER-GreenWave compares emergency-vehicle travel times with and without signal priority. The simulation uses Kraków’s road network, emergency-service locations and municipal address data.",
+          text: "ER-GreenWave compares emergency-vehicle travel times with and without signal priority. The simulation uses Kraków’s road network, emergency-service locations and municipal address data. The corridor has two intended benefits: faster emergency response and proactive reorganisation of general traffic. Coordinated green phases ahead of the vehicle are intended to flush queues and prevent gridlock and downstream jams caused by emergency passage through heavy traffic. The current PoC demonstrates signal-priority coordination; it does not yet calculate queue discharge or congestion reduction.",
         },
         {
           kind: "paragraph",
@@ -613,6 +615,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
           caption:
             "Solid grey arrows show data preparation and loading. Green arrows carry simulation states to the dashboard over SSE. The dashed two-way arrow shows priority requests and responses exchanged with the simulated ITS controller, entirely within the simulation.",
         },
+        ...operatingModeBlocks("en"),
         { kind: "heading", text: "Data preparation" },
         {
           kind: "paragraph",
