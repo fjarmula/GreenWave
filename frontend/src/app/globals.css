@@ -551,6 +551,7 @@
 }
 .page-menu-trigger {
   display: inline-flex;
+  max-width: 100%;
   align-items: center;
   gap: 0.5rem;
   min-height: 2.25rem;
@@ -1612,10 +1613,10 @@ button,
   .home-brand-divider {
     display: none;
   }
-  .home-main .workspace-header[data-compact] > .workspace-heading {
+  .home-main:not(.content-page) .workspace-header[data-compact] > .workspace-heading {
     flex: 0 0 auto;
   }
-  .home-main .workspace-actions {
+  .home-main:not(.content-page) .workspace-actions {
     flex: 0 1 auto;
     flex-wrap: wrap;
     justify-content: flex-end;
@@ -2943,6 +2944,7 @@ button,
   .workspace-header[data-compact] > .workspace-heading {
     display: flex;
     flex: 1;
+    min-width: 0;
     align-items: center;
     gap: 0.25rem;
   }
