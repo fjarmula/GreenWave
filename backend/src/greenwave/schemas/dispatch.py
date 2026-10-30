@@ -18,6 +18,7 @@ from greenwave.schemas.simulation import (
     GreenWaveMode,
     OnFootLeg,
     Position,
+    RouteGeometry,
     SchemaVersion,
     SnappedEndpoint,
     VehicleType,
@@ -195,6 +196,8 @@ class DispatchRankRequest(BaseModel):
 
 
 class RankedCandidate(BaseModel):
+    # Existing planner output for read-only setup preview; absent for an on-site walk.
+    route_geometry: RouteGeometry | None = None
     station: Station
     greenwave_seconds: Annotated[float, Field(ge=0.0)]  # the preflight green-wave estimate
     # The exact pre-run standard estimate (ER Green Wave disabled) at the request's density.

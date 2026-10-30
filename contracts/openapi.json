@@ -1189,6 +1189,16 @@
             "title": "On Site",
             "type": "boolean"
           },
+          "route_geometry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RouteGeometry"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "selection_reason": {
             "anyOf": [
               {

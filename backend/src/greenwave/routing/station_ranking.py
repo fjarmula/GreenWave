@@ -43,7 +43,14 @@ from greenwave.routing.planner import (
     plan_route,
     snap_endpoint,
 )
-from greenwave.schemas import GreenWaveMode, Position, Station, StationSourceKind, VehicleType
+from greenwave.schemas import (
+    GreenWaveMode,
+    Position,
+    RouteGeometry,
+    Station,
+    StationSourceKind,
+    VehicleType,
+)
 from greenwave.simulation.route_model import build_route_model
 from greenwave.simulation.standard_estimate import standard_run_seconds
 from greenwave.simulation_settings import SimulationSettings
@@ -70,6 +77,7 @@ class RankedStation:
     on_site: bool = False
     walk_m: float | None = None
     walk_seconds: float | None = None
+    route_geometry: RouteGeometry | None = None
 
     def total_seconds_for(self, mode: GreenWaveMode) -> float:
         """The drive estimate of ``mode`` plus the walk from the access node (on-site: the walk)."""
@@ -189,6 +197,7 @@ def rank_stations(
             standard_run_seconds(route, model, traffic_density_multiplier, settings),
             route.total_distance_m,
             route.on_foot,
+            route_geometry=RouteGeometry(type="LineString", coordinates=route.polyline_wgs84),
         )
         walk = on_site.get(node.station.station_id)
         if walk is not None and walk.total_seconds_for(time_mode) < candidate.total_seconds_for(
