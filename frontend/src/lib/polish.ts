@@ -28,6 +28,7 @@ export const polish: Record<string, string> = {
   "Live demo": "Wersja demonstracyjna",
   Tools: "Narzędzia",
   "Workspace navigation": "Nawigacja",
+  "View source code on GitHub": "Zobacz kod źródłowy na GitHubie",
   "ER–GreenWave home": "ER–GreenWave — strona główna",
   "Emergency corridor simulation": "Symulacja przejazdu służb ratunkowych",
   "A clearer path to the incident.": "Sprawniejszy dojazd na miejsce zdarzenia.",
