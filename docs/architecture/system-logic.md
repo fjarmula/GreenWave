@@ -619,7 +619,7 @@ stateDiagram-v2
     NORMAL --> CLEARING: accepted request; waiting for eligibility or shown green
     NORMAL --> PRIORITY_GREEN: accepted; TTI at most 25; route indications already green
     CLEARING --> PRIORITY_GREEN: TTI at most 25 and all route vehicle indications green
-    PRIORITY_GREEN --> CLEARING: no complete shown-green route confirmation
+    PRIORITY_GREEN --> CLEARING: TTI above priority threshold or no shown-green confirmation
     CLEARING --> NORMAL: request no longer accepted and target unpassed
     PRIORITY_GREEN --> NORMAL: request no longer accepted and target unpassed
     CLEARING --> RECOVERY: passed after active priority state
@@ -801,7 +801,7 @@ signal safety. No calibrated performance or deployment-safety claim follows from
 | Medium | Mock uses synthetic timings/group identities and fixed red wait; settings not shared with server. | Use it for UI/contract demonstration, not backend numerical validation. |
 | Low | Prior architecture prose and schema comments describe playback as a 1 Hz wall tick advancing $p$ seconds; some older text describes terminal ITS failure ([overview](../../GreenWave_ARCHITECTURE.md), [schema](../../backend/src/greenwave/schemas/simulation.py)). | Current session emits each simulated second at interval $I/p$; ITS failure is per-junction fallback. This audit and ADR 0015 document actual behavior. |
 | Low | The overview says the shortest-drive neighbour table gates cascade; runtime route builder only checks forward along-route distance ([route_model](../../backend/src/greenwave/simulation/route_model.py)). | Candidate mismatches are warnings; they do not suppress cascade. |
-| Low | Frontend engineering prose says six documentation tabs; current typed content/test renders five (running guidance is grouped into current content). | Inspect current UI/content rather than treating historical tab counts as contract. |
+| Low | At the audit baseline, frontend engineering prose said six documentation tabs while typed content rendered five. This follow-up adds System logic as the sixth tab and aligns the engineering reference. | The tab-count discrepancy is resolved by the in-app audit follow-up. |
 
 Further model boundaries: no turn-restriction model, no dynamic traffic queue or interacting
 emergency vehicles, no signal conflict arbitration across operations, no pedestrian barrier
@@ -891,7 +891,8 @@ motion → controller/ledger → telemetry → session/SSE → frontend adapters
 the independent mock. Work plan: inspect sources and tests, write formula/state/config
 reference, remove the docs header link test-first, run both quality suites, review the
 diff and open a documentation PR. No backend algorithm, schema or generated artifact
-was changed. The separate UI change removes only the docs header Live demo link.
+was changed. The UI exposes the audit in a bilingual System logic tab at `/docs#logic`, with readable
+formula blocks, text state diagrams and parameter tables, and removes the docs header Live demo link.
 
 | Behavior | Existing verification source |
 | --- | --- |
@@ -918,3 +919,12 @@ the simulation badge remains visible, and five tabs render. Browser artifacts ar
 under `.tmp/playwright/audit/`; they are not documentation or production assets. Vitest
 reported its existing Vite native-config compatibility warning; no test failed.
 $$
+
+Follow-up: the audit is also available directly on the in-app Documentation page at
+`/docs#logic` (System logic / Logika systemu). Both languages share the parameter values
+and equations, with translated explanations, diagram annotations and table headings.
+
+In-app follow-up verification (2026-10-30): frontend lint, typecheck, formatting,
+all 1,286 tests and the production build passed. Playwright CLI checked `/docs#logic`
+in PL and EN at 1440, 390 and 320 px: sixteen formula blocks, no document overflow,
+keyboard tab navigation and browser-back selection all passed.

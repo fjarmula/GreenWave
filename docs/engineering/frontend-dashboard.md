@@ -61,10 +61,10 @@ camera actions stop an old gesture before applying the new view so rapid toggles
 
 ## Documentation page
 
-`/docs` holds the contest documentation (Open Data App rules §5.2) as six tabs: About, Running it,
-Technologies, Data, Architecture, Future development. The copy lives in
-`src/lib/docs/content.ts` as typed blocks per language and does not go through the `polish.ts`
-dictionary. PL and EN must stay structurally identical, every command must appear in `README.md`,
+`/docs` holds the contest documentation (Open Data App rules §5.2) as six tabs: About, Technologies,
+Data, Architecture, System logic, Future development. The copy lives in
+`src/lib/docs/content.ts` and `logic-content.ts` as typed blocks per language and does not
+go through the `polish.ts` dictionary. PL and EN must stay structurally identical, every command must appear in `README.md`,
 and English sentences must not copy the repository docs (`content.test.ts`,
 `content-facts.test.ts`). The active tab is the URL hash (`/docs#data`), with unknown hashes
 opening About, and the tabs follow the WAI-ARIA tabs keyboard model.
@@ -75,3 +75,9 @@ full-width tables and diagrams; a section marked `numbered` numbers its headings
 table marked `cards` renders one card per row. Behind it sits the home corridor in road ink (no
 signal colours). The tab track sticks under the header and turns glass only while stuck; one thumb
 slides to the clicked tab and the panel fades in, while keyboard switches stay instant.
+
+The System logic tab (`/docs#logic`) publishes the implementation audit in both languages.
+Its formula and state blocks render readable notation in keyboard-scrollable figures; they
+are not shell commands and have no command-copy UI. `logic-settings.ts` stores the audited
+parameter reference values, not runtime configuration. Keep it aligned with the audited
+backend settings and ETL constants when updating that reference.

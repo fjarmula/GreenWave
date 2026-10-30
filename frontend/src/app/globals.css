@@ -3156,6 +3156,32 @@ a.docs-chip:focus-visible,
   font-weight: 500;
   color: var(--muted-foreground);
 }
+.docs-notation {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  overflow: hidden;
+}
+.docs-notation figcaption {
+  padding: 0.625rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: var(--muted);
+}
+.docs-notation pre {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.75;
+}
+.docs-notation pre:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
 .docs-group .docs-code {
   background: var(--tile);
 }

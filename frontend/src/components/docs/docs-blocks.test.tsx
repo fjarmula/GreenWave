@@ -143,3 +143,36 @@ it("offers labelled source details for narrow screens", () => {
   expect(html).toContain('class="docs-table-mobile"');
   expect(html).toContain("<dt>Publisher</dt><dd>Community</dd>");
 });
+
+it("renders readable mathematical notation with its label, without a command-copy control", () => {
+  const html = renderToStaticMarkup(
+    <DocsBlocks
+      blocks={[
+        { kind: "formula", label: "Time to intersection", expression: "TTIᵢ = max(0, sᵢ − x) / v̄" },
+      ]}
+    />,
+  );
+  expect(html).toContain("<figcaption>Time to intersection</figcaption>");
+  expect(html).toContain('role="math"');
+  expect(html).toContain("TTIᵢ = max(0, sᵢ − x) / v̄");
+  expect(html).not.toContain("<button");
+});
+
+it("renders the in-app system logic reference as substantive content in both languages", () => {
+  for (const language of ["pl", "en"] as const) {
+    const logic = docsContent[language].find((section) => section.id === "logic");
+    expect(logic).toBeDefined();
+    const html = renderToStaticMarkup(<DocsSectionView section={logic!} />);
+    for (const implementedTerm of [
+      "STANDARD_FALLBACK",
+      "PRIORITY_GREEN",
+      "its_ack_timeout_seconds",
+      "min_intersection_delay_seconds",
+      "estimated_standard_time_sec",
+      "MIXED",
+    ])
+      expect(html).toContain(implementedTerm);
+    expect(html.match(/role="math"/g)?.length).toBeGreaterThan(5);
+    expect(html).toContain("&lt;= 25");
+  }
+});

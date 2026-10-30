@@ -73,6 +73,20 @@ export function Block({ block }: { block: DocsBlock }) {
           </div>
         </div>
       );
+    case "formula":
+    case "state":
+      return (
+        <figure className="docs-notation">
+          <figcaption>{block.label}</figcaption>
+          <pre
+            tabIndex={0}
+            role={block.kind === "formula" ? "math" : undefined}
+            aria-label={block.expression}
+          >
+            {block.expression}
+          </pre>
+        </figure>
+      );
     case "code":
       return <CodeBlock label={block.label} code={block.code} />;
     case "links":

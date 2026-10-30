@@ -14,10 +14,11 @@ const english = () =>
   );
 
 describe("DocsWorkspace", () => {
-  it("names a tablist with five tabs", () => {
+  it("names a tablist including the system logic reference", () => {
     const html = english();
     expect(html).toMatch(/role="tablist"[^>]*aria-label="Documentation sections"/);
-    expect(html.match(/role="tab"/g)).toHaveLength(5);
+    expect(html.match(/role="tab"/g)).toHaveLength(6);
+    expect(html).toMatch(/id="docs-tab-logic"[^>]*>System logic<\/button>/);
   });
 
   it("selects About first with roving focus", () => {

@@ -27,3 +27,7 @@ it("uses Up/Down for the vertical documentation rail", () => {
   expect(nextTabIndex("ArrowRight", 0, 5, "vertical")).toBeNull();
   expect(sectionFromHash("#run")).toBe("about");
 });
+
+it("opens the system logic reference directly from its URL hash", () => {
+  expect(sectionFromHash("#logic")).toBe("logic");
+});

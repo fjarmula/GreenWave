@@ -16,6 +16,9 @@ function strings(block: DocsBlock): string[] {
       return block.items;
     case "table":
       return [...block.columns, ...block.rows.flat()];
+    case "formula":
+    case "state":
+      return [block.label, block.expression];
     case "code":
       return [block.label, block.code];
     case "links":
@@ -26,7 +29,7 @@ function strings(block: DocsBlock): string[] {
 }
 
 describe("docs content", () => {
-  it("lists the five sections in order in both languages", () => {
+  it("lists the documentation sections in order in both languages", () => {
     for (const language of languages)
       expect(docsContent[language].map((section) => section.id)).toEqual([...DOCS_SECTION_IDS]);
   });

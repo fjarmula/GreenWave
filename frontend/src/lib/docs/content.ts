@@ -1,3 +1,4 @@
+import { logicSections } from "./logic-content";
 import type { Language } from "@/lib/localization";
 import type { DocsSectionId } from "./tabs";
 
@@ -11,6 +12,7 @@ export type DocsBlock =
   /** `cards`: one card per row, first column as its label (rows that read as items, not data). */
   | { kind: "table"; columns: string[]; rows: string[][]; cards?: true }
   | { kind: "code"; label: string; code: string }
+  | { kind: "formula" | "state"; label: string; expression: string }
   | { kind: "links"; items: { label: string; href: string }[] }
   | {
       kind: "diagram";
@@ -265,7 +267,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         { kind: "heading", text: "Ruch standardowy" },
         {
           kind: "paragraph",
-          text: "W wariancie bez priorytetu pojazd porusza się po tej samej trasie, a sygnalizacja działa według zwykłego programu. Przy czerwonym świetle model zakłada ostrożny przejazd i dolicza opóźnienie zależne od czasu do zmiany światła, nie większe niż 15 s na skrzyżowanie. Wynik porównania dotyczy tych założeń modelu.",
+          text: "W wariancie bez priorytetu pojazd porusza się po tej samej trasie, a sygnalizacja działa według zwykłego programu. Przy czerwonym świetle model zakłada ostrożny przejazd i dolicza opóźnienie zależne od czasu do zmiany światła, nie większe niż 15 s na decyzję przy linii zatrzymania. Wynik porównania dotyczy tych założeń modelu.",
         },
         {
           kind: "note",
@@ -273,6 +275,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         },
       ],
     },
+    logicSections.pl,
     {
       id: "roadmap",
       label: "Rozwój",
@@ -516,12 +519,12 @@ export const docsContent: Record<Language, DocsSection[]> = {
         { kind: "heading", text: "Choosing the unit and the route" },
         {
           kind: "paragraph",
-          text: "Once the incident is placed, the server estimates the driving time from every suitable base and picks the fastest. The emergency vehicle's speed follows the limit on each road. A bus lane or tram track lets it go faster, and each speed bump costs a few seconds.",
+          text: "Once the incident is placed, the server ranks suitable bases by estimated travel time; resource-aware ambulance selection can prefer a team within the incident’s operating area. The emergency vehicle's speed follows the limit on each road. A bus lane or tram track lets it go faster, and each speed bump costs a few seconds.",
         },
         { kind: "heading", text: "The green corridor" },
         {
           kind: "paragraph",
-          text: "Every simulated second, the engine computes the time to intersection (TTI) for each signal ahead: remaining distance divided by smoothed speed. As the vehicle approaches, it sends a priority request to the simulated ITS controller. Signals within 250 m of each other along the route are handled together, so a queue at the next junction cannot block the run.",
+          text: "Every simulated second, the engine computes the time to intersection (TTI) for each signal ahead: remaining distance divided by smoothed speed. As the vehicle approaches, it sends a priority request to the simulated ITS controller. Signals within 250 m of each other along the route are handled together, as a one-hop cascade from independently eligible targets.",
         },
         {
           kind: "paragraph",
@@ -530,7 +533,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         { kind: "heading", text: "Standard traffic" },
         {
           kind: "paragraph",
-          text: "Without priority, the vehicle takes the same route while the signals run their ordinary programme. At a red light it crosses with care and loses time that depends on how long it would have waited for green, at most 15 s per junction. The difference between the two runs is what the green corridor saves.",
+          text: "Without priority, the vehicle takes the same route while the signals run their ordinary programme. At a red light it crosses with care and loses time that depends on how long it would have waited for green, at most 15 s per stop-line decision. The difference between the two runs is what the green corridor saves.",
         },
         {
           kind: "note",
@@ -538,6 +541,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         },
       ],
     },
+    logicSections.en,
     {
       id: "roadmap",
       label: "Future development",
