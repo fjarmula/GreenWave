@@ -172,3 +172,30 @@ describe("coincident station dispatch", () => {
     expect(result.candidates[0].station.station_id).toBe("STN-A-0001");
   });
 });
+
+it("returns the same preview line that mock playback drives", async () => {
+  const { createMockSession } = await import("./mock-session");
+  const destination = { lat: 50.065, lng: 19.945 };
+  const ranked = await createMockDispatchAdapter(STATIONS).rank({
+    incident: destination,
+    vehicle_type: "AMBULANCE",
+    availability: {},
+    resource_aware: false,
+    time_mode: "ENABLED",
+    traffic_density_multiplier: 1,
+  });
+  const chosen = ranked.candidates[0];
+  const session = createMockSession({
+    simulation_id: "SIM-preview",
+    origin: chosen.station.position,
+    destination,
+    vehicle_type: "AMBULANCE",
+    traffic_density_multiplier: 1,
+    enable_cascade_mode: true,
+    playback_speed: 1,
+    green_wave_mode: "ENABLED",
+    its_scenario: "NOMINAL",
+    its_outcome_seed: 0,
+  });
+  expect(chosen.route_geometry).toEqual(session.route.route_geometry);
+});

@@ -3643,3 +3643,9 @@ a.docs-chip:focus-visible,
     margin-inline: auto;
   }
 }
+
+/* Informational preview feedback must never intercept map or phone-sheet gestures. */
+.workspace-status > .route-preview-status {
+  width: fit-content;
+  pointer-events: none;
+}

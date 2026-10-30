@@ -16,10 +16,18 @@ type RouteLayerProps = {
   theme: ResolvedTheme;
   /** Green Wave draws the corridor in `go`; standard traffic a neutral line. */
   mode: GreenWaveMode;
+  preview?: boolean;
 };
 
 /** White-cased road with the corridor line on top, as in the home animation. */
-export function RouteLayer({ map, routeGeometry, styleRevision, theme, mode }: RouteLayerProps) {
+export function RouteLayer({
+  map,
+  routeGeometry,
+  styleRevision,
+  theme,
+  mode,
+  preview = false,
+}: RouteLayerProps) {
   useEffect(() => {
     if (!map || !routeGeometry || routeGeometry.coordinates.length < 2) return;
     const palette = mapPalette(theme);
@@ -51,8 +59,10 @@ export function RouteLayer({ map, routeGeometry, styleRevision, theme, mode }: R
           type: "line",
           source: sourceId,
           paint: {
-            "line-color": mode === "DISABLED" ? palette.routeStandard : palette.routeLive,
+            "line-color":
+              preview || mode === "DISABLED" ? palette.routeStandard : palette.routeLive,
             "line-width": 7,
+            ...(preview ? { "line-dasharray": [2, 1.5] } : {}),
           },
           layout: { "line-cap": "round", "line-join": "round" },
         },
@@ -64,7 +74,7 @@ export function RouteLayer({ map, routeGeometry, styleRevision, theme, mode }: R
       if (map.getLayer(casingId)) map.removeLayer(casingId);
       if (map.getSource(sourceId)) map.removeSource(sourceId);
     };
-  }, [map, routeGeometry, styleRevision, theme, mode]);
+  }, [map, routeGeometry, styleRevision, theme, mode, preview]);
 
   return null;
 }

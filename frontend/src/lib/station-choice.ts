@@ -4,6 +4,7 @@ import type {
   GreenWaveMode,
   OnFootLeg,
   RankedCandidate,
+  RouteGeometry,
   Station,
   VehicleType,
 } from "@/types/telemetry";
@@ -142,4 +143,14 @@ export function shownOnSite(
 /** A run can start once the ranking is ready with at least one candidate. */
 export function canStart(dispatch: Pick<IncidentDispatchState, "rankStatus" | "ranking">): boolean {
   return dispatch.rankStatus === "ready" && (dispatch.ranking?.candidates.length ?? 0) > 0;
+}
+
+/** The same candidate Start uses; never reveal stale geometry during a re-rank. */
+export function plannedRoute(
+  state: Pick<IncidentDispatchState, "ranking" | "selectedStationId" | "rankStatus">,
+  mode: TimeMode,
+): RouteGeometry | null {
+  if (state.rankStatus !== "ready") return null;
+  const candidate = pageCandidate(state, mode);
+  return candidate?.on_site ? null : (candidate?.route_geometry ?? null);
 }

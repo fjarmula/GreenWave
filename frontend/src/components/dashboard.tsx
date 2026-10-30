@@ -27,6 +27,7 @@ import { createSimulationId } from "@/lib/simulation-id";
 import {
   onSiteResult,
   pageCandidate,
+  plannedRoute,
   runnerUpIds,
   shownOnSite,
   timeModeFor,
@@ -42,6 +43,7 @@ import { KpiHeader } from "@/components/hud/KpiHeader";
 import { RunSummary } from "@/components/hud/RunSummary";
 import { PriorityFallbackNotice } from "@/components/hud/PriorityFallbackNotice";
 import { IntersectionList } from "@/components/hud/IntersectionList";
+import { RoutePreviewStatus } from "@/components/hud/RoutePreviewStatus";
 import { ItsConsole } from "@/components/hud/ItsConsole";
 import { DispatchStartButton } from "@/components/hud/dispatch/DispatchStartButton";
 import { DispatchForm } from "@/components/hud/DispatchForm";
@@ -333,6 +335,8 @@ export function Dashboard({
           <div className="driver-overlay">
             <NextSignalCard signal={signal} />
           </div>
+        ) : mode === "setup" ? (
+          <RoutePreviewStatus dispatch={dispatch} mode={timeMode} />
         ) : undefined
       }
       header={
@@ -350,6 +354,7 @@ export function Dashboard({
       map={
         <MapContainer
           live={mode === "live"}
+          previewGeometry={plannedRoute(dispatch, timeMode)}
           origin={origin}
           destination={destination}
           focusRequest={mapFocusRequest}

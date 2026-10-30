@@ -626,3 +626,20 @@ describe("resource-aware ambulance ranking (ADR 0014)", () => {
     expect(() => validateResources(wire(RESOURCES, (c) => (c.roster = null)))).toThrow("roster");
   });
 });
+
+it("rejects invalid preview geometry instead of drawing an untrusted route", () => {
+  expect(() =>
+    validateRank(
+      wire(TEAM_RANK, (body) => {
+        const candidates = body.candidates as Record<string, unknown>[];
+        candidates[0].route_geometry = {
+          type: "LineString",
+          coordinates: [
+            [19.9, 50],
+            ["bad", 50],
+          ],
+        };
+      }),
+    ),
+  ).toThrow();
+});
