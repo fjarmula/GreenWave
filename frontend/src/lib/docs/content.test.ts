@@ -133,3 +133,17 @@ it("explains the dashed ITS exchange in both diagram captions", () => {
   expect(caption("en")).toContain("dashed two-way arrow");
   expect(caption("en")).toContain("within the simulation");
 });
+
+it("preserves configuration identifiers and equations between languages", () => {
+  const reference = (language: "pl" | "en") => docsContent[language].flatMap((s) => s.blocks);
+  const identifiers = (language: "pl" | "en") =>
+    reference(language).flatMap((block) =>
+      block.kind === "table"
+        ? block.rows.filter((row) => /^[a-zA-Z][a-zA-Z0-9]*_/.test(row[0]))
+        : [],
+    );
+  expect(identifiers("pl").map((row) => row[0])).toEqual(identifiers("en").map((row) => row[0]));
+  const equations = (language: "pl" | "en") =>
+    reference(language).flatMap((block) => (block.kind === "formula" ? [block.expression] : []));
+  expect(equations("pl")).toEqual(equations("en"));
+});

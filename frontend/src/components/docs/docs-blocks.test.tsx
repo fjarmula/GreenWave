@@ -224,3 +224,12 @@ describe("details reference", () => {
     expect(JSON.stringify(details("pl"))).not.toContain("Ten opis odtwarza");
   });
 });
+
+it("preserves canonical state identifiers when the operating-mode descriptions change language", () => {
+  for (const language of ["pl", "en"] as const) {
+    const architecture = docsContent[language].find((section) => section.id === "architecture")!;
+    const html = renderToStaticMarkup(<DocsSectionView section={architecture} />);
+    for (const state of ["NORMAL", "CLEARING", "PRIORITY_GREEN", "RECOVERY"])
+      expect(html).toContain(`class="docs-card-label">${state}</span>`);
+  }
+});

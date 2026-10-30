@@ -1,12 +1,28 @@
 # ER-GreenWave
 
-Emergency vehicles lose time at red lights. ER-GreenWave is a proof of concept for Kraków that
-picks the dispatch station, routes the vehicle over the real road network and simulates a
-**green corridor**: the signals ahead of an ambulance, fire truck or police car are asked to turn
-green in time, and the run shows how many seconds that saves against standard traffic.
+ER-GreenWave is a Kraków emergency-corridor proof of concept with two intended benefits:
+shorter emergency response and less disruption to general traffic. Coordinating signals ahead
+of an emergency vehicle is intended to flush queues before arrival and avoid downstream
+blocking when emergency vehicles move through heavy traffic. The PoC selects a dispatch base,
+plans a road route and compares simulated journeys with and without signal priority.
+It does not simulate traffic queues or measure reductions in congestion.
 
 **Simulation only.** ER-GreenWave never connects to or controls real traffic infrastructure. Every
 signal state, ITS message, delay and priority command it shows is simulated.
+
+## Traffic signal operating modes
+
+These are intersection phases, separate from the `ENABLED` / `DISABLED` run modes.
+
+| Phase | Intended traffic-management role | Current PoC behavior |
+| --- | --- | --- |
+| `NORMAL` — baseline | Serve ordinary traffic without an active emergency corridor. | Ordinary two-group cycle; a pending request alone does not alter it. |
+| `CLEARING` — pre-arrival queue flushing | Open coordinated phases ahead of arrival to discharge queues and keep downstream junctions moving. | After acceptance, conflicting movements and pedestrians target red; route movements keep their ordinary programme. No queue discharge is simulated. |
+| `PRIORITY_GREEN` — corridor preemption | Hold route green for continuous emergency passage. | Accepted request, TTI ≤25 s by default and shown-green confirmation required. Delays and fallback mean passage is not guaranteed to be uninterrupted. |
+| `RECOVERY` — post-passage stabilization | Gradually restore cycle lengths and offsets to limit shockwaves, secondary bottlenecks and gridlock. | After protected passage, the ordinary programme resumes immediately with shown-head clearance transitions; recovery state lasts 15 s by default. No gradual offset/cycle restoration is implemented. |
+
+The bilingual `/docs` Architecture section presents these roles alongside implementation
+behavior; Details retains the equations, transition conditions and parameter reference.
 
 ## Features
 
