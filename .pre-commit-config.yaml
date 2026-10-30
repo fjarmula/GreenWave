@@ -1,8 +1,7 @@
 # Install all hook types from the repository root with:
 #   uv run --project backend pre-commit install --install-hooks
-# post-checkout/post-merge/post-rewrite only refresh the local code graph (ADR 0004).
 minimum_pre_commit_version: "4.0.0"
-default_install_hook_types: [pre-commit, pre-push, commit-msg, post-checkout, post-merge, post-rewrite]
+default_install_hook_types: [pre-commit, pre-push, commit-msg]
 default_stages: [pre-commit]
 
 repos:
@@ -108,11 +107,3 @@ repos:
         pass_filenames: false
         files: ^(backend/src/greenwave/|backend/scripts/export_openapi\.py$|contracts/openapi\.json$)
         stages: [pre-push]
-
-      - id: graphify-refresh
-        name: graphify · refresh local code graph
-        entry: scripts/graphify-refresh.sh
-        language: system
-        pass_filenames: false
-        always_run: true
-        stages: [post-checkout, post-merge, post-rewrite]

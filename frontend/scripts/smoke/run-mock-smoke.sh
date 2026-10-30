@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Mock-transport smoke test with @playwright/cli (AGENTS.md: never @playwright/mcp).
+# Mock-transport smoke test with @playwright/cli.
 # Usage: scripts/smoke/run-mock-smoke.sh [base-url]   (default http://localhost:3000)
 # Expects the dashboard to be running with NEXT_PUBLIC_SIMULATION_TRANSPORT=mock
 # (`npm run build && npx next start`, or `npm run dev`). Outputs go to

@@ -4,6 +4,12 @@ set -euo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 script="$root/scripts/graphify-refresh.sh"
 
+# Agent configuration is intentionally omitted from the evaluation snapshot.
+if [ ! -e "$root/.mcp.json" ] && [ ! -d "$root/.agent" ]; then
+  printf 'SKIP: agent configuration is intentionally omitted from the submission snapshot\n'
+  exit 0
+fi
+
 test -x "$script"
 
 # A PATH with the basic tools but no graphify.

@@ -11,7 +11,7 @@ The standard-traffic page showed the green-wave time before a run, and its live 
 down `estimated_normal_time_sec` (car speeds x density plus 35 s per junction), not the
 ambulance-without-priority run it shows. An off-road incident showed one drive + walk total
 before start while only the drive is simulated. Design:
-`docs/superpowers/specs/archive/2026-10-25-post-merge-regressions-design.md` (D4, D5; findings B4, B5,
+the internal development specification (omitted from this evaluation snapshot) (D4, D5; findings B4, B5,
 X2).
 
 ## Decision

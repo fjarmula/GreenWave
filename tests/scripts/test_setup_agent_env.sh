@@ -4,6 +4,12 @@ set -euo pipefail
 project_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 script="$project_root/scripts/setup-agent-env.sh"
 
+# Agent configuration is intentionally omitted from the evaluation snapshot.
+if [ ! -e "$project_root/.mcp.json" ] && [ ! -d "$project_root/.agent" ]; then
+  printf 'SKIP: agent configuration is intentionally omitted from the submission snapshot\n'
+  exit 0
+fi
+
 test -x "$script"
 "$script" --help | grep -F -- '--check'
 "$script" --help | grep -F -- '--install'

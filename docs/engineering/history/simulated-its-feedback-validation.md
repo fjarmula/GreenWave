@@ -1,6 +1,6 @@
 # Simulated ITS feedback validation — 2026-10-23
 
-Specification: `docs/superpowers/specs/archive/2026-10-23-simulated-its-feedback-design.md`.
+Specification: the internal development specification (omitted from this evaluation snapshot).
 Implementation: four approved milestones on `codex/simulated-its-feedback`.
 No physical signal connection, actuation, dependency or deployment change.
 

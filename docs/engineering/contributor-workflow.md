@@ -9,7 +9,7 @@ Before planning or editing, inspect the relevant structure, source, related docu
 ## Stack and design rules
 
 - Backend: Python 3.12+, `uv`, FastAPI/ASGI, Pydantic v2, GeoPandas, Polars, NetworkX, Shapely, Ruff, mypy, and pytest. Use the repository configuration as the source of truth; do not introduce a listed technology merely because it appears here.
-- Frontend: Next.js App Router, strict TypeScript, React, Tailwind, lucide icons, MapLibre, and the existing real-time state approach. `frontend/AGENTS.md` adds required Next.js guidance.
+- Frontend: Next.js App Router, strict TypeScript, React, Tailwind, lucide icons, MapLibre, and the existing real-time state approach.
 - Keep GIS ingestion and graph construction separate from the simulation loop; keep domain logic out of FastAPI/transport code; keep MapLibre within the map boundary and HUD components separate. Keep transport, validation, domain, persistence, and presentation responsibilities distinct.
 - Use explicit Python parameter/return annotations and precise TypeScript types. Avoid Python `Any` and TypeScript `any`; validate untrusted boundaries. Use Pydantic for parsing/validation and keep stateful domain decisions in domain/service modules.
 - Keep tunable values in existing configuration with explicit units and range validation. Reuse existing configuration; do not invent unspecified thresholds or turn local implementation literals into global settings without reason.
@@ -48,4 +48,4 @@ A task is done only when requested behavior, contracts, and relevant documentati
 
 Be concise, technically precise, and evidence-led. Explain consequential trade-offs. Do not claim inspection or verification that did not occur.
 
-Do not discard or reformat unrelated work or change secrets unnecessarily. Agents may create local commits after relevant checks and staged-diff review, using the commit format required by `AGENTS.md`. Do not push, deploy, publish, or open a pull request unless asked. Use `uv add` / `uv add --dev` and the established frontend package manager for approved dependencies.
+Do not discard or reformat unrelated work or change secrets unnecessarily. Create local commits after relevant checks and staged-diff review, using `<category>: <message>` subjects as described in `CONTRIBUTING.md`. Do not push, deploy, publish, or open a pull request unless asked. Use `uv add` / `uv add --dev` and the established frontend package manager for approved dependencies.

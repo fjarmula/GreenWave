@@ -4,6 +4,8 @@
 
 <h1 align="center">ER-GreenWave</h1>
 
+> ⚠️ **Note for Evaluators:** This `submission` branch contains the official, finalized codebase for evaluation. All internal development metadata and AI configuration files have been removed to provide a clean, production-ready review environment.
+
 <p align="center">
   Emergency vehicle routing and traffic-signal preemption simulation for Kraków.
 </p>

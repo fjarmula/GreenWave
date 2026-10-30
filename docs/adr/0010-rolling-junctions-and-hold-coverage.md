@@ -14,7 +14,7 @@ the first stop line at the smoothed speed, so it ignored every `D_min` up to the
 distance to a multi-line target's last line and a slower road ahead. Sampled on the real
 Kraków network (40 routes, seed 11) 24 of 40 nominal runs ended `ITS_HOLD_EXPIRED`.
 The standard-traffic crossing spread `c x D_u x mu` (35 s at mu 1) over a fixed 30 m, a crawl
-of about 2.9 km/h for about 37 s. Design: `docs/superpowers/specs/archive/2026-10-25-post-merge-regressions-design.md`
+of about 2.9 km/h for about 37 s. Design: the internal development specification (omitted from this evaluation snapshot)
 (D1-D3).
 
 ## Decision

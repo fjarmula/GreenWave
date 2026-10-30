@@ -2,7 +2,7 @@
 
 > Superseded in part (2026-10-30): rejection, timeout and hold expiry no longer end the run;
 > they fall back per junction (ADR 0015,
-> `docs/superpowers/specs/2026-10-29-per-junction-fallback-design.md`).
+> the internal development specification (omitted from this evaluation snapshot)).
 
 ## Requirement and expected behavior
 
