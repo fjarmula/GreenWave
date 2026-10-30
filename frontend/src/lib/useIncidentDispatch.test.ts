@@ -9,7 +9,7 @@ import {
   pinnedIncident,
   type Incident,
 } from "@/lib/useIncidentDispatch";
-import { pageCandidate } from "@/lib/station-choice";
+import { pageCandidate, plannedRoute } from "@/lib/station-choice";
 import { RESOURCES } from "@/lib/transport/__fixtures__/team-dispatch";
 import type { DispatchRankRequest, DispatchRankResponse } from "@/types/telemetry";
 
@@ -64,6 +64,13 @@ const ranking = (stationId: string): DispatchRankResponse => ({
       greenwave_seconds: 120,
       standard_seconds: 150,
       distance_m: 900,
+      route_geometry: {
+        type: "LineString",
+        coordinates: [
+          [19.9, 50],
+          [19.94, stationId.endsWith("2") ? 50.02 : 50.01],
+        ],
+      },
       on_site: false,
     },
   ],
@@ -145,6 +152,7 @@ describe("createIncidentDispatch", () => {
     await flush();
 
     expect(dispatch.getState().ranking?.candidates[0].station.station_id).toBe("STN-A-0002");
+    expect(plannedRoute(dispatch.getState(), "GREENWAVE")?.coordinates[1]).toEqual([19.94, 50.02]);
     expect(dispatch.getState().incident?.position.lat).toBe(50.02);
     expect(dispatch.getState().rankStatus).toBe("ready");
   });
@@ -169,7 +177,9 @@ describe("createIncidentDispatch", () => {
     calls[0].resolve(ranking("STN-A-0001"));
     await flush();
 
+    expect(plannedRoute(dispatch.getState(), "GREENWAVE")).not.toBeNull();
     dispatch.setVehicleType("FIRE_TRUCK");
+    expect(plannedRoute(dispatch.getState(), "GREENWAVE")).toBeNull();
 
     expect(calls).toHaveLength(2);
     expect(calls[1].request.vehicle_type).toBe("FIRE_TRUCK");

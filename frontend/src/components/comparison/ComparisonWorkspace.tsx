@@ -13,6 +13,7 @@ import type { SheetSnap } from "@/lib/sheet-physics";
 import { DispatchSettingsChip } from "@/components/driver/DispatchSettingsChip";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import { DispatchStartButton } from "@/components/hud/dispatch/DispatchStartButton";
+import { RoutePreviewStatus } from "@/components/hud/RoutePreviewStatus";
 import { DispatchForm } from "@/components/hud/DispatchForm";
 import { OnSiteResult } from "@/components/hud/OnSiteResult";
 import { MapContainer } from "@/components/map/MapContainer";
@@ -24,6 +25,7 @@ import { normalizeOutcomeSeed, type DispatchSettings } from "@/lib/start-request
 import {
   onSiteResult,
   pageCandidate,
+  plannedRoute,
   runnerUpIds,
   shownOnSite,
   type OnSite,
@@ -130,6 +132,7 @@ export function ComparisonWorkspace() {
           />
         ) : undefined
       }
+      status={!live ? <RoutePreviewStatus dispatch={dispatch} mode="BOTH" /> : undefined}
       defaultDetails={!live}
       provenance={`${config.transport === "mock" ? "Synthetic mock" : "Backend simulation"} · ${live ? "Both runs live on one simulated clock" : "Comparison scenario"}`}
       controls={running && runRequest ? <DispatchSettingsChip request={runRequest} /> : undefined}
@@ -147,6 +150,7 @@ export function ComparisonWorkspace() {
           <div className="comparison-setup-map">
             <MapContainer
               live={false}
+              previewGeometry={plannedRoute(dispatch, "BOTH")}
               origin={
                 chosenStation
                   ? { label: chosenStation.name, position: chosenStation.position }

@@ -237,6 +237,7 @@ def _candidate(index: RoutingIndex, c: RankedStation) -> RankedCandidate:
         greenwave_seconds=c.greenwave_seconds,
         standard_seconds=c.standard_seconds,
         distance_m=c.distance_m,
+        route_geometry=c.route_geometry,
         on_foot=OnFootLeg(
             access_point=node_position(index, c.on_foot.node_key),
             distance_m=c.on_foot.on_foot_m,

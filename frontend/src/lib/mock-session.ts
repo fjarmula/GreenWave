@@ -18,7 +18,11 @@ import {
   MOCK_STANDARD_MAX_RED_LOSS_SECONDS,
   MOCK_STANDARD_MIN_ROLLING_SPEED_MPS,
 } from "@/lib/mock-simulation-config";
-import { estimateMockRoute, type MockRouteMetrics } from "@/lib/mock-route-metrics";
+import {
+  estimateMockRoute,
+  mockRouteGeometry,
+  type MockRouteMetrics,
+} from "@/lib/mock-route-metrics";
 import { SimulationAdapterError } from "@/lib/transport/errors";
 import { positionOnRoute } from "@/lib/route-position";
 import { simulatedVehicleId } from "@/lib/vehicle-ids";
@@ -156,13 +160,7 @@ function createMockRoute(
       distance_along_route_m: routeFraction * metrics.distanceMeters,
     }),
   );
-  const routeGeometry: SimulationStartResponse["route_geometry"] = {
-    type: "LineString",
-    coordinates: [
-      [request.origin.lng, request.origin.lat],
-      [request.destination.lng, request.destination.lat],
-    ],
-  };
+  const routeGeometry = mockRouteGeometry(request.origin, request.destination);
   const routeIntersections = scaledIntersections.map((intersection, sourceIndex) => {
     // Synthetic position: the sample distance projected onto the straight mock line.
     const coordinates = positionOnRoute(

@@ -240,17 +240,7 @@ export function parseStartResponse(value: unknown): SimulationStartResponse {
   envelope(body);
   if (body.status !== "INITIALIZED") fail("status", '"INITIALIZED"');
 
-  const geometry = record(body.route_geometry, "route_geometry");
-  if (geometry.type !== "LineString") fail("route_geometry.type", '"LineString"');
-  const coordinates = list(geometry.coordinates, "route_geometry.coordinates");
-  if (coordinates.length < 2) fail("route_geometry.coordinates", "at least 2 coordinates");
-  coordinates.forEach((pair, index) => {
-    const path = `route_geometry.coordinates[${index}]`;
-    const lngLat = list(pair, path);
-    if (lngLat.length !== 2) fail(path, "a [lng, lat] pair");
-    finite(lngLat[0], `${path}[0]`);
-    finite(lngLat[1], `${path}[1]`);
-  });
+  routeGeometry(body.route_geometry, "route_geometry");
 
   finite(body.total_distance_m, "total_distance_m");
   finite(body.estimated_normal_time_sec, "estimated_normal_time_sec");
@@ -672,6 +662,20 @@ export function validateResources(body: unknown): ResourcesResponse {
   return response as ResourcesResponse;
 }
 
+function routeGeometry(value: unknown, path: string): void {
+  const geometry = record(value, path);
+  if (geometry.type !== "LineString") fail(`${path}.type`, '"LineString"');
+  const coordinates = list(geometry.coordinates, `${path}.coordinates`);
+  if (coordinates.length < 2) fail(`${path}.coordinates`, "at least 2 coordinates");
+  coordinates.forEach((pair, index) => {
+    const pairPath = `${path}.coordinates[${index}]`;
+    const lngLat = list(pair, pairPath);
+    if (lngLat.length !== 2) fail(pairPath, "a [lng, lat] pair");
+    finite(lngLat[0], `${pairPath}[0]`);
+    finite(lngLat[1], `${pairPath}[1]`);
+  });
+}
+
 export function validateRank(body: unknown): DispatchRankResponse {
   const response = record(body, "response");
   if (response.schema_version !== "1.0") fail("schema_version", '"1.0"');
@@ -689,6 +693,8 @@ export function validateRank(body: unknown): DispatchRankResponse {
     nonNegative(candidate.greenwave_seconds, `${path}.greenwave_seconds`);
     nonNegative(candidate.standard_seconds, `${path}.standard_seconds`);
     nonNegative(candidate.distance_m, `${path}.distance_m`);
+    if (candidate.route_geometry != null)
+      routeGeometry(candidate.route_geometry, `${path}.route_geometry`);
     optionalOnFootLeg(candidate.on_foot, `${path}.on_foot`);
     bool(candidate.on_site, `${path}.on_site`);
     teamAssignment(candidate.team, `${path}.team`);

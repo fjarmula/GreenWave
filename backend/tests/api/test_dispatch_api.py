@@ -474,3 +474,45 @@ def test_station_ranking_honours_time_mode(
 
     assert response.status_code == 200, response.text
     assert seen == [GreenWaveMode.DISABLED]
+
+
+@pytest.mark.parametrize("mode", ["ENABLED", "DISABLED"])
+@pytest.mark.parametrize("off_road", [False, True])
+def test_rank_previews_exact_start_geometry_without_starting(
+    layout: Layout, monkeypatch: pytest.MonkeyPatch, mode: str, off_road: bool
+) -> None:
+    with client(layout) as c:
+        manager = c.app.state.session_manager  # type: ignore[union-attr]
+        original_start = manager.start
+        starts: list[object] = []
+
+        async def observed_start(*args: Any, **kwargs: Any) -> Any:
+            starts.append(args)
+            return await original_start(*args, **kwargs)
+
+        monkeypatch.setattr(manager, "start", observed_start)
+        incident = OFF_ROAD if off_road else _poprzeczna(c)
+        response = c.post(
+            "/api/v1/dispatch/rank",
+            json={"incident": incident, "vehicle_type": "FIRE_TRUCK", "time_mode": mode},
+        )
+        assert response.status_code == 200
+        candidate = response.json()["candidates"][0]
+        assert starts == []
+        assert len(candidate["route_geometry"]["coordinates"]) >= 2
+        started = c.post(
+            "/api/v1/simulation/start",
+            json={
+                "simulation_id": "SIM-preview",
+                "origin": candidate["station"]["position"],
+                "destination": incident,
+                "vehicle_type": "FIRE_TRUCK",
+                "green_wave_mode": mode,
+                "traffic_density_multiplier": 1,
+                "enable_cascade_mode": True,
+                "playback_speed": 1,
+            },
+        )
+        assert started.status_code == 200
+        assert started.json()["route_geometry"] == candidate["route_geometry"]
+        c.post("/api/v1/simulation/SIM-preview/stop")

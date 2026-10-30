@@ -85,3 +85,19 @@ the few core formulas. Formula blocks use compact notation (`x_i`, `t_{a,e}`, `x
 the audited parameter reference values, not runtime configuration. Keep it aligned with the audited
 backend settings and ETL constants when updating that reference. A footer on every tab credits the
 authors with their GitHub profiles.
+
+## Planning preview and monitoring scroll
+
+Setup displays the selected candidate's `route_geometry` from the existing dispatch ranking,
+using the same `pageCandidate` selection as Start. Ranking owns loading, errors and request
+freshness; a non-ready ranking never draws its previous geometry. The preview is a neutral
+dashed line in either mode and becomes the normal live route on successful start. On-site
+crews have no driven route. Mock preview and playback share their synthetic line constructor.
+Ranking retains its already planned geometry; preview needs no additional request or session.
+Start still validates and plans authoritatively on the server using the same deterministic planner.
+
+Live desktop details fill the inspector's available height. Controls have their own bounded
+area, while Route Signals and the ITS audit log share the remainder with separate scrollable
+bodies and fixed headings. Their focusable regions support keyboard scrolling. Phone sheets
+keep their existing scroll and gesture model, with each monitoring panel capped by viewport
+height; the sheet can still scroll between panels.

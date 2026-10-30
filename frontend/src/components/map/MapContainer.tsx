@@ -14,6 +14,7 @@ import { StationLayer } from "@/components/map/StationLayer";
 import { useMaplibreMap } from "@/components/map/useMaplibreMap";
 import { useMapCamera } from "@/components/map/useMapCamera";
 import { useFollowTarget } from "@/components/map/follow-context";
+import { applyRouteFit } from "@/components/map/useRouteFit";
 import { useVehicleWake } from "@/components/map/useVehicleWake";
 import { VehicleMarker } from "@/components/map/VehicleMarker";
 import { tickIntervalMilliseconds } from "@/lib/playback-speed";
@@ -25,6 +26,7 @@ import type {
   IntersectionTelemetry,
   Position,
   RouteIntersection,
+  RouteGeometry,
   SignalPhaseIndicator,
   Station,
   VehicleType,
@@ -38,6 +40,7 @@ const NO_SIGNAL_PHASES: SignalPhaseIndicator[] = [];
 
 type MapContainerProps = {
   live: boolean;
+  previewGeometry?: RouteGeometry | null;
   snapshot?: SimulationState;
   origin: MapEndpoint | null;
   destination: MapEndpoint | null;
@@ -65,6 +68,7 @@ export function MapContainer(props: MapContainerProps) {
 
 function MapCanvas({
   live,
+  previewGeometry = null,
   snapshot,
   origin,
   destination,
@@ -148,6 +152,18 @@ function MapCanvas({
     };
   }, [live, map, onMapClick]);
 
+  const incidentLat = destination?.position.lat;
+  const incidentLng = destination?.position.lng;
+  useEffect(() => {
+    if (!map || live || !previewGeometry) return;
+    const coordinates =
+      incidentLat !== undefined && incidentLng !== undefined
+        ? [...previewGeometry.coordinates, [incidentLng, incidentLat] as [number, number]]
+        : previewGeometry.coordinates;
+    map.stop();
+    applyRouteFit(map, coordinates, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }, [map, live, previewGeometry, incidentLat, incidentLng, focusRequest]);
+
   return (
     <>
       <div
@@ -201,7 +217,8 @@ function MapCanvas({
         />
         <RouteLayer
           map={map}
-          routeGeometry={routeData?.route_geometry ?? null}
+          routeGeometry={live ? (routeData?.route_geometry ?? null) : previewGeometry}
+          preview={!live}
           styleRevision={styleRevision}
           theme={theme}
           mode={routeData?.green_wave_mode ?? "ENABLED"}

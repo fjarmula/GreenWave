@@ -3643,3 +3643,54 @@ a.docs-chip:focus-visible,
     margin-inline: auto;
   }
 }
+
+/* Monitor headings stay outside their bounded, independently scrolling bodies. */
+.monitor-panel {
+  display: flex;
+  min-height: 0;
+  max-height: 45dvh;
+  flex-direction: column;
+  overflow: hidden;
+}
+.monitor-panel > :first-child {
+  flex-shrink: 0;
+}
+.monitor-panel-body {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  overflow-wrap: anywhere;
+}
+.workspace-inspector[data-bounded] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.workspace-inspector[data-bounded][hidden] {
+  display: none;
+}
+.live-inspector {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 1rem;
+}
+.live-inspector-controls {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 40%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+.live-inspector > .monitor-panel {
+  flex: 1 1 0;
+  max-height: none;
+}
+
+/* Informational preview feedback must never intercept map or phone-sheet gestures. */
+.workspace-status > .route-preview-status {
+  width: fit-content;
+  pointer-events: none;
+}

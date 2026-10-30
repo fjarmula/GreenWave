@@ -63,7 +63,7 @@ export function IntersectionList() {
     </div>
   );
   return (
-    <section className="hud-panel" style={tick as CSSProperties}>
+    <section className="hud-panel monitor-panel" style={tick as CSSProperties}>
       <div className="hud-head">
         <div>
           <p className="dashboard-eyebrow">{t("Corridor monitoring")}</p>
@@ -77,7 +77,12 @@ export function IntersectionList() {
         </span>
       </div>
 
-      <div className="mt-3 space-y-3">
+      <div
+        tabIndex={0}
+        role="region"
+        aria-label={t("Route signal entries")}
+        className="monitor-panel-body mt-3 space-y-3"
+      >
         {!intersections.length && (
           <p className="text-xs text-muted-foreground">{t("Waiting for simulation telemetry.")}</p>
         )}

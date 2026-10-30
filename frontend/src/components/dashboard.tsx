@@ -27,6 +27,7 @@ import { createSimulationId } from "@/lib/simulation-id";
 import {
   onSiteResult,
   pageCandidate,
+  plannedRoute,
   runnerUpIds,
   shownOnSite,
   timeModeFor,
@@ -42,6 +43,7 @@ import { KpiHeader } from "@/components/hud/KpiHeader";
 import { RunSummary } from "@/components/hud/RunSummary";
 import { PriorityFallbackNotice } from "@/components/hud/PriorityFallbackNotice";
 import { IntersectionList } from "@/components/hud/IntersectionList";
+import { RoutePreviewStatus } from "@/components/hud/RoutePreviewStatus";
 import { ItsConsole } from "@/components/hud/ItsConsole";
 import { DispatchStartButton } from "@/components/hud/dispatch/DispatchStartButton";
 import { DispatchForm } from "@/components/hud/DispatchForm";
@@ -301,6 +303,7 @@ export function Dashboard({
 
   return (
     <WorkspaceShell
+      boundedInspector={mode === "live"}
       primaryAction={
         onSite ? (
           <div className="surface-glass p-4">
@@ -333,6 +336,8 @@ export function Dashboard({
           <div className="driver-overlay">
             <NextSignalCard signal={signal} />
           </div>
+        ) : mode === "setup" ? (
+          <RoutePreviewStatus dispatch={dispatch} mode={timeMode} />
         ) : undefined
       }
       header={
@@ -350,6 +355,7 @@ export function Dashboard({
       map={
         <MapContainer
           live={mode === "live"}
+          previewGeometry={plannedRoute(dispatch, timeMode)}
           origin={origin}
           destination={destination}
           focusRequest={mapFocusRequest}
@@ -374,10 +380,12 @@ export function Dashboard({
                 onFocusMap={() => setMapFocusRequest((request) => request + 1)}
               />
             ) : (
-              <div className="space-y-4 p-4">
-                <KpiHeader />
-                <RunSummary onBackToSetup={backToSetup} onStop={stopRun} />
-                <PriorityFallbackNotice />
+              <div className="live-inspector">
+                <div className="live-inspector-controls space-y-4">
+                  <KpiHeader />
+                  <RunSummary onBackToSetup={backToSetup} onStop={stopRun} />
+                  <PriorityFallbackNotice />
+                </div>
                 <IntersectionList />
                 <ItsConsole />
               </div>

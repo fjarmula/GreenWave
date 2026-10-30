@@ -701,6 +701,7 @@ export interface components {
              * @default false
              */
             on_site: boolean;
+            route_geometry?: components["schemas"]["RouteGeometry"] | null;
             /** Selection Reason */
             selection_reason?: ("NEAREST" | "IN_AREA_WITHIN_MARGIN" | "NEAREST_OUTSIDE_MARGIN") | null;
             /** Standard Seconds */

@@ -214,3 +214,51 @@ describe("rankTimeModeFor", () => {
     expect(rankTimeModeFor("DISABLED", "comparison")).toBe("ENABLED");
   });
 });
+
+it("previews only the ready, selected candidate using the page's start criteria", async () => {
+  const { plannedRoute } = await import("./station-choice");
+  const { TEAM_RANK } = await import("./transport/__fixtures__/team-dispatch");
+  const geometry = {
+    type: "LineString" as const,
+    coordinates: [
+      [19.9, 50],
+      [19.94, 50.06],
+    ] as [number, number][],
+  };
+  const ranking = {
+    ...TEAM_RANK,
+    candidates: TEAM_RANK.candidates.map((c, i) => ({
+      ...c,
+      route_geometry: {
+        ...geometry,
+        coordinates: [
+          [19.9 + i / 100, 50],
+          [19.94, 50.06],
+        ] as [number, number][],
+      },
+    })),
+  };
+  const ready = { rankStatus: "ready" as const, ranking, selectedStationId: null };
+  expect(plannedRoute(ready, "GREENWAVE")).toEqual(ranking.candidates[0].route_geometry);
+  expect(plannedRoute(ready, "STANDARD")).toEqual(ranking.candidates[0].route_geometry);
+  expect(
+    plannedRoute(
+      { ...ready, selectedStationId: ranking.candidates[1].station.station_id },
+      "STANDARD",
+    ),
+  ).toEqual(ranking.candidates[1].route_geometry);
+  for (const rankStatus of ["idle", "loading", "error"] as const)
+    expect(plannedRoute({ ...ready, rankStatus }, "GREENWAVE")).toBeNull();
+  expect(
+    plannedRoute({ ...ready, ranking: { ...ranking, candidates: [] } }, "GREENWAVE"),
+  ).toBeNull();
+  expect(
+    plannedRoute(
+      {
+        ...ready,
+        ranking: { ...ranking, candidates: [{ ...ranking.candidates[0], on_site: true }] },
+      },
+      "GREENWAVE",
+    ),
+  ).toBeNull();
+});

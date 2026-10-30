@@ -8,7 +8,7 @@ import type { DispatchAdapter } from "@/lib/dispatch-adapter";
 import { SimulationAdapterError } from "@/lib/transport/errors";
 import { validateStations } from "@/lib/transport/validate";
 import { warsawMinute } from "@/lib/local-time";
-import { haversineMeters } from "@/lib/mock-route-metrics";
+import { haversineMeters, mockRouteGeometry } from "@/lib/mock-route-metrics";
 import type { Station } from "@/types/telemetry";
 
 export function createMockDispatchAdapter(
@@ -68,6 +68,7 @@ export function createMockDispatchAdapter(
                   standard_seconds: 0,
                   distance_m: nearest.distance,
                   on_site: false,
+                  route_geometry: mockRouteGeometry(nearest.station.position, incident),
                 },
               ]
             : []),

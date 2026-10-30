@@ -4,7 +4,7 @@ import {
   MOCK_REFERENCE_GREENWAVE_SECONDS,
   MOCK_REFERENCE_NORMAL_SECONDS,
 } from "@/lib/mock-simulation-config";
-import type { Position } from "@/types/telemetry";
+import type { Position, RouteGeometry } from "@/types/telemetry";
 
 const EARTH_RADIUS_M = 6_371_000;
 
@@ -38,5 +38,16 @@ export function estimateMockRoute(
       (scale * MOCK_REFERENCE_NORMAL_SECONDS * trafficDensityMultiplier) /
       DEFAULT_TRAFFIC_DENSITY_MULTIPLIER,
     greenwaveSeconds: scale * MOCK_REFERENCE_GREENWAVE_SECONDS,
+  };
+}
+
+/** The synthetic straight line used by both setup and mock playback. */
+export function mockRouteGeometry(origin: Position, destination: Position): RouteGeometry {
+  return {
+    type: "LineString",
+    coordinates: [
+      [origin.lng, origin.lat],
+      [destination.lng, destination.lat],
+    ],
   };
 }
