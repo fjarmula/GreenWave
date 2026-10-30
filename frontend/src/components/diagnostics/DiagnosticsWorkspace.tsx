@@ -52,9 +52,7 @@ export function DiagnosticsWorkspace() {
         {t("Endpoint diagnostics")}
       </h1>
       <p className="mt-3 mb-8 text-muted-foreground">
-        {t(
-          "Simulation only. Activity is observed at the existing adapter and validation boundary.",
-        )}
+        {t("Simulation only. Events are recorded as the app transfers and validates data.")}
       </p>
       <DataFlowView entries={entries} />
       <EndpointActivity entries={entries} />

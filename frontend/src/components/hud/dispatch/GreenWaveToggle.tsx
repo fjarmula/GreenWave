@@ -21,7 +21,7 @@ export function GreenWaveToggle({ mode, onChange }: GreenWaveToggleProps) {
       <p className="mt-1 text-xs text-muted-foreground">
         {t(
           mode === "ENABLED"
-            ? "Simulated signal priority clears each intersection ahead of the vehicle."
+            ? "Simulated traffic signal priority prepares upcoming intersections for the vehicle."
             : "Simulated standard traffic, no signal priority: at a red or yellow signal the vehicle rolls through cautiously without stopping, within the ordinary speed limit.",
         )}
       </p>

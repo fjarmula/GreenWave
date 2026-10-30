@@ -50,13 +50,13 @@ describe("GreenWaveToggle", () => {
     expect(markup).not.toMatch(/crosses at the speed limit/i);
   });
 
-  it("keeps the enabled-mode explanation unchanged", () => {
+  it("describes simulated priority without claiming measured queue clearance", () => {
     const markup = renderToStaticMarkup(
       <GreenWaveToggle mode="ENABLED" onChange={() => undefined} />,
     );
 
     expect(markup).toContain(
-      "Simulated signal priority clears each intersection ahead of the vehicle.",
+      "Simulated traffic signal priority prepares upcoming intersections for the vehicle.",
     );
   });
 

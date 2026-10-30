@@ -53,11 +53,11 @@ it("translates empty optional suffixes and complete signal states", () => {
     translate("Simulated runs from the selected station, without and with ER Green Wave.", "pl"),
   ).toContain("Symulowane przejazdy");
   expect(translate("Simulated signal INT-0360: NORMAL", "pl")).toBe(
-    "Symulowana sygnalizacja INT-0360: NORMALNY",
+    "Symulowana sygnalizacja INT-0360: ZWYKŁY PROGRAM",
   );
   expect(
     translate("Simulated signal INT-0360: NORMAL; simulated phase detail unavailable", "pl"),
-  ).toContain("NORMALNY; szczegóły");
+  ).toContain("ZWYKŁY PROGRAM; szczegóły");
 });
 
 it("preserves GreenWave as a proper noun throughout the Polish catalog", async () => {
@@ -76,4 +76,12 @@ it.each([
   ["setup", "Konfiguracja"],
 ])("uses a standalone Polish label for %s", (status, label) => {
   expect(translate(status, "pl")).toBe(label);
+});
+
+it("preserves every interpolation parameter in the Polish catalog", async () => {
+  const { polish } = await import("./polish");
+  for (const [english, translated] of Object.entries(polish)) {
+    const slots = (text: string) => [...text.matchAll(/\{\d+\}/g)].map((match) => match[0]).sort();
+    expect(slots(translated), english).toEqual(slots(english));
+  }
 });

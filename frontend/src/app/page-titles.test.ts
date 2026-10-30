@@ -20,7 +20,7 @@ it("names each workspace in the browser title", async () => {
   expect((await docs()).title).toBe("Dokumentacja");
   expect((await driver()).title).toBe("Kierowca");
   expect((await greenWave()).title).toBe("GreenWave");
-  expect((await standard()).title).toBe("Ruch standardowy");
+  expect((await standard()).title).toBe("Bez priorytetu");
 });
 
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }) }));

@@ -178,7 +178,9 @@ export function DispatchSettingsFields({
         </p>
       )}
       <p className="mt-3 text-xs text-muted-foreground">
-        {t("Times are model estimates. Simulated controller feedback may delay or end a run.")}
+        {t(
+          "Times are model estimates. Controller responses may delay passage or cause individual junctions to use ordinary signals; the run continues.",
+        )}
       </p>
       {previousRun && <PreviousRunCard run={previousRun} />}
 
