@@ -82,7 +82,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "ER-GreenWave pozwala porównać czas dojazdu służb ratunkowych z priorytetem na skrzyżowaniach i bez niego. Symulacja wykorzystuje sieć drogową Krakowa, lokalizacje jednostek ratunkowych oraz miejskie dane adresowe.",
+          text: "ER-GreenWave (Emergency Response GreenWave) pozwala porównać czas dojazdu służb ratunkowych z priorytetem na skrzyżowaniach i bez niego. Symulacja wykorzystuje sieć drogową Krakowa, lokalizacje jednostek ratunkowych oraz miejskie dane adresowe.",
         },
         {
           kind: "paragraph",
@@ -435,7 +435,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "ER-GreenWave compares emergency response times with and without traffic signal priority. The simulation uses Kraków’s road network, emergency-service locations and municipal address data.",
+          text: "ER-GreenWave (Emergency Response GreenWave) compares emergency response times with and without traffic signal priority. The simulation uses Kraków’s road network, emergency-service locations and municipal address data.",
         },
         {
           kind: "paragraph",
