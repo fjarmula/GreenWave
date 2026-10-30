@@ -61,14 +61,12 @@ describe("DocsWorkspace", () => {
     expect(html).not.toMatch(/class="docs-chip"[^>]*href="https:\/\/green-wave\.duckdns\.org\/"/);
   });
 
-  it("uses an SVG external-link icon and a documentation navigation rail", () => {
+  it("keeps the navigation rail without a GitHub header button", () => {
     const html = english();
     expect(html).not.toContain("↗");
     expect(html).toContain('class="docs-navigation"');
     expect(html).not.toContain("Live demo");
-    expect(html).toMatch(
-      /href="https:\/\/github.com\/fjarmula\/GreenWave"[^>]*>[\s\S]*?GitHub[\s\S]*?<svg/,
-    );
+    expect(html).not.toMatch(/<a class="docs-chip"/);
     expect(html).toContain('aria-orientation="vertical"');
     expect(html).not.toContain("Contest documentation");
     expect(html).toMatch(/<h1[^>]*>Documentation<\/h1>/);

@@ -1,12 +1,11 @@
 "use client";
 import { useTranslation } from "@/components/language-provider";
 import { useEffect, useRef } from "react";
-import { ArrowUpRight } from "lucide-react";
 import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { ResponsiveNavigation } from "@/components/workspace/ResponsiveNavigation";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { useIsPhone } from "@/lib/useIsPhone";
-import { DOCS_REPOSITORY, docsContent } from "@/lib/docs/content";
+import { docsContent } from "@/lib/docs/content";
 import { DocsBackdrop } from "./DocsBackdrop";
 import { DocsFooter } from "./DocsFooter";
 import { DocsSectionView } from "./DocsSectionView";
@@ -48,9 +47,6 @@ export function DocsWorkspace({ className }: { className?: string }) {
             <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-amber-500" />
             {t("Simulation mode")}
           </span>
-          <a className="docs-chip" href={DOCS_REPOSITORY} target="_blank" rel="noopener">
-            GitHub <ArrowUpRight aria-hidden className="size-4 shrink-0" />
-          </a>
         </div>
       </div>
       <div className="docs-layout">
