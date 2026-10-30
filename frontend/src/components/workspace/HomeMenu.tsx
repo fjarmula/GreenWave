@@ -26,7 +26,7 @@ const MODES = [
   {
     icon: ComparisonGlyph,
     tone: "home-card-icon--beacon",
-    copy: "Record both modes. Replay together.",
+    copy: "Run both modes together. Compare arrival times.",
   },
 ];
 const TOOL_ICONS = [Activity, Smartphone, BookOpen];
@@ -79,7 +79,7 @@ export function HomeMenu() {
             <h1 className="home-title">{t("A clearer path to the incident.")}</h1>
             <p className="home-lede">
               {t(
-                "Explore simulated emergency response, compare recorded runs and follow the data behind the corridor.",
+                "Explore emergency response simulations, compare journeys and inspect the data used to coordinate the corridor.",
               )}
             </p>
             {startRequest && (

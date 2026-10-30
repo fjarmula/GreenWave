@@ -82,30 +82,39 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "ER-GreenWave porównuje czas dojazdu pojazdu uprzywilejowanego z priorytetem na skrzyżowaniach i bez niego. Symulacja korzysta z sieci drogowej Krakowa, lokalizacji jednostek ratunkowych i miejskich danych adresowych. Wartość korytarza obejmuje dwa cele: szybszy dojazd służb i wcześniejsze uporządkowanie ruchu ogólnego. Docelowo skoordynowane otwieranie sygnalizacji przed pojazdem ma opróżniać kolejki i zapobiegać blokowaniu skrzyżowań oraz zatorom w dalszej części trasy, zamiast tylko podawać zielone nadjeżdżającemu pojazdowi. Obecny PoC prezentuje koordynację priorytetu; efektu na kolejki jeszcze nie oblicza.",
+          text: "ER-GreenWave pozwala porównać czas dojazdu służb ratunkowych z priorytetem na skrzyżowaniach i bez niego. Symulacja wykorzystuje sieć drogową Krakowa, lokalizacje jednostek ratunkowych oraz miejskie dane adresowe.",
         },
         {
           kind: "paragraph",
-          text: "Użytkownik wskazuje miejsce zdarzenia i typ pojazdu. Aplikacja wybiera jednostkę na podstawie szacowanego czasu dojazdu, wyznacza trasę i pokazuje przejazd na mapie. Oba warianty można uruchomić jednocześnie, aby porównać ich wyniki.",
+          text: "System ma spełniać dwa zadania: skracać czas dojazdu służb ratunkowych oraz usprawniać ruch pozostałych pojazdów. Docelowo odpowiednio skoordynowana sygnalizacja świetlna ma umożliwiać rozładowanie kolejek przed skrzyżowaniami jeszcze przed przyjazdem pojazdu uprzywilejowanego. Pozwoliłoby to ograniczyć ryzyko blokowania skrzyżowań i powstawania kolejnych zatorów. Obecna wersja demonstracyjna pokazuje działanie takiego systemu, ale nie uwzględnia jeszcze jego wpływu na natężenie ruchu i długość kolejek.",
+        },
+        {
+          kind: "paragraph",
+          text: "Aby rozpocząć symulację, użytkownik wskazuje miejsce zdarzenia i wybiera rodzaj pojazdu ratunkowego. Aplikacja ustala, która jednostka może najszybciej dotrzeć na miejsce, wyznacza trasę i przedstawia przejazd na mapie. Użytkownik może następnie porównać czas dojazdu z priorytetem na skrzyżowaniach i bez niego.",
         },
         { kind: "heading", text: "Widoki aplikacji" },
         {
           kind: "list",
           items: [
             "GreenWave — symulowany przejazd z priorytetem na kolejnych skrzyżowaniach.",
-            "Ruch standardowy — przejazd tą samą trasą bez priorytetu sygnalizacji.",
-            "Porównanie — oba przejazdy na wspólnym zegarze symulacji, z osobnymi mapami i zestawieniem czasów.",
+            "Przejazd bez priorytetu — przejazd tą samą trasą bez priorytetu sygnalizacji.",
+            "Porównanie — oba przejazdy w zsynchronizowanym czasie symulacji, z osobnymi mapami i zestawieniem czasów.",
             "Kierowca — widok dostosowany do telefonu, z mapą i informacją o najbliższej sygnalizacji.",
             "Diagnostyka — podgląd żądań, zdarzeń symulacji i raportu jakości danych.",
           ],
         },
         { kind: "heading", text: "Zastosowanie" },
         {
+          kind: "paragraph",
+          text: "To możliwe zastosowania docelowego systemu. Wpływ na płynność ruchu i długość kolejek nie jest jeszcze obliczany.",
+        },
+        {
           kind: "list",
           items: [
-            "Analiza, o ile priorytet sygnalizacji może skrócić dojazd służb ratunkowych.",
-            "Porównanie jednostek według szacowanego czasu przejazdu, a nie samej odległości.",
-            "Ocena wybranych tras i scenariuszy przed ewentualnymi testami w terenie.",
+            "Ocena wpływu pierwszeństwa na skrzyżowaniach na czas dojazdu służb ratunkowych.",
+            "Porównywanie jednostek ratunkowych na podstawie przewidywanego czasu dojazdu na miejsce zdarzenia, a nie wyłącznie odległości.",
+            "Wstępna analiza tras przejazdu i różnych sytuacji drogowych przed przeprowadzeniem testów w rzeczywistych warunkach.",
+            "Efektywniejsze zarządzanie ruchem dzięki skoordynowanemu sterowaniu sygnalizacją świetlną na trasach przejazdu służb ratunkowych.",
           ],
         },
         {
@@ -174,7 +183,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "Symulacja łączy dane OpenStreetMap, miejskie zbiory MSIP i wojewódzki plan działania systemu Państwowe Ratownictwo Medyczne. Pochodzenie plików i ich sumy kontrolne są zapisane w repozytorium. Serwer sprawdza zgodność przygotowanego zbioru z tym wykazem.",
+          text: "Symulacja łączy dane OpenStreetMap, miejskie zbiory MSIP i wojewódzki plan działania systemu Państwowego Ratownictwa Medycznego. Pochodzenie plików i ich sumy kontrolne są zapisane w repozytorium. Serwer sprawdza zgodność przygotowanego zbioru z tym wykazem.",
         },
         {
           kind: "table",
@@ -192,7 +201,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
               "Urząd Miasta Krakowa / MSIP",
               "Ustawa o otwartych danych (Dz.U. 2021 poz. 1641)",
               "13.10.2026",
-              "Kontrola nazw i długości ulic oraz nazw ulic na skrzyżowaniach.",
+              "Sprawdzanie nazw i długości ulic oraz nazw ulic tworzących skrzyżowania.",
             ],
             [
               "Buspasy (ZDMK / MSIP)",
@@ -291,7 +300,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
           kind: "paragraph",
           text: "Sterownik może przyjąć żądanie po 1 s lub 5 s, odrzucić je albo nie odpowiedzieć. Po odmowie lub braku odpowiedzi przez 8 s pojazd przejeżdża tylko te skrzyżowania na zwykłej sygnalizacji i jedzie dalej, a kolejne skrzyżowania nadal mogą dać mu priorytet. Scenariusz mieszany losuje wynik każdego żądania z podanego ziarna.",
         },
-        { kind: "heading", text: "Ruch standardowy" },
+        { kind: "heading", text: "Przejazd bez priorytetu" },
         {
           kind: "paragraph",
           text: "W wariancie bez priorytetu pojazd porusza się po tej samej trasie, a sygnalizacja działa według zwykłego programu. Przy czerwonym świetle model zakłada ostrożny przejazd i dolicza opóźnienie zależne od czasu do zmiany światła, nie większe niż 15 s na decyzję przy linii zatrzymania. Wynik porównania dotyczy tych założeń modelu.",
@@ -304,7 +313,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
         { kind: "heading", text: "Tryby działania" },
         {
           kind: "paragraph",
-          text: "Tryby są niezależnymi osiami. Decyzje zapadają po kolei: transport, ustawienia żądania, tryb przejazdu, odpowiedź sterownika i na końcu fallback pojedynczych skrzyżowań. Odmowa nie zmienia trasy ani nie ponawia żądania.",
+          text: "Poszczególne ustawienia trybów są od siebie niezależne. Decyzje zapadają po kolei: transport, ustawienia żądania, tryb przejazdu, odpowiedź sterownika i na końcu przejazd poszczególnych skrzyżowań bez przyznanego priorytetu. Po odmowie trasa pozostaje bez zmian, a żądanie nie jest ponawiane.",
         },
         {
           kind: "table",
@@ -332,7 +341,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
             ],
             [
               "comparison",
-              "Jedna operacja z przejazdami ENABLED i DISABLED na wspólnym zegarze, każdy z własnym silnikiem i sterownikiem.",
+              "Jedna operacja z przejazdami ENABLED i DISABLED w zsynchronizowanym czasie symulacji, każdy z własnym silnikiem i sterownikiem.",
             ],
             [
               "Home / Driver / Diagnostics",
@@ -351,7 +360,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
           steps: [
             { label: "Ruch", detail: "według poprzedniego raportu świateł" },
             { label: "Sterownik", detail: "obserwacje i odpowiedzi" },
-            { label: "Limity czasu", detail: "nieudane cele → fallback" },
+            { label: "Limity czasu", detail: "brak priorytetu → zwykła sygnalizacja" },
             { label: "Żądanie", detail: "wybór i wysłanie, tylko ENABLED" },
             { label: "Publikacja", detail: "zdarzenia i tick przez SSE" },
           ],
@@ -374,7 +383,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
               ],
             },
             { label: "ARRIVED", detail: "pojazd na miejscu" },
-            { label: "Odzyskiwanie świateł", detail: "do NORMAL na każdym skrzyżowaniu" },
+            { label: "Powrót do zwykłej sygnalizacji", detail: "do NORMAL na każdym skrzyżowaniu" },
             { label: "SIMULATION_COMPLETED", detail: "koniec operacji" },
           ],
         },
@@ -388,7 +397,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
     {
       id: "roadmap",
       label: "Rozwój",
-      title: "Możliwości rozwoju",
+      title: "Kierunki rozwoju",
       blocks: [
         {
           kind: "paragraph",
@@ -426,11 +435,15 @@ export const docsContent: Record<Language, DocsSection[]> = {
       blocks: [
         {
           kind: "paragraph",
-          text: "ER-GreenWave compares emergency-vehicle travel times with and without signal priority. The simulation uses Kraków’s road network, emergency-service locations and municipal address data. The corridor has two intended benefits: faster emergency response and proactive reorganisation of general traffic. Coordinated green phases ahead of the vehicle are intended to flush queues and prevent gridlock and downstream jams caused by emergency passage through heavy traffic. The current PoC demonstrates signal-priority coordination; it does not yet calculate queue discharge or congestion reduction.",
+          text: "ER-GreenWave compares emergency response times with and without traffic signal priority. The simulation uses Kraków’s road network, emergency-service locations and municipal address data.",
         },
         {
           kind: "paragraph",
-          text: "Choose an incident location and vehicle type. The application selects a unit using estimated travel time, plans a route and shows the simulated journey on the map. Both modes can run together to compare their results.",
+          text: "The system has two main goals: reducing emergency response times and improving traffic flow for other road users. Ultimately, coordinated traffic signals ahead of an emergency vehicle should help clear queues before it arrives, reducing the risk of blocked intersections and further congestion along its route. The current proof of concept demonstrates how coordinated signal priority works, but does not yet model its impact on traffic volumes or queue lengths.",
+        },
+        {
+          kind: "paragraph",
+          text: "To start a simulation, users select an incident location and emergency vehicle type. The application identifies the unit with the shortest estimated response time, calculates a route and displays the journey on a map. Users can then compare travel times with and without traffic signal priority.",
         },
         { kind: "heading", text: "What the app does" },
         {
@@ -445,11 +458,16 @@ export const docsContent: Record<Language, DocsSection[]> = {
         },
         { kind: "heading", text: "Uses" },
         {
+          kind: "paragraph",
+          text: "These are potential applications of the intended system. Effects on traffic flow and queue lengths are not yet calculated.",
+        },
+        {
           kind: "list",
           items: [
-            "Analyse how signal priority could shorten emergency response times.",
-            "Compare units by estimated driving time rather than distance alone.",
-            "Evaluate routes and scenarios before considering field trials.",
+            "Assess how traffic signal priority could reduce emergency response times.",
+            "Compare emergency response units based on estimated arrival time rather than distance alone.",
+            "Evaluate routes and different traffic conditions before conducting real-world tests.",
+            "More efficient traffic management through coordinated traffic signal control along emergency response routes.",
           ],
         },
         {
@@ -480,7 +498,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
             [
               "Map",
               "MapLibre GL JS, CARTO basemap on OSM data",
-              "WebGL rendering for the map, routes, vehicles and signals.",
+              "Render maps, routes, vehicles and signal indications using WebGL.",
             ],
             [
               "Server and simulation",
@@ -490,7 +508,7 @@ export const docsContent: Record<Language, DocsSection[]> = {
             [
               "Data processing",
               "GeoPandas, Shapely, Polars, NetworkX",
-              "Spatial operations in the metric Polish PL-2000 grid (EPSG:2178), fast tables and graph routing.",
+              "Spatial operations in the metric Polish PL-2000 grid (EPSG:2178), efficient table processing and graph-based routing.",
             ],
             [
               "Live updates",
@@ -731,8 +749,8 @@ export const docsContent: Record<Language, DocsSection[]> = {
     detailsSections.en,
     {
       id: "roadmap",
-      label: "Future development",
-      title: "Future development",
+      label: "Development",
+      title: "Development",
       blocks: [
         {
           kind: "paragraph",

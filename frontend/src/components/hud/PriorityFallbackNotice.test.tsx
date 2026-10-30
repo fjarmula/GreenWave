@@ -49,7 +49,7 @@ describe("PriorityFallbackNotice", () => {
     expect(pl).toContain("Priorytet niedostępny · przejazd trwa dalej");
     expect(pl).toContain("Priorytet odrzucony");
     expect(render({ itsRequests: [rejected] }, "pl", true)).toContain(
-      "Tryb awaryjny · 1 skrzyżowanie",
+      "Bez priorytetu · 1 skrzyżowanie",
     );
   });
 

@@ -32,8 +32,8 @@ export function TrafficDensityControl({ value, onChange }: TrafficDensityControl
         style={{ "--fill": `${((value - 1) / 2) * 100}%` } as CSSProperties}
       />
       <div className="mt-1 flex justify-between text-2xs text-muted-foreground tabular-nums">
-        <span>{t("1.0x normal")}</span>
-        <span>{t("3.0x peak")}</span>
+        <span>{t("1.0x free flow")}</span>
+        <span>{t("3.0x heavy traffic")}</span>
       </div>
     </>
   );

@@ -71,7 +71,7 @@ export function DataFlowView({ entries }: { entries: ReadonlyArray<DiagnosticEnt
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
           {t(
-            "Browser durations only. Repeated ticks are coalesced; counts show sampled activity. Bodies and endpoint queries are retained temporarily for JSON inspection in this browser only. Clear history removes them. Each tick is one simulated second, independent of playback speed. Several events can share a tick; tick numbers do not count messages.",
+            "Durations are measured in this browser. Consecutive simulation updates are grouped into one entry; the counter shows how many updates were recorded. Request bodies and query parameters are kept temporarily in this browser for JSON inspection. Clearing history removes them. Each step represents one simulated second, regardless of playback speed. Several events may share a step, so its number is not a message count.",
           )}
         </p>
         <dl className="mt-5 grid gap-3 sm:grid-cols-2">

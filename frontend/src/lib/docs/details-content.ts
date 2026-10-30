@@ -44,14 +44,14 @@ function detailsSection(language: Language): DocsSection {
       {
         kind: "note",
         text: t(
-          "Wszystkie światła, odpowiedzi ITS i statusy dostępności są symulowane. To model do analizy, bez połączenia z rzeczywistymi sterownikami i bez potwierdzenia dokładności fizycznej. Parametry opóźnień i prędkości wymagają kalibracji.",
-          "Every light, ITS answer and availability status here is simulated. This analytical model has no connection to physical controllers and has not been validated for physical accuracy. Delay and speed assumptions need calibration.",
+          "Wskazania świateł, odpowiedzi ITS i dostępność zespołów są symulowane. Model służy analizie i nie jest połączony z rzeczywistymi sterownikami. Nie zweryfikowano jego zgodności z rzeczywistym ruchem; parametry opóźnień i prędkości wymagają kalibracji.",
+          "All signal indications, ITS responses and availability statuses are simulated. The model is not connected to physical controllers, and its physical accuracy has not been validated. Delay and speed assumptions require calibration.",
         ),
       },
       h("Ustawienia: źródła i nadpisywanie", "Configuration sources and overrides"),
       p(
-        "SimulationSettings powstaje przy starcie serwera i jest niezmienne. Argument konstruktora ma pierwszeństwo przed zmienną środowiskową GREENWAVE_SIM_<NAZWA_POLA>, a ta przed wartością domyślną. Klasy aplikacji nie konfigurują odczytu pliku .env, katalogu sekretów ani przeładowania w czasie działania. Launcher może przekazać zmienne do procesu. Żądanie API nie nadpisuje dowolnych parametrów silnika.",
-        "SimulationSettings is created at server startup and frozen. Constructor arguments take precedence over GREENWAVE_SIM_<FIELD_NAME> environment variables, then field defaults. The app classes configure no dotenv reader, secrets directory or runtime reload. A launcher may supply process variables. API requests cannot override arbitrary engine parameters.",
+        "Obiekt SimulationSettings jest tworzony przy uruchomieniu serwera i nie zmienia się w trakcie jego działania. Argument konstruktora ma pierwszeństwo przed zmienną środowiskową GREENWAVE_SIM_<FIELD_NAME>, a zmienna przed wartością domyślną. Aplikacja nie wczytuje samodzielnie pliku .env ani katalogu sekretów i nie przeładowuje ustawień podczas pracy. Zmienne środowiskowe może przekazać program uruchamiający serwer. Żądanie API nie pozwala zmieniać dowolnych parametrów silnika.",
+        "SimulationSettings is created at server startup and remains unchanged. Constructor arguments override GREENWAVE_SIM_<FIELD_NAME> environment variables, which override defaults. The app does not load .env files or secret directories itself, or reload settings at runtime. The server launcher can supply environment variables. API requests cannot change arbitrary engine settings.",
       ),
       table(
         ["Zmienna / opcja", "Domyślnie", "Reguła"],
@@ -77,7 +77,7 @@ function detailsSection(language: Language): DocsSection {
             "GREENWAVE_CORS_ORIGINS",
             "http://localhost:3000",
             t(
-              "Lista po przecinku, usunięte spacje/puste wpisy; brak walidatora URL. GET/POST, bez credentials.",
+              "Lista rozdzielona przecinkami, bez zbędnych spacji i pustych wpisów. Adresy URL nie są walidowane. GET/POST, bez przesyłania danych uwierzytelniających.",
               "Comma-separated, trimmed, empty entries removed; no URL validator. GET/POST, no credentials.",
             ),
           ],
@@ -93,7 +93,7 @@ function detailsSection(language: Language): DocsSection {
             "NEXT_PUBLIC_API_BASE_URL",
             "http://127.0.0.1:8000",
             t(
-              "Tylko HTTP(S); pozostaje origin i prefiks ścieżki, bez query/hash/końcowego /. Błąd przywraca domyślny adres.",
+              "Dozwolone jest HTTP(S). Zachowywany jest adres serwera i prefiks ścieżki; parametry zapytania, fragment i końcowe / są usuwane. Błędna wartość przywraca adres domyślny.",
               "HTTP(S) only; keep origin/path prefix, strip query/hash/trailing slash. Invalid input uses the default.",
             ),
           ],
@@ -108,7 +108,7 @@ function detailsSection(language: Language): DocsSection {
         ],
       ),
       p(
-        "Jawne ścieżki create_app wygrywają ze środowiskiem. Wstrzyknięty dataset pomija odczyt dysku, ale nie można go łączyć z argumentami ścieżek. NEXT_PUBLIC_* jest utrwalane podczas budowania i buforowane raz na środowisko JS. Zmiana środowiska serwera nie zmienia gotowego frontendu. Walidacja żądań nie jest strict, a dodatkowe pola są domyślnie ignorowane.",
+        "Ścieżki przekazane do create_app mają pierwszeństwo przed ustawieniami środowiska. Przekazanie gotowego obiektu dataset pomija odczyt z dysku i wyklucza jednoczesne podanie ścieżek. Wartości NEXT_PUBLIC_* są zapisywane podczas budowania aplikacji i odczytywane raz w danym środowisku JS. Zmiana środowiska serwera nie aktualizuje gotowego panelu. Walidacja żądań dopuszcza konwersję typów, a dodatkowe pola są domyślnie ignorowane.",
         "Explicit create_app paths override dataset environment paths. Injecting a dataset bypasses disk loading but cannot be combined with path arguments. NEXT_PUBLIC_* values are compiled into the frontend and cached once per JS runtime. Changing server environment does not update an existing bundle. Request validation is not strict and extra fields are ignored by default.",
       ),
       h("Parametry żądania i wartości interfejsu", "Request parameters and UI defaults"),
@@ -140,7 +140,7 @@ function detailsSection(language: Language): DocsSection {
           [
             "enable_cascade_mode / playback_speed",
             t(
-              "Kaskada wymagana, UI true. Prędkość odtwarzania: liczba całkowita [1,10], domyślnie 1.",
+              "Pole kaskady jest wymagane; domyślnie w interfejsie true. Prędkość odtwarzania: liczba całkowita [1,10], domyślnie 1.",
               "Cascade required, UI true. Playback: integer [1,10], default 1.",
             ),
           ],
@@ -152,7 +152,7 @@ function detailsSection(language: Language): DocsSection {
           [
             "time_mode / resource_aware",
             t(
-              "Ranking: ENABLED / false; świadomy zasobów tylko dla AMBULANCE.",
+              "Wybór jednostki: ENABLED / false; uwzględnianie dostępności zespołów dotyczy tylko AMBULANCE.",
               "Ranking: ENABLED / false; resource-aware policy applies only to AMBULANCE.",
             ),
           ],
@@ -173,12 +173,12 @@ function detailsSection(language: Language): DocsSection {
         ],
       ),
       p(
-        "Domyślny pojazd API to AMBULANCE, tryb ENABLED. Wszystkie typy korzystają z tego samego modelu prędkości; typ zmienia bazy i prezentację. UI obcina ziarno do liczby całkowitej i zakresu uint32; brak lub wartość niefinitywna daje 0. Porównanie wymaga dwóch różnych identyfikatorów, bez pola globalnego trybu.",
-        "The API defaults to AMBULANCE and ENABLED. All vehicle types share the same speed model; type changes candidate bases and presentation. The UI truncates/clamps seeds into uint32, with absent/non-finite values becoming zero. Comparison requires two distinct IDs and has no overall run-mode field.",
+        "Domyślne wartości API to pojazd AMBULANCE i tryb ENABLED. Wszystkie rodzaje pojazdów korzystają z tego samego modelu prędkości; wybór pojazdu zmienia dostępne bazy i sposób prezentacji. Interfejs obcina część ułamkową ziarna i ogranicza wartość do zakresu uint32. Brak wartości, NaN lub nieskończoność daje 0. Porównanie wymaga dwóch różnych identyfikatorów; każdy przejazd ma własny tryb.",
+        "The API defaults to AMBULANCE and ENABLED. All vehicle types use the same speed model; vehicle type determines available bases and presentation. The UI truncates the seed to an integer and clamps it to uint32. An absent value, NaN or infinity becomes 0. Comparison requires two distinct identifiers, with a separate mode for each run.",
       ),
       h("Pełny katalog parametrów silnika", "Complete engine parameter reference"),
       p(
-        "Dla każdej nazwy użyj prefiksu GREENWAVE_SIM_ i wielkich liter. Jednostki znajdują się w nazwach: sekundy, metry, km/h lub m/s; czynniki i liczności są bezwymiarowe. finite oznacza jawny zakaz NaN i nieskończoności. Nie należy dopisywać takiej gwarancji pozostałym polom. Walidacja wymaga też ack_delay ≤ delayed_ack < ack_timeout, priority_green_tti ≤ clearing_tti oraz ambulance_min_speed ≤ ambulance_max_speed.",
+        "Nazwę zmiennej środowiskowej tworzy prefiks GREENWAVE_SIM_ i nazwa pola zapisana wielkimi literami. Nazwy określają jednostki: sekundy, metry, km/h lub m/s. Współczynniki i liczności są bezwymiarowe. Oznaczenie finite wyklucza NaN i nieskończoność; nie dotyczy automatycznie pozostałych pól. Walidacja wymaga też ack_delay ≤ delayed_ack < ack_timeout, priority_green_tti ≤ clearing_tti oraz ambulance_min_speed ≤ ambulance_max_speed.",
         "Prefix each uppercase field name with GREENWAVE_SIM_. Names specify seconds, metres, km/h or m/s; factors and counts are dimensionless. finite means NaN/infinity are explicitly forbidden. Do not infer that guarantee for other fields. Validation also requires ack_delay ≤ delayed_ack < ack_timeout, priority_green_tti ≤ clearing_tti and ambulance_min_speed ≤ ambulance_max_speed.",
       ),
       table(
@@ -188,29 +188,29 @@ function detailsSection(language: Language): DocsSection {
       ),
       h("Wybór trasy, dojazd pieszy i zasoby", "Routing, on-foot access and resources"),
       p(
-        "Punkty końcowe są dopasowywane do najbliższych węzłów największej silnie spójnej składowej grafu. Limit dopasowania wynosi 150 m. Trasa minimalizuje sumę czasów krawędzi pojazdu uprzywilejowanego, włącznie z progami, ale bez kar skrzyżowań, gęstości i odpowiedzi ITS. Spośród równoległych krawędzi wygrywa najkrótszy czas, potem identyfikator. Oba tryby wybierają tę samą trasę.",
+        "Punkty początkowy i końcowy są dopasowywane do najbliższych węzłów największej silnie spójnej składowej grafu, w granicach 150 m. Wybrana trasa minimalizuje sumę czasów przejazdu krawędzi pojazdem uprzywilejowanym. Uwzględnia progi zwalniające, ale nie opóźnienia na skrzyżowaniach, gęstość ruchu ani odpowiedzi ITS. Spośród równoległych krawędzi wybierana jest ta o najkrótszym czasie; remisy rozstrzyga identyfikator. Oba tryby korzystają z tej samej trasy.",
         "Endpoints snap to the nearest nodes in the graph’s largest strongly connected component, within 150 m. Routing minimizes emergency-vehicle edge time including calming, but excludes junction penalties, density and ITS outcomes. Parallel edges are chosen by minimum time, then ID. Both modes select the same route.",
       ),
       p(
-        "Dojście piesze ma długość 1.3 r, gdzie r jest odległością prostą w metrach, tempo 1.4 m/s i limit 800 m. Węzeł dojazdu minimalizuje sumę czasu jazdy i marszu. Początek poza siecią jest błędem; tylko cel poza limitem snap uruchamia dojście piesze. Wybór dojazdu wyklucza węzeł początku, remisy rozstrzyga klucz węzła. Brak węzła w zasięgu daje DESTINATION_OFF_NETWORK, a brak osiągalnego dojazdu NO_ROUTE. Marsz omija model barier i jest raportowany osobno; KPI kończy się na dojeździe pojazdu.",
+        "Model dojścia pieszego przyjmuje dystans 1.3 r, prędkość 1.4 m/s i limit 800 m; r oznacza odległość w linii prostej w układzie metrycznym. Węzeł kończący dojazd pojazdu minimalizuje łączny czas jazdy i marszu. Początek poza siecią oznacza błąd. Tylko cel poza limitem dopasowania do sieci uruchamia wariant z dojściem pieszym. Węzeł początkowy jest wykluczony z wyboru punktu dojazdu, a remisy rozstrzyga klucz węzła. Brak węzła w zasięgu daje DESTINATION_OFF_NETWORK, a brak osiągalnej trasy NO_ROUTE. Model marszu nie uwzględnia barier terenowych. Czas dojścia jest podawany osobno; KPI obejmują tylko dojazd pojazdu.",
         "Walking access covers 1.3 r at 1.4 m/s, up to 800 m, where r is projected straight-line metres. The access node minimizes drive plus walk time. An off-network origin is an error; only a destination beyond the snap limit triggers walking access. Driven access excludes the origin node and breaks ties by node key. No node within walking reach gives DESTINATION_OFF_NETWORK; no reachable access gives NO_ROUTE. Walking ignores barriers and is reported separately; vehicle KPIs stop at vehicle arrival.",
       ),
       p(
-        "Ranking baz używa odwróconej Dijkstry i domyślnie dokładniej ocenia pięć najlepszych baz, zwracając do trzech. Liczy czas wybranego trybu plus marsz. Baza na węźle zdarzenia może obsłużyć je na miejscu bez uruchamiania trasy; poza siecią marsz z bazy musi być szybszy niż przejazd, bo remis wygrywa jazda. Limit pięciu może pominąć bazę lepszą po uwzględnieniu sygnalizacji.",
-        "Base ranking uses reversed Dijkstra, fully estimates the best five by default and returns up to three. It orders by the selected mode’s drive time plus walking. A base at the incident node can answer on site without a simulated route; off network, walking from the base must beat driving because driving wins ties. The five-base cut may omit a base that wins after signal timing is included.",
+        "Wybór bazy rozpoczyna się od algorytmu Dijkstry na grafie o odwróconych krawędziach. Domyślnie pięć najlepszych baz przechodzi pełne obliczenia czasu, a wynik zawiera do trzech propozycji. Kolejność zależy od czasu jazdy w wybranym trybie i czasu marszu. Jeśli baza leży na węźle zdarzenia, zespół może dotrzeć pieszo bez uruchamiania przejazdu. Poza siecią marsz bezpośrednio z bazy jest wybierany tylko wtedy, gdy trwa krócej niż jazda; przy remisie wybierana jest jazda. Wstępny limit pięciu baz może pominąć bazę, która byłaby lepsza po uwzględnieniu sygnalizacji.",
+        "Base selection starts with Dijkstra’s algorithm on the reversed graph. By default, the five fastest candidates receive full journey-time estimates and up to three are returned. Selection uses driving time in the chosen mode plus walking time. A team based at the incident’s node can respond on foot without a simulated drive. For off-network incidents, walking directly from a base is selected only if it is faster than driving; driving wins ties. The initial five-base limit may exclude a base that would be faster once signal timing is included.",
       ),
       p(
-        "Ranking zasobów karetek ocenia wszystkie uprawnione bazy. Zespół musi być w sezonie i dniu tygodnia oraz w przedziale minut [od, do). OFF_SHIFT ma pierwszeństwo przed free; busy wyklucza zespół na dyżurze; brak nadpisania oznacza assumed_free. W bazie wybierany jest najpierw zespół z rejonu, potem według kodu. Typ zespołu nie jest współczynnikiem czasu.",
+        "Wybór karetki z uwzględnieniem dostępności obejmuje wszystkie bazy z zespołami spełniającymi warunki. Sprawdzane są sezon, dzień tygodnia i przedział minut [od, do). Stan OFF_SHIFT wyklucza zespół niezależnie od wartości free. Wartość busy wyklucza zespół będący na dyżurze; brak nadpisania oznacza assumed_free. W danej bazie pierwszeństwo ma zespół z rejonu zdarzenia, a następnie decyduje kod zespołu. Typ zespołu nie wpływa na obliczany czas.",
         "Resource-aware ambulance ranking evaluates every eligible base. A team must match season, weekday and the [from, to) minute window. OFF_SHIFT overrides free; busy excludes an on-shift team; no override means assumed_free. Within a base, in-area teams come first, then team code. Team type is not a time coefficient.",
       ),
       p(
-        "Zespół z rejonu wygrywa, jeśli jest najwyżej 60 s wolniejszy od najszybszego. Rekomendacja jest pierwsza, reszta według czasu i identyfikatora bazy. Brak zespołów daje NO_ELIGIBLE_RESOURCE; istniejące zespoły bez osiągalnej bazy: NO_STATION_REACHABLE. Nieznany rejon oznacza wybór najbliższego czasowo. Rejon wynika z najbliższego adresu EMUiA w promieniu 250 m, a nie z testu zawierania punktu w wielokącie.",
-        "An in-area team wins when it is at most 60 seconds slower than the fastest. The recommendation is first; remaining candidates sort by time then base ID. No eligible teams gives NO_ELIGIBLE_RESOURCE; eligible teams without a reachable base give NO_STATION_REACHABLE. Unknown area means nearest-by-time selection. Area comes from the nearest EMUiA address within 250 m, rather than polygon containment.",
+        "Zespół z rejonu jest zalecany, jeśli dojedzie najwyżej 60 s później niż najszybszy zespół. Zalecana jednostka jest pierwsza na liście, a pozostałe są uporządkowane według czasu i identyfikatora bazy. Brak dostępnych zespołów daje NO_ELIGIBLE_RESOURCE; brak osiągalnej bazy mimo dostępnych zespołów daje NO_STATION_REACHABLE. Przy nieznanym rejonie decyduje najkrótszy czas dojazdu. Rejon ustala się na podstawie najbliższego adresu EMUiA w promieniu 250 m, bez sprawdzania, czy punkt leży wewnątrz granic rejonu.",
+        "An in-area team is recommended if it arrives no more than 60 seconds after the fastest team. The recommendation appears first; others are ordered by time and base ID. No eligible teams yields NO_ELIGIBLE_RESOURCE. Eligible teams without a reachable base yield NO_STATION_REACHABLE. If the incident area is unknown, estimated arrival time alone decides. The area comes from the nearest EMUiA address within 250 m, without testing whether the incident lies inside an area boundary.",
       ),
       h("Trzy różne czasy przejazdu", "Three different journey times"),
       p(
-        "Lₑ: metry krawędzi; Vₑ: zwykła prędkość w km/h; nₑ: liczba elementów uspokojenia ruchu; μ: gęstość [1,3]; Dᵢ: zapisane opóźnienie skrzyżowania; N: liczba unikalnych skrzyżowań. Buspas i torowisko dają największą z premii, nigdy ich iloczyn.",
-        "Lₑ is edge metres, Vₑ ordinary km/h, nₑ calming-feature count, μ density in [1,3], Dᵢ stored junction delay and N unique junction count. Bus and tram advantages use the largest applicable boost, never their product.",
+        "Lₑ oznacza długość krawędzi w metrach, Vₑ zwykły limit prędkości w km/h, nₑ liczbę elementów uspokojenia ruchu, μ mnożnik gęstości [1,3], Dᵢ zapisane opóźnienie skrzyżowania, a N liczbę unikalnych skrzyżowań. Dla buspasa i torowiska stosuje się większy z odpowiednich współczynników, a nie ich iloczyn.",
+        "Lₑ is edge length in metres, Vₑ the ordinary speed limit in km/h, nₑ the number of traffic-calming features, μ the density multiplier [1,3], Dᵢ the stored intersection delay and N the number of unique intersections. Bus-lane and tram-track adjustments use the larger applicable boost, not their product.",
       ),
       f(
         "Prędkość krawędzi (km/h) i jej czas (s)",
@@ -222,7 +222,7 @@ function detailsSection(language: Language): DocsSection {
         "b_bus and b_tram are 1.05 on a bus lane or tram track, otherwise 1. ℓₑ is 1.15 for exactly one lane per direction, otherwise 1. sₑ is 1.3 for a recognized unpaved surface, otherwise 1. Unknown attributes are neutral. Numbers in these equations are the defaults from the parameter reference.",
       ),
       f(
-        "Estymacje nominalne (domyślnie D_min = 3 s, Dᵢ = 35 s)",
+        "Szacowane czasy nominalne (domyślnie D_min = 3 s, Dᵢ = 35 s)",
         "Nominal estimates (defaults D_min = 3 s, Dᵢ = 35 s)",
         "T̂_normal = ∑_e t_{n,e} + ∑_i D_i\nT̂_greenwave = ∑_e t_{a,e} + N D_min",
       ),
@@ -233,14 +233,14 @@ function detailsSection(language: Language): DocsSection {
           [
             "estimated_normal_time_sec",
             t(
-              "Wzór dla zwykłego samochodu; nie jest czasem karetki w DISABLED. Kara raz na unikalne skrzyżowanie.",
+              "Czas zwykłego samochodu, a nie karetki w trybie DISABLED. Opóźnienie jest doliczane raz na unikalne skrzyżowanie.",
               "Ordinary-car formula, not the DISABLED ambulance time. One delay per unique intersection.",
             ),
           ],
           [
             "estimated_greenwave_time_sec",
             t(
-              "Nominalny model bez nieprzewidzianego oczekiwania na potwierdzenie, odmów i fallbacku.",
+              "Szacunek nominalny, bez dodatkowego oczekiwania na potwierdzenie, odmów ani przejazdu na zwykłej sygnalizacji po nieudanym żądaniu.",
               "Nominal model without unconfirmed-green holds, rejection or fallback.",
             ),
           ],
@@ -258,30 +258,30 @@ function detailsSection(language: Language): DocsSection {
         "Movement, priority windows and stop-line crossings",
       ),
       p(
-        "Na otwartej drodze prędkość efektywna to uₑ = Lₑ / tₐ,ₑ; koszt progów rozkłada się po krawędzi. Jedna iteracja ma budżet 1 s i dzieli go na końcach krawędzi, początku spowolnienia, liniach i celu. Ruch niesie pozostały czas na kolejną krawędź. Przyjazd zapisuje się z dokładnością do ułamka sekundy, a prędkość telemetryczna to faktyczne metry tej sekundy × 3.6.",
+        "Na odcinku drogi poza skrzyżowaniem prędkość efektywna wynosi uₑ = Lₑ / tₐ,ₑ; opóźnienie od progów jest rozłożone na całej krawędzi. Jeden krok ma budżet 1 s, dzielony na końcach krawędzi, początku spowolnienia, liniach zatrzymania i punkcie docelowym. Pozostały czas można wykorzystać na kolejnej krawędzi. Czas przyjazdu jest zapisywany z częścią ułamkową. Prędkość w telemetrii odpowiada liczbie metrów rzeczywiście przejechanych w tej sekundzie × 3.6.",
         "Open-road effective speed is uₑ = Lₑ / tₐ,ₑ, spreading calming cost across the edge. One iteration has a one-second budget split at edge ends, slowdown starts, stop lines and destination. Remaining time carries onto the next edge. Arrival retains subsecond precision; telemetry speed is metres actually moved that second × 3.6.",
       ),
       p(
-        "Na skrzyżowaniu z priorytetem pojazd zwalnia płynnie do co najwyżej 15 km/h, tak aby przejazd trwał dodatkowo D_min. Spowolnienie zaczyna się najwyżej 60 m przed pierwszą linią, ale nie przed pierwszą linią poprzedniego skrzyżowania. R i E to pozostały dystans i dodatkowy czas; nakładające się okna mogą się łączyć. Brak miejsca daje postój D_min. Kolejne wewnętrzne linie priorytetowego skrzyżowania nie tworzą następnego spowolnienia. Dojazd do pierwszej linii wymaga następnie pokazanego zielonego z poprzedniego raportu; samo ACCEPTED nie wystarcza.",
-        "At a priority junction the vehicle rolls down towards 15 km/h so the crossing costs D_min extra. Slowdown starts at most 60 m before the first line, but never before the previous junction’s first line. R and E are remaining distance and extra time; overlapping windows may merge. No room means a D_min dwell. Later internal priority lines do not add another slowdown. Departure from the first line then requires green shown in the previous report; ACCEPTED alone does not suffice.",
+        "Przed skrzyżowaniem z priorytetem pojazd płynnie zwalnia, rozkładając dodatkowy czas D_min na odcinku dojazdu. Okno jest dobierane z założeniem dolnej prędkości 15 km/h, z ograniczeniami opisanymi we wnioskach audytu. Spowolnienie zaczyna się najwyżej 60 m przed pierwszą linią zatrzymania, ale nie przed pierwszą linią poprzedniego skrzyżowania. R i E oznaczają pozostały dystans i dodatkowy czas; nakładające się okna mogą się łączyć. Gdy brakuje miejsca, pojazd zatrzymuje się na D_min. Kolejne linie tego samego skrzyżowania nie rozpoczynają następnego spowolnienia. Opuszczenie pierwszej linii wymaga zielonego światła potwierdzonego w poprzednim raporcie; samo ACCEPTED nie wystarcza.",
+        "Before a priority intersection, the vehicle slows smoothly to spread the additional D_min time across its approach. The window is sized for a 15 km/h lower speed bound, subject to the limitations listed in the audit findings. Slowdown begins at most 60 m before the first stop line, but not before the previous intersection’s first line. R and E are remaining distance and extra time; overlapping windows can merge. If there is no room, the vehicle waits for D_min. Later lines in the same priority intersection do not start another slowdown. Departure from the first line requires route green confirmed in the previous report; ACCEPTED alone is insufficient.",
       ),
       p(
-        "W DISABLED oraz na skrzyżowaniach fallback decyzja zapada przy każdej linii, w dokładnym czasie jej osiągnięcia. Zielone wszystkich właścicieli pozwala jechać dalej. Czerwone, żółte lub nieznane rozpoczyna ostrożny przejazd. u jest wtedy minimum efektywnej prędkości i zwykłego limitu drogi. Dla kilku właścicieli stosowany jest najdłuższy czas do zielonego; brak wiedzy zastępuje go Dᵢ.",
+        "W trybie DISABLED oraz po przejściu skrzyżowania na zwykłą sygnalizację decyzja zapada przy każdej linii zatrzymania, dokładnie w chwili jej osiągnięcia. Jeśli wszystkie kierunki przypisane do tej linii mają zielone, pojazd jedzie dalej. Czerwone, żółte lub nieznany stan rozpoczyna ostrożny przejazd. Prędkość u jest wtedy mniejszą z prędkości efektywnej i zwykłego limitu drogi. Jeśli linię kontroluje kilka skrzyżowań, przyjmowany jest najdłuższy czas do zielonego; gdy nie jest znany, zastępuje go Dᵢ.",
         "DISABLED and fallback decide at every stop line at its exact arrival time. Green for every owner drives on; red, yellow or unknown starts a cautious crossing. Here u is the minimum of effective ambulance speed and ordinary road limit. Multiple owners use the longest wait for green; an unknown movement substitutes Dᵢ.",
       ),
       p(
         "Ostrożny przejazd dolicza standard_clearance_factor × μ × czas do zielonego, najwyżej 15 s, rozłożone na co najmniej 30 m przy prędkości nie mniejszej niż 10 km/h. Długość jest sprawdzana względem najwolniejszych krawędzi, które obejmuje. Późniejsza krawędź o prędkości poniżej progu kończy okno na swoim początku i ogranicza koszt. Następna linia zastępuje aktywny standardowy przejazd; zielone może usunąć resztę kosztu. Fallback zastępuje własne spowolnienie, ale zachowuje resztę poprzedniego priorytetowego skrzyżowania. Cel ucina niewydany koszt. Limit 15 s dotyczy decyzji na linii, nie całego skrzyżowania o wielu liniach.",
         "A cautious crossing adds standard_clearance_factor × μ × wait for green, at most 15 s, spread over at least 30 m at no less than 10 km/h. Length is sized against the slowest covered edges. A later edge at/below the floor ends the window at its start and caps the extra cost. The next line replaces an active Standard crossing; green can clear its remainder. Fallback replaces its own slowdown but preserves an earlier priority junction’s remainder. Arrival truncates unspent cost. The 15-second cap is per stop-line decision, not per multi-line junction.",
       ),
-      h("TTI, kaskada i długość żądania", "TTI, cascade and request hold"),
+      h("TTI, grupowanie skrzyżowań i czas priorytetu", "TTI, cascade and request hold"),
       f(
         "Wygładzona prędkość i czas do skrzyżowania",
         "Smoothed speed and time to intersection",
         "v̄_t = max(5, 0.25 Δx_t + 0.75 v̄_{t−1})\nTTI_i = max(0, s_i − x) / v̄_t",
       ),
       p(
-        "sᵢ to pozycja pierwszej linii celu, a v̄₀ to efektywna prędkość pierwszej krawędzi (nie mniej niż próg). Ponieważ krok wynosi 1 s, Δx ma numerycznie wartość m/s. Przejechany cel ma TTI null. Dla nieżądanych i nieprzejechanych celów TTI ≤40 s kwalifikuje do żądania. Kaskada dodaje tylko cele w przód oddalone pierwsza-linia → pierwsza-linia o ≤250 m według wczytanego progu. Nie rozwija się rekurencyjnie. Tabela sąsiadów ETL służy do diagnostyki; nie blokuje dopasowania w modelu trasy.",
-        "sᵢ is the target’s first stop line and v̄₀ the first edge’s effective speed, never below the floor. Because a step is one second, Δx numerically equals m/s. Passed targets report null TTI. Unrequested, unpassed targets become eligible at TTI ≤40 s. Cascade adds only forward first-line-to-first-line targets within the loaded threshold, default 250 m, without recursive expansion. ETL neighbour candidates are diagnostic evidence rather than a runtime membership gate.",
+        "sᵢ oznacza pozycję pierwszej linii zatrzymania danego skrzyżowania, a v̄₀ prędkość efektywną pierwszej krawędzi, nie mniejszą od ustawionego progu. Ponieważ krok trwa 1 s, przejechany dystans Δx jest liczbowo równy prędkości w m/s. Dla miniętego skrzyżowania TTI wynosi null. Skrzyżowanie bez wcześniejszego żądania kwalifikuje się do priorytetu przy TTI ≤40 s. Kaskada dołącza kolejne skrzyżowania w odległości ≤250 m między pierwszymi liniami zatrzymania, zgodnie z wczytanym progiem. Nie jest rozwijana rekurencyjnie. Tabela sąsiadów ETL służy diagnostyce i nie ogranicza wyboru celów w modelu trasy.",
+        "sᵢ is the position of the intersection’s first stop line. Initial speed v̄₀ is the first edge’s effective speed, bounded below by the configured floor. Over a one-second step, distance Δx is numerically equal to speed in m/s. Passed intersections report null TTI. An unrequested intersection becomes eligible at TTI ≤40 s. Cascade adds forward intersections whose first stop lines are within the loaded threshold, default 250 m, without recursive expansion. The ETL neighbour table supports diagnostics and does not restrict route-model target selection.",
       ),
       f(
         "Czas zwolnienia i utrzymania priorytetu",
@@ -289,7 +289,7 @@ function detailsSection(language: Language): DocsSection {
         "R_i = T_open(x, last_i) + D_min J_i + E_rem\nH = max(40, ⌈max_i R_i⌉ + 5)",
       ),
       p(
-        "Tₒₚₑₙ to czas jazdy bez kar do ostatniej linii celu, a E_rem pozostały dodatkowy czas. Przewidywany przyjazd UTC to teraz + min TTIᵢ / playback_speed. Jᵢ liczy nieprzejechane skrzyżowania do pierwszej linii celu lub z pierwszą linią wewnątrz jego ostatniej linii. Trwające spowolnienie bywa policzone konserwatywnie dwa razy. Domyślnie minimum H to 40 s, bufor 5 s. Kontrakt zawsze wymaga H ≥40 s. Zegar wygaśnięcia biegnie od wysłania, nie od akceptacji. Nie przewiduje przyszłych postojów ani fallbacku. Jeden pakiet na krok, cel żądany najwyżej raz.",
+        "Tₒₚₑₙ oznacza czas jazdy bez opóźnień skrzyżowań do ostatniej linii zatrzymania danego celu, a E_rem pozostały dodatkowy czas. Przewidywany przyjazd UTC to teraz + min TTIᵢ / playback_speed. Jᵢ to liczba nieprzejechanych skrzyżowań, których pierwsza linia leży nie dalej niż pierwsza linia celu lub przed jego ostatnią linią. Dla zachowania zapasu trwające spowolnienie może zostać uwzględnione dwukrotnie. Domyślnie minimum H to 40 s, bufor 5 s. Kontrakt zawsze wymaga H ≥40 s. Czas do wygaśnięcia jest liczony od wysłania, a nie od przyjęcia żądania. Szacunek nie uwzględnia przyszłych postojów ani przejścia na zwykłą sygnalizację. W jednym kroku wysyłany jest najwyżej jeden pakiet, a każdy cel otrzymuje żądanie najwyżej raz.",
         "T_open is penalty-free driving time to the target’s last line and E_rem the remaining extra time. Expected UTC arrival is now + min TTIᵢ / playback_speed. Jᵢ counts unpassed junctions up to the target’s first line or whose first line lies inside its last line. An ongoing slowdown can be conservatively counted twice. H defaults to at least 40 seconds with a five-second buffer; the payload always requires H ≥40. Expiry runs from submission, not acceptance. Release estimates do not predict future holds or fallback. One grouped dispatch per step; each target is requested at most once.",
       ),
       h("Odpowiedzi ITS i deterministyczne wyniki", "ITS presets and deterministic outcomes"),
@@ -312,8 +312,8 @@ function detailsSection(language: Language): DocsSection {
         ],
       ),
       p(
-        "MIXED hashuje UTF-8 tekstu „ziarno:posortowane_ID” i wybiera wynik z dwóch najwyższych bitów: ACCEPT, ACCEPT_DELAYED, REJECT lub NO_RESPONSE. To FNV-1a z finalizatorem MurmurHash3 fmix32, a nie nowe losowanie w każdym kroku. Ziarno i uporządkowane identyfikatory celów wystarczają do odtworzenia. Czas i identyfikator przejazdu nie wpływają na hash; grupowanie kaskady może zmienić wynik. Każdy koszyk ma ¼ przestrzeni wyników, co nie gwarantuje 25% obserwacji w skończonej próbce. Stałe scenariusze ignorują ziarno.",
-        "MIXED hashes the UTF-8 text “seed:sorted_IDs” and picks the outcome from the top two bits: ACCEPT, ACCEPT_DELAYED, REJECT or NO_RESPONSE. This is FNV-1a finalized with MurmurHash3 fmix32, not a fresh random draw every tick. Seed and sorted target IDs determine replay. Time and simulation ID are excluded; cascade grouping can change the outcome. Each bucket occupies one quarter of the output space, without guaranteeing 25% frequency in a finite sample. Fixed presets ignore the seed.",
+        "Scenariusz MIXED oblicza hash tekstu „seed:sorted_IDs” zakodowanego w UTF-8. Dwa najwyższe bity wybierają wynik: ACCEPT, ACCEPT_DELAYED, REJECT lub NO_RESPONSE. Używany jest FNV-1a z finalizatorem MurmurHash3 fmix32; wynik nie jest losowany ponownie w każdym kroku. Do odtworzenia wystarczą ziarno i posortowane identyfikatory celów. Czas i identyfikator symulacji nie wpływają na wynik, ale zmiana grupy skrzyżowań może go zmienić. Każda z czterech kategorii zajmuje ¼ przestrzeni wyników hasha, co nie gwarantuje udziału 25% w skończonej próbie. Pozostałe scenariusze ignorują ziarno.",
+        "MIXED hashes the UTF-8 text “seed:sorted_IDs”. Its two highest bits select ACCEPT, ACCEPT_DELAYED, REJECT or NO_RESPONSE. The algorithm is FNV-1a with the MurmurHash3 fmix32 finalizer; it does not draw a new outcome each step. The seed and sorted target IDs determine the result. Time and simulation ID do not affect it, but changing the intersection group can change the outcome. Each bucket occupies ¼ of the hash output space, without guaranteeing a 25% share in a finite sample. Fixed presets ignore the seed.",
       ),
       flow("Cykl życia żądania", "Request lifecycle", [
         step("REQUESTED", "wysłane przy TTI ≤ 40 s", "sent at TTI ≤ 40 s", [
@@ -321,12 +321,16 @@ function detailsSection(language: Language): DocsSection {
           branch("TIMED_OUT", "brak odpowiedzi w 8 s", "no answer within 8 s"),
         ]),
         step("ACCEPTED", "priorytet aktywny", "priority active", [
-          branch("EXPIRED", "minął czas hold od wysłania", "hold elapsed since submission"),
+          branch(
+            "EXPIRED",
+            "upłynął czas utrzymania priorytetu liczony od wysłania",
+            "hold elapsed since submission",
+          ),
         ]),
         step("RELEASED", "przejechano wszystkie cele", "every target passed"),
       ]),
       p(
-        "Nieprzejechane cele żądań REJECTED, TIMED_OUT lub EXPIRED przechodzą na STANDARD_FALLBACK. REQUESTED przechodzi od razu w RELEASED, gdy pojazd minie wszystkie cele przed odpowiedzią. Najpierw sprawdzane jest przejechanie wszystkich celów, następnie termin odpowiedzi, a potem wygaśnięcie zaakceptowanego żądania. Spóźniona akceptacja po końcu hold daje od razu ACCEPTED i EXPIRED bez aktywacji. Timeout wycofuje żądanie i rezerwuje numer sekwencji. Ledger ignoruje złą symulację, nieznane żądanie, niezgodną kolejność celów, stary numer, cofnięty czas lub niedozwolone przejście. Identyczne ponowne wysłanie jest idempotentne, sprzeczne jest błędem.",
+        "Nieprzejechane cele żądań REJECTED, TIMED_OUT lub EXPIRED przechodzą na STANDARD_FALLBACK. REQUESTED przechodzi od razu w RELEASED, gdy pojazd minie wszystkie cele przed odpowiedzią. Najpierw sprawdzane jest przejechanie wszystkich celów, następnie termin odpowiedzi, a potem wygaśnięcie zaakceptowanego żądania. Spóźniona akceptacja po upływie czasu utrzymania priorytetu daje od razu ACCEPTED i EXPIRED bez aktywacji. Przekroczenie limitu czasu wycofuje żądanie i rezerwuje numer sekwencji. Rejestr żądań pomija odpowiedzi dotyczące innej symulacji, nieznane żądanie, niezgodną kolejność celów, stary numer, czas wcześniejszy od ostatniej aktualizacji lub niedozwolone przejście. Identyczne ponowne wysłanie jest idempotentne, sprzeczne jest błędem.",
         "Unpassed targets of REJECTED, TIMED_OUT or EXPIRED requests cross as STANDARD_FALLBACK. REQUESTED goes straight to RELEASED when the vehicle passes every target before an answer. All-targets-passed release is checked first, then due acknowledgement, then accepted hold expiry. Acceptance after the hold deadline immediately produces ACCEPTED and EXPIRED without activating targets. Timeout withdraws the request and reserves a sequence number. The ledger ignores wrong simulations, unknown requests, mismatched ordered targets, stale sequence numbers, backward time and illegal transitions. Identical duplicate submission is idempotent; conflicting duplicates are errors.",
       ),
       h("Maszyna stanów skrzyżowania", "Intersection state machine"),
@@ -335,13 +339,18 @@ function detailsSection(language: Language): DocsSection {
         "Reported state transitions",
         [
           step("NORMAL", "zwykły program", "ordinary programme"),
-          step("CLEARING", "przyjęto, brak pokazanego zielonego", "accepted, green not yet shown", [
-            branch(
-              "NORMAL",
-              "akceptacja kończy się przed przejazdem",
-              "acceptance ends before passage",
-            ),
-          ]),
+          step(
+            "CLEARING",
+            "przyjęto, brak pokazanego zielonego",
+            "accepted, route green not yet confirmed",
+            [
+              branch(
+                "NORMAL",
+                "akceptacja kończy się przed przejazdem",
+                "acceptance ends before passage",
+              ),
+            ],
+          ),
           step(
             "PRIORITY_GREEN",
             "TTI ≤ 25 s i wszystkie światła trasy GREEN",
@@ -365,14 +374,14 @@ function detailsSection(language: Language): DocsSection {
           [
             "NORMAL",
             t(
-              "Brak zaakceptowanego priorytetu lub zakończona regeneracja. Samo REQUESTED nie zmienia świateł.",
+              "Brak zaakceptowanego priorytetu lub zakończony powrót do zwykłego programu. Samo REQUESTED nie zmienia świateł.",
               "No accepted priority or recovery complete. REQUESTED alone changes no lights.",
             ),
           ],
           [
             "CLEARING",
             t(
-              "Akceptacja bez kwalifikacji lub potwierdzonego zielonego. Konfliktowe pojazdy i piesi mają cel czerwony, trasa zachowuje zwykły program.",
+              "Żądanie jest przyjęte, ale próg TTI nie został osiągnięty lub zielone nie jest potwierdzone. Dla kolidujących kierunków i pieszych docelowym kolorem jest czerwony; trasa zachowuje zwykły program.",
               "Accepted without eligibility or confirmed green. Conflicting vehicles and pedestrians target red; route vehicles retain the ordinary programme.",
             ),
           ],
@@ -386,7 +395,7 @@ function detailsSection(language: Language): DocsSection {
           [
             "RECOVERY",
             t(
-              "Przejechano ostatnią linię po aktywnym priorytecie. Zwykły cykl wraca od razu; 15 s to stan odzyskiwania, a nie dodatkowa faza all-red.",
+              "Pojazd minął ostatnią linię po przejeździe z aktywnym priorytetem. Zwykły cykl wraca od razu; przez 15 s trwa stan powrotu do zwykłego programu, a nie dodatkowa faza all-red.",
               "Last line passed after active priority. Ordinary cycle resumes immediately; 15 seconds is runtime recovery, not an extra all-red phase.",
             ),
           ],
@@ -397,7 +406,7 @@ function detailsSection(language: Language): DocsSection {
         "The controller creates light targets before downgrading unconfirmed PRIORITY_GREEN to reported CLEARING, and can enter PRIORITY_GREEN directly from NORMAL; passage without active priority stays NORMAL. TTI eligibility is re-evaluated rather than latched. is_active_corridor means exactly CLEARING or PRIORITY_GREEN; is_cascade is separate metadata, not a state.",
       ),
       p(
-        "Ostatnia linia pozostaje chroniona przez krok, który przenosi przez nią pojazd, oraz podczas postoju na wspólnej linii. Przyjazd na linię końcową utrzymuje ochronę dla przedziału przyjazdu, a odzyskiwanie zaczyna się później. Nieaktywowany lub nieudany priorytet nie wymaga RECOVERY. Anulowanie zamyka sterownik bez dodatkowego strumienia 15 s. Gdy brak znanych świateł na trasie, kontrola wyjazdu dopuszcza ruch mimo braku potwierdzonego zielonego.",
+        "Ostatnia linia pozostaje chroniona przez krok, który przenosi przez nią pojazd, oraz podczas postoju na wspólnej linii. Przyjazd na linię końcową utrzymuje ochronę dla przedziału przyjazdu, a powrót do zwykłego programu zaczyna się później. Nieaktywowany lub nieudany priorytet nie wymaga RECOVERY. Anulowanie zamyka sterownik bez dodatkowego strumienia 15 s. Gdy brak znanych świateł na trasie, kontrola wyjazdu dopuszcza ruch mimo braku potwierdzonego zielonego.",
         "The last line remains protected through the movement interval carrying the vehicle across it and while waiting at a shared line. A destination on that line retains protection for the arrival interval before recovery begins. Priority never activated or already failed requires no RECOVERY. Cancellation closes the controller without another 15-second stream. With no known route vehicle heads, the departure check permits motion without confirming green.",
       ),
       h(
@@ -405,15 +414,20 @@ function detailsSection(language: Language): DocsSection {
         "Ordinary programme, priority and clearance timers",
       ),
       p(
-        "Grupą ruchu jest uporządkowana tożsamość kontrolowanych krawędzi. Grupy trasy są łączone w jedną, potem posortowane grupy dostają numer modulo 2. Nie jest to graf konfliktów pasów. Sygnalizator bez znanej grupy nie ma wskaźnika. Węzły sygnalizacji obsługują pojazdy i pieszych, a przejścia piesze tylko pieszych. Dla wielu świateł trasy wybierany jest najbardziej restrykcyjny kolor: RED, YELLOW, GREEN.",
-        "Movement identity comes from sorted controlled edges. Route groups merge into one; sorted groups then receive slots modulo two. This is not a lane-conflict graph. Signals without a known group have no indicator. Traffic-signal nodes support vehicles and pedestrians; crossing nodes pedestrians only. Multiple route lights use the most restrictive programme color: RED, YELLOW, GREEN.",
+        "Grupę ruchu wyznacza uporządkowany zestaw identyfikatorów kontrolowanych krawędzi. Grupy leżące na trasie są łączone w jedną; następnie posortowanym grupom przypisuje się jeden z dwóch przedziałów cyklu, według numeru modulo 2. Nie jest to pełny model kolizji kierunków ruchu na pasach. Sygnalizator bez znanej grupy nie otrzymuje wskaźnika. Węzły sygnalizacji obejmują pojazdy i pieszych, a węzły przejść wyłącznie pieszych. Dla kilku świateł na trasie obowiązuje najbardziej restrykcyjny kolor: RED, YELLOW, GREEN.",
+        "A movement group is identified by its sorted controlled-edge IDs. Groups on the route merge into one; the sorted groups then receive one of two cycle slots by ordinal modulo 2. This is not a complete lane-conflict model. Signals without a known group have no indicator. Traffic-signal nodes support vehicles and pedestrians; crossing nodes support pedestrians only. Multiple route lights use the most restrictive color: RED, YELLOW, GREEN.",
       ),
       p(
-        "Każda grupa ma slot S = 30 s zielonego + 3 s żółtego + 2 s all-red = 35 s, więc cykl trwa 70 s i liczy się od absolutnego czasu symulacji. Czas oczekiwania trasy to 0 w jej zielonym, a inaczej czas do początku następnego zielonego slotu trasy. r w tabeli to czas od początku slotu.",
+        "Każda grupa ma przedział S = 30 s zielonego + 3 s żółtego + 2 s czerwonego dla wszystkich kierunków (all-red) = 35 s. Cykl trwa więc 70 s i jest wyznaczany na podstawie bezwzględnego czasu symulacji. W czasie zielonego oczekiwanie wynosi 0; poza nim jest to czas do następnego zielonego dla kierunku przejazdu. W tabeli r oznacza czas od początku przedziału.",
         "Each group has a slot S = 30 s green + 3 s yellow + 2 s all-red = 35 s, so the cycle lasts 70 s from absolute simulation time. The route’s wait is zero during its green, otherwise the time until its next green slot starts. In the table, r is time since the slot began.",
       ),
       table(
-        ["Część slotu", "Aktywne pojazdy", "Inne pojazdy", "Piesi innej grupy"],
+        [
+          "Przedział czasu",
+          "Pojazdy aktywnej grupy",
+          "Pojazdy pozostałych grup",
+          "Piesi innej grupy",
+        ],
         ["Slot interval", "Active vehicles", "Other vehicles", "Other-group pedestrians"],
         [
           [
@@ -421,8 +435,8 @@ function detailsSection(language: Language): DocsSection {
             "GREEN",
             "RED",
             t(
-              "GREEN, jeśli pokazane pojazdy tej grupy są czerwone",
-              "GREEN if shown vehicles on their arm are red",
+              "GREEN, jeśli sygnalizatory pojazdów tej grupy pokazują czerwone",
+              "GREEN if vehicle signals on their arm show red",
             ),
           ],
           ["30 ≤ r < 33 s", "YELLOW", "RED", "RED"],
@@ -430,25 +444,25 @@ function detailsSection(language: Language): DocsSection {
         ],
       ),
       p(
-        "Piesi aktywnej grupy mają czerwone. NORMAL i RECOVERY korzystają z absolutnego czasu cyklu bez resetu. W CLEARING konfliktowe pojazdy i wszyscy piesi dostają cel czerwony; trasa pozostaje w zwykłym cyklu. PRIORITY_GREEN kieruje trasę na zielone, resztę na czerwone. Zmiana nie przeskakuje pokazanego żółtego.",
+        "Piesi na ramieniu obsługiwanym przez aktywną grupę mają czerwone. W stanach NORMAL i RECOVERY cykl jest kontynuowany bez zerowania czasu. CLEARING ustawia docelowo czerwone dla kolidujących kierunków i wszystkich pieszych; kierunek przejazdu pozostaje w zwykłym cyklu. PRIORITY_GREEN ustawia docelowo zielone dla trasy, a czerwone dla pozostałych kierunków. Zmiana wskazania nie pomija żółtego światła.",
         "Pedestrians on the active arm stay red. NORMAL and RECOVERY follow absolute cycle time without reset. CLEARING targets conflicting vehicles and every pedestrian red while route vehicles keep cycling. PRIORITY_GREEN targets route vehicles green and everything else red. Switching does not skip displayed yellow.",
       ),
       flow(
         "Pokazane światła pojazdów",
         "Shown vehicle heads",
         [
-          step("GREEN", "cel zielony", "target green"),
-          step("YELLOW", "cel już nie jest zielony", "target no longer green"),
+          step("GREEN", "docelowy kolor zielony", "target green"),
+          step("YELLOW", "docelowy kolor inny niż zielony", "target no longer green"),
           step("RED", "po signal_yellow_seconds", "after signal_yellow_seconds"),
         ],
         [
-          "RED → GREEN, gdy cel jest zielony, a każde inne światło bez zielonego celu było już RED",
+          "RED → GREEN, gdy cel jest zielony, a każde inne światło bez docelowego zielonego było już RED",
           "RED → GREEN once the target is green and every other head not targeting green was already RED",
         ],
       ),
       p(
-        "Nowe światło bez historii przyjmuje cel od razu. Żółte musi się skończyć nawet po powrocie zielonego celu; warunek używa poprzednich świateł, więc możliwy jest dodatkowy krok. Nie ma osobnego wymuszenia 2 s all-red przy dowolnym przełączeniu priorytetu — 2 s należą do zwykłego cyklu. Piesi nie mają żółtego i są blokowani przez zielone/żółte pojazdy na swoim ramieniu. Standard i fallback próbkują program w chwili dotarcia; priorytet sprawdza dodatkowo poprzednio pokazane światła.",
-        "New heads initialize directly to target. Yellow must finish even if a green target returns; the check uses previous heads and can add another tick. An arbitrary priority switch has no independent two-second all-red hold: those two seconds belong to the ordinary cycle. Pedestrians have no yellow and are blocked by green/yellow vehicles on their arm. Standard and fallback sample the programme at arrival; priority additionally checks previously shown heads.",
+        "Nowy wskaźnik, bez poprzedniego stanu, od razu przyjmuje docelowy kolor. Rozpoczęte żółte musi dobiec końca, nawet jeśli ponownie zażądano zielonego. Warunek korzysta z poprzednich wskazań, dlatego przełączenie może wymagać dodatkowego kroku. Przy zmianie priorytetu nie ma osobnego wymogu 2 s all-red — ten czas należy do zwykłego cyklu. Wskazania dla pieszych nie mają fazy żółtej; zielone lub żółte pojazdów na tym samym ramieniu blokuje zielone dla pieszych. Przejazd bez priorytetu korzysta z programu w chwili osiągnięcia linii, a priorytet dodatkowo sprawdza wskazania pokazane w poprzednim raporcie.",
+        "A new signal head with no previous state immediately takes its target color. Once yellow starts, it must finish even if green is requested again. The check uses previous indications, so a change may take an extra step. Priority switching has no separate two-second all-red requirement; that interval belongs to the ordinary cycle. Pedestrian signals have no yellow phase. Green or yellow vehicle indications on their arm prevent pedestrian green. Standard and fallback crossings sample the programme at arrival; priority also checks previously shown indications.",
       ),
       h("Oszczędność czasu i zaokrąglenia", "Time savings and rounding"),
       f(
@@ -457,34 +471,34 @@ function detailsSection(language: Language): DocsSection {
         "Δt_saved = round(T_S(x)) − round(t_elapsed)",
       ),
       p(
-        "Tₛ(x) to czas próbnego przejazdu DISABLED na tej samej pozycji x, a t_elapsed to czas przyjazdu lub bieżący czas symulacji. W DISABLED oszczędność wynosi 0, a porównanie podaje różnicę przyjazdów DISABLED − ENABLED. Próbny przejazd zapisuje pozycję co sekundę i dokładny końcowy przyjazd. Tₛ interpoluje liniowo czas na tej samej pozycji, także gdy próbka przecina zmianę prędkości. KPI odejmuje osobno zaokrąglone czasy, nie zaokrągla różnicy, i dopuszcza wynik ujemny. Python używa zaokrąglenia połówek do parzystej. Odzyskiwanie świateł nie zwiększa elapsed. Porównanie czeka na dwa pomyślne zakończenia; pozycje w wyścigu są równe przy różnicy mniejszej niż 10 m.",
+        "Tₛ(x) to czas próbnego przejazdu DISABLED na tej samej pozycji x, a t_elapsed to czas przyjazdu lub bieżący czas symulacji. W DISABLED oszczędność wynosi 0, a porównanie podaje różnicę przyjazdów DISABLED − ENABLED. Próbny przejazd zapisuje pozycję co sekundę i dokładny końcowy przyjazd. Tₛ interpoluje liniowo czas na tej samej pozycji, także gdy próbka przecina zmianę prędkości. KPI oblicza różnicę osobno zaokrąglonych czasów, nie zaokrągla różnicy, i dopuszcza wynik ujemny. Python używa zaokrąglenia połówek do parzystej. Powrót do zwykłej sygnalizacji nie zwiększa elapsed. Porównanie czeka na dwa pomyślne zakończenia; pojazdy są uznawane za jadące równo, gdy różnica odległości jest mniejsza niż 10 m.",
         "Tₛ(x) is the DISABLED dry run’s time at the same position x, and t_elapsed is arrival or current simulated time. DISABLED reports zero saving; comparison reports DISABLED − ENABLED arrival. The dry run samples positions each second and retains exact final arrival. Tₛ linearly interpolates time at the same position, including samples spanning speed changes. KPIs subtract separately rounded times rather than rounding a difference, and permit negative savings. Python uses ties-to-even. Recovery does not increase elapsed. Comparison requires both successful completion events; the live race calls gaps under 10 metres level.",
       ),
       h("Zegar, zastępowanie operacji i SSE", "Clock, replacement and SSE"),
       p(
-        "Żądanie wysłane w danym kroku nie zmienia ruchu ani raportu tego kroku. Fallback działa od następnego ruchu. Każdy krok dodaje dokładnie 1 s i tick. Odtwarzanie p przy interwale I śpi max(0, I/p − czas_obliczeń); przekroczenie terminu jest logowane, bez serii nadrabiającej. ETA UTC dzieli przez p, ale nie uwzględnia niestandardowego I.",
+        "Żądanie wysłane w danym kroku nie zmienia ruchu ani raportu z tego kroku. Zwykłe zasady po nieudanym żądaniu obowiązują od następnego kroku ruchu. Każdy krok zwiększa czas symulacji o 1 s i numer tick o 1. Przy tempie p i interwale I pętla czeka max(0, I/p − czas_obliczeń). Przekroczenie terminu jest zapisywane w logach, bez serii kroków nadrabiających opóźnienie. Przewidywany czas przyjazdu UTC dzieli TTI przez p, ale nie uwzględnia niestandardowego I.",
         "A request submitted in a step cannot change that step’s movement or report. Fallback affects the next movement. Every step advances exactly one second and tick. Playback p with interval I sleeps max(0, I/p − processing_time); overruns are logged without catch-up bursts. UTC ETA divides by p but does not account for a nondefault I.",
       ),
       p(
-        "Nowa operacja zastępuje poprzednią dopiero po udanym planowaniu; oba plany porównania muszą się udać. Stop jednego członka zatrzymuje parę. Awaria pętli kończy niezakończonych członków SERVER_ERROR, a jeden terminal na przejazd jest gwarantowany. Przyjazd i koniec operacji nie są tym samym. Historyczne ITS_REJECTED, ITS_TIMEOUT i ITS_HOLD_EXPIRED pozostają poprawnymi kodami kontraktu, ale silnik już ich nie emituje.",
-        "Replacement supersedes the previous operation only after planning succeeds; both comparison plans must succeed. Stopping either member stops the pair. Loop failure ends unfinished members with SERVER_ERROR; publication permits only one terminal per run. Arrival and operation completion differ. Legacy ITS_REJECTED, ITS_TIMEOUT and ITS_HOLD_EXPIRED remain contract-valid but are no longer emitted by the engine.",
+        "Nowa operacja zastępuje poprzednią dopiero po udanym planowaniu. W porównaniu muszą zostać wyznaczone obie trasy. Zatrzymanie jednego przejazdu zatrzymuje całą parę. Awaria pętli kończy niezakończone przejazdy zdarzeniem SERVER_ERROR; każdy przejazd otrzymuje najwyżej jedno zdarzenie końcowe. Przyjazd pojazdu nie oznacza jeszcze końca operacji. Historyczne kody ITS_REJECTED, ITS_TIMEOUT i ITS_HOLD_EXPIRED pozostają dozwolone w kontrakcie, ale silnik już ich nie wysyła.",
+        "A new operation replaces the previous one only after planning succeeds. Both routes must be planned for a comparison. Stopping either run stops the pair. A loop failure ends unfinished runs with SERVER_ERROR; each run receives at most one terminal event. Vehicle arrival does not mean the operation has finished. Legacy ITS_REJECTED, ITS_TIMEOUT and ITS_HOLD_EXPIRED codes remain valid in the contract but are no longer emitted by the engine.",
       ),
       p(
-        "SSE zaczyna się retry: 2000; ramki mają event, id=tick i JSON data. Wiele zdarzeń może mieć ten sam tick. Reconnect dostaje ostatni stan i zdarzenia bieżące, nie odtwarza Last-Event-ID. Kolejka klienta ma domyślnie 32 zdarzenia i usuwa najstarsze, także feedback. Terminal wypiera zwykłe zdarzenie. Limit pamięci czterech sesji dotyczy sesji, nie operacji; aktywna para pozostaje. Rozłączenie nie zatrzymuje symulacji, a stan jest lokalny dla procesu serwera.",
+        "Strumień SSE zaczyna się od retry: 2000. Ramki zawierają pola event, id=tick oraz dane JSON w polu data. Kilka zdarzeń może mieć ten sam numer tick. Ponowne połączenie przekazuje ostatni stan i bieżące zdarzenia, bez odtwarzania od Last-Event-ID. Kolejka subskrybenta mieści domyślnie 32 zdarzenia; po zapełnieniu usuwa najstarsze, także odpowiedzi ITS. Zdarzenie końcowe wypiera zdarzenie zwykłe. Limit czterech sesji dotyczy sesji, nie operacji; aktywna para pozostaje w pamięci. Rozłączenie nie zatrzymuje symulacji. Stan sesji jest przechowywany osobno w każdym procesie serwera.",
         "SSE begins with retry: 2000; frames contain event, id=tick and JSON data. Several events can share a tick. Reconnect gets the latest snapshot and live events, not Last-Event-ID replay. A subscriber queue holds 32 events by default and drops the oldest, including feedback; terminal delivery displaces a nonterminal. Retention of four counts sessions rather than operations; an active pair is preserved. Disconnect does not stop simulation, and state is server-process-local.",
       ),
-      h("Mock a backend", "Mock versus backend"),
+      h("Wariant testowy a serwer symulacji", "Mock versus backend"),
       p(
         "Mock liczy odległość L po łuku koła wielkiego (haversine, R = 6371 km). Dla q = L / 5400 m zwykła estymacja wynosi 780 q μ / 1.5 s, a GreenWave 380 q s. Opóźnienie skrzyżowania to min(3 s, czas GreenWave / 2N).",
         "Mock measures L along a great circle (haversine, R = 6371 km). With q = L / 5400 m the ordinary estimate is 780 q μ / 1.5 s and GreenWave 380 q s. Junction delay is min(3 s, GreenWave time / 2N).",
       ),
       p(
-        "Mock rysuje prostą zamiast trasy drogowej, bez snap. INT-9001 i INT-9002 leżą na ułamkach 1480/5400 i 1632/5400 długości. Zwykły limit wynosi 50 km/h, a czerwone używa stałego oczekiwania 35 s zamiast rzeczywistego czasu do zielonego. TTI jest czasem pozostałym na osi syntetycznej, nie EMA. Grupy S1/S2 są stałe; hold = max(40, ceil(max TTI)+5). Parametry backendu nie nadpisują stałych mock.",
+        "Wariant mock rysuje linię prostą zamiast trasy drogowej i nie dopasowuje punktów do sieci. Skrzyżowania INT-9001 i INT-9002 leżą odpowiednio na 1480/5400 i 1632/5400 długości odcinka. Zwykły limit wynosi 50 km/h. Dla czerwonego przyjmowane jest stałe oczekiwanie 35 s zamiast rzeczywistego czasu do zielonego. TTI oznacza czas pozostały na syntetycznej osi przejazdu, a nie wynik EMA. Grupy S1/S2 są stałe; hold = max(40, ceil(max TTI)+5). Ustawienia serwera nie nadpisują stałych wariantu mock.",
         "Mock draws a straight line rather than a road route, with no snapping. INT-9001 and INT-9002 sit at fractions 1480/5400 and 1632/5400 of its length. Ordinary limit is 50 km/h; red uses a fixed 35-second wait instead of actual next-green time. TTI is remaining synthetic timeline time, not EMA. S1/S2 groups are fixed; hold = max(40, ceil(max TTI)+5). Backend settings do not override mock constants.",
       ),
       p(
-        "Mock korzysta z tego samego hasha i domyślnych czasów 1/5/8 s. Po fallback przebudowuje tylko niezakończoną część osi czasu, zachowując przeszłość. JavaScript Math.round różni się od Python round przy połówkach. To zgodność demonstracyjna kontraktu, nie identyczność wyników numerycznych ani fallback serwera po błędzie.",
-        "Mock shares the hash and default 1/5/8-second response timing. Fallback rebuilds only the undriven timeline, preserving its past. JavaScript Math.round differs from Python round at half values. This is a contract-level demonstration, not numerical parity or automatic server-error fallback.",
+        "Wariant mock używa tego samego hasha i domyślnych czasów 1/5/8 s. Po nieudanym żądaniu przebudowuje tylko pozostałą część przejazdu, zachowując już przebyty odcinek. JavaScript Math.round i Python round inaczej zaokrąglają wartości połówkowe. Wariant mock ilustruje kontrakt, ale nie gwarantuje zgodności wyników numerycznych z serwerem i nie jest uruchamiany automatycznie po jego błędzie.",
+        "Mock uses the same hash and default 1/5/8-second response times. After a failed request, it rebuilds only the remaining journey and preserves the path already travelled. JavaScript Math.round and Python round handle half values differently. Mock illustrates the contract; it does not guarantee numerical parity with the server or activate automatically after a server error.",
       ),
       h("Wnioski audytu i granice modelu", "Audit findings and model limits"),
       table(
@@ -492,9 +506,9 @@ function detailsSection(language: Language): DocsSection {
         ["Area", "Implementation limitation"],
         [
           [
-            t("Estymacje", "Estimates"),
+            t("Szacowane czasy", "Estimates"),
             t(
-              "Nominalny GreenWave nie uwzględnia postojów sterownika i fallbacku. Rzeczywistą oszczędność daje Standard na tej samej pozycji lub dwa zakończone przejazdy.",
+              "Nominalny czas GreenWave pomija oczekiwanie na sterownik i nieudane żądania. Oszczędność w symulacji jest obliczana względem przejazdu bez priorytetu na tej samej pozycji lub na podstawie dwóch zakończonych przejazdów.",
               "Nominal GreenWave excludes controller holds and fallback. Measured simulation savings use Standard at the same position or two completed runs.",
             ),
           ],
@@ -506,51 +520,51 @@ function detailsSection(language: Language): DocsSection {
             ),
           ],
           [
-            t("Walidacja hold", "Hold validation"),
+            t("Walidacja czasu utrzymania priorytetu", "Hold validation"),
             t(
-              "Ustawienie minimum hold poniżej 40 s i mały bufor mogą zbudować pakiet sprzeczny z kontraktem H ≥40, kończąc pętlę SERVER_ERROR.",
+              "Minimum czasu utrzymania priorytetu poniżej 40 s w połączeniu z małym buforem może dać pakiet niezgodny z kontraktem H ≥40 i zakończyć pętlę błędem SERVER_ERROR.",
               "A hold minimum below 40 seconds plus a small buffer can produce a payload violating H ≥40, ending the loop with SERVER_ERROR.",
             ),
           ],
           [
-            t("Dolna prędkość", "Rolling floor"),
+            t("Minimalna prędkość przejazdu", "Rolling floor"),
             t(
-              "Łączenie okien, zmiany krawędzi i ucięcie celu mogą obniżyć prędkość poniżej zamierzonego progu. Część floatów nie ma jawnego zakazu nieskończoności.",
+              "Łączenie okien, zmiany krawędzi i skrócenie okna na końcu trasy mogą obniżyć prędkość poniżej założonego progu. Dla części pól zmiennoprzecinkowych nieskończoność nie jest jawnie zabroniona.",
               "Merged windows, edge changes and destination truncation can defeat the intended rolling floor. Several floats have no explicit infinity rejection.",
             ),
           ],
           [
             t("Sygnały", "Signals"),
             t(
-              "Dwie grupy modulo 2 nie modelują pełnych konfliktów. Brak sygnałów nie potwierdza zielonego, ale pozwala na opuszczenie linii. Standard celowo przejeżdża czerwone ostrożnie.",
+              "Podział modulo 2 na dwie grupy nie opisuje wszystkich kolizji kierunków ruchu. Brak danych sygnałów nie potwierdza zielonego, ale dopuszcza opuszczenie linii. Model przejazdu bez priorytetu zakłada ostrożny przejazd na czerwonym.",
               "Two modulo slots do not model full conflicts. Missing heads cannot confirm green but permit line departure. Standard deliberately rolls red with caution.",
             ),
           ],
           [
             t("Optymalizacja", "Optimization"),
             t(
-              "Najkrótsza suma krawędzi nie musi być najkrótszym czasem całej symulacji. Zwykły ranking ma limit pięciu baz; świadomy zasobów ocenia wszystkie uprawnione.",
+              "Najmniejsza suma czasów krawędzi nie musi oznaczać najkrótszego przejazdu w symulacji. Zwykły wybór jednostki obejmuje pięć baz; wariant uwzględniający dostępność ocenia wszystkie bazy spełniające warunki.",
               "Minimum edge cost need not minimize simulated trip time. Ordinary ranking cuts at five bases; resource-aware ranking evaluates all eligible bases.",
             ),
           ],
           [
             t("Zegar i połączenie", "Clock and connection"),
             t(
-              "ETA UTC pomija niestandardowy interwał. EventSource nie udostępnia HTTP status: CORS/proxy może wyglądać jak brak sesji. Stop po timeout startu jest best-effort.",
+              "Przewidywany czas przyjazdu UTC pomija niestandardowy interwał. EventSource nie udostępnia statusu HTTP, więc błąd CORS lub serwera proxy może zostać rozpoznany jako brak sesji. Próba zatrzymania po przekroczeniu czasu uruchamiania nie gwarantuje zatrzymania sesji.",
               "UTC ETA omits nondefault interval. EventSource hides HTTP status, so CORS/proxy failures can look like missing sessions. Cleanup after start timeout is best-effort.",
             ),
           ],
           [
             t("Pamięć i odtwarzanie", "State and replay"),
             t(
-              "Wyłączność jest na proces serwera, kolejki są stratne, brak trwałego replay. Więcej workerów nie współdzieli jednej operacji.",
+              "Ograniczenie do jednej operacji obowiązuje osobno w każdym procesie serwera. Kolejki mogą pomijać zdarzenia i nie ma trwałego dziennika do ich odtworzenia. Procesy robocze nie współdzielą jednej operacji.",
               "Exclusivity is per server process, queues are lossy and there is no durable replay. Multiple workers do not share one operation.",
             ),
           ],
         ],
       ),
       p(
-        "Brak modelu zakazów skrętu, dynamicznych kolejek, wielu oddziałujących pojazdów uprzywilejowanych, barier pieszych i rzeczywistej dostępności. μ nie spowalnia otwartej drogi karetki. Wyniki hashy nie są empiryczną niezawodnością ITS. Historyczne opisy 1 Hz czasu rzeczywistego i kończenia przejazdu po odmowie są zastąpione przez krok 1 s symulacji i fallback per skrzyżowanie.",
+        "Model nie uwzględnia zakazów skrętu, dynamicznych kolejek, oddziaływania wielu pojazdów uprzywilejowanych, barier na trasach pieszych ani rzeczywistej dostępności zespołów. μ nie zmniejsza prędkości karetki na drodze poza skrzyżowaniami. Wyniki funkcji hashującej nie opisują zmierzonej niezawodności ITS. Dawne opisy kroku 1 Hz w czasie rzeczywistym i kończenia przejazdu po odmowie zostały zastąpione krokiem jednej sekundy symulacji i obsługą nieudanego priorytetu osobno dla każdego skrzyżowania.",
         "There is no model of turn restrictions, dynamic queues, interacting emergency vehicles, walking barriers or live availability. μ does not slow open-road ambulance movement. Hash outcomes are not empirical ITS reliability. Historical descriptions of 1 Hz wall-clock ticks and cancellation on rejection are superseded by one-second simulated steps and per-junction fallback.",
       ),
       h("Konfiguracja przygotowania danych", "Offline data-preparation configuration"),
@@ -560,7 +574,7 @@ function detailsSection(language: Language): DocsSection {
       ),
       table(["Stała", "Wartość"], ["Constant", "Value"], etlSettingRows),
       p(
-        "Dodatnie całkowite maxspeed z opcjonalnym km/h wygrywa z prędkością klasy; np. mph, listy lub PL:urban trafiają do domyślnej z oznaczeniem źródła. Jawny oneway wygrywa, nawet no na rondzie; bez niego rondo/circular i motorway/link są jednokierunkowe. Wartości nieznane są zgłaszane. Cechy kierunkowe pasów wygrywają z sumą; sumy dwukierunkowe dzielone są na pół z minimum jednego pasa.",
+        "Dodatnia liczba całkowita maxspeed, opcjonalnie z km/h, ma pierwszeństwo przed domyślną prędkością danej klasy drogi. Wartości takie jak mph, listy lub PL:urban powodują użycie wartości domyślnej z oznaczeniem źródła. Jawny oneway ma pierwszeństwo, także no na rondzie. Bez niego roundabout/circular i motorway/link oznaczają ruch jednokierunkowy. Nierozpoznane kierunki są zgłaszane. Kierunkowe oznaczenia liczby pasów mają pierwszeństwo przed liczbą łączną. Dla drogi dwukierunkowej połowa liczby pasów, zaokrąglona w dół, wynosi co najmniej jeden pas na kierunek.",
         "Positive integer maxspeed with optional km/h wins over class speed; mph, lists and PL:urban use a source-marked default. Explicit oneway wins, even no on a roundabout; without it, roundabout/circular and motorway/link imply one-way. Unknown directions are reported. Directional lane tags override totals; two-way totals are halved with a minimum of one lane.",
       ),
       h("Źródła i zakres sprawdzenia", "Sources and verification scope"),

@@ -19,7 +19,9 @@ describe("localized interactions", () => {
       </LanguageProvider>,
     );
     expect(html).toContain(
-      language === "pl" ? "Szybsza droga na miejsce zdarzenia." : "A clearer path to the incident.",
+      language === "pl"
+        ? "Sprawniejszy dojazd na miejsce zdarzenia."
+        : "A clearer path to the incident.",
     );
     expect(html).toContain(language === "pl" ? "Wyłącznie symulacja." : "Simulation only.");
     expect(html).toContain("Aleje Trzech Wieszczów");

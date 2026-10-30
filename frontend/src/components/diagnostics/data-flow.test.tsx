@@ -39,5 +39,5 @@ it("distinguishes event receipt and explains the simulated tick clock", () => {
   expect(html).toContain("event received");
   expect(html).not.toContain("success");
   expect(html).toContain("tick 14 (14 s simulated)");
-  expect(html).toContain("Several events can share a tick");
+  expect(html).toContain("Several events may share a step");
 });
