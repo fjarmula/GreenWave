@@ -119,6 +119,9 @@ Public HTTPS hosting on a free Oracle VM: [deployment guide](deploy/README.md).
 
 ## Documentation
 
+- [Implemented system logic and mathematical audit](docs/architecture/system-logic.md): modes,
+  configuration, travel-time formulas, signal state machines and implementation limitations.
+
 - [GreenWave_ARCHITECTURE.md](GreenWave_ARCHITECTURE.md): system design and API.
 - [docs/adr/](docs/adr/README.md): architecture decisions and their status.
 - [backend/README.md](backend/README.md): ETL, simulation settings, simulated ITS feedback.

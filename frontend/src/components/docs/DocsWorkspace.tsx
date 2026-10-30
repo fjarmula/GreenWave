@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/hud/ThemeToggle";
 import { ResponsiveNavigation } from "@/components/workspace/ResponsiveNavigation";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { useIsPhone } from "@/lib/useIsPhone";
-import { DEMO_URL, docsContent } from "@/lib/docs/content";
+import { docsContent } from "@/lib/docs/content";
 import { DocsBackdrop } from "./DocsBackdrop";
 import { DocsSectionView } from "./DocsSectionView";
 import { DocsTabs } from "./DocsTabs";
@@ -46,9 +46,6 @@ export function DocsWorkspace() {
             <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-amber-500" />
             {t("Simulation mode")}
           </span>
-          <a className="docs-chip" href={DEMO_URL} target="_blank" rel="noopener">
-            {t("Live demo")} <ArrowUpRight aria-hidden className="size-4 shrink-0" />
-          </a>
           <a
             className="docs-chip"
             href="https://github.com/fjarmula/GreenWave"

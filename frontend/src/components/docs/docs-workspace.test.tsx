@@ -42,20 +42,20 @@ describe("DocsWorkspace", () => {
     );
   });
 
-  it("shows a simulation-mode badge distinct from the demo link", () => {
+  it("shows a simulation-mode badge without a redundant live-demo header link", () => {
     const html = english();
     expect(html).toMatch(/data-testid="simulation-mode-badge"[\s\S]*?Simulation mode<\/span>/);
     expect(html).toContain("bg-amber-500");
     expect(html).toContain("bg-zinc-900/80");
     expect(html).toContain("border-neutral-700/60");
-    expect(html).toMatch(/class="docs-chip"[^>]*href="https:\/\/green-wave\.duckdns\.org\/"/);
+    expect(html).not.toMatch(/class="docs-chip"[^>]*href="https:\/\/green-wave\.duckdns\.org\/"/);
   });
 
   it("uses an SVG external-link icon and a documentation navigation rail", () => {
     const html = english();
     expect(html).not.toContain("↗");
     expect(html).toContain('class="docs-navigation"');
-    expect(html).toMatch(/Live demo[\s\S]*?<svg/);
+    expect(html).not.toContain("Live demo");
     expect(html).toMatch(
       /href="https:\/\/github.com\/fjarmula\/GreenWave"[^>]*>[\s\S]*?GitHub[\s\S]*?<svg/,
     );
