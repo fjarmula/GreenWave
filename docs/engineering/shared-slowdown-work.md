@@ -35,3 +35,19 @@ Apply configured D_min (default 3 seconds) once per unique controlled intersecti
 - Complete checks: 1,579 backend tests, Ruff lint/format, strict mypy (application plus experiments); 1,310 frontend tests, lint/typecheck/format/build; agent cleanup, graphify automation and setup shell checks (with backend Python on PATH).
 - A 12-pair/24-simulation smoke passed with no failures. Repeat smoke from the final clean revision before handoff; leave the full experiment to the maintainer. No pre-fix statistics or post-fix averages were added to README.
 - Proposed commit: `feat: add reproducible paired simulation experiment runner`.
+
+## Results publication plan (approved 2026-10-31)
+
+Specification: publish the verified 200-incident post-fix results in README and bilingual /docs, link a durable REPORT.md, open a focused PR to main, then recreate submission from finalized main with identical current application source and no internal development artifacts.
+
+1. Preserve a readable report under docs/results/2026-10-31/REPORT.md, including methodology, signed results, rank/density and controlled-intersection strata, provenance hashes and limitations. Raw execution outputs remain ignored.
+2. Add matching concise README and PL/EN About-tab summaries using existing content blocks. Verify values, link and structural parity, then full quality checks and browser review.
+3. Publish codex/shared-slowdown-results and open a PR to main. Preserve existing local main history; no force push or reset. Main must be finalized before submission publication.
+4. In a separate checkout, apply the saved metadata manifest and adapt presentation/hook/test adjustments to current files; preserve current README plus evaluator notice. Compare protected application/data/contract/test/Docker/CI files byte-for-byte and run checks before publishing submission. No merging old submission history.
+
+### Publication verification
+
+- Verified report statistics, five density rows, all intersection strata, fastest-candidate counts and provenance hashes against the full clean-revision run. Raw outputs were not added to Git.
+- Independent publication review found no correctness issues.
+- Full backend checks passed (1,579 tests). Frontend content consistency test first failed before publication content was added; all 1,311 tests and production build now pass. The existing layout test caught an anonymous panel created by placing the report link after a standalone note; placing the link inside the results heading group preserves the established layout.
+- Proposed commit: `docs: publish verified post-fix simulation experiment results`.

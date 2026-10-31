@@ -98,6 +98,26 @@ Intersection phases are separate from the run-level **GreenWave** (`ENABLED`) an
 - **Responsive workspaces:** Polish/English copy, light/dark themes, map-follow controls,
   Focus Mode, and a phone-oriented driver view without a geolocation requirement.
 
+## Simulation experiment results
+
+A reproducible post-fix experiment on **31 October 2026** covered 200 incident addresses, 600 incident–station routes and **3,000 paired comparisons (6,000 simulations)**, with nominal ITS feedback, cascade enabled and default settings. Both modes drove identical routes and incurred the same common intersection slowdown.
+
+GreenWave arrived sooner in **89%** of comparisons and tied in **11%**; no slower cases occurred in this sample. Mean driving-time saving was **71.94 seconds**, median **62.58 seconds**, and mean per-pair saving **15.01%**. Mean arrival times were **453.49 seconds for Standard** and **381.55 seconds for GreenWave**. For the first GreenWave-ranked station, mean saving across densities was **37.02 seconds (11.66%)**.
+
+Mean savings in seconds, with station choices fixed at density 1.5:
+
+| Density | Rank 1 | Rank 2 | Rank 3 |
+| --- | ---: | ---: | ---: |
+| 1.0 | 33.9 | 68.6 | 96.8 |
+| 1.5 | 36.7 | 72.8 | 102.7 |
+| 2.0 | 37.8 | 75.0 | 104.5 |
+| 2.5 | 38.2 | 76.9 | 108.8 |
+| 3.0 | 38.6 | 78.4 | 109.5 |
+
+There were no failed runs, missing candidates or on-site cases. The sampled routes contained 0–25 unique controlled intersections. Savings exclude walking and post-arrival recovery. These are **model results, not measured real-world benefits**; station/density combinations repeat incidents and are not independent observations. Higher savings from a more distant station do not imply a better dispatch decision, and other scenarios can still produce negative savings.
+
+[Read the experiment report and reproducibility record](https://github.com/fjarmula/GreenWave/blob/main/docs/results/2026-10-31/REPORT.md).
+
 ## Tech Stack
 
 | Layer                    | Technologies                                                                          | Responsibility                                                                      |
