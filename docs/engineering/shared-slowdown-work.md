@@ -26,3 +26,12 @@ Apply configured D_min (default 3 seconds) once per unique controlled intersecti
 - Independent motion review found no correctness defects; its requested cautious-leg speed-cap coverage was restored.
 - Legacy browser smoke assumes a preselected incident and obsolete tick labels. The current Playwright CLI flow selected an incident on the map, completed GreenWave and Standard runs, and verified displayed saving = Standard minus actual (proof under .tmp/playwright/shared-slowdown-verified.json). No browser test source was changed.
 - Proposed commit: `fix: share rolling intersection delay across simulation modes`.
+
+## Experiment milestone verification
+
+- Maintained runner and instructions reproduce sampling and fixed ranking/density choices. Reports retain partial failures, missing ranks and on-site walking separately; each mode selects its own fastest available station.
+- Seven harness tests cover exact sampling, empty strata, negative/tied/faster counts, independent station winners including partial-mode failures, actual-engine/profile equality, common-budget consumption, arrival limits and on-site/missing-candidate CSV orchestration.
+- Independent review identified on-site walking and partial-mode winner omissions. Both had failing regressions before correction and now pass.
+- Complete checks: 1,579 backend tests, Ruff lint/format, strict mypy (application plus experiments); 1,310 frontend tests, lint/typecheck/format/build; agent cleanup, graphify automation and setup shell checks (with backend Python on PATH).
+- A 12-pair/24-simulation smoke passed with no failures. Repeat smoke from the final clean revision before handoff; leave the full experiment to the maintainer. No pre-fix statistics or post-fix averages were added to README.
+- Proposed commit: `feat: add reproducible paired simulation experiment runner`.
