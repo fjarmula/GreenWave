@@ -11,7 +11,7 @@
 An incident whose snapped node is a station's own node could not be routed (`plan_route`
 raises `NoRoute`), so ranking reported that station as `station_at_incident` and dispatched the
 next one, often minutes away. Off the network, a station whose node was the only access node
-was dropped the same way. Design: `docs/superpowers/specs/archive/2026-10-25-post-merge-regressions-design.md`
+was dropped the same way. Design: the internal development specification (omitted from this evaluation snapshot)
 (D6; finding B2).
 
 ## Decision

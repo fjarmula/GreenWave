@@ -10,7 +10,7 @@
 The `/compare` screen recorded an ER Green Wave run and then a standard-traffic run one after the
 other through the single active run, and replayed both. The contest demo needs both runs watched
 live and side by side, so the time saved is felt rather than replayed (design
-`docs/superpowers/specs/archive/2026-10-23-soft-glass-live-comparison-design.md`, section P4). Contract v1
+the internal development specification (omitted from this evaluation snapshot), section P4). Contract v1
 (ADR 0003) allows one active simulation and starts runs one at a time; two separate `/start`
 calls would supersede each other, and two independent loops would let the panes' simulated clocks
 drift apart, which makes the race dishonest.

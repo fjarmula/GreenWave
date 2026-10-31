@@ -11,7 +11,7 @@ If the backend simulation loop raised, `SessionManager._run` only logged the exc
 terminal event was published, so subscribers waited out their 15 s silence timeout and the
 dashboard showed a generic "no simulated telemetry" error. The dead session also stayed active
 until the next start superseded it. Decision D2 of
-`docs/superpowers/plans/archive/2026-10-22-repo-audit-master.md` (finding B5) asks for a terminal event
+the internal development specification (omitted from this evaluation snapshot) (finding B5) asks for a terminal event
 that tells the client the server failed, and for the dashboard to say: "Simulation server error.
 Retry the green corridor initialization."
 

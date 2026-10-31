@@ -11,7 +11,7 @@ Every OSM ambulance station and every hospital emergency department (SOR) was an
 always-available ambulance origin. The Małopolska PRM plan (update no. 2, 24 June 2026; Table 1a
 effective 1 Sep 2026) publishes each ambulance team's base address, type, readiness hours and
 operating area. Ranking buildings hides the published fact that a 07:00–19:00 team is not there at
-21:00. Design: `docs/superpowers/specs/archive/2026-10-27-resource-aware-ambulance-dispatch-design.md`
+21:00. Design: the internal development specification (omitted from this evaluation snapshot)
 (decisions D1–D4).
 
 ## Decision

@@ -11,7 +11,7 @@
 A single rejected or unanswered priority request ended the whole simulated run, although the
 vehicle could still reach the incident and every later junction could still be prioritised. The
 dashboard therefore could not show what a dispatcher most needs: how much a partly failing corridor
-still saves. Design: `docs/superpowers/specs/2026-10-29-per-junction-fallback-design.md`.
+still saves. Design: the internal development specification (omitted from this evaluation snapshot).
 
 ## Decision
 

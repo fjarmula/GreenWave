@@ -8,7 +8,7 @@
 
 ## Context
 
-Phase 2 builds the simulation engine (backend) and wires the dashboard to it (frontend) in parallel. `GreenWave_ARCHITECTURE.md` §4 defines the payloads but leaves gaps, and the frontend's temporary types disagree with it (a fifth state `CLEARING_CASCADE`, an untyped ambulance status, no coordinates for intersections, no terminal stream event). Anything left open here becomes a contract change later. The decisions below close the gaps before either branch starts. Decision numbers D1–D23 refer to `docs/superpowers/plans/archive/2026-10-16-phase2-00-contract-freeze-and-coordination.md` §2.
+Phase 2 builds the simulation engine (backend) and wires the dashboard to it (frontend) in parallel. `GreenWave_ARCHITECTURE.md` §4 defines the payloads but leaves gaps, and the frontend's temporary types disagree with it (a fifth state `CLEARING_CASCADE`, an untyped ambulance status, no coordinates for intersections, no terminal stream event). Anything left open here becomes a contract change later. The decisions below close the gaps before either branch starts. Decision numbers D1–D23 refer to the internal development specification (omitted from this evaluation snapshot) §2.
 
 ## Decision
 

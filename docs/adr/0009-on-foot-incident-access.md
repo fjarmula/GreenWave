@@ -13,7 +13,7 @@ only `footway` / `path` / `steps` ways: no track and no emergency-tagged way. Ma
 emergency ways routable (spec C, `backend/README.md` "access ways") therefore fixes forest and
 outskirts locations but not Błonia (50.0597, 19.9090), which stays off the network. A crew
 reaches such incidents by driving to the nearest practical point and walking the rest
-(design `docs/superpowers/specs/archive/2026-10-24-dispatch-access-and-map-framing-design.md`, section D).
+(design the internal development specification (omitted from this evaluation snapshot), section D).
 
 ## Decision
 

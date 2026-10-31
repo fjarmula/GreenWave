@@ -1,6 +1,6 @@
 # ER-GreenWave frontend
 
-Next.js (App Router) dispatcher dashboard. See `../GreenWave_ARCHITECTURE.md` and `../AGENTS.md`.
+Next.js (App Router) dispatcher dashboard. See `../GreenWave_ARCHITECTURE.md` and `../CONTRIBUTING.md`.
 Requires Node 22+ (`.nvmrc`).
 
 ## Commands (run from `frontend/`)

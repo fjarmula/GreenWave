@@ -3,9 +3,16 @@ set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 
-test -f "$root/.agent/MEMORY.md"
-test ! -e "$root/.agents"
-for link in .claude/skills .codex/skills; do
-  test "$(readlink "$root/$link")" = ../.agent/skills
+for path in submission-preparation backend/experiments backend/tests/experiments docs/superpowers docs/engineering/experiments.md docs/engineering/shared-slowdown-work.md .local-archives .agent .agents .claude .codex .cursor .cursorrules .cline .mcp.json .graphifyignore AGENTS.md CLAUDE.md GEMINI.md frontend/AGENTS.md; do
+  if [ -e "$root/$path" ] || [ -L "$root/$path" ]; then
+    printf 'Unexpected development metadata: %s\n' "$path" >&2
+    exit 1
+  fi
 done
-grep -F 'Agent workflow setup' "$root/docs/adr/0002-agent-workflow-setup.md" >/dev/null
+grep -F 'Note for Evaluators:' "$root/README.md" >/dev/null
+test -f "$root/.github/workflows/ci.yml"
+test -f "$root/compose.yaml"
+test -f "$root/backend/data/raw/MANIFEST.json"
+
+test -f "$root/docs/results/2026-10-31/REPORT.md"
+printf 'submission cleanup: pass\n'

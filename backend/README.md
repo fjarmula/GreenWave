@@ -1,7 +1,7 @@
 # ER-GreenWave backend
 
 FastAPI service: spatial ETL, simulation engine and telemetry API.
-See `../GreenWave_ARCHITECTURE.md` for the design, `../AGENTS.md` for contributor rules and
+See `../GreenWave_ARCHITECTURE.md` for the design, `../CONTRIBUTING.md` for contributor rules and
 `../docs/engineering/data-pipeline.md` for data-pipeline constraints.
 
 ## Commands (run from `backend/`)

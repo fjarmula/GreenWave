@@ -1,1 +1,0 @@
-> ⚠️ **Note for Evaluators:** This `submission` branch contains the official, finalized codebase for evaluation. All internal development metadata and AI configuration files have been removed to provide a clean, production-ready review environment.

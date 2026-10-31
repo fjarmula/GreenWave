@@ -12,7 +12,7 @@
 The contest asks the application to make meaningful use of municipal data, and a judge must be
 able to see where an incident coordinate comes from. The OSM extract's bounding box also covers
 towns outside Kraków (Wieliczka, Skawina) that reuse Kraków street names. Design:
-`docs/superpowers/specs/archive/2026-10-27-municipal-addresses-design.md`.
+the internal development specification (omitted from this evaluation snapshot).
 
 ## Decision
 
