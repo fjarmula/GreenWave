@@ -73,6 +73,8 @@ type MockLeg = {
   crossing: boolean;
   crossingMeters: number;
   cautiousSeconds: number;
+  standardMeters: number;
+  standardSeconds: number;
   standard: boolean;
   slowed: number;
   slowdownOwner: number | null;
@@ -215,11 +217,6 @@ function createMockRoute(
   return route;
 }
 
-/** Rolling cautious speed: the ordinary limit plus the remaining extra time per metre. */
-function cautiousSpeedMps(limitMps: number, remainingMeters: number, extraSeconds: number): number {
-  return 1 / (1 / limitMps + extraSeconds / remainingMeters);
-}
-
 /**
  * `[length, extra]` of a standard red crossing, the backend's `standard_crossing` with the fixed
  * delay as the wait: the loss is capped and the crossing extends so it never drops below the floor.
@@ -238,10 +235,10 @@ function standardCrossing(limitMps: number, density: number): [number, number] {
  * The whole drive, precomputed: open road at the ambulance speed and, with ER Green Wave disabled,
  * a controlled crossing wherever the route movement is red or yellow on reaching a stop line. The
  * backend's rolling formula at contract level; a later stop line replaces an active crossing.
- * Enabled spends each junction's D_min as the backend does: a rolling slowdown over the approach
+ * Both modes spend each junction's D_min as the backend does: a rolling slowdown over the approach
  * (never before the previous junction), extended past the line to respect the floor, so the trip
- * still takes `greenwaveSeconds` and the vehicle never stops. Junctions in `plan.fallback` (their
- * priority request failed) are crossed by the disabled rules instead, deciding on the ordinary
+ * priority trip still takes `greenwaveSeconds`. Junctions in `plan.fallback` (their
+ * priority request failed) retain D_min and additionally decide on the ordinary
  * programme at simulated time (timeline seconds + `plan.colorOffsetSeconds`). A rebuilt timeline
  * resumes from `cursor`, so the driven past never changes.
  */
@@ -270,51 +267,48 @@ function mockTimeline(
     : [0, 0, 0, 0, 0];
   let standard = cursor?.standard ?? false;
   let slowdownOwner = cursor?.slowdownOwner ?? null;
-  // The backend's _standard_decision: replaces a standard crossing or the junction's own slowdown;
-  // merges with an earlier junction's slowdown remainder so that junction keeps its own delay.
+  let standardMeters = cursor?.standardMeters ?? 0;
+  let standardSeconds = cursor?.standardSeconds ?? 0;
+  // Signal decisions replace only the cautious budget, preserving the common slowdown.
   const decide = (index: number) => {
-    const replaceable = standard || crossing <= 0 || slowdownOwner === index;
+    void index;
     if (routeMovementColor(seconds + plan.colorOffsetSeconds) === "GREEN") {
-      if (replaceable) [crossing, cautious, standard] = [0, 0, false];
+      [standardMeters, standardSeconds, standard] = [0, 0, false];
       return;
     }
     const [length, extra] = standardCrossing(ordinaryMps, request.traffic_density_multiplier);
-    [crossing, cautious] = replaceable
-      ? [length, extra]
-      : [Math.max(crossing, length), cautious + extra];
+    [standardMeters, standardSeconds] = [length, extra];
     standard = true;
   };
   plan.decideAtStart?.forEach(decide);
   while (meters < total) {
     const next = stops[reachSeconds.length];
     let windowStart = Infinity;
-    if (enabled && next !== undefined && slowed === reachSeconds.length) {
-      if (plan.fallback.has(slowed)) {
-        slowed += 1; // a fallback junction gets no D_min slowdown
-      } else {
-        windowStart = Math.max(stops[slowed - 1] ?? 0, next - MOCK_GREENWAVE_APPROACH_DISTANCE_M);
-        if (meters >= windowStart) {
-          windowStart = Infinity;
-          slowdownOwner = slowed;
-          slowed += 1;
-          const needed =
-            ambulanceMps > MOCK_MIN_ROLLING_SPEED_MPS
-              ? delay / (1 / MOCK_MIN_ROLLING_SPEED_MPS - 1 / ambulanceMps)
-              : 0;
-          crossing += Math.max(next - meters, needed);
-          cautious += delay;
-        }
+    if (next !== undefined && slowed === reachSeconds.length) {
+      windowStart = Math.max(stops[slowed - 1] ?? 0, next - MOCK_GREENWAVE_APPROACH_DISTANCE_M);
+      if (meters >= windowStart) {
+        windowStart = Infinity;
+        slowdownOwner = slowed;
+        slowed += 1;
+        const needed =
+          ambulanceMps > MOCK_MIN_ROLLING_SPEED_MPS
+            ? delay / (1 / MOCK_MIN_ROLLING_SPEED_MPS - 1 / ambulanceMps)
+            : 0;
+        crossing = Math.min(crossing + Math.max(next - meters, needed), total - meters);
+        cautious += delay;
       }
     }
     const speedMps =
-      crossing > 0
-        ? cautiousSpeedMps(standard ? ordinaryMps : ambulanceMps, crossing, cautious)
-        : ambulanceMps;
+      1 /
+      (1 / (standardMeters > 0 ? ordinaryMps : ambulanceMps) +
+        (crossing > 0 ? cautious / crossing : 0) +
+        (standardMeters > 0 ? standardSeconds / standardMeters : 0));
     const end = Math.min(
       total,
       next ?? Infinity,
       windowStart,
       crossing > 0 ? meters + crossing : Infinity,
+      standardMeters > 0 ? meters + standardMeters : Infinity,
     );
     const endSeconds = seconds + (end - meters) / speedMps;
     legs.push({
@@ -322,9 +316,11 @@ function mockTimeline(
       startMeters: meters,
       endSeconds,
       speedMps,
-      crossing: crossing > 0,
+      crossing: crossing > 0 || standardMeters > 0,
       crossingMeters: crossing,
       cautiousSeconds: cautious,
+      standardMeters,
+      standardSeconds,
       standard,
       slowed,
       slowdownOwner,
@@ -332,7 +328,12 @@ function mockTimeline(
     if (crossing > 0) {
       cautious -= (cautious * (end - meters)) / crossing;
       crossing -= end - meters;
-      if (crossing <= 1e-9) [crossing, cautious, standard] = [0, 0, false];
+      if (crossing <= 1e-9) [crossing, cautious] = [0, 0];
+    }
+    if (standardMeters > 0) {
+      standardSeconds -= (standardSeconds * (end - meters)) / standardMeters;
+      standardMeters -= end - meters;
+      if (standardMeters <= 1e-9) [standardMeters, standardSeconds, standard] = [0, 0, false];
     }
     [seconds, meters] = [endSeconds, end];
     if (meters === next) {
@@ -357,7 +358,12 @@ function cursorAt(timeline: MockTimeline, seconds: number): MockCursor | null {
     meters: leg.startMeters + step,
     crossingMeters: crossing,
     cautiousSeconds: crossing > 0 ? (leg.cautiousSeconds * crossing) / leg.crossingMeters : 0,
-    standard: crossing > 0 && leg.standard,
+    standardMeters: Math.max(0, leg.standardMeters - step),
+    standardSeconds:
+      leg.standardMeters > 0
+        ? (leg.standardSeconds * Math.max(0, leg.standardMeters - step)) / leg.standardMeters
+        : 0,
+    standard: leg.standardMeters > step && leg.standard,
     slowed: leg.slowed,
     slowdownOwner: leg.slowdownOwner,
     legs: [

@@ -47,7 +47,7 @@ _FLOOR_STD_MPS = 10 / 3.6
 # to hit standard_max_red_loss_seconds; the crossing then extends to keep the 10 km/h floor.
 _CAUTIOUS_S = 15.0
 _STD_L = _CAUTIOUS_S / (1 / _FLOOR_STD_MPS - 1 / _LIMIT_MPS)
-_REACH_S = _STOP_M / _AMBULANCE_MPS
+_REACH_S = _STOP_M / _AMBULANCE_MPS + 3  # common approach slowdown
 GREEN, YELLOW, RED = SignalPhaseColor.GREEN, SignalPhaseColor.YELLOW, SignalPhaseColor.RED
 # Phase programmes that put the route movement (controlling edge "first") in a known colour when
 # the ambulance reaches the stop line at ~6.92 s. "a-cross" sorts before "first", so the cross
@@ -288,17 +288,17 @@ def test_disabled_red_or_unknown_movement_rolls_into_the_crossing(
 ) -> None:
     """Yellow and an unknown movement take the cautious path; nothing dwells at the stop line."""
     states, _ = _run(_engine(GreenWaveMode.DISABLED, phase=phase))
-    at_7 = _at(states, 7)
+    at_7 = _at(states, 10)
     speed = cautious_speed_mps(_LIMIT_MPS, _STD_L, _CAUTIOUS_S)
     assert speed == pytest.approx(_FLOOR_STD_MPS)
     assert at_7.dwell_remaining_s == 0.0
     assert at_7.dwelling_intersection_id is None
-    assert at_7.distance_travelled_m == pytest.approx(_STOP_M + speed * (7 - _REACH_S))
-    assert at_7.cautious_crossing_remaining_m == pytest.approx(
+    assert at_7.distance_travelled_m == pytest.approx(_STOP_M + speed * (10 - _REACH_S))
+    assert at_7.standard_crossing_remaining_m == pytest.approx(
         _STOP_M + _STD_L - at_7.distance_travelled_m
     )
-    assert at_7.cautious_time_remaining_s == pytest.approx(
-        _CAUTIOUS_S * at_7.cautious_crossing_remaining_m / _STD_L
+    assert at_7.standard_time_remaining_s == pytest.approx(
+        _CAUTIOUS_S * at_7.standard_crossing_remaining_m / _STD_L
     )
 
 
@@ -308,7 +308,7 @@ def test_disabled_crossing_speed_is_positive_and_capped_every_tick(
 ) -> None:
     states, ticks = _run(_engine(GreenWaveMode.DISABLED, phase=phase))
     crossing_end_s = _REACH_S + _crossing_s()
-    for seconds in range(8, int(crossing_end_s) + 1):  # ticks wholly inside the crossing
+    for seconds in range(11, int(crossing_end_s) + 1):  # ticks wholly inside the crossing
         moved = (
             _at(states, seconds).distance_travelled_m
             - _at(states, seconds - 1).distance_travelled_m
@@ -324,7 +324,7 @@ def test_disabled_cautious_crossing_adds_exactly_the_cautious_time(
     phase: SignalPhaseColor | None,
 ) -> None:
     states, ticks = _run(_engine(GreenWaveMode.DISABLED, phase=phase))
-    expected = (200 - _STD_L) / _AMBULANCE_MPS + _crossing_s()
+    expected = (200 - _STD_L) / _AMBULANCE_MPS + _crossing_s() + 3
     assert states[-1].arrived_at_s == pytest.approx(expected)
     assert ticks[-1].kpi_metrics.total_time_elapsed_sec == round(expected)
 
@@ -374,6 +374,7 @@ def test_a_crossing_onto_a_slower_edge_keeps_the_floor() -> None:
     # The 10 m/s edge sets the length, so it is driven exactly at the floor.
     assert states[-1].arrived_at_s == pytest.approx(
         _STOP_M / 19.5
+        + 3
         + 10.0 / 15.0
         + (_STD_L - 10.0) / 10.0
         + _CAUTIOUS_S
@@ -389,15 +390,15 @@ def test_a_crossing_ends_at_a_slow_edge_and_keeps_its_capped_extra_time() -> Non
     states, _ = _run(_engine(GreenWaveMode.DISABLED, speeds_kmh=(36.0, 9.0)))
     capped_s = 10.0 * (1 / _FLOOR_STD_MPS - 1 / _LIMIT_MPS)
     assert states[-1].arrived_at_s == pytest.approx(
-        _STOP_M / _AMBULANCE_MPS + 10.0 / _LIMIT_MPS + capped_s + 100.0 / (30 / 3.6)
+        _STOP_M / _AMBULANCE_MPS + 3 + 10.0 / _LIMIT_MPS + capped_s + 100.0 / (30 / 3.6)
     )
 
 
-def test_disabled_green_movement_has_no_penalty() -> None:
+def test_disabled_green_movement_has_only_common_penalty() -> None:
     states, ticks = _run(_engine(GreenWaveMode.DISABLED, phase=GREEN))
-    assert states[-1].arrived_at_s == pytest.approx(200 / 13)
-    assert all(state.cautious_crossing_remaining_m == 0.0 for state in states)
-    assert all(tick.ambulance.status is not AmbulanceStatus.CROSSING_INTERSECTION for tick in ticks)
+    assert states[-1].arrived_at_s == pytest.approx(200 / 13 + 3)
+    assert all(state.standard_crossing_remaining_m == 0.0 for state in states)
+    assert any(tick.ambulance.status is AmbulanceStatus.CROSSING_INTERSECTION for tick in ticks)
 
 
 def test_the_crossing_follows_each_edge_speed_limit_across_the_edge_end() -> None:
@@ -419,6 +420,7 @@ def test_a_stop_line_inside_a_crossing_starts_a_fresh_penalty() -> None:
         _REACH_S
         + 10.0 / _LIMIT_MPS
         + _CAUTIOUS_S * 10.0 / _STD_L  # 90 -> 100, part of INT-1's budget
+        + 3  # common delay for INT-2 survives the cautious replacement
         + _crossing_s()  # INT-2 replaces it with its own decision: 100 -> 100 + L
         + (100.0 - _STD_L) / _AMBULANCE_MPS
     )
@@ -435,7 +437,7 @@ def test_motion_samples_the_route_movement_at_the_exact_stop_line_time() -> None
         calls.append((intersection_id, at_s))
         return GREEN
 
-    for _ in range(8):
+    for _ in range(11):
         state, _ = move_one_second(
             state,
             track,
@@ -518,6 +520,6 @@ def test_every_red_route_stop_line_of_a_junction_starts_a_controlled_crossing(
     assert states[-1].arrived_at_s == pytest.approx(expected)
 
 
-def test_a_green_junction_adds_no_penalty_at_any_of_its_lines() -> None:
+def test_a_green_junction_adds_common_penalty_only_once() -> None:
     states, _ = _run(_two_line_engine(GREEN))
-    assert states[-1].arrived_at_s == pytest.approx(200 / 13)
+    assert states[-1].arrived_at_s == pytest.approx(200 / 13 + 3)

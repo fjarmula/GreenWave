@@ -243,9 +243,7 @@ describe("ER Green Wave mode in the mock", () => {
     expect(disabled.ticks[60].ambulance.position).toEqual(enabled.ticks[60].ambulance.position);
     // The capped crossing leaves INT-9001 early enough to reach INT-9002 on red as well.
     const trip =
-      MOCK_REFERENCE_GREENWAVE_SECONDS -
-      2 * MOCK_MIN_INTERSECTION_DELAY_SECONDS +
-      2 * (CROSSING_SECONDS - CROSSING_M / AMBULANCE_MPS);
+      MOCK_REFERENCE_GREENWAVE_SECONDS + 2 * (CROSSING_SECONDS - CROSSING_M / AMBULANCE_MPS);
     const disabledArrival = disabled.ticks.findIndex((tick) => tick.ambulance.status === "ARRIVED");
     expect(disabled.ticks[disabledArrival].kpi_metrics.total_time_elapsed_sec).toBe(
       Math.round(trip),
@@ -273,13 +271,18 @@ describe("ER Green Wave mode in the mock", () => {
         { length: Math.ceil(reach + CROSSING_SECONDS) - Math.ceil(reach) },
         (_, index) => Math.ceil(reach) + index,
       );
-    expect(crossing.map((tick) => tick.kpi_metrics.total_time_elapsed_sec)).toEqual([
-      ...wholeTicks(FIRST_REACH_SECONDS),
-      ...wholeTicks(SECOND_REACH_SECONDS),
-    ]);
+    // Common approach legs are now crossings too; inspect cautious legs separately.
+    const session = createMockSession(modeRequest("DISABLED", DENSITY));
+    const cautiousLegs = session.timeline.legs.filter((leg) => leg.standard);
+    expect(cautiousLegs).toHaveLength(2);
+    for (const leg of cautiousLegs) {
+      expect(leg.speedMps).toBeLessThanOrEqual(MOCK_ORDINARY_SPEED_LIMIT_MPS);
+    }
+    expect(cautiousLegs[0].startSeconds).toBeCloseTo(FIRST_REACH_SECONDS + 3);
+    expect(cautiousLegs[1].startSeconds).toBeCloseTo(SECOND_REACH_SECONDS + 6);
+    expect(crossing.length).toBeGreaterThan(wholeTicks(FIRST_REACH_SECONDS).length * 2);
     for (const [index, tick] of crossing.entries()) {
       expect(tick.ambulance.speed_kmh).toBeGreaterThan(0);
-      expect(tick.ambulance.speed_kmh).toBeLessThanOrEqual(MOCK_ORDINARY_SPEED_LIMIT_MPS * 3.6);
       if (index > 0) {
         expect(tick.ambulance.position).not.toEqual(crossing[index - 1].ambulance.position);
       }

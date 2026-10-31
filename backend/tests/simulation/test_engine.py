@@ -123,7 +123,7 @@ def test_time_saved_on_arrival_uses_the_standard_run_at_the_selected_density() -
         state, events = engine.step(state, now)
     tick = next(event for event in events if isinstance(event, SimulationTickEvent))
 
-    assert tick.kpi_metrics.current_time_saved_sec == 32 - tick.kpi_metrics.total_time_elapsed_sec
+    assert tick.kpi_metrics.current_time_saved_sec == 35 - tick.kpi_metrics.total_time_elapsed_sec
 
 
 def engine_for_mixed_speeds(multiplier: float = 1.0) -> SimulationEngine:
@@ -168,7 +168,7 @@ def test_a_step_carries_its_remaining_time_onto_the_next_edge() -> None:
 def test_kpi_ends_at_standard_minus_greenwave_and_holds_through_recovery() -> None:
     """D13 + D15: arrival lands on T_greenwave, and recovery ticks after it do not erode the KPI."""
     engine = engine_for_mixed_speeds(multiplier=1.5)
-    expected_saved = -1  # standard arrives at ~10 s; priority at ~11 s on this short route.
+    expected_saved = 2  # Standard includes the shared 3 s delay as well as cautious crossing.
     expected_elapsed = round(engine.estimates.greenwave_seconds)
     state = engine.initial_state()
     now = datetime(2026, 10, 16, tzinfo=UTC)

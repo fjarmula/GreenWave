@@ -15,7 +15,7 @@ export const MOCK_PRIORITY_GREEN_TTI_SECONDS = 25;
 export const MOCK_RECOVERY_SECONDS = 15;
 export const MOCK_MIN_HOLD_SECONDS = 40;
 export const MOCK_HOLD_BUFFER_SECONDS = 5;
-// Mirrors of the backend's ER Green Wave D_min slowdown (simulation/motion.py): D_min is spent
+// Mirrors of the backend's common D_min slowdown (both modes and fallback) (simulation/motion.py): D_min is spent
 // rolling over the approach to each junction, never below the floor, never as a stop.
 export const MOCK_MIN_INTERSECTION_DELAY_SECONDS = 3;
 export const MOCK_GREENWAVE_APPROACH_DISTANCE_M = 60;

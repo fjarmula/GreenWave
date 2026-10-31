@@ -395,11 +395,11 @@ describe("mock preflight estimates", () => {
         false,
       ),
     );
-    expect(far).toContain("06m 44s");
+    expect(far).toContain("06m 50s");
     expect(far).toContain("06m 20s");
-    expect(near).toContain("03m 19s");
+    expect(near).toContain("03m 25s");
     expect(near).toContain("03m 10s");
-    expect(otherStation).toContain("03m 19s");
+    expect(otherStation).toContain("03m 25s");
     expect(otherStation).toContain("03m 10s");
     expect(far).toContain("Approximate (mock)");
     expect(far).toContain("straight line");
@@ -414,7 +414,7 @@ describe("mock preflight estimates", () => {
         incident={nearIncident}
       />,
     );
-    expect(markup).toContain("03m 19s");
+    expect(markup).toContain("03m 25s");
     expect(markup).toContain("03m 10s");
   });
 

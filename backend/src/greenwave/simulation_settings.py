@@ -15,11 +15,11 @@ class SimulationSettings(BaseSettings):
     priority_green_tti_seconds: float = Field(default=25, ge=0)
     recovery_hold_seconds: float = Field(default=15, ge=0)
     min_intersection_delay_seconds: float = Field(default=3, ge=0)
-    # APPROVED 2026-10-23 (human): ER Green Wave spends D_min as a rolling slowdown over this
+    # Shared-delay correction (2026-10-31): both modes spend D_min over this
     # approach to each intersection's first stop line instead of a stop (simulation/motion.py).
     greenwave_approach_distance_m: float = Field(default=60, gt=0, allow_inf_nan=False)
-    # APPROVED 2026-10-23 (human): the slowdown never drops below this; any D_min it cannot absorb
-    # before the line is spent past it at this speed, so the vehicle never stops for D_min.
+    # Size the common window using this floor, extending past the line when needed.
+    # Destination truncation or overlapping windows can reduce the combined speed further.
     greenwave_min_rolling_speed_kmh: float = Field(default=15, gt=0, allow_inf_nan=False)
     ambulance_speed_factor: float = Field(default=1.3, gt=0)
     ambulance_min_speed_kmh: float = Field(default=30, ge=0)
