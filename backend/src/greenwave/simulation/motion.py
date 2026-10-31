@@ -69,7 +69,7 @@ def cautious_speed_mps(
 def greenwave_slowdown(
     item_line_m: float, window_start_m: float, speed_mps: float, settings: SimulationSettings
 ) -> float:
-    """Metres over which ER Green Wave spreads ``D_min``, starting at ``window_start_m``.
+    """Metres over which both modes spread ``D_min``, starting at ``window_start_m``.
 
     The whole window up to the stop line, extended past it when spreading ``D_min`` over the
     window alone would drop below the rolling floor. An ambulance already at or below the floor
@@ -172,30 +172,24 @@ def _standard_decision(
     owners: list[RouteIntersection],
     at_s: float,
     distance_m: float,
-    crossing: tuple[float, float, bool],
-    slowdown_id: str | None,
     track: RouteTrack,
     density: float,
     settings: SimulationSettings,
     route_movement_color_at: Callable[[str, float], SignalPhaseColor | None],
     route_seconds_until_green: Callable[[str, float], float | None],
-) -> tuple[float, float, bool]:
-    """The ``(remaining_m, extra_s, is_standard)`` crossing after a standard stop-line decision.
+) -> tuple[float, float]:
+    """Replace only the signal-dependent crossing; common D_min is independent.
 
-    GREEN for every owner drives on; otherwise the controlled crossing of :func:`move_one_second`
-    starts. It replaces a standard crossing already running and the remainder of an owner's own
-    ``D_min`` slowdown (a junction is never charged both); a slowdown still running for an earlier
-    priority junction is kept and merged, so that junction keeps its own delay.
+    GREEN clears the previous cautious crossing. Other colours start a fresh one, including
+    additional lines in the same intersection. Neither decision can erase common delay.
     """
-    remaining, extra, standard = crossing
-    replaceable = standard or remaining <= 0 or slowdown_id in {o.id for o in owners}
     facing = [
         item
         for item in owners
         if route_movement_color_at(item.id, at_s) is not SignalPhaseColor.GREEN
     ]
     if not facing:
-        return (0.0, 0.0, False) if replaceable else crossing
+        return 0.0, 0.0
     waits = [
         item.delay_seconds if wait is None else wait
         for item in facing
@@ -209,9 +203,7 @@ def _standard_decision(
         density,
         settings,
     )
-    if replaceable:
-        return length, added, True
-    return max(remaining, length), extra + added, True
+    return length, added
 
 
 def move_one_second(
@@ -227,27 +219,15 @@ def move_one_second(
 ) -> tuple[EngineState, float]:
     """Spend one simulated second; return the new state and the distance actually driven.
 
-    The ambulance drives at the speed of whichever edge it is on, carrying the rest of the
-    second across edge ends. Arrival is recorded to the fraction of a second. ER Green Wave
-    enabled spends each intersection's ``D_min`` as a rolling slowdown (so the trip time equals
-    ``T_greenwave``): from ``greenwave_approach_distance_m`` before its first stop line (never
-    before the previous one) it drives a constant reduced share of the ambulance speed that adds
-    exactly ``D_min``, never below ``greenwave_min_rolling_speed_kmh``, continuing past the line
-    when the window is too short. At the line it stays, ``dwelling_intersection_id`` set, until
-    ``may_leave_stop_line(distance)`` says every light it faces there was shown green; a priority
-    requested too late for its approach therefore holds the ambulance instead of showing it drive
-    through red. Disabled asks ``route_movement_color_at`` for the route
-    movement at the exact time it reaches each route stop line, including lines inside a junction:
-    GREEN drives on; RED, YELLOW or an unknown movement (``None``) starts a controlled crossing
-    (:func:`standard_crossing`): extra time from ``route_seconds_until_green`` (the longest wait
-    of the facing intersections; an unknown one counts its normal delay), capped, spread over a
-    crossing long enough to stay above ``standard_min_rolling_speed_kmh`` at the ordinary limit
-    there, rolled at no more than each edge's ordinary limit, across edge ends. A later stop line
-    replaces it with its own decision.
-    Enabled crosses an intersection in ``state.fallback_intersection_ids`` (its priority request
-    failed) by these standard rules instead, with no slowdown or hold for it; a hold already
-    waiting there ends and the standard decision is taken at release (:func:`_standard_decision`).
-    Open-road motion is the same in both modes.
+    Both modes spend D_min once per unique controlled intersection as a common rolling
+    approach slowdown, extended past the line and truncated at the destination while retaining
+    its full time budget. Existing greenwave_* settings govern this common window for compatibility.
+    Standard and STANDARD_FALLBACK additionally decide at every route stop line: green clears
+    the signal-dependent crossing; red/yellow/unknown start a floored, capped cautious crossing.
+    Common and cautious time-per-metre contributions add when windows overlap. Component floor
+    sizing is unchanged; simultaneous contributions or destination truncation can reduce the
+    combined speed further. Priority crossings still wait for confirmed green at the line.
+    Arrival records fractional driving time and clears both rolling budgets; recovery is separate.
     """
     now, tick = state.simulated_time_s + 1, state.tick + 1
     if state.arrived:
@@ -257,7 +237,9 @@ def move_one_second(
     dwell, dwelling = state.dwell_remaining_s, state.dwelling_intersection_id
     crossing, cautious = state.cautious_crossing_remaining_m, state.cautious_time_remaining_s
     slowdown = state.slowdown_intersection_id
-    standard = state.crossing_is_standard
+    standard_m = state.standard_crossing_remaining_m
+    standard_s = state.standard_time_remaining_s
+    slowed = state.slowdown_intersection_ids
     enabled = green_wave_mode is GreenWaveMode.ENABLED
     fallback = state.fallback_intersection_ids
     # Intersections crossed by standard rules: every one when disabled, failed ones when enabled.
@@ -269,19 +251,29 @@ def move_one_second(
     arrived_at: float | None = None
 
     def decide(owners: list[RouteIntersection]) -> None:
-        nonlocal crossing, cautious, standard
-        crossing, cautious, standard = _standard_decision(
+        nonlocal standard_m, standard_s
+        standard_m, standard_s = _standard_decision(
             owners,
             state.simulated_time_s + (1.0 - budget),
             distance,
-            (crossing, cautious, standard),
-            slowdown,
             track,
             traffic_density_multiplier,
             settings,
             route_movement_color_at,
             route_seconds_until_green,
         )
+
+    if state.tick == 0:
+        # Strictly-ahead line searches intentionally exclude a line exactly at the origin.
+        at_origin = [
+            item for item in route_model.intersections if distance in item.route_stop_lines_m
+        ]
+        ordinary = [item for item in at_origin if item.id in standard_ids]
+        if ordinary:
+            decide(ordinary)
+        priority = [item for item in at_origin if item.id not in standard_ids]
+        if priority:
+            dwelling = priority[0].id
 
     while budget > _TIME_EPSILON_S:
         if dwell > 0:
@@ -316,36 +308,57 @@ def move_one_second(
                     line = (stop.first_stop_line_m, [stop])
                 elif stop.first_stop_line_m == line[0]:
                     line = (line[0], [stop, *line[1]])
-            if stop is not None and slowdown != stop.id:
-                window_start = _window_start_m(route_model, stop, settings)
-                if distance >= window_start:
-                    window_start, slowdown = inf, stop.id
-                    added = greenwave_slowdown(stop.first_stop_line_m, distance, speed, settings)
-                    if added <= _DISTANCE_EPSILON_M:
-                        # No room to roll (route starts on the line at or below the floor).
-                        dwell, dwelling = settings.min_intersection_delay_seconds, stop.id
-                        continue
-                    # A slowdown still running past the previous line keeps its own extra time.
-                    # It never runs past the destination, so every D_min is spent before
-                    # arrival and the trip still takes T_greenwave.
-                    crossing = min(crossing + added, track.total_distance_m - distance)
-                    cautious += settings.min_intersection_delay_seconds
+        # Start each controlled intersection's common window once, in either mode and fallback.
+        # Identity, rather than stop-line count or request status, prevents duplicate charging.
+        common = next(
+            (
+                item
+                for item in route_model.intersections
+                if item.id not in slowed and item.first_stop_line_m >= distance
+            ),
+            None,
+        )
+        if common is not None:
+            window_start = _window_start_m(route_model, common, settings)
+            if distance >= window_start:
+                window_start, slowdown = inf, common.id
+                slowed = slowed | {common.id}
+                added = greenwave_slowdown(common.first_stop_line_m, distance, speed, settings)
+                if added <= _DISTANCE_EPSILON_M:
+                    # A route starting on a line needs room past it to spend the common delay.
+                    added = track.total_distance_m - distance
+                crossing = min(crossing + added, track.total_distance_m - distance)
+                cautious += settings.min_intersection_delay_seconds
+                # Another intersection may start at this same position.
+                continue
+        # Add the two time-per-metre contributions independently. A cautious crossing may be
+        # replaced by a later stop-line decision, but the common budget always survives.
+        limit_mps = _ordinary_limit_mps(track, edge) if standard_m > 0 else speed
+        seconds_per_m = 1 / limit_mps
         if crossing > 0:
-            limit_mps = min(speed, track.speed_limit_mps(edge)) if standard else speed
-            speed = cautious_speed_mps(limit_mps, crossing, cautious)
+            seconds_per_m += cautious / crossing
+        if standard_m > 0:
+            seconds_per_m += standard_s / standard_m
+        speed = 1 / seconds_per_m
         limit = min(
             track.edge_end_m(edge),
             track.total_distance_m,
             inf if line is None else line[0],
             window_start,
             distance + crossing if crossing > 0 else inf,
+            distance + standard_m if standard_m > 0 else inf,
         )
         step = min(limit - distance, speed * budget)
         if crossing > 0:
             cautious -= cautious * step / crossing
             crossing -= step
             if crossing <= _DISTANCE_EPSILON_M:
-                crossing, cautious, standard = 0.0, 0.0, False
+                crossing, cautious = 0.0, 0.0
+        if standard_m > 0:
+            standard_s -= standard_s * step / standard_m
+            standard_m -= step
+            if standard_m <= _DISTANCE_EPSILON_M:
+                standard_m, standard_s = 0.0, 0.0
         if speed * budget < limit - distance:
             distance += step
             break
@@ -372,7 +385,10 @@ def move_one_second(
         dwelling_intersection_id=dwelling,
         cautious_crossing_remaining_m=0.0 if arrived else crossing,
         cautious_time_remaining_s=0.0 if arrived else cautious,
-        crossing_is_standard=False if arrived else standard,
+        crossing_is_standard=not arrived and standard_m > 0,
+        standard_crossing_remaining_m=0.0 if arrived else standard_m,
+        standard_time_remaining_s=0.0 if arrived else standard_s,
+        slowdown_intersection_ids=slowed,
         v_avg_meters_per_second=max(
             settings.speed_floor_meters_per_second,
             settings.speed_ema_alpha * moved

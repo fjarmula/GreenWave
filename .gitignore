@@ -58,3 +58,6 @@ graphify-out/
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
 .superpowers/
+
+# Durable local Git history backups
+.local-archives/

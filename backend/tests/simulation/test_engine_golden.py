@@ -69,7 +69,12 @@ def run_scenario(
             break
     else:
         pytest.fail(f"{simulation_id} did not complete within {_MAX_TICKS} ticks")
-    final_state = json.loads(json.dumps(dataclasses.asdict(state), default=str))
+    final_state = json.loads(
+        json.dumps(
+            dataclasses.asdict(state),
+            default=lambda value: sorted(value) if isinstance(value, frozenset) else str(value),
+        )
+    )
     return {"events": events, "dispatched": gateway.dispatched, "final_state": final_state}
 
 

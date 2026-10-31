@@ -99,8 +99,12 @@ def standard_run_profile(
 def _slowest_arrival_s(track: RouteTrack, stop_lines: int, settings: SimulationSettings) -> float:
     """An upper bound on the disabled arrival: every edge at its ordinary limit (a crossing never
     drives faster than its ambulance speed or slower than that limit plus its extra time), plus
-    the capped extra time at every stop line. Infinite when an edge cannot be driven."""
-    seconds = float(stop_lines) * settings.standard_max_red_loss_seconds
+    the capped extra time at every stop line and an upper bound on common delay
+    (one common budget per line overestimates multi-line intersections).
+    Infinite when an edge cannot be driven."""
+    seconds = float(stop_lines) * (
+        settings.standard_max_red_loss_seconds + settings.min_intersection_delay_seconds
+    )
     start = 0.0
     for edge in range(track.edge_count):
         end = track.edge_end_m(edge)

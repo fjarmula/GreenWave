@@ -46,7 +46,7 @@ Additive to contract v1; `schema_version` stays `"1.0"`.
 - Each ranked station costs one more dry run (about 12 ms per route on the 40-route Kraków
   sample, at most 5 per rank). A start costs one.
 - Standard and green-wave times can be equal (a route that meets no red light), and standard
-  can be shorter (it spends no `D_min`); both are simulated estimates, not measured times.
+  can be shorter due to signal timing or priority holds; both now spend the same common `D_min`. These are simulated estimates, not measured times.
 - On the standard page the default station can differ from the green-wave page's for the same
   incident; each page starts from its own fastest unless the dispatcher picks.
 - No real signal actuation; no new dependency.

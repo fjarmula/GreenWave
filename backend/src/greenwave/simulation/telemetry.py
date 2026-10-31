@@ -46,6 +46,7 @@ def _ambulance_status(state: EngineState) -> AmbulanceStatus:
         state.dwell_remaining_s
         or state.dwelling_intersection_id
         or state.cautious_crossing_remaining_m
+        or state.standard_crossing_remaining_m
     ):
         return AmbulanceStatus.CROSSING_INTERSECTION
     if any(

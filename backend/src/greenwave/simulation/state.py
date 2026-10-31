@@ -18,8 +18,8 @@ class SignalHead:
 class EngineState:
     """``dwelling_intersection_id`` marks an enabled-mode safety hold at a first stop line.
 
-    ``dwell_remaining_s`` is only a degenerate enabled-mode fallback (no room to roll ``D_min``);
-    disabled mode never dwells.
+    ``dwell_remaining_s`` retains support for an explicitly supplied dwell budget;
+    common delay uses rolling motion in both modes.
     """
 
     simulated_time_s: int
@@ -34,17 +34,21 @@ class EngineState:
     arrived: bool
     completed: bool
     arrived_at_s: float | None = None
-    # Metres of the current controlled crossing (disabled) or D_min slowdown (enabled) still to
+    # Metres of the common D_min slowdown (both modes) still to
     # drive, and the extra seconds still to spread over them (simulation/motion.py).
     cautious_crossing_remaining_m: float = 0.0
     cautious_time_remaining_s: float = 0.0
     # Shown vehicle lights of every route signal, in projection order; empty before the first tick.
     signal_heads: tuple[SignalHead, ...] = ()
-    # Enabled mode: the intersection whose D_min slowdown has started, so it starts only once.
+    # Most recent common slowdown owner (diagnostic); slowdown_intersection_ids prevents repeats.
     slowdown_intersection_id: str | None = None
     # Whether the current crossing includes a standard-traffic crossing, which rolls at no more
     # than the ordinary limit (always so with ER Green Wave disabled).
     crossing_is_standard: bool = False
+    # Signal-dependent cautious crossing, independent of the common rolling budget above.
+    standard_crossing_remaining_m: float = 0.0
+    standard_time_remaining_s: float = 0.0
+    slowdown_intersection_ids: frozenset[str] = frozenset()
     # Enabled mode: intersections whose priority request failed; they are crossed by standard
     # rules (CrossingStrategy.STANDARD_FALLBACK) for the rest of the run.
     fallback_intersection_ids: frozenset[str] = frozenset()

@@ -103,6 +103,43 @@ export const docsContent: Record<Language, DocsSection[]> = {
             "Diagnostyka — podgląd żądań, zdarzeń symulacji i raportu jakości danych.",
           ],
         },
+        { kind: "heading", text: "Wyniki eksperymentu symulacyjnego — 31.10.2026" },
+        {
+          kind: "paragraph",
+          text: "Sprawdzono 200 miejsc zdarzeń i 600 tras z trzech jednostek wybranych dla każdego zdarzenia. Pięć poziomów natężenia dało 3 000 porównań parami i 6 000 symulowanych przejazdów. Użyto ambulansu, nominalnych odpowiedzi ITS, kaskady i ustawień domyślnych. Oba tryby pokonywały tę samą trasę i ponosiły takie samo wspólne opóźnienie na skrzyżowaniach.",
+        },
+        {
+          kind: "paragraph",
+          text: "GreenWave był szybszy w 89% porównań, remisował w 11%, a wolniejszy był w 0%. Średnia oszczędność czasu jazdy wyniosła 71,94 s, mediana 62,58 s, a średnia oszczędność procentowa dla pojedynczych par — 15,01%. Średnie czasy dojazdu: Standard 453,49 s, GreenWave 381,55 s. Dla pierwszej jednostki w rankingu GreenWave średnia oszczędność wyniosła 37,02 s (11,66%). Wszystkie przejazdy zakończyły się poprawnie; nie brakowało kandydatów i nie wystąpiły przypadki obsługi zdarzenia na miejscu.",
+        },
+        {
+          kind: "paragraph",
+          text: "Tabela pokazuje średnią oszczędność w sekundach. Trzy jednostki wybrano według rankingu GreenWave przy mnożniku 1,5 i zachowano przy pozostałych mnożnikach. Każda komórka obejmuje 200 porównań.",
+        },
+        {
+          kind: "links",
+          items: [
+            {
+              label: "Pełny raport wyników i opis odtwarzania eksperymentu (REPORT.md)",
+              href: "https://github.com/fjarmula/GreenWave/blob/main/docs/results/2026-10-31/REPORT.md",
+            },
+          ],
+        },
+        {
+          kind: "table",
+          columns: ["Mnożnik natężenia", "Miejsce 1", "Miejsce 2", "Miejsce 3"],
+          rows: [
+            ["1,0", "33,9", "68,6", "96,8"],
+            ["1,5", "36,7", "72,8", "102,7"],
+            ["2,0", "37,8", "75,0", "104,5"],
+            ["2,5", "38,2", "76,9", "108,8"],
+            ["3,0", "38,6", "78,4", "109,5"],
+          ],
+        },
+        {
+          kind: "note",
+          text: "To wyniki modelu, nie pomiary korzyści w rzeczywistym ruchu. Na trasach występowało 0–25 różnych skrzyżowań z sygnalizacją. Obliczenia pomijają końcowe dojście pieszo i powrót sygnalizacji do zwykłego programu po dojeździe. Warianty natężenia i jednostek powtarzają te same zdarzenia. Większa oszczędność z dalszej jednostki nie oznacza lepszego wyboru do wysłania. Inne scenariusze mogą dać ujemne oszczędności.",
+        },
         { kind: "heading", text: "Zastosowanie" },
         {
           kind: "paragraph",
@@ -455,6 +492,43 @@ export const docsContent: Record<Language, DocsSection[]> = {
             "Driver: a phone view with the map and the next signal ahead of the vehicle.",
             "Diagnostics: every request and event as it happens, plus the data-quality report.",
           ],
+        },
+        { kind: "heading", text: "Simulation experiment — 31 October 2026" },
+        {
+          kind: "paragraph",
+          text: "The test used 200 incident locations and three candidate stations per incident, giving 600 routes. Testing five density multipliers produced 3 000 paired comparisons and 6 000 simulated drives. Ambulances ran with nominal ITS responses, cascade coordination and default parameters. Each pair shared its road geometry and the common intersection delay.",
+        },
+        {
+          kind: "paragraph",
+          text: "GreenWave finished ahead in 89% of pairs, level in 11%, and behind in 0%. The average driving-time reduction was 71.94 s; the median was 62.58 s. Averaging the individual percentage reductions gave 15.01%. Standard took 453.49 s on average, compared with 381.55 s for GreenWave. Using only the first GreenWave-ranked candidate gave a 37.02 s average reduction (11.66%). Every drive completed, all candidate slots were filled, and no incident was handled on site.",
+        },
+        {
+          kind: "paragraph",
+          text: "Each table cell gives the average seconds saved across 200 pairs. Station ranks were chosen using GreenWave estimates at a density multiplier of 1.5 and held fixed for the other multipliers.",
+        },
+        {
+          kind: "links",
+          items: [
+            {
+              label: "Full findings and reproducibility record (REPORT.md)",
+              href: "https://github.com/fjarmula/GreenWave/blob/main/docs/results/2026-10-31/REPORT.md",
+            },
+          ],
+        },
+        {
+          kind: "table",
+          columns: ["Density multiplier", "Rank 1", "Rank 2", "Rank 3"],
+          rows: [
+            ["1.0", "33.9", "68.6", "96.8"],
+            ["1.5", "36.7", "72.8", "102.7"],
+            ["2.0", "37.8", "75.0", "104.5"],
+            ["2.5", "38.2", "76.9", "108.8"],
+            ["3.0", "38.6", "78.4", "109.5"],
+          ],
+        },
+        {
+          kind: "note",
+          text: "The figures describe simulated behavior rather than benefits measured on real streets. Routes crossed 0–25 distinct signal-controlled intersections. Final walking and signal recovery after arrival are excluded from driving savings. Density and station variants reuse incidents, so they are not independent observations. A larger reduction from a more distant station does not make that station the best dispatch choice. Different scenarios may yield negative savings.",
         },
         { kind: "heading", text: "Uses" },
         {

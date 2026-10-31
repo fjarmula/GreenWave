@@ -46,3 +46,25 @@ it("never claims real signal control", () => {
       /\b(controls|actuates) (real|physical) (traffic )?(signals|lights)\b/i,
     );
 });
+
+it("publishes matching post-fix model results and the durable report in both languages", () => {
+  const reportUrl =
+    "https://github.com/fjarmula/GreenWave/blob/main/docs/results/2026-10-31/REPORT.md";
+  for (const language of ["pl", "en"] as const) {
+    const about = docsContent[language].find((section) => section.id === "about")!;
+    const text = about.blocks.flatMap(prose).join(" ");
+    for (const value of ["200", "600", "3 000", "6 000", "89%", "11%", "0%"])
+      expect(text).toContain(value);
+    expect(
+      about.blocks.some(
+        (block) => block.kind === "links" && block.items.some((item) => item.href === reportUrl),
+      ),
+    ).toBe(true);
+    const table = about.blocks.find((block) => block.kind === "table");
+    expect(table?.kind === "table" ? table.rows : []).toHaveLength(5);
+  }
+  expect(repo("README.md")).toContain(reportUrl);
+  expect(repo("docs/results/2026-10-31/REPORT.md")).toContain(
+    "e79afd52dd2a29cac88c4ef18e864dc0f66a68aa",
+  );
+});

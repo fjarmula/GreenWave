@@ -22,8 +22,9 @@ Additive to contract v1; `schema_version` stays `"1.0"`.
   `CrossingStrategy.STANDARD_FALLBACK` for the rest of the run. The run continues, its mode never
   changes and every other junction keeps requesting priority. A grouped request fails as one.
 - Fallback junctions are crossed by disabled-mode rules (ordinary programme at each route stop
-  line). A hold waiting at the line ends and decides at release; the junction's own slowdown
-  remainder is replaced, never charged twice. Failed targets are never re-requested, never shown
+  line). A hold waiting at the line ends and decides at release. Following the shared-delay
+  correction, both modes retain the common slowdown remainder independently of cautious crossing;
+  it is never omitted, erased by green, or restarted by fallback. Failed targets are never re-requested, never shown
   as prioritised and never enter RECOVERY.
 - On acknowledgement timeout the engine emits the correlated `TIMED_OUT` feedback and withdraws the
   request from the controller; the withdrawal reserves the next number in the run's single
