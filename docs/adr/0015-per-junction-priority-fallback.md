@@ -2,7 +2,7 @@
 
 - Status: Proposed
 - Date: 2026-10-30
-- Owners: @fjarmula @Piotrek406
+- Owners: @fjarmula @piotr-lorek
 - Supersedes: ADR 0008 (simulated ITS feedback) in part: its rule that rejection, timeout and
   hold expiry end the run with `ITS_REJECTED`, `ITS_TIMEOUT` or `ITS_HOLD_EXPIRED`.
 

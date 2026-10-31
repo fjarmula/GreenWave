@@ -2,7 +2,7 @@
 
 - Status: Proposed
 - Date: 2026-10-25
-- Owners: @fjarmula @Piotrek406
+- Owners: @fjarmula @piotr-lorek
 - Supersedes: None (amends ADR 0006's rank contract additively)
 
 ## Context

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-16
-- Owners: @fjarmula @Piotrek406
+- Owners: @fjarmula @piotr-lorek
 - Supersedes: None
 - Superseded in part: D9 by architecture §6 item 11 (every simulated second is its own tick; playback shortens only the wall-clock interval); D16/D18 confirmation semantics by ADR 0008 simulated ITS feedback; D18 `expected_arrival_utc` is now emission time + smallest TTI / `playback_speed` (wall-clock). The rest stands.
 

@@ -2,7 +2,7 @@
 
 - Status: Proposed
 - Date: 2026-10-24
-- Owners: @fjarmula @Piotrek406
+- Owners: @fjarmula @piotr-lorek
 - Supersedes: None (amends ADR 0003 and ADR 0006 additively)
 
 ## Context

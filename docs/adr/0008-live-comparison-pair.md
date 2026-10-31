@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-23
-- Owners: @fjarmula @Piotrek406
+- Owners: @fjarmula @piotr-lorek
 - Supersedes: None (amends ADR 0003 additively)
 
 ## Context

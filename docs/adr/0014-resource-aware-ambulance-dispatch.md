@@ -2,7 +2,7 @@
 
 - Status: Proposed
 - Date: 2026-10-27
-- Owners: @fjarmula @Piotrek406
+- Owners: @fjarmula @piotr-lorek
 - Supersedes: None (amends ADR 0006 ranking for AMBULANCE; fire and police unchanged)
 
 ## Context
