@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-16
-- Owners: @fjarmula @Piotrek406
+- Owners: @fjarmula @piotr-lorek
 - Supersedes: Part of 0002 (graphify output as a tracked artifact)
 
 ## Context

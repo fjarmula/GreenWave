@@ -2,7 +2,7 @@
 
 - Status: Proposed
 - Date: 2026-10-25
-- Owners: @fjarmula @Piotrek406
+- Owners: @fjarmula @piotr-lorek
 - Supersedes: None (amends ADR 0008's hold calculation and ADR 0003 D17's TTI basis)
 
 ## Context

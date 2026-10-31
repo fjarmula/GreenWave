@@ -2,7 +2,7 @@
 
 - Status: Proposed
 - Date: 2026-10-19
-- Owners: @fjarmula @Piotrek406
+- Owners: @fjarmula @piotr-lorek
 - Supersedes: None
 
 ## Context

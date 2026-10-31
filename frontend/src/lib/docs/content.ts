@@ -55,7 +55,7 @@ export const DOCS_REPOSITORY = "https://github.com/fjarmula/GreenWave";
 
 export const DOCS_AUTHORS = [
   { name: "Filip Jarmuła", github: "fjarmula" },
-  { name: "Piotr Lorek", github: "Piotrek406" },
+  { name: "Piotr Lorek", github: "piotr-lorek" },
 ] as const;
 
 export const docsFooter: Record<Language, { authors: string; repository: string; notice: string }> =

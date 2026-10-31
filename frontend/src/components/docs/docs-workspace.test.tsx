@@ -25,7 +25,7 @@ describe("DocsWorkspace", () => {
   it("credits both authors in a footer linking their GitHub profiles", () => {
     const footer = english().match(/<footer class="docs-footer"[\s\S]*?<\/footer>/)?.[0] ?? "";
     expect(footer).toMatch(/href="https:\/\/github.com\/fjarmula"[^>]*>[\s\S]*?Filip Jarmuła/);
-    expect(footer).toMatch(/href="https:\/\/github.com\/Piotrek406"[^>]*>[\s\S]*?Piotr Lorek/);
+    expect(footer).toMatch(/href="https:\/\/github.com\/piotr-lorek"[^>]*>[\s\S]*?Piotr Lorek/);
     expect(footer).toContain('href="https://github.com/fjarmula/GreenWave"');
     expect(footer).toContain("Authors");
   });
