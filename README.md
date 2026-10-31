@@ -137,6 +137,10 @@ coordinates; API and map positions use WGS84. At startup, the backend loads thes
 and validates their schemas, references, and recorded hashes. Incomplete or inconsistent data
 prevents startup.
 
+Route selection minimizes modelled emergency-vehicle travel time rather than distance. Its road
+weights account for bus lanes, tram tracks, speed, road length, and traffic-calming features;
+intersection waiting times are simulated separately and do not influence route selection.
+
 The dashboard uses REST for dispatch and lifecycle actions, then subscribes to SSE for live
 updates. The engine advances in one-second simulated steps; playback speed changes wall-clock
 pacing. A separate in-process controller acknowledges requests and reports simulated signal
